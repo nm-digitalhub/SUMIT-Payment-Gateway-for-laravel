@@ -18,7 +18,7 @@ class TransactionResource extends Resource
 {
     protected static ?string $model = OfficeGuyTransaction::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'Transactions';
 
