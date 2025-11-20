@@ -2,6 +2,9 @@
 
 A comprehensive Laravel package for integrating SUMIT payment gateway with full Filament admin and client panel support. This package is a 1:1 port of the official SUMIT WooCommerce plugin.
 
+> **⚠️ Filament v4 Upgrade Notice**  
+> This package now requires Filament v4 and Laravel 11.28+. If you're upgrading from a previous version, please see the [Upgrade Guide](docs/UPGRADE_TO_V4.md).
+
 ## Features
 
 - **Card Payments**: Support for PCI direct, redirect, and simple (PaymentsJS) modes

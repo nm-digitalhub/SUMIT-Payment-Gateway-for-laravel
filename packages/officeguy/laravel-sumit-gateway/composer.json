@@ -1,6 +1,6 @@
 {
     "name": "officeguy/laravel-sumit-gateway",
-    "description": "Laravel package for SUMIT payment gateway with Filament integration - 1:1 port from WooCommerce",
+    "description": "Laravel package for SUMIT payment gateway with Filament v4 integration - 1:1 port from WooCommerce",
     "type": "library",
     "keywords": [
         "laravel",
