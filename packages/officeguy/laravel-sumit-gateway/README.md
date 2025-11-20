@@ -17,8 +17,8 @@ A comprehensive Laravel package for integrating SUMIT payment gateway with full 
 ## Requirements
 
 - PHP 8.2 or higher
-- Laravel 10.x or 11.x
-- Filament 3.x
+- Laravel 11.28 or higher
+- Filament 4.x
 - A SUMIT account with API credentials
 
 ## Installation
@@ -273,19 +273,60 @@ $defaultToken = OfficeGuyToken::getDefaultForOwner($user);
 
 ## Filament Integration
 
-The package includes ready-to-use Filament resources for both admin and client panels.
+The package includes complete Filament v4 resources for both admin and client panels.
 
 ### Admin Resources
 
-- `OfficeGuyTransactionResource` - View and manage all transactions
-- `OfficeGuyTokenResource` - Manage customer payment tokens
-- `OfficeGuyDocumentResource` - View generated documents
-- `OfficeGuySettingsPage` - Configure gateway settings
+All admin resources are automatically discovered and registered:
 
-### Client Panel Resources
+- **TransactionResource** (`/admin/transactions`) - View and manage all payment transactions
+  - Filter by status, currency, amount range, and test mode
+  - View detailed transaction information including raw API data
+  - Actions: View associated documents, refresh payment status
+  - Navigation badge showing pending transactions
 
-- `ClientTransactionResource` - Customer's transaction history
-- `ClientPaymentMethodResource` - Manage saved payment methods
+- **TokenResource** (`/admin/tokens`) - Manage customer payment tokens
+  - View all saved payment methods
+  - Set tokens as default for users
+  - Delete expired or unwanted tokens
+  - Navigation badge showing expired tokens
+
+- **DocumentResource** (`/admin/documents`) - View generated invoices and receipts
+  - Filter by document type, draft status, and email status
+  - View document details and raw API responses
+  - Navigation badge showing draft documents
+
+- **OfficeGuySettings** (`/admin/officeguy-settings`) - View gateway configuration
+  - Read-only display of all gateway settings
+  - Shows API credentials, environment, payment options
+  - All settings managed via environment variables
+
+### Client Panel
+
+A separate customer-facing panel is available at `/client`:
+
+- **ClientTransactionResource** - Customer's transaction history
+  - View only authenticated user's transactions
+  - Filter and search personal payment history
+  - Read-only access (no create/edit/delete)
+
+- **ClientPaymentMethodResource** - Manage saved payment methods
+  - View and manage saved credit cards
+  - Set default payment method
+  - Delete saved cards with confirmation
+  - Warning badges for expired cards
+
+- **ClientDocumentResource** - View invoices and receipts
+  - View only authenticated user's documents
+  - Display invoices, receipts, and orders
+  - Filter by document type and draft status
+  - Read-only access (no create/edit/delete)
+
+### Installation
+
+Filament resources are automatically registered via service providers. No additional configuration needed.
+
+For more details, see `src/Filament/README.md`.
 
 ## API Endpoints
 

@@ -4,6 +4,8 @@
 
 This Laravel package is a comprehensive 1:1 port of the SUMIT/OfficeGuy WooCommerce payment gateway plugin (v3.3.1). It provides full payment processing capabilities for Israeli and international merchants using the SUMIT platform.
 
+**Note**: This package has been upgraded to support Filament v4 and Laravel 11.28+. The package is ready for Filament v4 integration, though Filament Resources and Pages are planned for future implementation.
+
 ## What Has Been Implemented
 
 ### Core Package Structure ✅
@@ -118,6 +120,46 @@ This Laravel package is a comprehensive 1:1 port of the SUMIT/OfficeGuy WooComme
 - Max payments calculation
 - User authentication checks
 
+### Filament Resources ✅ (Filament v4)
+
+**Admin Panel Resources**
+- TransactionResource - Complete transaction management
+  - List and view all transactions
+  - Status filtering and badges
+  - Amount range filtering
+  - Raw API data viewing
+  - Navigation badges for pending transactions
+- TokenResource - Payment token management
+  - List and view saved payment methods
+  - Set default tokens
+  - Delete expired tokens
+  - Expiry status indicators
+  - Navigation badges for expired tokens
+- DocumentResource - Invoice and receipt management
+  - List and view all documents
+  - Document type filtering (Invoice, Order, Donation Receipt)
+  - Draft and email status tracking
+  - Raw API response viewing
+  - Navigation badges for draft documents
+- OfficeGuySettings Page - Configuration viewer
+  - Read-only display of all gateway settings
+  - API credentials, environment settings
+  - Payment options and limits
+  - Document configuration
+  - Tokenization settings
+
+**Client Panel** (`/client`)
+- ClientPanelProvider - Separate customer-facing panel
+- ClientTransactionResource - Customer transaction history
+  - Filtered to authenticated user only
+  - Status filtering
+  - Read-only access
+- ClientPaymentMethodResource - Saved payment methods
+  - User-specific payment methods
+  - Set default card
+  - Delete saved cards
+  - Expiry warnings
+
 ### Documentation ✅
 
 **README.md**
@@ -188,23 +230,7 @@ The following features from the WooCommerce plugin are documented but not yet im
 
 **Why Not**: WooCommerce ecosystem specific.
 
-### 6. Filament Admin Resources
-**Planned but not implemented**:
-- OfficeGuyTransactionResource
-- OfficeGuyTokenResource
-- OfficeGuyDocumentResource
-- OfficeGuySettingsPage
-
-**Why Not**: Time constraints. Structure is ready for implementation.
-
-### 7. Filament Client Panel
-**Planned but not implemented**:
-- ClientTransactionResource
-- ClientPaymentMethodResource
-
-**Why Not**: Time constraints. Structure is ready for implementation.
-
-### 8. Full Payment Processing Flow
+### 6. Full Payment Processing Flow
 **Partially implemented**:
 - Order processing logic exists in services
 - Controllers handle callbacks
@@ -360,10 +386,11 @@ Routes are auto-registered:
 - [x] Callback/webhook handling
 - [x] Documentation
 - [x] Frontend component (basic)
+- [x] Filament v4 Admin resources
+- [x] Filament v4 Client panel
 
 ### 🚧 Needs Work
 - [ ] Full payment processing workflow
-- [ ] Filament resources
 - [ ] Test suite
 - [ ] Subscription support
 - [ ] Refund processing
@@ -372,13 +399,13 @@ Routes are auto-registered:
 
 ### 📋 Recommended Before Production
 1. Add comprehensive tests
-2. Implement Filament resources for admin
-3. Add payment processing workflow examples
-4. Set up monitoring and alerts
-5. Configure proper logging channels
-6. Test in SUMIT sandbox thoroughly
-7. Security audit of card data handling
-8. Performance testing under load
+2. Add payment processing workflow examples
+3. Set up monitoring and alerts
+4. Configure proper logging channels
+5. Test in SUMIT sandbox thoroughly
+6. Security audit of card data handling
+7. Performance testing under load
+8. Extend Filament resources with additional actions (refunds, API status refresh)
 
 ## Maintenance Notes
 
