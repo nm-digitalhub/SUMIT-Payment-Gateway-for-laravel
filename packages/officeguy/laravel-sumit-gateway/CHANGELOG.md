@@ -18,6 +18,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     - ClientPanelProvider - Separate customer-facing panel
     - ClientTransactionResource - Customer transaction history (user-filtered)
     - ClientPaymentMethodResource - Saved payment method management
+    - ClientDocumentResource - Customer invoices and receipts (user-filtered)
   - Full integration with existing models and services
   - Navigation badges for pending transactions, expired tokens, and draft documents
   - Comprehensive README documentation for all Filament resources

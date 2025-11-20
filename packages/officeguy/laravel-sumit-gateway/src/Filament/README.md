@@ -144,6 +144,26 @@ Customer management of saved payment methods.
 
 ---
 
+### 3. ClientDocumentResource
+**Path:** `src/Filament/Client/Resources/ClientDocumentResource.php`
+
+Customer view of their invoices and receipts.
+
+**Features:**
+- View only authenticated user's documents
+- Display invoices, receipts, and orders
+- Show document type with color-coded badges
+- Filter by document type and draft status
+- Read-only access (no create/edit/delete)
+- Navigation badge for draft documents
+- Empty state message for users with no documents
+
+**Pages:**
+- List: Browse user's documents
+- View: See detailed document information
+
+---
+
 ## Installation & Setup
 
 ### 1. Register Resources in Service Provider
@@ -217,6 +237,7 @@ php artisan vendor:publish --tag=officeguy-views
 ### Client Panel
 - Transactions: `/client/client-transactions`
 - Payment Methods: `/client/client-payment-methods`
+- Documents: `/client/client-documents`
 
 ---
 

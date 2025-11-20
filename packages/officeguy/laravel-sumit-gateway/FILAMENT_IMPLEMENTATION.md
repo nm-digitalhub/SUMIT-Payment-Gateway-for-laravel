@@ -152,6 +152,29 @@ Completed: 2025-11-20
 
 ---
 
+### 3. ClientDocumentResource
+**File:** `src/Filament/Client/Resources/ClientDocumentResource.php`
+
+**Features Implemented:**
+- ✅ View authenticated user's documents only
+- ✅ Display invoices, receipts, and orders
+- ✅ Document type badges (Invoice, Order, Donation Receipt)
+- ✅ Filter by document type and draft status
+- ✅ Show amount and date information
+- ✅ Display draft and email status
+- ✅ Read-only access (no create/edit/delete)
+- ✅ Navigation badge for draft documents
+- ✅ Empty state message for new users
+- ✅ User-specific data filtering
+
+**Pages:**
+- ListClientDocuments
+- ViewClientDocument
+
+**URL:** `/client/client-documents`
+
+---
+
 ## Technical Implementation
 
 ### Filament v4 Compliance
@@ -205,7 +228,7 @@ Completed: 2025-11-20
 10. `src/Filament/Pages/OfficeGuySettings.php`
 11. `resources/views/filament/pages/officeguy-settings.blade.php`
 
-### Client Panel (8 files)
+### Client Panel (11 files)
 12. `src/Filament/Client/ClientPanelProvider.php`
 13. `src/Filament/Client/Resources/ClientTransactionResource.php`
 14. `src/Filament/Client/Resources/ClientTransactionResource/Pages/ListClientTransactions.php`
@@ -213,17 +236,20 @@ Completed: 2025-11-20
 16. `src/Filament/Client/Resources/ClientPaymentMethodResource.php`
 17. `src/Filament/Client/Resources/ClientPaymentMethodResource/Pages/ListClientPaymentMethods.php`
 18. `src/Filament/Client/Resources/ClientPaymentMethodResource/Pages/ViewClientPaymentMethod.php`
+19. `src/Filament/Client/Resources/ClientDocumentResource.php`
+20. `src/Filament/Client/Resources/ClientDocumentResource/Pages/ListClientDocuments.php`
+21. `src/Filament/Client/Resources/ClientDocumentResource/Pages/ViewClientDocument.php`
 
 ### Documentation (1 file)
-19. `src/Filament/README.md`
+22. `src/Filament/README.md`
 
 ### Modified Files (4 files)
-20. `composer.json` - Added ClientPanelProvider auto-discovery
-21. `README.md` - Updated Filament integration section
-22. `CHANGELOG.md` - Documented new features
-23. `docs/IMPLEMENTATION_SUMMARY.md` - Updated implementation status
+23. `composer.json` - Added ClientPanelProvider auto-discovery
+24. `README.md` - Updated Filament integration section
+25. `CHANGELOG.md` - Documented new features
+26. `docs/IMPLEMENTATION_SUMMARY.md` - Updated implementation status
 
-**Total: 23 files**
+**Total: 26 files**
 
 ---
 
@@ -251,6 +277,9 @@ To verify the implementation:
 - [ ] Navigate to `/client/client-payment-methods` - verify user's cards only
 - [ ] Set default payment method
 - [ ] Delete a payment method
+- [ ] Navigate to `/client/client-documents` - verify user's documents only
+- [ ] Filter documents by type
+- [ ] View document details
 
 ---
 

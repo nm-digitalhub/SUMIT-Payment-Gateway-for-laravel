@@ -316,6 +316,12 @@ A separate customer-facing panel is available at `/client`:
   - Delete saved cards with confirmation
   - Warning badges for expired cards
 
+- **ClientDocumentResource** - View invoices and receipts
+  - View only authenticated user's documents
+  - Display invoices, receipts, and orders
+  - Filter by document type and draft status
+  - Read-only access (no create/edit/delete)
+
 ### Installation
 
 Filament resources are automatically registered via service providers. No additional configuration needed.
