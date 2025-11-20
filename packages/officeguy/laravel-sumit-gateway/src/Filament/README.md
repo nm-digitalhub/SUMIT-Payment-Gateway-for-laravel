@@ -2,6 +2,31 @@
 
 This directory contains all Filament v4 resources for the Laravel SUMIT Gateway package.
 
+## Package Architecture
+
+This is a **Laravel package** (not an application), and all Filament resources are self-contained within the package:
+
+**Key Points:**
+- ✅ **Namespace:** All resources use `OfficeGuy\LaravelSumitGateway\Filament\*` namespace
+- ✅ **Auto-Discovery:** Panel providers are automatically registered via `composer.json`
+- ✅ **Resource Discovery:** Resources are discovered from the **package directory**, not from `app/`
+- ✅ **Independence:** No need to copy files to your application - everything works from the package
+
+**Directory Structure:**
+```
+packages/officeguy/laravel-sumit-gateway/src/Filament/
+├── Resources/           # Admin panel resources
+├── Pages/              # Admin panel pages
+├── Client/             # Client panel (separate)
+│   ├── ClientPanelProvider.php
+│   ├── Resources/      # Client resources
+│   ├── Pages/          # Client pages (future)
+│   └── Widgets/        # Client widgets (future)
+└── README.md
+```
+
+---
+
 ## Admin Panel Resources
 
 The following admin resources are available for managing the SUMIT payment gateway:
@@ -99,6 +124,9 @@ The client panel provides a customer-facing interface for managing their own tra
 - URL Path: `/client`
 - Authentication: Required
 - Primary Color: Sky Blue (#0ea5e9)
+- **Resources auto-discovered from package** (`src/Filament/Client/Resources`)
+
+**Important:** This panel provider is part of the package and will be automatically registered via Laravel's package auto-discovery. All resources, pages, and widgets are discovered from within the package directory, not from the application's `app/` directory.
 
 ---
 
@@ -192,18 +220,11 @@ public function boot(): void
 }
 ```
 
-### 2. Register Client Panel Provider
+### 2. Client Panel Provider Auto-Discovery
 
-Add to `config/app.php`:
+The `ClientPanelProvider` is **automatically registered** via Laravel's package auto-discovery. No manual configuration needed!
 
-```php
-'providers' => [
-    // ... other providers ...
-    \OfficeGuy\LaravelSumitGateway\Filament\Client\ClientPanelProvider::class,
-],
-```
-
-Or use auto-discovery by adding to `composer.json`:
+The package's `composer.json` already includes:
 
 ```json
 {
@@ -217,6 +238,8 @@ Or use auto-discovery by adding to `composer.json`:
     }
 }
 ```
+
+Both the main service provider and the client panel provider will be automatically registered when you install the package.
 
 ### 3. Publish Views (if needed)
 
