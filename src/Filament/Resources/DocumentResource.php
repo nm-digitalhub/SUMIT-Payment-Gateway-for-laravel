@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Filament\Actions\ViewAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
@@ -16,18 +19,18 @@ class DocumentResource extends Resource
 {
     protected static ?string $model = OfficeGuyDocument::class;
 
-    protected static string|null $navigationIcon = 'heroicon-o-document-text';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationLabel = 'Documents';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
+    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 3;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Forms\Components\Section::make('Document Information')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
@@ -155,11 +158,11 @@ class DocumentResource extends Resource
                     ->multiple(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -178,6 +181,16 @@ class DocumentResource extends Resource
             'index' => Pages\ListDocuments::route('/'),
             'view' => Pages\ViewDocument::route('/{record}'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
     }
 
     public static function getNavigationBadge(): ?string
