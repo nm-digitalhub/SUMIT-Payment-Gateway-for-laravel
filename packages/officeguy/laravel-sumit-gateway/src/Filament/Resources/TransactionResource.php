@@ -128,20 +128,23 @@ class TransactionResource extends Resource
                     ->searchable()
                     ->sortable()
                     ->copyable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'completed',
-                        'warning' => 'pending',
-                        'danger' => 'failed',
-                        'secondary' => 'refunded',
-                    ])
-                    ->icons([
-                        'heroicon-o-check-circle' => 'completed',
-                        'heroicon-o-clock' => 'pending',
-                        'heroicon-o-x-circle' => 'failed',
-                        'heroicon-o-arrow-path' => 'refunded',
-                    ])
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
+                        'refunded' => 'gray',
+                        default => 'gray',
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'completed' => 'heroicon-o-check-circle',
+                        'pending' => 'heroicon-o-clock',
+                        'failed' => 'heroicon-o-x-circle',
+                        'refunded' => 'heroicon-o-arrow-path',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)

@@ -89,14 +89,16 @@ class ClientTransactionResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'completed',
-                        'warning' => 'pending',
-                        'danger' => 'failed',
-                        'secondary' => 'refunded',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
+                        'refunded' => 'gray',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)
                     ->sortable(),
