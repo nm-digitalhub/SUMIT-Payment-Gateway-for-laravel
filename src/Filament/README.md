@@ -14,7 +14,7 @@ This is a **Laravel package** (not an application), and all Filament resources a
 
 **Directory Structure:**
 ```
-packages/officeguy/laravel-sumit-gateway/src/Filament/
+src/Filament/
 ├── Resources/           # Admin panel resources
 ├── Pages/              # Admin panel pages
 ├── Client/             # Client panel (separate)

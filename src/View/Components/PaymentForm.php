@@ -31,7 +31,7 @@ class PaymentForm extends Component
      */
     public function __construct(
         ?float $orderAmount = null,
-        ?mixed $owner = null
+        mixed $owner = null
     ) {
         $this->pciMode = config('officeguy.pci', 'no');
         $this->cvvMode = config('officeguy.cvv', 'required');
