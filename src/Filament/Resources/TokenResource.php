@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
@@ -17,18 +22,18 @@ class TokenResource extends Resource
 {
     protected static ?string $model = OfficeGuyToken::class;
 
-    protected static string|null $navigationIcon = 'heroicon-o-credit-card';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'Payment Tokens';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
+    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Forms\Components\Section::make('Token Information')
                     ->schema([
                         Forms\Components\TextInput::make('token')
@@ -130,8 +135,8 @@ class TokenResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('set_default')
+                ViewAction::make(),
+                Action::make('set_default')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
                     ->visible(fn ($record) => !$record->is_default)
@@ -143,12 +148,12 @@ class TokenResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->requiresConfirmation(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -169,13 +174,23 @@ class TokenResource extends Resource
         ];
     }
 
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $expiredCount = static::getModel()::query()
             ->get()
             ->filter(fn ($token) => $token->isExpired())
             ->count();
-        
+
         return $expiredCount > 0 ? (string)$expiredCount : null;
     }
 }
