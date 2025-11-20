@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Filament\Actions\ViewAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,18 +21,18 @@ class TransactionResource extends Resource
 {
     protected static ?string $model = OfficeGuyTransaction::class;
 
-    protected static string|null $navigationIcon = 'heroicon-o-credit-card';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'Transactions';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
+    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 1;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Forms\Components\Section::make('Transaction Details')
                     ->schema([
                         Forms\Components\TextInput::make('payment_id')
@@ -208,11 +211,11 @@ class TransactionResource extends Resource
                     ->label('Test Transactions'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
@@ -231,6 +234,16 @@ class TransactionResource extends Resource
             'index' => Pages\ListTransactions::route('/'),
             'view' => Pages\ViewTransaction::route('/{record}'),
         ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
     }
 
     public static function getNavigationBadge(): ?string
