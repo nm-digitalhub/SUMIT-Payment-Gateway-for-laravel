@@ -20,7 +20,7 @@ class DocumentResource extends Resource
 
     protected static ?string $navigationLabel = 'Documents';
 
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
+    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 3;
 

@@ -21,7 +21,7 @@ class ClientTransactionResource extends Resource
 
     protected static ?string $navigationLabel = 'My Transactions';
 
-    protected static ?string $navigationGroup = 'Payments';
+    protected static string|\UnitEnum|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 1;
 

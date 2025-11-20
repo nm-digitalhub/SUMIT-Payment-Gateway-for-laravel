@@ -21,7 +21,7 @@ class OfficeGuySettings extends Page implements HasForms
 
     protected static ?string $navigationLabel = 'Gateway Settings';
 
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
+    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 10;
 
