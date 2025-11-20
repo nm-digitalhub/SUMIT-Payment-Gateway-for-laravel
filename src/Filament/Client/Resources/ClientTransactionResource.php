@@ -11,28 +11,24 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
-use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientDocumentResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
+use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientTransactionResource\Pages;
 
-class ClientDocumentResource extends Resource
+class ClientTransactionResource extends Resource
 {
-    protected static ?string $model = OfficeGuyDocument::class;
+    protected static ?string $model = OfficeGuyTransaction::class;
 
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationLabel = 'My Documents';
+    protected static ?string $navigationLabel = 'My Transactions';
 
     protected static \UnitEnum|string|null $navigationGroup = 'Payments';
 
-    protected static ?int $navigationSort = 3;
-
-    protected static ?string $modelLabel = 'Document';
-
-    protected static ?string $pluralModelLabel = 'Documents';
+    protected static ?int $navigationSort = 1;
 
     public static function getEloquentQuery(): Builder
     {
-        // Filter to only show documents for the authenticated user's orders
+        // Filter to only show transactions for the authenticated user
         return parent::getEloquentQuery()
             ->where('customer_id', auth()->id());
     }
@@ -41,41 +37,48 @@ class ClientDocumentResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Document Information')
+                Forms\Components\Section::make('Transaction Details')
                     ->schema([
-                        Forms\Components\TextInput::make('document_id')
-                            ->label('Document ID')
+                        Forms\Components\TextInput::make('payment_id')
+                            ->label('Payment ID')
                             ->disabled(),
-                        Forms\Components\TextInput::make('document_type')
-                            ->label('Document Type')
-                            ->formatStateUsing(fn ($record) => $record?->getDocumentTypeName())
+                        Forms\Components\TextInput::make('auth_number')
+                            ->label('Authorization Number')
                             ->disabled(),
                         Forms\Components\TextInput::make('amount')
                             ->label('Amount')
                             ->prefix(fn ($record) => $record?->currency ?? '')
                             ->disabled(),
+                        Forms\Components\TextInput::make('status')
+                            ->disabled(),
                         Forms\Components\TextInput::make('created_at')
                             ->label('Date')
-                            ->formatStateUsing(fn ($record) => $record?->created_at?->format('M d, Y'))
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Document Details')
+                Forms\Components\Section::make('Card Information')
                     ->schema([
-                        Forms\Components\Textarea::make('description')
-                            ->label('Description')
-                            ->disabled()
-                            ->rows(3),
-                        Forms\Components\Placeholder::make('status')
-                            ->label('Status')
-                            ->content(fn ($record) => 
-                                $record?->is_draft ? '📝 Draft' : '✅ Final'
-                            ),
-                        Forms\Components\Placeholder::make('email_status')
-                            ->label('Email Status')
-                            ->content(fn ($record) => 
-                                $record?->emailed ? '✉️ Sent' : '📧 Not Sent'
-                            ),
+                        Forms\Components\TextInput::make('card_type')
+                            ->label('Card Type')
+                            ->disabled(),
+                        Forms\Components\TextInput::make('last_digits')
+                            ->label('Card Number')
+                            ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-')
+                            ->disabled(),
+                    ])->columns(2),
+
+                Forms\Components\Section::make('Installments')
+                    ->visible(fn ($record) => $record?->payments_count > 1)
+                    ->schema([
+                        Forms\Components\TextInput::make('payments_count')
+                            ->label('Number of Payments')
+                            ->disabled(),
+                        Forms\Components\TextInput::make('first_payment_amount')
+                            ->label('First Payment')
+                            ->disabled(),
+                        Forms\Components\TextInput::make('non_first_payment_amount')
+                            ->label('Other Payments')
+                            ->disabled(),
                     ])->columns(3),
             ]);
     }
@@ -87,51 +90,42 @@ class ClientDocumentResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
-                Tables\Columns\TextColumn::make('document_id')
-                    ->label('Document ID')
-                    ->searchable()
-                    ->copyable(),
-                Tables\Columns\TextColumn::make('document_type')
-                    ->label('Type')
-                    ->formatStateUsing(fn ($record) => $record->getDocumentTypeName())
-                    ->badge()
-                    ->color(fn ($record) => match (true) {
-                        $record->isInvoice() => 'success',
-                        $record->isOrder() => 'info',
-                        $record->isDonationReceipt() => 'warning',
-                        default => 'secondary',
-                    }),
+                Tables\Columns\BadgeColumn::make('status')
+                    ->label('Status')
+                    ->colors([
+                        'success' => 'completed',
+                        'warning' => 'pending',
+                        'danger' => 'failed',
+                        'secondary' => 'refunded',
+                    ]),
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)
                     ->sortable(),
-                Tables\Columns\IconColumn::make('is_draft')
-                    ->label('Draft')
-                    ->boolean(),
-                Tables\Columns\IconColumn::make('emailed')
-                    ->label('Emailed')
-                    ->boolean(),
+                Tables\Columns\TextColumn::make('last_digits')
+                    ->label('Card')
+                    ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-'),
+                Tables\Columns\TextColumn::make('payments_count')
+                    ->label('Installments')
+                    ->badge()
+                    ->color('info'),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Date')
-                    ->date()
+                    ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('document_type')
-                    ->label('Document Type')
+                Tables\Filters\SelectFilter::make('status')
                     ->options([
-                        '1' => 'Invoice',
-                        '8' => 'Order',
-                        'DonationReceipt' => 'Donation Receipt',
-                    ]),
-                Tables\Filters\TernaryFilter::make('is_draft')
-                    ->label('Draft Documents'),
+                        'completed' => 'Completed',
+                        'pending' => 'Pending',
+                        'failed' => 'Failed',
+                        'refunded' => 'Refunded',
+                    ])
+                    ->multiple(),
             ])
             ->actions([
                 ViewAction::make(),
             ])
-            ->emptyStateHeading('No documents found')
-            ->emptyStateDescription('You don\'t have any invoices or receipts yet. Documents will appear here after you make a purchase.')
-            ->emptyStateIcon('heroicon-o-document-text')
             ->defaultSort('created_at', 'desc');
     }
 
@@ -145,8 +139,8 @@ class ClientDocumentResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => Pages\ListClientDocuments::route('/'),
-            'view' => Pages\ViewClientDocument::route('/{record}'),
+            'index' => Pages\ListClientTransactions::route('/'),
+            'view' => Pages\ViewClientTransaction::route('/{record}'),
         ];
     }
 
@@ -163,19 +157,5 @@ class ClientDocumentResource extends Resource
     public static function canDelete($record): bool
     {
         return false;
-    }
-
-    public static function getNavigationBadge(): ?string
-    {
-        $draftCount = static::getEloquentQuery()
-            ->where('is_draft', true)
-            ->count();
-        
-        return $draftCount > 0 ? (string)$draftCount : null;
-    }
-
-    public static function getNavigationBadgeColor(): ?string
-    {
-        return static::getNavigationBadge() ? 'info' : null;
     }
 }
