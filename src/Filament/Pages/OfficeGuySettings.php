@@ -15,7 +15,7 @@ class OfficeGuySettings extends Page implements HasForms
 {
     use InteractsWithForms;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
     protected static string $view = 'officeguy::filament.pages.officeguy-settings';
 
