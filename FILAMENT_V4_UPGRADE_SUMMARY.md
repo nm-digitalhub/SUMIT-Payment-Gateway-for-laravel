@@ -13,7 +13,34 @@ This document summarizes the complete upgrade of the SUMIT Payment Gateway Larav
 
 ## Changes Made
 
-### 1. Core API Migrations
+### 1. Property Type Declarations
+
+#### navigationIcon Property Type
+The `navigationIcon` property type has been updated to support the new union type in Filament v4.
+
+**Files Modified:**
+1. `packages/officeguy/laravel-sumit-gateway/src/Filament/Client/Resources/ClientDocumentResource.php`
+2. `packages/officeguy/laravel-sumit-gateway/src/Filament/Client/Resources/ClientPaymentMethodResource.php`
+3. `packages/officeguy/laravel-sumit-gateway/src/Filament/Client/Resources/ClientTransactionResource.php`
+4. `packages/officeguy/laravel-sumit-gateway/src/Filament/Resources/TransactionResource.php`
+5. `packages/officeguy/laravel-sumit-gateway/src/Filament/Resources/TokenResource.php`
+6. `packages/officeguy/laravel-sumit-gateway/src/Filament/Resources/DocumentResource.php`
+7. `packages/officeguy/laravel-sumit-gateway/src/Filament/Pages/OfficeGuySettings.php`
+
+**Before (Filament v3):**
+```php
+protected static ?string $navigationIcon = 'heroicon-o-document-text';
+```
+
+**After (Filament v4):**
+```php
+protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
+```
+
+**Why This Change?**
+Filament v4 now supports using BackedEnum values for navigation icons, providing better type safety and flexibility. The property must be declared with the union type `string|\BackedEnum|null` to match the parent class's type declaration in `Filament\Resources\Resource`.
+
+### 2. Core API Migrations
 
 #### BadgeColumn → TextColumn
 The deprecated `BadgeColumn` has been replaced with the modern `TextColumn->badge()` approach.

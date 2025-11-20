@@ -27,6 +27,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - Upgraded from Filament v3 to Filament v4
 - **Updated Filament v4 APIs:**
+  - Fixed `navigationIcon` property type to `string|\BackedEnum|null` for v4 compatibility in all Resources and Pages
   - Replaced deprecated `BadgeColumn` with `TextColumn->badge()` using match expressions
   - Updated status badge color syntax to use modern match expressions
   - Verified all form components, table columns, and actions for v4 compatibility
