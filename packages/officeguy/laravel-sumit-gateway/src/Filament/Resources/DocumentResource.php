@@ -16,7 +16,7 @@ class DocumentResource extends Resource
 {
     protected static ?string $model = OfficeGuyDocument::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-document-text';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationLabel = 'Documents';
 

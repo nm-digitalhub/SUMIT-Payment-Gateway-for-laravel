@@ -17,7 +17,7 @@ class TokenResource extends Resource
 {
     protected static ?string $model = OfficeGuyToken::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-credit-card';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'Payment Tokens';
 
