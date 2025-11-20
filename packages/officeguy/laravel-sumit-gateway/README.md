@@ -273,19 +273,62 @@ $defaultToken = OfficeGuyToken::getDefaultForOwner($user);
 
 ## Filament Integration
 
-The package includes ready-to-use Filament resources for both admin and client panels.
+The package includes ready-to-use Filament resources for managing transactions, tokens, and documents.
+
+### Installation
+
+To use the Filament resources, register the plugin in your Filament panel provider:
+
+```php
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
+
+public function panel(Panel $panel): Panel
+{
+    return $panel
+        // ... other configuration
+        ->plugins([
+            OfficeGuyPlugin::make(),
+        ]);
+}
+```
 
 ### Admin Resources
 
-- `OfficeGuyTransactionResource` - View and manage all transactions
-- `OfficeGuyTokenResource` - Manage customer payment tokens
-- `OfficeGuyDocumentResource` - View generated documents
-- `OfficeGuySettingsPage` - Configure gateway settings
+The plugin provides three main resources:
 
-### Client Panel Resources
+#### 1. Transaction Resource
+- **List View**: View all transactions with advanced filtering
+- **Filters**: Status, currency, payment method, amount range, date range, test mode
+- **Actions**: View details, refresh transaction status
+- **Details**: Complete transaction information including raw request/response data
+- **Features**: Search by payment ID, order ID; Sort by any column; Export capabilities
 
-- `ClientTransactionResource` - Customer's transaction history
-- `ClientPaymentMethodResource` - Manage saved payment methods
+#### 2. Token Resource
+- **List View**: Manage all payment tokens
+- **Filters**: Card type, default status, expired tokens
+- **Actions**: View details, set as default, delete token
+- **Details**: Card information (masked), expiry date, owner details, metadata
+- **Features**: Automatic expiry detection with badges
+
+#### 3. Document Resource
+- **List View**: View all generated documents (invoices, orders, receipts)
+- **Filters**: Document type, currency, draft status, email status, date range
+- **Actions**: View details, download PDF (placeholder)
+- **Details**: Document information, financial data, raw API response
+- **Features**: Badge indicators for document type and status
+
+### Features
+
+- **Navigation Badges**: 
+  - Transactions: Shows count of pending transactions
+  - Tokens: Shows count of expired tokens
+  - Documents: Shows count of draft documents
+- **Responsive Tables**: All resources include responsive, sortable tables
+- **Advanced Filtering**: Multiple filter options for efficient data management
+- **Bulk Actions**: Delete multiple records at once
+- **Search**: Quick search across key fields
+- **Data Export**: Native Filament export capabilities
+- **Raw Data Access**: View complete API request/response data for debugging
 
 ## API Endpoints
 
