@@ -21,7 +21,7 @@ class TokenResource extends Resource
 
     protected static ?string $navigationLabel = 'Payment Tokens';
 
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
+    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 2;
 

@@ -22,7 +22,7 @@ class TransactionResource extends Resource
 
     protected static ?string $navigationLabel = 'Transactions';
 
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
+    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 1;
 
