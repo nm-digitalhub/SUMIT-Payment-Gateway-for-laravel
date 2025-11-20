@@ -4,6 +4,8 @@
 
 This Laravel package is a comprehensive 1:1 port of the SUMIT/OfficeGuy WooCommerce payment gateway plugin (v3.3.1). It provides full payment processing capabilities for Israeli and international merchants using the SUMIT platform.
 
+**Note**: This package has been upgraded to support Filament v4 and Laravel 11.28+. The package is ready for Filament v4 integration, though Filament Resources and Pages are planned for future implementation.
+
 ## What Has Been Implemented
 
 ### Core Package Structure ✅

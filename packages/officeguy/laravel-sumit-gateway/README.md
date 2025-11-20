@@ -17,8 +17,8 @@ A comprehensive Laravel package for integrating SUMIT payment gateway with full 
 ## Requirements
 
 - PHP 8.2 or higher
-- Laravel 10.x or 11.x
-- Filament 3.x
+- Laravel 11.28 or higher
+- Filament 4.x
 - A SUMIT account with API credentials
 
 ## Installation
