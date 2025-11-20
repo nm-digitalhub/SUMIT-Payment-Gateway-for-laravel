@@ -26,6 +26,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Upgraded from Filament v3 to Filament v4
+- **Updated Filament v4 APIs:**
+  - Replaced deprecated `BadgeColumn` with `TextColumn->badge()` using match expressions
+  - Updated status badge color syntax to use modern match expressions
+  - Verified all form components, table columns, and actions for v4 compatibility
 - Updated minimum Laravel version requirement to 11.28 (required by Filament v4)
 - Updated orchestra/testbench to v9.0 for Laravel 11 compatibility
 - Updated PHPUnit to support both v10.0 and v11.0

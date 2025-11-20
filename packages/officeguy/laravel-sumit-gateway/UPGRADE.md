@@ -4,7 +4,17 @@ This guide helps you upgrade your Laravel application from using this package wi
 
 ## Overview
 
-The Laravel SUMIT Gateway package has been upgraded to support Filament v4 and Laravel 11.28+. This upgrade is **fully backwards compatible** for the package's existing functionality since no Filament-specific code (Resources, Pages, Forms, etc.) is currently implemented.
+The Laravel SUMIT Gateway package has been fully upgraded to support Filament v4 and Laravel 11.28+. This package includes complete Filament resource implementations for both admin and client panels.
+
+## What Changed in Filament v4
+
+### Package-Level Changes
+- **Replaced deprecated APIs**: All Filament v3-specific APIs have been updated to v4
+- **BadgeColumn → TextColumn**: Status badges now use `TextColumn::make()->badge()` with modern match expressions
+- **Color syntax**: Updated to use inline color functions with match expressions
+- **Form components**: All form components verified for v4 compatibility
+- **Table actions**: Updated to use v4 action APIs
+- **Panel configuration**: Verified middleware and discovery configurations
 
 ## Requirements
 
@@ -85,7 +95,12 @@ Thoroughly test:
 ## Breaking Changes
 
 ### Package Level
-**None** - This package has no breaking changes since it doesn't currently implement any Filament-specific code.
+The following Filament v3 APIs have been updated to v4:
+- **BadgeColumn**: Replaced with `TextColumn::make()->badge()` in TransactionResource and ClientTransactionResource
+- **Status colors**: Now use match expressions instead of array mappings
+- **Icons**: Updated to use inline icon functions with match expressions
+
+All other components (IconColumn, form fields, actions, filters) remain compatible with v4.
 
 ### Your Application Level
 If you've implemented custom Filament resources, pages, or forms that interact with this package's models, you'll need to update them according to the Filament v4 upgrade guide.
@@ -103,20 +118,20 @@ If you've implemented custom Filament resources, pages, or forms that interact w
 
 ## Future Filament Integration
 
-Once upgraded, the package is ready for implementing Filament v4 resources:
+The package already includes complete Filament v4 resource implementations:
 
-### Planned Features
-- **Admin Panel Resources:**
-  - Transaction management
-  - Token management
-  - Document viewing
-  - Gateway settings page
+### Admin Panel Resources
+- **TransactionResource**: Full transaction management with status filtering and detailed views
+- **TokenResource**: Payment token management with expiry tracking
+- **DocumentResource**: Invoice and receipt management
+- **OfficeGuySettings Page**: Read-only configuration viewer
 
-- **Client Panel Resources:**
-  - Customer transaction history
-  - Saved payment methods management
+### Client Panel Resources (`/client`)
+- **ClientTransactionResource**: Customer transaction history (user-filtered)
+- **ClientPaymentMethodResource**: Saved payment method management
+- **ClientDocumentResource**: Customer invoices and receipts (user-filtered)
 
-These features will be added in future releases using Filament v4 APIs.
+All resources are production-ready and use Filament v4 APIs and best practices.
 
 ## Rollback Plan
 
