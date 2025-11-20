@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -18,11 +21,11 @@ class ClientPaymentMethodResource extends Resource
 {
     protected static ?string $model = OfficeGuyToken::class;
 
-    protected static string|null $navigationIcon = 'heroicon-o-credit-card';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'My Payment Methods';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Payments';
+    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 2;
 
@@ -38,10 +41,10 @@ class ClientPaymentMethodResource extends Resource
             ->where('owner_id', auth()->id());
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Forms\Components\Section::make('Card Information')
                     ->schema([
                         Forms\Components\TextInput::make('card_type')
@@ -106,8 +109,8 @@ class ClientPaymentMethodResource extends Resource
                     ->label('Default Method'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('set_default')
+                ViewAction::make(),
+                Action::make('set_default')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
                     ->visible(fn ($record) => !$record->is_default && !$record->isExpired())
@@ -119,7 +122,7 @@ class ClientPaymentMethodResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Tables\Actions\DeleteAction::make()
+                DeleteAction::make()
                     ->requiresConfirmation()
                     ->modalHeading('Delete Payment Method')
                     ->modalDescription('Are you sure you want to delete this saved payment method? This action cannot be undone.')
