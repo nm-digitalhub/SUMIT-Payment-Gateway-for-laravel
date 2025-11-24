@@ -12,7 +12,24 @@ return new class extends SettingsMigration {
         $this->migrator->add('officeguy.public_key', '');
         $this->migrator->add('officeguy.environment', 'www');
 
+        $this->migrator->add('officeguy.routes', [
+            'prefix' => 'officeguy',
+            'middleware' => ['web'],
+            'card_callback' => 'callback/card',
+            'bit_webhook' => 'webhook/bit',
+            'success' => 'checkout.success',
+            'failed' => 'checkout.failed',
+            'enable_checkout_endpoint' => false,
+            'checkout_charge' => 'checkout/charge',
+        ]);
+
+        $this->migrator->add('officeguy.order', [
+            'resolver' => null,
+            'model' => null,
+        ]);
+
         $this->migrator->add('officeguy.pci', 'no');
+        $this->migrator->add('officeguy.pci_mode', 'no');
         $this->migrator->add('officeguy.testing', false);
 
         $this->migrator->add('officeguy.max_payments', 1);
@@ -47,6 +64,9 @@ return new class extends SettingsMigration {
 
         $this->migrator->add('officeguy.stock_sync_freq', 'none');
         $this->migrator->add('officeguy.checkout_stock_sync', false);
+        $this->migrator->add('officeguy.stock', [
+            'update_callback' => null,
+        ]);
 
         $this->migrator->add('officeguy.paypal_receipts', 'no');
         $this->migrator->add('officeguy.bluesnap_receipts', false);
