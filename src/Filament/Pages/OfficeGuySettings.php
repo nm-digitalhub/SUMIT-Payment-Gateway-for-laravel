@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
-use Filament\Forms\Components\Fieldset;
-use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Schemas\Schema; // ← שינוי חדש
+use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page
@@ -41,7 +40,7 @@ class OfficeGuySettings extends Page
         );
     }
 
-    public function form(Schema $form): Schema // ← שינוי כאן
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema($this->getFormSchema())
@@ -51,100 +50,93 @@ class OfficeGuySettings extends Page
     protected function getFormSchema(): array
     {
         return [
-
-            Fieldset::make('API Credentials')
+            Section::make('API Credentials')
+                ->columns(3)
                 ->schema([
-                    Grid::make(3)->schema([
-                        TextInput::make('company_id')
-                            ->label('Company ID')
-                            ->required()
-                            ->numeric(),
+                    TextInput::make('company_id')
+                        ->label('Company ID')
+                        ->required()
+                        ->numeric(),
 
-                        TextInput::make('private_key')
-                            ->label('Private Key')
-                            ->password()
-                            ->revealable()
-                            ->required(),
+                    TextInput::make('private_key')
+                        ->label('Private Key')
+                        ->password()
+                        ->revealable()
+                        ->required(),
 
-                        TextInput::make('public_key')
-                            ->label('Public Key')
-                            ->required(),
-                    ]),
+                    TextInput::make('public_key')
+                        ->label('Public Key')
+                        ->required(),
                 ]),
 
-            Fieldset::make('Environment Settings')
+            Section::make('Environment Settings')
+                ->columns(3)
                 ->schema([
-                    Grid::make(3)->schema([
-                        Select::make('environment')
-                            ->label('Environment')
-                            ->options([
-                                'www' => 'Production (www)',
-                                'dev' => 'Development (dev)',
-                                'test' => 'Testing (test)',
-                            ])
-                            ->required(),
+                    Select::make('environment')
+                        ->label('Environment')
+                        ->options([
+                            'www' => 'Production (www)',
+                            'dev' => 'Development (dev)',
+                            'test' => 'Testing (test)',
+                        ])
+                        ->required(),
 
-                        Select::make('pci')
-                            ->label('PCI Mode')
-                            ->options([
-                                'no' => 'Simple (PaymentsJS)',
-                                'redirect' => 'Redirect',
-                                'yes' => 'Advanced (PCI-compliant)',
-                            ])
-                            ->required(),
+                    Select::make('pci')
+                        ->label('PCI Mode')
+                        ->options([
+                            'no' => 'Simple (PaymentsJS)',
+                            'redirect' => 'Redirect',
+                            'yes' => 'Advanced (PCI-compliant)',
+                        ])
+                        ->required(),
 
-                        Toggle::make('testing')
-                            ->label('Testing Mode'),
-                    ]),
+                    Toggle::make('testing')
+                        ->label('Testing Mode'),
                 ]),
 
-            Fieldset::make('Payment Settings')
+            Section::make('Payment Settings')
+                ->columns(4)
                 ->schema([
-                    Grid::make(4)->schema([
-                        TextInput::make('max_payments')
-                            ->numeric()
-                            ->minValue(1)
-                            ->maxValue(36),
+                    TextInput::make('max_payments')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(36),
 
-                        Toggle::make('authorize_only'),
+                    Toggle::make('authorize_only'),
 
-                        TextInput::make('authorize_added_percent')
-                            ->numeric(),
+                    TextInput::make('authorize_added_percent')
+                        ->numeric(),
 
-                        TextInput::make('authorize_minimum_addition')
-                            ->numeric(),
-                    ]),
+                    TextInput::make('authorize_minimum_addition')
+                        ->numeric(),
                 ]),
 
-            Fieldset::make('Document Settings')
+            Section::make('Document Settings')
+                ->columns(3)
                 ->schema([
-                    Grid::make(3)->schema([
-                        Toggle::make('draft_document'),
-                        Toggle::make('email_document'),
-                        Toggle::make('create_order_document'),
-                    ]),
+                    Toggle::make('draft_document'),
+                    Toggle::make('email_document'),
+                    Toggle::make('create_order_document'),
                 ]),
 
-            Fieldset::make('Tokenization')
+            Section::make('Tokenization')
+                ->columns(2)
                 ->schema([
-                    Grid::make(2)->schema([
-                        Toggle::make('support_tokens'),
+                    Toggle::make('support_tokens'),
 
-                        Select::make('token_param')
-                            ->options([
-                                '2' => 'J2 Method',
-                                '5' => 'J5 Method (Recommended)',
-                            ]),
-                    ]),
+                    Select::make('token_param')
+                        ->options([
+                            '2' => 'J2 Method',
+                            '5' => 'J5 Method (Recommended)',
+                        ]),
                 ]),
 
-            Fieldset::make('Additional Features')
+            Section::make('Additional Features')
+                ->columns(3)
                 ->schema([
-                    Grid::make(3)->schema([
-                        Toggle::make('bit_enabled'),
-                        Toggle::make('logging'),
-                        TextInput::make('log_channel'),
-                    ]),
+                    Toggle::make('bit_enabled'),
+                    Toggle::make('logging'),
+                    TextInput::make('log_channel'),
                 ]),
         ];
     }
@@ -185,7 +177,6 @@ class OfficeGuySettings extends Page
                 ->send();
 
         } catch (\Exception $e) {
-
             Notification::make()
                 ->title('Error')
                 ->body($e->getMessage())
