@@ -11,10 +11,16 @@ class SumitSettings extends Settings
     public int $company_id;
     public string $private_key;
     public string $public_key;
-    public string $environment; // www|dev|test
 
-    public string $pci; // no|redirect|yes
-    public string $pci_mode; // alias to pci
+    /** Allowed: www|dev|test */
+    public string $environment;
+
+    /** Allowed: no|redirect|yes */
+    public string $pci;
+
+    /** Alias for pci – optional for backward compatibility */
+    public string $pci_mode;
+
     public bool $testing;
 
     public int $max_payments;
@@ -35,10 +41,16 @@ class SumitSettings extends Settings
     public bool $merge_customers;
 
     public bool $support_tokens;
-    public string $token_param; // J2/J5 -> '2'|'5'
 
-    public string $citizen_id; // required|yes|no
-    public string $cvv; // required|yes|no
+    /** Example: '2' or '5' */
+    public string $token_param;
+
+    /** Allowed: required|yes|no */
+    public string $citizen_id;
+
+    /** Allowed: required|yes|no */
+    public string $cvv;
+
     public bool $four_digits_year;
     public bool $single_column_layout;
 
@@ -47,24 +59,37 @@ class SumitSettings extends Settings
     public bool $logging;
     public string $log_channel;
 
-    public string $stock_sync_freq; // none|12|24
+    /** Allowed: none|12|24 */
+    public string $stock_sync_freq;
+
     public bool $checkout_stock_sync;
-    /** @var array{update_callback:mixed} */
+
+    /** Stock configuration (generic array) */
     public array $stock;
 
-    public string $paypal_receipts; // no|yes|async
+    /** Allowed: no|yes|async */
+    public string $paypal_receipts;
+
     public bool $bluesnap_receipts;
+
+    /** Optional value for "other" receipts provider */
     public ?string $other_receipts;
 
-    /** @var array<int,string> */
+    /** Example: ['ILS','USD'] */
     public array $supported_currencies;
 
     public bool $ssl_verify;
 
-    /** @var array{prefix:string,middleware:array,card_callback:string,bit_webhook:string,success:string,failed:string,enable_checkout_endpoint:bool,checkout_charge:string} */
+    /**
+     * Route configuration structure.
+     * Example keys: prefix, middleware, card_callback, bit_webhook, success, failed, enable_checkout_endpoint, checkout_charge
+     */
     public array $routes;
 
-    /** @var array{resolver:mixed,model:mixed} */
+    /**
+     * Order resolver or model configuration
+     * Keys: resolver, model
+     */
     public array $order;
 
     public static function group(): string
