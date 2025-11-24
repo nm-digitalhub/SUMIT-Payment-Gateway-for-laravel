@@ -6,16 +6,18 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
 use Filament\Forms;
 use Filament\Forms\Form;
+use Filament\Forms\Contracts\HasForms;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
-class OfficeGuySettings extends Page
+class OfficeGuySettings extends Page implements HasForms
 {
+    use InteractsWithForms;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
-
     protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
-
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'officeguy::filament.pages.officeguy-settings';
@@ -31,8 +33,8 @@ class OfficeGuySettings extends Page
 
     public function mount(): void
     {
-        // Filament v4: MUST use getForm()
-        $this->getForm()->fill(
+        // Filament v4 Page: MUST use $this->form
+        $this->form->fill(
             $this->settingsService->getEditableSettings()
         );
     }
@@ -48,7 +50,6 @@ class OfficeGuySettings extends Page
     {
         return [
             Forms\Components\Section::make('API Credentials')
-                ->description('Your SUMIT Gateway API credentials')
                 ->schema([
                     Forms\Components\TextInput::make('company_id')
                         ->label('Company ID')
@@ -92,10 +93,8 @@ class OfficeGuySettings extends Page
                         ->minValue(1)
                         ->maxValue(36),
                     Forms\Components\Toggle::make('authorize_only'),
-                    Forms\Components\TextInput::make('authorize_added_percent')
-                        ->numeric(),
-                    Forms\Components\TextInput::make('authorize_minimum_addition')
-                        ->numeric(),
+                    Forms\Components\TextInput::make('authorize_added_percent')->numeric(),
+                    Forms\Components\TextInput::make('authorize_minimum_addition')->numeric(),
                 ])
                 ->columns(4),
 
@@ -138,7 +137,6 @@ class OfficeGuySettings extends Page
                 ->action(function () {
                     $this->settingsService->resetAllToDefaults();
                     $this->mount();
-
                     Notification::make()
                         ->title('Settings reset to defaults')
                         ->success()
@@ -155,8 +153,7 @@ class OfficeGuySettings extends Page
     public function save(): void
     {
         try {
-            // Filament v4 rule still stands: use getForm()
-            $this->settingsService->setMany($this->getForm()->getState());
+            $this->settingsService->setMany($this->form->getState());
 
             Notification::make()
                 ->title('Settings saved')
