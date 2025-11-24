@@ -9,17 +9,17 @@ use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Schemas\Schema; // ← שינוי חדש
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page
 {
     use InteractsWithForms;
 
-     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
 
@@ -41,7 +41,7 @@ class OfficeGuySettings extends Page
         );
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema // ← שינוי כאן
     {
         return $form
             ->schema($this->getFormSchema())
