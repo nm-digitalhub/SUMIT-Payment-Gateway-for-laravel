@@ -8,19 +8,16 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Forms\Concerns\InteractsWithForms;
-use Filament\Forms\Contracts\HasForms;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
-class OfficeGuySettings extends Page implements HasForms
+class OfficeGuySettings extends Page
 {
-    use InteractsWithForms;
-
-    protected static string|null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string $view = 'officeguy::filament.pages.officeguy-settings';
+    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
     protected static ?string $navigationLabel = 'Gateway Settings';
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
+    protected static ?string $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
+
+    protected static string $view = 'officeguy::filament.pages.officeguy-settings';
 
     public ?array $data = [];
 
@@ -33,127 +30,100 @@ class OfficeGuySettings extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill($this->settingsService->getEditableSettings());
+        $this->form->fill(
+            $this->settingsService->getEditableSettings()
+        );
     }
 
     public function form(Form $form): Form
     {
         return $form
-            ->schema([
-                Forms\Components\Section::make('API Credentials')
-                    ->description('Your SUMIT Gateway API credentials')
-                    ->schema([
-                        Forms\Components\TextInput::make('company_id')
-                            ->label('Company ID')
-                            ->required()
-                            ->numeric()
-                            ->helperText('Override .env value by saving here'),
-                        Forms\Components\TextInput::make('private_key')
-                            ->label('Private Key (API Key)')
-                            ->required()
-                            ->password()
-                            ->revealable()
-                            ->helperText('Stored encrypted in database'),
-                        Forms\Components\TextInput::make('public_key')
-                            ->label('Public Key')
-                            ->required()
-                            ->helperText('Public key for PaymentsJS'),
-                    ])->columns(3),
-
-                Forms\Components\Section::make('Environment Settings')
-                    ->description('Gateway environment configuration')
-                    ->schema([
-                        Forms\Components\Select::make('environment')
-                            ->label('Environment')
-                            ->options([
-                                'www' => 'Production (www)',
-                                'dev' => 'Development (dev)',
-                                'test' => 'Testing (test)',
-                            ])
-                            ->required()
-                            ->helperText('Controls API base URL'),
-                        Forms\Components\Select::make('pci')
-                            ->label('PCI Mode')
-                            ->options([
-                                'no' => 'Simple (PaymentsJS)',
-                                'redirect' => 'Redirect',
-                                'yes' => 'Advanced (PCI-compliant)',
-                            ])
-                            ->required()
-                            ->helperText('Choose according to site PCI level'),
-                        Forms\Components\Toggle::make('testing')
-                            ->label('Testing Mode')
-                            ->helperText('AuthoriseOnly defaults to true when testing'),
-                    ])->columns(3),
-
-                Forms\Components\Section::make('Payment Settings')
-                    ->description('Configure payment options')
-                    ->schema([
-                        Forms\Components\TextInput::make('max_payments')
-                            ->label('Maximum Installments')
-                            ->numeric()
-                            ->minValue(1)
-                            ->maxValue(36)
-                            ->helperText('Maximum allowed installments'),
-                        Forms\Components\Toggle::make('authorize_only')
-                            ->label('Authorize Only (No Capture)')
-                            ->helperText('If enabled, capture handled separately'),
-                        Forms\Components\TextInput::make('authorize_added_percent')
-                            ->numeric()
-                            ->label('Authorize Added Percent')
-                            ->helperText('Optional percent to add on authorise')
-                            ->minValue(0),
-                        Forms\Components\TextInput::make('authorize_minimum_addition')
-                            ->numeric()
-                            ->label('Authorize Minimum Addition')
-                            ->helperText('Absolute minimum added amount')
-                            ->minValue(0),
-                    ])->columns(4),
-
-                Forms\Components\Section::make('Document Settings')
-                    ->description('Invoice and receipt configuration')
-                    ->schema([
-                        Forms\Components\Toggle::make('draft_document')
-                            ->label('Create Draft Documents')
-                            ->helperText('Create drafts instead of final docs'),
-                        Forms\Components\Toggle::make('email_document')
-                            ->label('Email Documents to Customers')
-                            ->helperText('Send document emails to customer'),
-                        Forms\Components\Toggle::make('create_order_document')
-                            ->label('Create Order Documents')
-                            ->helperText('Create document on order completion'),
-                    ])->columns(3),
-
-                Forms\Components\Section::make('Tokenization')
-                    ->description('Credit card tokenization settings')
-                    ->schema([
-                        Forms\Components\Toggle::make('support_tokens')
-                            ->label('Support Saved Cards')
-                            ->helperText('Allow saved cards/tokenization'),
-                        Forms\Components\Select::make('token_param')
-                            ->label('Token Method')
-                            ->options([
-                                '2' => 'J2 Method',
-                                '5' => 'J5 Method (Recommended)',
-                            ])
-                            ->helperText('Choose SUMIT token variant'),
-                    ])->columns(2),
-
-                Forms\Components\Section::make('Additional Features')
-                    ->description('Extra payment methods and features')
-                    ->schema([
-                        Forms\Components\Toggle::make('bit_enabled')
-                            ->label('Enable Bit Payments')
-                            ->helperText('Toggle Bit gateway availability'),
-                        Forms\Components\Toggle::make('logging')
-                            ->label('Enable Logging')
-                            ->helperText('Use Laravel log channel defined below'),
-                        Forms\Components\TextInput::make('log_channel')
-                            ->label('Log Channel')
-                            ->helperText('Defaults to stack'),
-                    ])->columns(3),
-            ])
+            ->schema($this->getFormSchema())
             ->statePath('data');
+    }
+
+    protected function getFormSchema(): array
+    {
+        return [
+            Forms\Section::make('API Credentials')
+                ->description('Your SUMIT Gateway API credentials')
+                ->schema([
+                    Forms\TextInput::make('company_id')
+                        ->label('Company ID')
+                        ->required()
+                        ->numeric(),
+                    Forms\TextInput::make('private_key')
+                        ->label('Private Key')
+                        ->password()
+                        ->revealable()
+                        ->required(),
+                    Forms\TextInput::make('public_key')
+                        ->label('Public Key')
+                        ->required(),
+                ])
+                ->columns(3),
+
+            Forms\Section::make('Environment Settings')
+                ->schema([
+                    Forms\Select::make('environment')
+                        ->options([
+                            'www' => 'Production (www)',
+                            'dev' => 'Development (dev)',
+                            'test' => 'Testing (test)',
+                        ])
+                        ->required(),
+                    Forms\Select::make('pci')
+                        ->options([
+                            'no' => 'Simple (PaymentsJS)',
+                            'redirect' => 'Redirect',
+                            'yes' => 'Advanced (PCI-compliant)',
+                        ])
+                        ->required(),
+                    Forms\Toggle::make('testing'),
+                ])
+                ->columns(3),
+
+            Forms\Section::make('Payment Settings')
+                ->schema([
+                    Forms\TextInput::make('max_payments')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(36),
+                    Forms\Toggle::make('authorize_only'),
+                    Forms\TextInput::make('authorize_added_percent')
+                        ->numeric(),
+                    Forms\TextInput::make('authorize_minimum_addition')
+                        ->numeric(),
+                ])
+                ->columns(4),
+
+            Forms\Section::make('Document Settings')
+                ->schema([
+                    Forms\Toggle::make('draft_document'),
+                    Forms\Toggle::make('email_document'),
+                    Forms\Toggle::make('create_order_document'),
+                ])
+                ->columns(3),
+
+            Forms\Section::make('Tokenization')
+                ->schema([
+                    Forms\Toggle::make('support_tokens'),
+                    Forms\Select::make('token_param')
+                        ->options([
+                            '2' => 'J2 Method',
+                            '5' => 'J5 Method (Recommended)',
+                        ])
+                ])
+                ->columns(2),
+
+            Forms\Section::make('Additional Features')
+                ->schema([
+                    Forms\Toggle::make('bit_enabled'),
+                    Forms\Toggle::make('logging'),
+                    Forms\TextInput::make('log_channel'),
+                ])
+                ->columns(3),
+        ];
     }
 
     protected function getHeaderActions(): array
@@ -166,29 +136,34 @@ class OfficeGuySettings extends Page implements HasForms
                 ->action(function () {
                     $this->settingsService->resetAllToDefaults();
                     $this->mount();
+
                     Notification::make()
-                        ->title('Settings reset to .env defaults')
+                        ->title('Settings reset to defaults')
                         ->success()
                         ->send();
                 }),
+            \Filament\Actions\Action::make('save')
+                ->label('Save Settings')
+                ->color('primary')
+                ->action(fn () => $this->save()),
         ];
     }
 
     public function save(): void
     {
-        $data = $this->form->getState();
-
         try {
-            $this->settingsService->setMany($data);
+            $this->settingsService->setMany($this->form->getState());
 
             Notification::make()
-                ->title('Settings saved successfully')
+                ->title('Settings saved')
                 ->body('Changes are now active')
                 ->success()
                 ->send();
+
         } catch (\Exception $e) {
+
             Notification::make()
-                ->title('Failed to save settings')
+                ->title('Error')
                 ->body($e->getMessage())
                 ->danger()
                 ->send();
