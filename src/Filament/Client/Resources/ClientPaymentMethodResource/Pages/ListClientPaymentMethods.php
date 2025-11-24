@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentM
 
 use Filament\Resources\Pages\ListRecords;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource;
+use Filament\Actions;
 
 class ListClientPaymentMethods extends ListRecords
 {
@@ -14,7 +15,8 @@ class ListClientPaymentMethods extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            //
+            Actions\CreateAction::make()
+                ->label('Add Payment Method'),
         ];
     }
 }

@@ -364,4 +364,198 @@ class PaymentService
 
         return $items;
     }
+
+    /**
+     * Build charge request for card/redirect payments.
+     * Mirrors GetOrderRequest logic from the Woo plugin.
+     *
+     * @param Payable $order
+     * @param int $paymentsCount
+     * @param bool $recurring
+     * @param bool $redirectMode
+     * @param OfficeGuyToken|null $token
+     * @param array $extra Additional request overrides
+     * @return array
+     */
+    public static function buildChargeRequest(
+        Payable $order,
+        int $paymentsCount = 1,
+        bool $recurring = false,
+        bool $redirectMode = false,
+        ?OfficeGuyToken $token = null,
+        array $extra = []
+    ): array {
+        $orderTotal = round($order->getPayableAmount(), 2);
+
+        $authorizeOnly = config('officeguy.authorize_only', false) || config('officeguy.testing', false);
+
+        $request = [
+            'Credentials'          => self::getCredentials(),
+            'Items'                => self::getPaymentOrderItems($order),
+            'VATIncluded'          => 'true',
+            'VATRate'              => self::getOrderVatRate($order),
+            'Customer'             => self::getOrderCustomer($order, RequestHelpers::post('og-citizenid')),
+            'AuthoriseOnly'        => $authorizeOnly ? 'true' : 'false',
+            'DraftDocument'        => config('officeguy.draft_document', false) ? 'true' : 'false',
+            'SendDocumentByEmail'  => config('officeguy.email_document', true) ? 'true' : 'false',
+            'UpdateCustomerByEmail'=> config('officeguy.email_document', true) ? 'true' : 'false',
+            'UpdateCustomerOnSuccess' => config('officeguy.email_document', true) ? 'true' : 'false',
+            'DocumentDescription'  => __('Order number') . ': ' . $order->getPayableId() .
+                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote()),
+            'Payments_Count'       => $paymentsCount,
+            'MaximumPayments'      => self::getMaximumPayments($orderTotal),
+            'DocumentLanguage'     => self::getOrderLanguage(),
+            'MerchantNumber'       => $recurring
+                ? config('officeguy.subscriptions_merchant_number')
+                : config('officeguy.merchant_number'),
+        ];
+
+        if ($authorizeOnly) {
+            $request['AutoCapture'] = 'false';
+            $authorizeAmount = $orderTotal;
+            $percent = config('officeguy.authorize_added_percent');
+            if ($percent !== null) {
+                $authorizeAmount = round($authorizeAmount * (1 + ((float)$percent) / 100), 2);
+            }
+            $minAddition = config('officeguy.authorize_minimum_addition');
+            if ($minAddition !== null && ($authorizeAmount - $orderTotal) < (float)$minAddition) {
+                $authorizeAmount = round($orderTotal + (float)$minAddition, 2);
+            }
+            $request['AuthorizeAmount'] = $authorizeAmount;
+        }
+
+        if ($redirectMode) {
+            // Caller must set RedirectURL / CancelRedirectURL in $extra
+        } else {
+            // Build payment method based on PCI mode
+            $pciMode = config('officeguy.pci', 'no');
+
+            if ($token) {
+                $request['PaymentMethod'] = TokenService::getPaymentMethodFromToken($token);
+            } elseif ($pciMode === 'yes') {
+                $request['PaymentMethod'] = TokenService::getPaymentMethodPCI();
+            } else {
+                $request['PaymentMethod'] = [
+                    'SingleUseToken' => RequestHelpers::post('og-token'),
+                    'Type'           => 1,
+                ];
+            }
+        }
+
+        return array_merge($request, $extra);
+    }
+
+    /**
+     * Process a card/redirect charge.
+     * Returns array with keys: success(bool), redirect_url?, message?, payment?, response?
+     */
+    public static function processCharge(
+        Payable $order,
+        int $paymentsCount = 1,
+        bool $recurring = false,
+        bool $redirectMode = false,
+        ?OfficeGuyToken $token = null,
+        array $extra = []
+    ): array {
+        $environment = config('officeguy.environment', 'www');
+
+        $request = self::buildChargeRequest($order, $paymentsCount, $recurring, $redirectMode, $token, $extra);
+
+        $endpoint = '/billing/payments/charge/';
+        if ($recurring) {
+            $endpoint = '/billing/recurring/charge/';
+        } elseif ($redirectMode) {
+            $endpoint = '/billing/payments/beginredirect/';
+        }
+
+        $response = OfficeGuyApi::post($request, $endpoint, $environment, !$recurring);
+
+        // Redirect flow
+        if ($redirectMode) {
+            if ($response && isset($response['Data']['RedirectURL'])) {
+                return [
+                    'success' => true,
+                    'redirect_url' => $response['Data']['RedirectURL'],
+                    'response' => $response,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'message' => __('Something went wrong.'),
+                'response' => $response,
+            ];
+        }
+
+        if (!$response) {
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . __('No response'),
+            ];
+        }
+
+        $status = $response['Status'] ?? null;
+        $payment = $response['Data']['Payment'] ?? null;
+
+        if ($status === 0 && $payment && ($payment['ValidPayment'] ?? false) === true) {
+            // Persist transaction
+            OfficeGuyTransaction::create([
+                'order_id' => $order->getPayableId(),
+                'payment_id' => $payment['ID'] ?? null,
+                'document_id' => $response['Data']['DocumentID'] ?? null,
+                'customer_id' => $response['Data']['CustomerID'] ?? null,
+                'auth_number' => $payment['AuthNumber'] ?? null,
+                'amount' => $payment['Amount'] ?? $order->getPayableAmount(),
+                'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,
+                'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
+                'status' => 'completed',
+                'status_description' => $payment['StatusDescription'] ?? null,
+                'payment_method' => 'card',
+                'last_digits' => $payment['PaymentMethod']['CreditCard_LastDigits'] ?? null,
+                'expiration_month' => $payment['PaymentMethod']['CreditCard_ExpirationMonth'] ?? null,
+                'expiration_year' => $payment['PaymentMethod']['CreditCard_ExpirationYear'] ?? null,
+                'raw_request' => $request,
+                'raw_response' => $response,
+                'environment' => $environment,
+                'is_test' => config('officeguy.testing', false),
+            ]);
+
+            event(new \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted(
+                $order->getPayableId(),
+                $payment,
+                $response
+            ));
+
+            return [
+                'success' => true,
+                'payment' => $payment,
+                'response' => $response,
+            ];
+        }
+
+        if ($status !== 0) {
+            event(new \OfficeGuy\LaravelSumitGateway\Events\PaymentFailed(
+                $order->getPayableId(),
+                $response,
+                $response['UserErrorMessage'] ?? 'Gateway error'
+            ));
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . ($response['UserErrorMessage'] ?? 'Gateway error'),
+                'response' => $response,
+            ];
+        }
+
+        // Decline
+        event(new \OfficeGuy\LaravelSumitGateway\Events\PaymentFailed(
+            $order->getPayableId(),
+            $response,
+            $payment['StatusDescription'] ?? 'Declined'
+        ));
+        return [
+            'success' => false,
+            'message' => __('Payment failed') . ' - ' . ($payment['StatusDescription'] ?? 'Declined'),
+            'response' => $response,
+        ];
+    }
 }

@@ -17,6 +17,8 @@ class OfficeGuyDocument extends Model
 {
     use SoftDeletes;
 
+    protected $table = 'officeguy_documents';
+
     protected $fillable = [
         'document_id',
         'order_id',

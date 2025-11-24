@@ -6,10 +6,12 @@ namespace OfficeGuy\LaravelSumitGateway\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Route;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
  * Card Callback Controller
@@ -24,99 +26,92 @@ class CardCallbackController extends Controller
      *
      * Port of: ThankYou($OrderID) from OfficeGuyPayment.php
      * and ProcessRedirectResponse() from officeguy_woocommerce_gateway.php
-     *
-     * @param Request $request
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function handle(Request $request)
     {
-        $orderId = $request->query('OG-OrderID');
-        $paymentId = $request->query('OG-PaymentID');
+        $orderId    = $request->query('OG-OrderID');
+        $paymentId  = $request->query('OG-PaymentID');
         $documentId = $request->query('OG-DocumentID');
 
         if (empty($orderId) || empty($paymentId)) {
             OfficeGuyApi::writeToLog('Card callback received without required parameters', 'error');
-            return redirect()->route('checkout.failed')
-                ->with('error', __('Invalid payment callback'));
+            return $this->redirectFailed(__('Invalid payment callback'));
         }
 
         OfficeGuyApi::writeToLog('Processing card callback for order #' . $orderId, 'debug');
 
-        // Find the order transaction
+        $order = OrderResolver::resolve($orderId);
+
+        // Find existing transaction or create pending
         $transaction = OfficeGuyTransaction::where('order_id', $orderId)
             ->where('status', 'pending')
             ->first();
 
         if (!$transaction) {
-            // Create a new transaction if not found (redirect mode)
             $transaction = new OfficeGuyTransaction([
-                'order_id' => $orderId,
-                'payment_id' => $paymentId,
-                'status' => 'pending',
-                'payment_method' => 'card',
-                'environment' => config('officeguy.environment', 'www'),
-                'is_test' => config('officeguy.testing', false),
+                'order_id'      => $orderId,
+                'payment_id'    => $paymentId,
+                'status'        => 'pending',
+                'payment_method'=> 'card',
+                'environment'   => config('officeguy.environment', 'www'),
+                'is_test'       => config('officeguy.testing', false),
             ]);
         }
 
         // Get payment details from SUMIT
         $paymentRequest = [
             'Credentials' => PaymentService::getCredentials(),
-            'PaymentID' => $paymentId,
+            'PaymentID'   => $paymentId,
         ];
 
         $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($paymentRequest, '/billing/payments/get/', $environment, false);
+        $response    = OfficeGuyApi::post($paymentRequest, '/billing/payments/get/', $environment, false);
 
         if ($response === null) {
             OfficeGuyApi::writeToLog('Failed to get payment details for payment #' . $paymentId, 'error');
-            return redirect()->route('checkout.failed')
-                ->with('error', __('Failed to verify payment'));
+            return $this->redirectFailed(__('Failed to verify payment'));
         }
 
         $payment = $response['Data']['Payment'] ?? null;
 
-        if (!$payment || $payment['ValidPayment'] !== true) {
-            // Payment failed
+        if (!$payment || ($payment['ValidPayment'] ?? false) !== true) {
             $statusDescription = $payment['StatusDescription'] ?? 'Unknown error';
 
-            $transaction->update([
-                'status' => 'failed',
-                'status_description' => $statusDescription,
-                'error_message' => $statusDescription,
-                'raw_response' => $response,
-            ]);
+            $transaction->status            = 'failed';
+            $transaction->status_description = $statusDescription;
+            $transaction->error_message     = $statusDescription;
+            $transaction->raw_response      = $response;
+            $transaction->save();
 
             OfficeGuyApi::writeToLog(
                 'Payment failed for order #' . $orderId . ': ' . $statusDescription,
                 'error'
             );
 
-            return redirect()->route('checkout.failed')
-                ->with('error', __('Payment failed') . ' - ' . $statusDescription);
+            return $this->redirectFailed(__('Payment failed') . ' - ' . $statusDescription);
         }
 
-        // Payment succeeded
         $paymentMethod = $payment['PaymentMethod'] ?? [];
 
-        $transaction->update([
-            'payment_id' => $payment['ID'],
-            'document_id' => $documentId,
-            'customer_id' => $payment['CustomerID'] ?? null,
-            'auth_number' => $payment['AuthNumber'] ?? null,
-            'amount' => $payment['Amount'] ?? 0,
-            'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,
+        $transaction->fill([
+            'payment_id'             => $payment['ID'] ?? null,
+            'document_id'            => $documentId,
+            'customer_id'            => $payment['CustomerID'] ?? null,
+            'auth_number'            => $payment['AuthNumber'] ?? null,
+            'amount'                 => $payment['Amount'] ?? ($order ? $order->getPayableAmount() : 0),
+            'first_payment_amount'   => $payment['FirstPaymentAmount'] ?? null,
             'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
-            'status' => 'completed',
-            'last_digits' => $paymentMethod['CreditCard_LastDigits'] ?? null,
-            'expiration_month' => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
-            'expiration_year' => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
-            'status_description' => $payment['StatusDescription'] ?? null,
-            'raw_response' => $response,
+            'status'                 => 'completed',
+            'last_digits'            => $paymentMethod['CreditCard_LastDigits'] ?? null,
+            'expiration_month'       => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
+            'expiration_year'        => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
+            'status_description'     => $payment['StatusDescription'] ?? null,
+            'raw_response'           => $response,
         ]);
+        $transaction->save();
 
         OfficeGuyApi::writeToLog(
-            'Payment completed for order #' . $orderId . 
+            'Payment completed for order #' . $orderId .
             '. Auth: ' . ($payment['AuthNumber'] ?? 'N/A') .
             ', Last digits: ' . ($paymentMethod['CreditCard_LastDigits'] ?? 'N/A') .
             ', Payment ID: ' . $payment['ID'] .
@@ -124,16 +119,34 @@ class CardCallbackController extends Controller
             'info'
         );
 
-        // Create order document if configured
-        if (config('officeguy.create_order_document', false)) {
-            // You would need to load the actual order here
-            // and call DocumentService::createOrderDocument()
-            // This depends on your Order implementation
+        // Create order document if configured and order is available
+        if (config('officeguy.create_order_document', false) && $order) {
+            $customer = PaymentService::getOrderCustomer($order);
+            DocumentService::createOrderDocument($order, $customer, $documentId);
         }
 
-        // Redirect to success page
-        // You'll need to implement your own success route
-        return redirect()->route('checkout.success', ['order' => $orderId])
-            ->with('success', __('Payment completed successfully'));
+        return $this->redirectSuccess($orderId, __('Payment completed successfully'));
+    }
+
+    private function redirectSuccess(string|int $orderId, string $message)
+    {
+        $route = config('officeguy.routes.success', 'checkout.success');
+
+        if ($route && Route::has($route)) {
+            return redirect()->route($route, ['order' => $orderId])->with('success', $message);
+        }
+
+        return redirect()->to(url('/'))->with('success', $message);
+    }
+
+    private function redirectFailed(string $message)
+    {
+        $route = config('officeguy.routes.failed', 'checkout.failed');
+
+        if ($route && Route::has($route)) {
+            return redirect()->route($route)->with('error', $message);
+        }
+
+        return redirect()->to(url('/'))->with('error', $message);
     }
 }

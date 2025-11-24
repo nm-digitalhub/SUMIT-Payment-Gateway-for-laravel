@@ -111,7 +111,7 @@ class OfficeGuyApi
             $response = Http::withHeaders($headers)
                 ->timeout(180)
                 ->withOptions([
-                    'verify' => false, // Equivalent to ssl_verify: false
+                    'verify' => config('officeguy.ssl_verify', true),
                 ])
                 ->post($url, $request);
 

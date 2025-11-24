@@ -202,6 +202,8 @@ class BitPaymentService
 
             OfficeGuyApi::writeToLog("Bit payment completed for order $orderId, document ID: $documentId", 'info');
 
+            event(new \OfficeGuy\LaravelSumitGateway\Events\BitPaymentCompleted($orderId, $documentId, $customerId));
+
             return true;
         }
 

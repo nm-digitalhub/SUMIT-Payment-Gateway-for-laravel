@@ -9,6 +9,7 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use OfficeGuy\LaravelSumitGateway\Services\BitPaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
+use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
  * Bit Webhook Controller
@@ -49,12 +50,15 @@ class BitWebhookController extends Controller
         }
 
         try {
+            $order = OrderResolver::resolve($orderId);
+
             // Process the webhook
             $success = BitPaymentService::processWebhook(
                 $orderId,
                 $orderKey,
                 $documentId,
-                $customerId
+                $customerId,
+                $order
             );
 
             if ($success) {
