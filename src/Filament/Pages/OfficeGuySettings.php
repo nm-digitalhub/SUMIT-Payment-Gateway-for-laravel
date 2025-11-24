@@ -10,7 +10,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use OfficeGuy\LaravelSumitGateway\Settings\SumitSettings;
+use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page implements HasForms
 {
@@ -24,29 +24,16 @@ class OfficeGuySettings extends Page implements HasForms
 
     public ?array $data = [];
 
+    protected SettingsService $settingsService;
+
+    public function boot(SettingsService $settingsService): void
+    {
+        $this->settingsService = $settingsService;
+    }
+
     public function mount(): void
     {
-        $settings = app(SumitSettings::class);
-        $this->form->fill([
-            'company_id' => $settings->company_id,
-            'private_key' => $settings->private_key,
-            'public_key' => $settings->public_key,
-            'environment' => $settings->environment,
-            'pci' => $settings->pci,
-            'testing' => $settings->testing,
-            'max_payments' => $settings->max_payments,
-            'authorize_only' => $settings->authorize_only,
-            'authorize_added_percent' => $settings->authorize_added_percent,
-            'authorize_minimum_addition' => $settings->authorize_minimum_addition,
-            'draft_document' => $settings->draft_document,
-            'email_document' => $settings->email_document,
-            'create_order_document' => $settings->create_order_document,
-            'support_tokens' => $settings->support_tokens,
-            'token_param' => $settings->token_param,
-            'bit_enabled' => $settings->bit_enabled,
-            'logging' => $settings->logging,
-            'log_channel' => $settings->log_channel,
-        ]);
+        $this->form->fill($this->settingsService->getEditableSettings());
     }
 
     public function form(Form $form): Form
@@ -60,17 +47,17 @@ class OfficeGuySettings extends Page implements HasForms
                             ->label('Company ID')
                             ->required()
                             ->numeric()
-                            ->helperText('Value stored via Spatie Settings (no .env needed)'),
+                            ->helperText('Override .env value by saving here'),
                         Forms\Components\TextInput::make('private_key')
                             ->label('Private Key (API Key)')
                             ->required()
                             ->password()
                             ->revealable()
-                            ->helperText('Value stored via Spatie Settings'),
+                            ->helperText('Stored encrypted in database'),
                         Forms\Components\TextInput::make('public_key')
                             ->label('Public Key')
                             ->required()
-                            ->helperText('Value stored via Spatie Settings'),
+                            ->helperText('Public key for PaymentsJS'),
                     ])->columns(3),
 
                 Forms\Components\Section::make('Environment Settings')
@@ -171,24 +158,40 @@ class OfficeGuySettings extends Page implements HasForms
 
     protected function getHeaderActions(): array
     {
-        return [];
+        return [
+            \Filament\Actions\Action::make('reset')
+                ->label('Reset to Defaults')
+                ->color('gray')
+                ->requiresConfirmation()
+                ->action(function () {
+                    $this->settingsService->resetAllToDefaults();
+                    $this->mount();
+                    Notification::make()
+                        ->title('Settings reset to .env defaults')
+                        ->success()
+                        ->send();
+                }),
+        ];
     }
 
     public function save(): void
     {
         $data = $this->form->getState();
-        /** @var SumitSettings $settings */
-        $settings = app(SumitSettings::class);
 
-        foreach ($data as $key => $value) {
-            $settings->$key = $value;
+        try {
+            $this->settingsService->setMany($data);
+
+            Notification::make()
+                ->title('Settings saved successfully')
+                ->body('Changes are now active')
+                ->success()
+                ->send();
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Failed to save settings')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
         }
-
-        $settings->save();
-
-        Notification::make()
-            ->title('Settings saved')
-            ->success()
-            ->send();
     }
 }
