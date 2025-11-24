@@ -130,7 +130,7 @@ class SettingsService
         // Override with database values (if table exists)
         if ($this->tableExists()) {
             try {
-                $dbSettings = OfficeGuySetting::all();
+                $dbSettings = OfficeGuySetting::getAllSettings();
                 $settings = array_merge($settings, $dbSettings);
             } catch (\Exception $e) {
                 // Failed to query - return config only
