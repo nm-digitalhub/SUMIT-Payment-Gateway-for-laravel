@@ -37,6 +37,7 @@ return [
     |
     */
     'pci' => env('OFFICEGUY_PCI_MODE', 'no'),
+    'pci_mode' => env('OFFICEGUY_PCI_MODE', 'no'), // alias for backward compatibility
 
     /*
     |--------------------------------------------------------------------------
@@ -123,6 +124,13 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | SSL verification
+    |--------------------------------------------------------------------------
+    */
+    'ssl_verify' => env('OFFICEGUY_SSL_VERIFY', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Route Configuration
     |--------------------------------------------------------------------------
     |
@@ -134,6 +142,21 @@ return [
         'middleware' => ['web'],
         'card_callback' => env('OFFICEGUY_CARD_CALLBACK_PATH', 'callback/card'),
         'bit_webhook' => env('OFFICEGUY_BIT_WEBHOOK_PATH', 'webhook/bit'),
+        'success' => env('OFFICEGUY_SUCCESS_ROUTE', 'checkout.success'),
+        'failed' => env('OFFICEGUY_FAILED_ROUTE', 'checkout.failed'),
+        'enable_checkout_endpoint' => env('OFFICEGUY_ENABLE_CHECKOUT_ROUTE', false),
+        'checkout_charge' => env('OFFICEGUY_CHECKOUT_CHARGE_PATH', 'checkout/charge'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Order binding
+    |--------------------------------------------------------------------------
+    | Provide either a resolver callable or a model class implementing Payable
+    */
+    'order' => [
+        'resolver' => null, // fn(string|int $orderId): ?Payable
+        'model' => env('OFFICEGUY_ORDER_MODEL'),
     ],
 
     /*
@@ -143,6 +166,9 @@ return [
     */
     'stock_sync_freq' => env('OFFICEGUY_STOCK_SYNC_FREQ', 'none'), // 'none', '12', '24'
     'checkout_stock_sync' => env('OFFICEGUY_CHECKOUT_STOCK_SYNC', false),
+    'stock' => [
+        'update_callback' => null, // callable(array $stockItem)
+    ],
 
     /*
     |--------------------------------------------------------------------------

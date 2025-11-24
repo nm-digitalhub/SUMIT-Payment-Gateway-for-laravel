@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
@@ -17,11 +18,11 @@ class ClientDocumentResource extends Resource
 {
     protected static ?string $model = OfficeGuyDocument::class;
 
-    protected static string|null $navigationIcon = 'heroicon-o-document-text';
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationLabel = 'My Documents';
 
-    protected static string|\UnitEnum|null $navigationGroup = 'Payments';
+    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 3;
 
@@ -36,10 +37,10 @@ class ClientDocumentResource extends Resource
             ->where('customer_id', auth()->id());
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
-            ->schema([
+        return $schema
+            ->components([
                 Forms\Components\Section::make('Document Information')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
@@ -126,7 +127,7 @@ class ClientDocumentResource extends Resource
                     ->label('Draft Documents'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ])
             ->emptyStateHeading('No documents found')
             ->emptyStateDescription('You don\'t have any invoices or receipts yet. Documents will appear here after you make a purchase.')

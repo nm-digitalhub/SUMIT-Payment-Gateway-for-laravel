@@ -1,6 +1,6 @@
 <div class="officeguy-payment-form" x-data="officeGuyPayment">
     {{-- Error messages --}}
-    <div x-show="errors.length > 0" class="og-errors bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" x-cloak>
+    <div x-show="errors.length > 0" class="og-errors bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded mb-4" x-cloak aria-live="assertive">
         <template x-for="error in errors" :key="error">
             <div x-text="error"></div>
         </template>
@@ -38,9 +38,9 @@
     @endif
 
     {{-- New payment form --}}
-    <div class="og-payment-form" x-show="selectedToken === 'new'" x-cloak>
+    <div class="og-payment-form" x-show="selectedToken === 'new'" x-cloak :class="rtl ? 'text-right' : ''">
         {{-- Card number --}}
-        <div class="mb-4">
+        <div class="mb-4" :class="rtl ? 'text-right' : ''">
             <label for="og-ccnum" class="block text-sm font-medium mb-1">
                 {{ __('Card Number') }} <span class="text-red-500">*</span>
             </label>
@@ -50,6 +50,8 @@
                 name="og-ccnum"
                 x-model="cardNumber"
                 maxlength="19"
+                inputmode="numeric"
+                autocomplete="cc-number"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="•••• •••• •••• ••••"
                 data-og-message="{{ __('Card number is required') }}"
@@ -58,8 +60,8 @@
         </div>
 
         {{-- Expiration date --}}
-        <div class="grid grid-cols-2 gap-4 mb-4">
-            <div>
+        <div class="grid grid-cols-2 gap-4 mb-4" :class="rtl ? 'text-right' : ''">
+            <div :class="rtl ? 'rtl' : ''">
                 <label for="og-expmonth" class="block text-sm font-medium mb-1">
                     {{ __('Expiration Month') }} <span class="text-red-500">*</span>
                 </label>
@@ -68,8 +70,9 @@
                     name="og-expmonth"
                     x-model="expMonth"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md"
-                    data-og-message="{{ __('Expiration date is required') }}"
-                    required
+                    autocomplete="cc-exp-month"
+                data-og-message="{{ __('Expiration date is required') }}"
+                required
                 >
                     <option value="">{{ __('Month') }}</option>
                     @for($i = 1; $i <= 12; $i++)
@@ -77,7 +80,7 @@
                     @endfor
                 </select>
             </div>
-            <div>
+            <div :class="rtl ? 'rtl' : ''">
                 <label for="og-expyear" class="block text-sm font-medium mb-1">
                     {{ __('Expiration Year') }} <span class="text-red-500">*</span>
                 </label>
@@ -86,6 +89,7 @@
                     name="og-expyear"
                     x-model="expYear"
                     class="w-full px-3 py-2 border border-gray-300 rounded-md"
+                    autocomplete="cc-exp-year"
                     required
                 >
                     <option value="">{{ __('Year') }}</option>
@@ -106,7 +110,7 @@
 
         {{-- CVV (if required) --}}
         @if(in_array($cvvMode, ['required', 'yes']))
-        <div class="mb-4">
+        <div class="mb-4" :class="rtl ? 'text-right' : ''">
             <label for="og-cvv" class="block text-sm font-medium mb-1">
                 {{ __('Security Code (CVV)') }} 
                 @if($cvvMode === 'required')<span class="text-red-500">*</span>@endif
@@ -117,6 +121,8 @@
                 name="og-cvv"
                 x-model="cvv"
                 maxlength="4"
+                inputmode="numeric"
+                autocomplete="cc-csc"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md"
                 placeholder="•••"
                 data-og-message="{{ __('Security code is required') }}"
@@ -127,7 +133,7 @@
 
         {{-- Citizen ID (if required) --}}
         @if(in_array($citizenIdMode, ['required', 'yes']))
-        <div class="mb-4">
+        <div class="mb-4" :class="rtl ? 'text-right' : ''">
             <label for="og-citizenid" class="block text-sm font-medium mb-1">
                 {{ __('ID Number') }}
                 @if($citizenIdMode === 'required')<span class="text-red-500">*</span>@endif
@@ -138,6 +144,7 @@
                 name="og-citizenid"
                 x-model="citizenId"
                 maxlength="9"
+                inputmode="numeric"
                 class="w-full px-3 py-2 border border-gray-300 rounded-md"
                 data-og-message="{{ __('ID number is required') }}"
                 @if($citizenIdMode === 'required') required @endif

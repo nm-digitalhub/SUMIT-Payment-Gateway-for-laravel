@@ -10,6 +10,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientTransactionResource\Pages;
@@ -125,6 +126,11 @@ class ClientTransactionResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('download_document')
+                    ->label('Download Document')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->visible(fn ($record) => $record->document_id)
+                    ->url(fn ($record) => route('officeguy.document.download', $record->document_id), true),
             ])
             ->defaultSort('created_at', 'desc');
     }

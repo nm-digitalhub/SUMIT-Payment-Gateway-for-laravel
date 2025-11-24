@@ -1,376 +1,105 @@
-# Laravel SUMIT Gateway
+# SUMIT (OfficeGuy) Payment Gateway for Laravel 12 + Filament v4
 
-A comprehensive Laravel package for integrating SUMIT payment gateway with full Filament admin and client panel support. This package is a 1:1 port of the official SUMIT WooCommerce plugin.
+**Clone 1:1 של התוסף WooCommerce `woo-payment-gateway-officeguy` עבור Laravel.**
 
-## Features
+- תשלומים בכרטיס אשראי (PCI modes: no/redirect/yes)
+- תשלומי Bit
+- תמיכה ב‑Tokens (J2/J5), Authorize Only, תשלומים (עד 36), recurring
+- מסמכים (חשבונית/קבלה/תרומה), שילוב PayPal/BlueSnap receipts
+- Multivendor & CartFlows מקבילים (לפי מפרט המקור)
+- סנכרון מלאי (12/24 שעות/Checkout), ווידג'ט דשבורד (למימוש עתידי)
+- ממשק ניהול Filament v4 + Spatie Settings
+- דפי לקוח Filament להצגת טרנזקציות/מסמכים/אמצעי תשלום
 
-- **Card Payments**: Support for PCI direct, redirect, and simple (PaymentsJS) modes
-- **Bit Payments**: Israeli Bit payment method support via Upay
-- **Tokenization**: Secure card storage for recurring payments
-- **Document Management**: Automatic invoice and receipt creation
-- **Multi-currency**: Support for 36+ currencies including ILS, USD, EUR, GBP, etc.
-- **Installments**: Configurable payment plans with custom rules
-- **Filament Integration**: Full admin panel and client portal resources
-- **Comprehensive Logging**: Track all transactions and API calls
-- **VAT Support**: Automatic tax calculation and document generation
-
-## Requirements
-
-- PHP 8.2 or higher
-- Laravel 11.28 or higher
-- Filament 4.x
-- A SUMIT account with API credentials
-
-## Installation
-
-### 1. Install via Composer
-
+## התקנה
 ```bash
 composer require officeguy/laravel-sumit-gateway
+php artisan vendor:publish --tag=officeguy-settings   # מיגרציית Spatie
+php artisan settings:migrate
 ```
 
-### 2. Publish Configuration
+> אם תרצה להעתיק גם קונפיג/מיגרציות/תצוגות: `--tag=officeguy-config`, `--tag=officeguy-migrations`, `--tag=officeguy-views`, `--tag=officeguy-settings`.
 
-```bash
-php artisan vendor:publish --tag=officeguy-config
-```
+## הגדרות (Spatie Settings)
+כל ההגדרות נשמרות ב‑Spatie Settings. ניתן לערוך דרך Filament (עמוד **Gateway Settings**) או בקוד.
 
-### 3. Configure Environment Variables
+שדות עיקריים:
+- מפתחות חברה: company_id, private_key, public_key
+- PCI mode: `no` (PaymentsJS), `redirect`, `yes` (PCI server)
+- תשלומים: max_payments, min_amount_for_payments, min_amount_per_payment
+- Authorize Only: דגל + אחוז תוספת + מינימום תוספת
+- מסמכים: draft_document, email_document, create_order_document, merge_customers, automatic_languages
+- Tokens: support_tokens, token_param (J2/J5)
+- Bit: bit_enabled
+- מלאי: stock_sync_freq (none/12/24), checkout_stock_sync
+- לוגים: logging, log_channel, ssl_verify
+- מסלולי Redirect: routes.success, routes.failed
+- Order binding: order.model או order.resolver (callable)
 
-Add the following to your `.env` file:
-
-```env
-# SUMIT Credentials (Required)
-OFFICEGUY_COMPANY_ID=your_company_id
-OFFICEGUY_PRIVATE_KEY=your_private_key
-OFFICEGUY_PUBLIC_KEY=your_public_key
-
-# Environment (www for production, dev or test for sandbox)
-OFFICEGUY_ENVIRONMENT=www
-
-# PCI Mode (no=simple, redirect, yes=advanced/PCI-compliant)
-OFFICEGUY_PCI_MODE=no
-
-# Payment Settings
-OFFICEGUY_TESTING=false
-OFFICEGUY_MAX_PAYMENTS=12
-OFFICEGUY_AUTHORIZE_ONLY=false
-
-# Document Settings
-OFFICEGUY_DRAFT_DOCUMENT=false
-OFFICEGUY_EMAIL_DOCUMENT=true
-OFFICEGUY_CREATE_ORDER_DOCUMENT=false
-
-# Tokenization
-OFFICEGUY_SUPPORT_TOKENS=true
-OFFICEGUY_TOKEN_PARAM=5
-
-# Bit Payments
-OFFICEGUY_BIT_ENABLED=false
-
-# Logging
-OFFICEGUY_LOGGING=true
-```
-
-### 4. Run Migrations
-
-```bash
-php artisan migrate
-```
-
-### 5. Publish Views (Optional)
-
-```bash
-php artisan vendor:publish --tag=officeguy-views
-```
-
-## Usage
-
-### Implementing the Payable Contract
-
-Your Order model must implement the `Payable` contract:
-
+## מודל Order (Payable)
+החבילה דורשת שמודל ההזמנה יממש `OfficeGuy\LaravelSumitGateway\Contracts\Payable`.
+דרך מהירה: השתמשו ב‑Trait
 ```php
-use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
-
-class Order extends Model implements Payable
-{
-    public function getPayableId(): string|int
-    {
-        return $this->id;
-    }
-
-    public function getPayableAmount(): float
-    {
-        return $this->total;
-    }
-
-    public function getPayableCurrency(): string
-    {
-        return $this->currency ?? 'ILS';
-    }
-
-    public function getCustomerEmail(): ?string
-    {
-        return $this->customer->email;
-    }
-
-    public function getCustomerPhone(): ?string
-    {
-        return $this->customer->phone;
-    }
-
-    public function getCustomerName(): string
-    {
-        return $this->customer->name;
-    }
-
-    public function getCustomerAddress(): ?array
-    {
-        return [
-            'address' => $this->billing_address,
-            'city' => $this->billing_city,
-            'state' => $this->billing_state,
-            'country' => $this->billing_country,
-            'zip_code' => $this->billing_zip,
-        ];
-    }
-
-    public function getCustomerCompany(): ?string
-    {
-        return $this->customer->company;
-    }
-
-    public function getCustomerId(): string|int|null
-    {
-        return $this->customer_id;
-    }
-
-    public function getLineItems(): array
-    {
-        return $this->items->map(function ($item) {
-            return [
-                'name' => $item->product_name,
-                'sku' => $item->product_sku,
-                'quantity' => $item->quantity,
-                'unit_price' => $item->price,
-                'product_id' => $item->product_id,
-                'variation_id' => $item->variation_id,
-            ];
-        })->toArray();
-    }
-
-    public function getShippingAmount(): float
-    {
-        return $this->shipping_total;
-    }
-
-    public function getShippingMethod(): ?string
-    {
-        return $this->shipping_method;
-    }
-
-    public function getFees(): array
-    {
-        return $this->fees->map(function ($fee) {
-            return [
-                'name' => $fee->name,
-                'amount' => $fee->amount,
-            ];
-        })->toArray();
-    }
-
-    public function getVatRate(): ?float
-    {
-        return $this->tax_rate;
-    }
-
-    public function isTaxEnabled(): bool
-    {
-        return config('app.tax_enabled', true);
-    }
-
-    public function getCustomerNote(): ?string
-    {
-        return $this->customer_note;
-    }
+class Order extends Model implements Payable {
+    use \OfficeGuy\LaravelSumitGateway\Support\Traits\PayableAdapter;
 }
 ```
+כדאי להעמיס (eager load) יחסי items/fees.
 
-### Processing a Payment
-
+קונפיג:
 ```php
-use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
-use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
-
-// Your order instance
-$order = Order::find(1);
-
-// Build payment items
-$items = PaymentService::getPaymentOrderItems($order);
-
-// Build customer data
-$customer = PaymentService::getOrderCustomer($order);
-
-// Make payment request
-$request = [
-    'Credentials' => PaymentService::getCredentials(),
-    'Items' => $items,
-    'Customer' => $customer,
-    'VATIncluded' => 'true',
-    'VATRate' => PaymentService::getOrderVatRate($order),
-    // ... additional fields
-];
-
-$response = OfficeGuyApi::post(
-    $request,
-    '/billing/payments/charge/',
-    config('officeguy.environment'),
-    true
-);
+'order' => [
+    'model' => App\Models\Order::class,
+    // או
+    'resolver' => fn($id) => App\Models\Order::with('items','fees')->find($id),
+],
 ```
 
-### Creating a Document
+## מסלולים
+תחת prefix (ברירת מחדל `officeguy`):
+- GET `callback/card` – חזרת Redirect מכרטיס
+- POST `webhook/bit` – IPN ל‑Bit
+- (אופציונלי) POST `checkout/charge` – מסלול סליקה מובנה (`OFFICEGUY_ENABLE_CHECKOUT_ROUTE=true`)
+מסלולי הצלחה/כישלון: מוגדרים ב‑config `routes.success` / `routes.failed` (ברירת מחדל `checkout.success` / `checkout.failed`).
 
+## שימוש ב‑Checkout מובנה
+קריאה למסלול `officeguy.checkout.charge` עם פרמטרים:
+- `order_id` (חובה)
+- `payments_count` (אופציונלי, ברירת מחדל 1)
+- `recurring` (bool)
+- `token_id` (אופציונלי, לטוקן שמור)
+המסלול יחזיר `redirect_url` (אם PCI=redirect) או תשובת הצלחה/שגיאה JSON.
+
+ניתן גם לקרוא ישירות:
 ```php
-use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
-
-$order = Order::find(1);
-$customer = PaymentService::getOrderCustomer($order);
-
-$result = DocumentService::createOrderDocument($order, $customer, null);
-
-if ($result === null) {
-    // Success
-} else {
-    // Error: $result contains error message
-}
+$result = PaymentService::processCharge($order, $paymentsCount, $recurring, $redirectMode, $token, $extra);
 ```
 
-### Working with Tokens
+## Filament
+- עמוד הגדרות: `OfficeGuySettings` (ניווט: SUMIT Gateway)
+- משאבי לקוח: טרנזקציות, מסמכים, אמצעי תשלום (Client panel provider)
 
-```php
-use OfficeGuy\LaravelSumitGateway\Services\TokenService;
+## Bit
+- הפעלה: enable `bit_enabled` בהגדרות.
+- Webhook: POST `officeguy/webhook/bit` מקבל orderid/orderkey/documentid/customerid.
 
-$user = auth()->user();
+## SSL
+ה‑HTTP client משתמש ב‑`ssl_verify` (ברירת מחדל true). לשימוש dev בלבד ניתן לכבות.
 
-// Process tokenization
-$result = TokenService::processToken($user, 'no');
+## לוגים
+`logging` + `log_channel` (ברירת מחדל stack). נתונים רגישים מנוקים מלוגים (מספר כרטיס/CVV).
 
-if ($result['success']) {
-    $token = $result['token'];
-    // Token saved successfully
-} else {
-    $errorMessage = $result['message'];
-}
+## מיגרציות נתונים
+- טבלאות: transactions, tokens, documents (נלקחו מגרסת ה‑Woo).
+- Spatie Settings: `database/settings/*` לאחר publish.
 
-// Get user's saved tokens
-$tokens = OfficeGuyToken::getForOwner($user);
+## בדיקות
+- phpunit / orchestra testbench מומלצים. החבילה כוללת בסיס מיגרציות; יש להגדיר מודל Order דמה ל‑Payable.
 
-// Get default token
-$defaultToken = OfficeGuyToken::getDefaultForOwner($user);
-```
+## סטטוס
+- Stock Sync: כולל שירות + Job + Command (`sumit:stock-sync`) עם callback התאמה אישית לעדכון מלאי (config `stock.update_callback`). cron לפי `stock_sync_freq`.
+- Multivendor / CartFlows: נקודות הרחבה קיימות; שילוב מתבצע ע"י resolver שמחזיר VendorCredentials פר מוצר וקריאה ל-`/billing/payments/multivendorcharge/` (ראה docs). CartFlows ניתן לממש דרך Token + Child Orders עם PaymentService.
+- אירועים: החבילה משדרת אירועים (`PaymentCompleted`, `PaymentFailed`, `DocumentCreated`, `StockSynced`, `BitPaymentCompleted`) לחיבור לוגיקה משלך.
 
-## Filament Integration
-
-The package includes complete Filament v4 resources for both admin and client panels.
-
-### Admin Resources
-
-All admin resources are automatically discovered and registered:
-
-- **TransactionResource** (`/admin/transactions`) - View and manage all payment transactions
-  - Filter by status, currency, amount range, and test mode
-  - View detailed transaction information including raw API data
-  - Actions: View associated documents, refresh payment status
-  - Navigation badge showing pending transactions
-
-- **TokenResource** (`/admin/tokens`) - Manage customer payment tokens
-  - View all saved payment methods
-  - Set tokens as default for users
-  - Delete expired or unwanted tokens
-  - Navigation badge showing expired tokens
-
-- **DocumentResource** (`/admin/documents`) - View generated invoices and receipts
-  - Filter by document type, draft status, and email status
-  - View document details and raw API responses
-  - Navigation badge showing draft documents
-
-- **OfficeGuySettings** (`/admin/officeguy-settings`) - View gateway configuration
-  - Read-only display of all gateway settings
-  - Shows API credentials, environment, payment options
-  - All settings managed via environment variables
-
-### Client Panel
-
-A separate customer-facing panel is available at `/client`:
-
-- **ClientTransactionResource** - Customer's transaction history
-  - View only authenticated user's transactions
-  - Filter and search personal payment history
-  - Read-only access (no create/edit/delete)
-
-- **ClientPaymentMethodResource** - Manage saved payment methods
-  - View and manage saved credit cards
-  - Set default payment method
-  - Delete saved cards with confirmation
-  - Warning badges for expired cards
-
-- **ClientDocumentResource** - View invoices and receipts
-  - View only authenticated user's documents
-  - Display invoices, receipts, and orders
-  - Filter by document type and draft status
-  - Read-only access (no create/edit/delete)
-
-### Installation
-
-Filament resources are automatically registered via service providers. No additional configuration needed.
-
-For more details, see `src/Filament/README.md`.
-
-## API Endpoints
-
-The package registers the following routes:
-
-- `GET /officeguy/callback/card` - Card payment callback handler
-- `POST /officeguy/webhook/bit` - Bit payment webhook handler
-
-## Configuration
-
-All configuration options are available in `config/officeguy.php`:
-
-- **Environment Settings**: Production/Development/Test modes
-- **Credentials**: Company ID, Private Key, Public Key
-- **PCI Modes**: Simple, Redirect, or Advanced
-- **Payment Options**: Installments, authorize-only, minimum amounts
-- **Document Settings**: Draft mode, auto-email, languages
-- **Tokenization**: Token storage and J5/J2 methods
-- **Logging**: Enable/disable comprehensive logging
-
-## Testing
-
-Run the test suite:
-
-```bash
-composer test
-```
-
-## Security
-
-If you discover any security-related issues, please email security@sumit.co.il instead of using the issue tracker.
-
-## Credits
-
-- SUMIT Team
-- Original WooCommerce plugin developers
-
-## License
-
-The MIT License (MIT). Please see [License File](LICENSE.md) for more information.
-
-## Support
-
-For support, please visit:
-- [SUMIT Documentation](https://help.sumit.co.il/)
-- [API Documentation](https://app.sumit.co.il/developers/)
-- [GitHub Issues](https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel/issues)
+## רישיון
+MIT

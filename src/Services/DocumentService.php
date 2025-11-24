@@ -69,6 +69,13 @@ class DocumentService
                 'info'
             );
 
+            event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
+                $order->getPayableId(),
+                $documentId,
+                $response['Data']['CustomerID'] ?? '',
+                $response
+            ));
+
             return null;
         }
 
@@ -173,6 +180,13 @@ class DocumentService
                 'SUMIT document completed. Document ID: ' . $documentId . ', Customer ID: ' . $customerId,
                 'info'
             );
+
+            event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
+                $order->getPayableId(),
+                $documentId,
+                $customerId,
+                $response
+            ));
 
             return null;
         }

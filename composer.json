@@ -50,8 +50,7 @@
     "extra": {
         "laravel": {
             "providers": [
-                "OfficeGuy\\LaravelSumitGateway\\OfficeGuyServiceProvider",
-                "OfficeGuy\\LaravelSumitGateway\\Filament\\Client\\ClientPanelProvider"
+                "OfficeGuy\\LaravelSumitGateway\\OfficeGuyServiceProvider"
             ]
         }
     },
