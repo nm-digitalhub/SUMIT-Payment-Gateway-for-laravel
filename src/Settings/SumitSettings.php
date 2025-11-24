@@ -14,6 +14,7 @@ class SumitSettings extends Settings
     public string $environment; // www|dev|test
 
     public string $pci; // no|redirect|yes
+    public string $pci_mode; // alias to pci
     public bool $testing;
 
     public int $max_payments;
@@ -48,6 +49,8 @@ class SumitSettings extends Settings
 
     public string $stock_sync_freq; // none|12|24
     public bool $checkout_stock_sync;
+    /** @var array{update_callback:mixed} */
+    public array $stock;
 
     public string $paypal_receipts; // no|yes|async
     public bool $bluesnap_receipts;
@@ -57,6 +60,12 @@ class SumitSettings extends Settings
     public array $supported_currencies;
 
     public bool $ssl_verify;
+
+    /** @var array{prefix:string,middleware:array,card_callback:string,bit_webhook:string,success:string,failed:string,enable_checkout_endpoint:bool,checkout_charge:string} */
+    public array $routes;
+
+    /** @var array{resolver:mixed,model:mixed} */
+    public array $order;
 
     public static function group(): string
     {
