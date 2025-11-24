@@ -23,8 +23,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Merge package config
         $this->mergeConfigFrom(__DIR__ . '/../config/officeguy.php', 'officeguy');
 
-        // Load package settings definition
-        $this->loadSettingsFrom(__DIR__ . '/../config/settings.php');
+    
 
         // Register SumitSettings inside SettingsContainer safely
         $this->app->afterResolving(
