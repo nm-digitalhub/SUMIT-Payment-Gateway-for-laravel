@@ -59,5 +59,11 @@
     "config": {
         "sort-packages": true,
         "optimize-autoloader": true
+    },
+
+    "scripts": {
+        "post-autoload-dump": [
+            "@php artisan vendor:publish --tag=officeguy-settings --force"
+        ]
     }
 }
