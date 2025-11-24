@@ -8,19 +8,90 @@ use Spatie\LaravelSettings\Settings;
 
 class SumitSettings extends Settings
 {
+    /**
+     * Default values to prevent MissingSettings before migrations run.
+     */
+    public static array $defaults = [
+        'company_id' => 0,
+        'private_key' => '',
+        'public_key' => '',
+        'environment' => 'www',
+
+        'routes' => [
+            'prefix' => 'officeguy',
+            'middleware' => ['web'],
+            'card_callback' => 'callback/card',
+            'bit_webhook' => 'webhook/bit',
+            'success' => 'checkout.success',
+            'failed' => 'checkout.failed',
+            'enable_checkout_endpoint' => false,
+            'checkout_charge' => 'checkout/charge',
+        ],
+
+        'order' => [
+            'resolver' => null,
+            'model' => null,
+        ],
+
+        'pci' => 'no',
+        'pci_mode' => 'no',
+        'testing' => false,
+
+        'max_payments' => 1,
+        'min_amount_for_payments' => 0.0,
+        'min_amount_per_payment' => 0.0,
+
+        'authorize_only' => false,
+        'authorize_added_percent' => 0.0,
+        'authorize_minimum_addition' => 0.0,
+
+        'merchant_number' => null,
+        'subscriptions_merchant_number' => null,
+
+        'draft_document' => false,
+        'email_document' => true,
+        'create_order_document' => false,
+        'automatic_languages' => true,
+        'merge_customers' => false,
+
+        'support_tokens' => true,
+        'token_param' => '5',
+
+        'citizen_id' => 'required',
+        'cvv' => 'required',
+        'four_digits_year' => true,
+        'single_column_layout' => true,
+
+        'bit_enabled' => false,
+
+        'logging' => false,
+        'log_channel' => 'stack',
+        'ssl_verify' => true,
+
+        'stock_sync_freq' => 'none',
+        'checkout_stock_sync' => false,
+        'stock' => [
+            'update_callback' => null,
+        ],
+
+        'paypal_receipts' => 'no',
+        'bluesnap_receipts' => false,
+        'other_receipts' => null,
+
+        'supported_currencies' => [
+            'ILS', 'USD', 'EUR', 'CAD', 'GBP', 'CHF', 'AUD', 'JPY', 'SEK', 'NOK',
+            'DKK', 'ZAR', 'JOD', 'LBP', 'EGP', 'BGN', 'CZK', 'HUF', 'PLN', 'RON',
+            'ISK', 'HRK', 'RUB', 'TRY', 'BRL', 'CNY', 'HKD', 'IDR', 'INR', 'KRW',
+            'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB',
+        ],
+    ];
     public int $company_id;
     public string $private_key;
     public string $public_key;
+    public string $environment; // www|dev|test
 
-    /** Allowed: www|dev|test */
-    public string $environment;
-
-    /** Allowed: no|redirect|yes */
-    public string $pci;
-
-    /** Alias for pci – optional for backward compatibility */
-    public string $pci_mode;
-
+    public string $pci; // no|redirect|yes
+    public string $pci_mode; // alias to pci
     public bool $testing;
 
     public int $max_payments;
@@ -41,16 +112,10 @@ class SumitSettings extends Settings
     public bool $merge_customers;
 
     public bool $support_tokens;
+    public string $token_param; // J2/J5 -> '2'|'5'
 
-    /** Example: '2' or '5' */
-    public string $token_param;
-
-    /** Allowed: required|yes|no */
-    public string $citizen_id;
-
-    /** Allowed: required|yes|no */
-    public string $cvv;
-
+    public string $citizen_id; // required|yes|no
+    public string $cvv; // required|yes|no
     public bool $four_digits_year;
     public bool $single_column_layout;
 
@@ -59,37 +124,24 @@ class SumitSettings extends Settings
     public bool $logging;
     public string $log_channel;
 
-    /** Allowed: none|12|24 */
-    public string $stock_sync_freq;
-
+    public string $stock_sync_freq; // none|12|24
     public bool $checkout_stock_sync;
-
-    /** Stock configuration (generic array) */
+    /** @var array{update_callback:mixed} */
     public array $stock;
 
-    /** Allowed: no|yes|async */
-    public string $paypal_receipts;
-
+    public string $paypal_receipts; // no|yes|async
     public bool $bluesnap_receipts;
-
-    /** Optional value for "other" receipts provider */
     public ?string $other_receipts;
 
-    /** Example: ['ILS','USD'] */
+    /** @var array<int,string> */
     public array $supported_currencies;
 
     public bool $ssl_verify;
 
-    /**
-     * Route configuration structure.
-     * Example keys: prefix, middleware, card_callback, bit_webhook, success, failed, enable_checkout_endpoint, checkout_charge
-     */
+    /** @var array{prefix:string,middleware:array,card_callback:string,bit_webhook:string,success:string,failed:string,enable_checkout_endpoint:bool,checkout_charge:string} */
     public array $routes;
 
-    /**
-     * Order resolver or model configuration
-     * Keys: resolver, model
-     */
+    /** @var array{resolver:mixed,model:mixed} */
     public array $order;
 
     public static function group(): string
