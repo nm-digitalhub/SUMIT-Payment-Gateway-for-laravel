@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
+use Filament\Pages\Page;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Notifications\Notification;
-use Filament\Pages\Page;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page implements HasForms
@@ -20,11 +19,13 @@ class OfficeGuySettings extends Page implements HasForms
     protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
 
-    protected string $view = 'officeguy::filament.pages.officeguy-settings';
+    protected static ?string $title = 'Gateway Settings';
 
     public ?array $data = [];
 
     protected SettingsService $settingsService;
+
+    protected string $view = 'officeguy::filament.pages.officeguy-settings';
 
     public function boot(SettingsService $settingsService): void
     {
@@ -33,36 +34,19 @@ class OfficeGuySettings extends Page implements HasForms
 
     public function mount(): void
     {
-        // Filament v4 Page: MUST use $this->form
         $this->form->fill(
             $this->settingsService->getEditableSettings()
         );
     }
 
-    public function form(Form $form): Form
-    {
-        return $form
-            ->schema($this->getFormSchema())
-            ->statePath('data');
-    }
-
-    protected function getFormSchema(): array
+    public function getFormSchema(): array
     {
         return [
             Forms\Components\Section::make('API Credentials')
                 ->schema([
-                    Forms\Components\TextInput::make('company_id')
-                        ->label('Company ID')
-                        ->required()
-                        ->numeric(),
-                    Forms\Components\TextInput::make('private_key')
-                        ->label('Private Key')
-                        ->password()
-                        ->revealable()
-                        ->required(),
-                    Forms\Components\TextInput::make('public_key')
-                        ->label('Public Key')
-                        ->required(),
+                    Forms\Components\TextInput::make('company_id')->label('Company ID')->required()->numeric(),
+                    Forms\Components\TextInput::make('private_key')->label('Private Key')->password()->revealable()->required(),
+                    Forms\Components\TextInput::make('public_key')->label('Public Key')->required(),
                 ])
                 ->columns(3),
 
@@ -88,10 +72,7 @@ class OfficeGuySettings extends Page implements HasForms
 
             Forms\Components\Section::make('Payment Settings')
                 ->schema([
-                    Forms\Components\TextInput::make('max_payments')
-                        ->numeric()
-                        ->minValue(1)
-                        ->maxValue(36),
+                    Forms\Components\TextInput::make('max_payments')->numeric()->minValue(1)->maxValue(36),
                     Forms\Components\Toggle::make('authorize_only'),
                     Forms\Components\TextInput::make('authorize_added_percent')->numeric(),
                     Forms\Components\TextInput::make('authorize_minimum_addition')->numeric(),
@@ -127,9 +108,35 @@ class OfficeGuySettings extends Page implements HasForms
         ];
     }
 
+    public function save(): void
+    {
+        try {
+            $this->settingsService->setMany(
+                $this->form->getState()
+            );
+
+            Notification::make()
+                ->title('Settings saved')
+                ->success()
+                ->send();
+
+        } catch (\Exception $e) {
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
     protected function getHeaderActions(): array
     {
         return [
+            \Filament\Actions\Action::make('save')
+                ->label('Save Settings')
+                ->color('primary')
+                ->action(fn () => $this->save()),
+
             \Filament\Actions\Action::make('reset')
                 ->label('Reset to Defaults')
                 ->color('gray')
@@ -137,37 +144,8 @@ class OfficeGuySettings extends Page implements HasForms
                 ->action(function () {
                     $this->settingsService->resetAllToDefaults();
                     $this->mount();
-                    Notification::make()
-                        ->title('Settings reset to defaults')
-                        ->success()
-                        ->send();
+                    Notification::make()->title('Defaults restored')->success()->send();
                 }),
-
-            \Filament\Actions\Action::make('save')
-                ->label('Save Settings')
-                ->color('primary')
-                ->action(fn () => $this->save()),
         ];
-    }
-
-    public function save(): void
-    {
-        try {
-            $this->settingsService->setMany($this->form->getState());
-
-            Notification::make()
-                ->title('Settings saved')
-                ->body('Changes are now active')
-                ->success()
-                ->send();
-
-        } catch (\Exception $e) {
-
-            Notification::make()
-                ->title('Error')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
     }
 }
