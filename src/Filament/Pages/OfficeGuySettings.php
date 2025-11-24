@@ -12,12 +12,15 @@ use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page
 {
-    protected static ?string $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static ?string $navigationLabel = 'Gateway Settings';
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
-    protected static ?int $navigationSort = 10;
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
 
-    protected static string $view = 'officeguy::filament.pages.officeguy-settings';
+protected static ?string $navigationLabel = 'Gateway Settings';
+
+protected static string | UnitEnum | null $navigationGroup = 'SUMIT Gateway';
+
+protected static ?int $navigationSort = 10;
+
+protected string $view = 'officeguy::filament.pages.officeguy-settings';
 
     public ?array $data = [];
 
