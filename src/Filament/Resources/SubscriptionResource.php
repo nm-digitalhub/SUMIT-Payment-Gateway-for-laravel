@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
-use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
-use Filament\Actions\BulkActionGroup;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\ViewAction;
+use Filament\Tables\Actions\BulkActionGroup;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource\Pages;
