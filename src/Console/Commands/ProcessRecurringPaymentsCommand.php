@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Console\Commands;
 
 use Illuminate\Console\Command;
 use OfficeGuy\LaravelSumitGateway\Jobs\ProcessRecurringPaymentsJob;
+use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 
 /**
  * Process Recurring Payments Command
@@ -21,9 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Jobs\ProcessRecurringPaymentsJob;
  */
 class ProcessRecurringPaymentsCommand extends Command
 {
-    protected $signature = 'sumit:process-recurring-payments 
-                            {--sync : Run synchronously instead of dispatching job}
-                            {--subscription= : Process a specific subscription ID only}';
+    protected $signature = 'sumit:process-recurring-payments {--sync : Run synchronously instead of dispatching job} {--subscription= : Process a specific subscription ID only}';
 
     protected $description = 'Process due recurring subscription payments via SUMIT gateway';
 
@@ -34,7 +33,7 @@ class ProcessRecurringPaymentsCommand extends Command
 
         if ($sync) {
             $this->info('Processing recurring payments synchronously...');
-            $results = \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::processDueSubscriptions();
+            $results = SubscriptionService::processDueSubscriptions();
 
             $total = count($results);
             $successful = count(array_filter($results, fn($r) => $r['success']));

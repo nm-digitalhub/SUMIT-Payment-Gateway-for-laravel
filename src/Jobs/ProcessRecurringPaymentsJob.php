@@ -9,6 +9,7 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Log;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 
@@ -48,21 +49,21 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
             $subscription = Subscription::find($this->subscriptionId);
 
             if (!$subscription) {
-                \Log::warning("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} not found");
+                Log::warning("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} not found");
                 return;
             }
 
             if (!$subscription->canBeCharged()) {
-                \Log::info("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} cannot be charged");
+                Log::info("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} cannot be charged");
                 return;
             }
 
             $result = SubscriptionService::processRecurringCharge($subscription);
 
             if ($result['success']) {
-                \Log::info("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} charged successfully");
+                Log::info("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} charged successfully");
             } else {
-                \Log::error("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} failed: " . ($result['message'] ?? 'Unknown error'));
+                Log::error("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} failed: " . ($result['message'] ?? 'Unknown error'));
             }
         } else {
             $results = SubscriptionService::processDueSubscriptions();
@@ -71,7 +72,7 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
             $successful = count(array_filter($results, fn($r) => $r['success']));
             $failed = $total - $successful;
 
-            \Log::info("ProcessRecurringPaymentsJob: Processed {$total} subscriptions: {$successful} successful, {$failed} failed");
+            Log::info("ProcessRecurringPaymentsJob: Processed {$total} subscriptions: {$successful} successful, {$failed} failed");
         }
     }
 
@@ -80,7 +81,7 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        \Log::error("ProcessRecurringPaymentsJob failed: " . $exception->getMessage(), [
+        Log::error("ProcessRecurringPaymentsJob failed: " . $exception->getMessage(), [
             'subscription_id' => $this->subscriptionId,
             'exception' => $exception,
         ]);
