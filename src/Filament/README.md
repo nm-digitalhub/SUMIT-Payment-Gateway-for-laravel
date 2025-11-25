@@ -305,7 +305,9 @@ In each resource, you can customize badge colors:
 Example of adding a custom action:
 
 ```php
-Tables\Actions\Action::make('custom_action')
+use Filament\Actions\Action;
+
+Action::make('custom_action')
     ->label('Custom Action')
     ->icon('heroicon-o-sparkles')
     ->requiresConfirmation()
@@ -328,10 +330,11 @@ The resources are designed to integrate with the existing SUMIT services:
 Example of calling the API from an action:
 
 ```php
+use Filament\Actions\Action;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
-Tables\Actions\Action::make('refresh_status')
+Action::make('refresh_status')
     ->action(function ($record) {
         $request = [
             'Credentials' => PaymentService::getCredentials(),

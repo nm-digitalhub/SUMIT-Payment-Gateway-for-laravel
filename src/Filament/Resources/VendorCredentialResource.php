@@ -5,11 +5,12 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
-use Filament\Actions\EditAction;
-use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -179,7 +180,7 @@ class VendorCredentialResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('validate_all')
+                    BulkAction::make('validate_all')
                         ->label('Validate Selected')
                         ->icon('heroicon-o-check-badge')
                         ->action(function ($records) {

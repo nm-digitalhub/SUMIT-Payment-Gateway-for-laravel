@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
@@ -296,7 +297,7 @@ class SubscriptionResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('cancel_selected')
+                    BulkAction::make('cancel_selected')
                         ->label('Cancel Selected')
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
