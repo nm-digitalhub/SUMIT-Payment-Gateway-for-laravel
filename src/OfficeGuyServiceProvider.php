@@ -7,7 +7,11 @@ namespace OfficeGuy\LaravelSumitGateway;
 use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
+use OfficeGuy\LaravelSumitGateway\Services\DonationService;
+use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
+use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
+use OfficeGuy\LaravelSumitGateway\Services\UpsellService;
 
 /**
  * OfficeGuy/SUMIT Gateway Service Provider
@@ -23,7 +27,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/officeguy.php', 'officeguy');
 
-        // Bind services
+        // Bind core services
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SettingsService::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\PaymentService::class);
@@ -31,6 +35,12 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\BitPaymentService::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\DocumentService::class);
         $this->app->singleton(StockService::class);
+
+        // Bind new feature services
+        $this->app->singleton(SubscriptionService::class);
+        $this->app->singleton(DonationService::class);
+        $this->app->singleton(MultiVendorPaymentService::class);
+        $this->app->singleton(UpsellService::class);
     }
 
     /**
@@ -72,6 +82,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
             \OfficeGuy\LaravelSumitGateway\Services\BitPaymentService::class,
             \OfficeGuy\LaravelSumitGateway\Services\DocumentService::class,
             StockService::class,
+            SubscriptionService::class,
+            DonationService::class,
+            MultiVendorPaymentService::class,
+            UpsellService::class,
         ];
     }
 }

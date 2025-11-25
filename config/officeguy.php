@@ -181,6 +181,54 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Subscription Settings
+    |--------------------------------------------------------------------------
+    */
+    'subscriptions' => [
+        'enabled' => env('OFFICEGUY_SUBSCRIPTIONS_ENABLED', true),
+        'default_interval_months' => env('OFFICEGUY_SUBSCRIPTIONS_DEFAULT_INTERVAL', 1),
+        'default_cycles' => env('OFFICEGUY_SUBSCRIPTIONS_DEFAULT_CYCLES'), // null = unlimited
+        'allow_pause' => env('OFFICEGUY_SUBSCRIPTIONS_ALLOW_PAUSE', true),
+        'retry_failed_charges' => env('OFFICEGUY_SUBSCRIPTIONS_RETRY_FAILED', true),
+        'max_retry_attempts' => env('OFFICEGUY_SUBSCRIPTIONS_MAX_RETRIES', 3),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Donation Settings
+    |--------------------------------------------------------------------------
+    */
+    'donations' => [
+        'enabled' => env('OFFICEGUY_DONATIONS_ENABLED', true),
+        'allow_mixed_cart' => env('OFFICEGUY_DONATIONS_ALLOW_MIXED', false), // Allow donations + regular products
+        'default_document_type' => env('OFFICEGUY_DONATIONS_DOCUMENT_TYPE', '320'), // DonationReceipt
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Multi-Vendor Settings
+    |--------------------------------------------------------------------------
+    */
+    'multivendor' => [
+        'enabled' => env('OFFICEGUY_MULTIVENDOR_ENABLED', false),
+        'validate_credentials' => env('OFFICEGUY_MULTIVENDOR_VALIDATE_CREDENTIALS', true),
+        'allow_authorize_only' => env('OFFICEGUY_MULTIVENDOR_ALLOW_AUTHORIZE', false),
+        'vendor_resolver' => null, // callable(array $item): mixed - returns vendor for item
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Upsell / CartFlows Settings
+    |--------------------------------------------------------------------------
+    */
+    'upsell' => [
+        'enabled' => env('OFFICEGUY_UPSELL_ENABLED', true),
+        'require_token' => env('OFFICEGUY_UPSELL_REQUIRE_TOKEN', true),
+        'max_upsells_per_order' => env('OFFICEGUY_UPSELL_MAX_PER_ORDER', 5),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Supported Currencies
     |--------------------------------------------------------------------------
     */

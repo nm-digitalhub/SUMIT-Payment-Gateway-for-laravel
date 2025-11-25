@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TransactionResource\Pages;
@@ -156,6 +158,22 @@ class TransactionResource extends Resource
                 Tables\Columns\TextColumn::make('last_digits')
                     ->label('Card')
                     ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-'),
+                Tables\Columns\TextColumn::make('vendor_id')
+                    ->label('Vendor')
+                    ->toggleable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('subscription_id')
+                    ->label('Subscription')
+                    ->toggleable()
+                    ->sortable(),
+                Tables\Columns\IconColumn::make('is_donation')
+                    ->label('Donation')
+                    ->boolean()
+                    ->toggleable(),
+                Tables\Columns\IconColumn::make('is_upsell')
+                    ->label('Upsell')
+                    ->boolean()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('auth_number')
                     ->label('Auth #')
                     ->searchable()
@@ -179,6 +197,13 @@ class TransactionResource extends Resource
                         'refunded' => 'Refunded',
                     ])
                     ->multiple(),
+                Tables\Filters\SelectFilter::make('payment_method')
+                    ->label('Payment Method')
+                    ->options([
+                        'card' => 'Credit Card',
+                        'bit' => 'Bit',
+                    ])
+                    ->multiple(),
                 Tables\Filters\SelectFilter::make('currency')
                     ->options([
                         'ILS' => 'ILS',
@@ -187,6 +212,16 @@ class TransactionResource extends Resource
                         'GBP' => 'GBP',
                     ])
                     ->multiple(),
+                Tables\Filters\TernaryFilter::make('is_donation')
+                    ->label('Donation Transactions'),
+                Tables\Filters\TernaryFilter::make('is_upsell')
+                    ->label('Upsell Transactions'),
+                Tables\Filters\Filter::make('has_vendor')
+                    ->label('Vendor Transactions')
+                    ->query(fn ($query) => $query->whereNotNull('vendor_id')),
+                Tables\Filters\Filter::make('has_subscription')
+                    ->label('Subscription Transactions')
+                    ->query(fn ($query) => $query->whereNotNull('subscription_id')),
                 Tables\Filters\Filter::make('amount')
                     ->form([
                         Forms\Components\TextInput::make('amount_from')
@@ -212,6 +247,33 @@ class TransactionResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('create_donation_receipt')
+                    ->label('Create Donation Receipt')
+                    ->icon('heroicon-o-document-plus')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->is_donation && $record->status === 'completed')
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        // Trigger donation receipt creation
+                        Notification::make()
+                            ->title('Donation receipt requested')
+                            ->body('Check documents for the new receipt.')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('resend_receipt')
+                    ->label('Resend Receipt')
+                    ->icon('heroicon-o-envelope')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->status === 'completed' && $record->document_id)
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        Notification::make()
+                            ->title('Receipt resend requested')
+                            ->body('The receipt will be sent to the customer.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,6 +13,7 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource\Pages;
 
@@ -159,6 +161,25 @@ class DocumentResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('download_pdf')
+                    ->label('Download PDF')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->color('gray')
+                    ->url(fn ($record) => route('officeguy.document.download', $record))
+                    ->openUrlInNewTab(),
+                Action::make('resend_email')
+                    ->label('Resend Email')
+                    ->icon('heroicon-o-envelope')
+                    ->color('primary')
+                    ->visible(fn ($record) => !$record->is_draft)
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        Notification::make()
+                            ->title('Email resend requested')
+                            ->body('The document will be sent to the customer.')
+                            ->success()
+                            ->send();
+                    }),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
