@@ -16,6 +16,14 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 class DocumentService
 {
     /**
+     * Document type constants
+     */
+    public const TYPE_INVOICE = '1';
+    public const TYPE_ORDER = '8';
+    public const TYPE_DONATION_RECEIPT = '320';
+    public const TYPE_RECEIPT = '2';
+    public const TYPE_CREDIT_NOTE = '3';
+    /**
      * Create order document (invoice/receipt)
      *
      * Port of: CreateOrderDocument($Gateway, $Order, $Customer, $OriginalDocumentID)
@@ -23,13 +31,30 @@ class DocumentService
      * @param Payable $order Order instance
      * @param array $customer Customer data array
      * @param string|null $originalDocumentId Original document ID for credit notes
+     * @param bool $isDonation Whether this is a donation document
      * @return string|null Error message, or null on success
      */
     public static function createOrderDocument(
         Payable $order,
         array $customer,
-        ?string $originalDocumentId = null
+        ?string $originalDocumentId = null,
+        bool $isDonation = false
     ): ?string {
+        // Determine document type - use DonationReceipt for donations
+        $documentType = $isDonation ? self::TYPE_DONATION_RECEIPT : self::TYPE_ORDER;
+
+        // Auto-detect donation from order items
+        if (!$isDonation) {
+            try {
+                $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
+                if ($isDonation) {
+                    $documentType = self::TYPE_DONATION_RECEIPT;
+                }
+            } catch (\Throwable $e) {
+                // DonationService not available, continue with default type
+            }
+        }
+
         $request = [
             'Credentials' => PaymentService::getCredentials(),
             'Items' => PaymentService::getDocumentOrderItems($order),
@@ -40,7 +65,7 @@ class DocumentService
                 'IsDraft' => config('officeguy.draft_document', false) ? 'true' : 'false',
                 'Language' => PaymentService::getOrderLanguage(),
                 'Currency' => $order->getPayableCurrency(),
-                'Type' => '8', // Order document type
+                'Type' => $documentType,
                 'Description' => __('Order number') . ': ' . $order->getPayableId() .
                     (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote()),
             ],
@@ -196,5 +221,50 @@ class DocumentService
         OfficeGuyApi::writeToLog($errorMessage, 'error');
 
         return $errorMessage;
+    }
+
+    /**
+     * Create a donation receipt document
+     *
+     * @param Payable $order Order/Donation instance
+     * @param array|null $customer Customer data array (optional, will be extracted from order if null)
+     * @return string|null Error message, or null on success
+     */
+    public static function createDonationReceipt(
+        Payable $order,
+        ?array $customer = null
+    ): ?string {
+        $customer = $customer ?? PaymentService::getOrderCustomer($order);
+
+        return self::createOrderDocument($order, $customer, null, true);
+    }
+
+    /**
+     * Get document type name for display
+     *
+     * @param string $type Document type code
+     * @return string Human-readable type name
+     */
+    public static function getDocumentTypeName(string $type): string
+    {
+        return match ($type) {
+            self::TYPE_INVOICE, '1' => __('Invoice'),
+            self::TYPE_RECEIPT, '2' => __('Receipt'),
+            self::TYPE_CREDIT_NOTE, '3' => __('Credit Note'),
+            self::TYPE_ORDER, '8' => __('Order'),
+            self::TYPE_DONATION_RECEIPT, '320' => __('Donation Receipt'),
+            default => __('Document'),
+        };
+    }
+
+    /**
+     * Check if document type is a donation receipt
+     *
+     * @param string $type Document type code
+     * @return bool
+     */
+    public static function isDonationReceiptType(string $type): bool
+    {
+        return $type === self::TYPE_DONATION_RECEIPT || $type === '320';
     }
 }

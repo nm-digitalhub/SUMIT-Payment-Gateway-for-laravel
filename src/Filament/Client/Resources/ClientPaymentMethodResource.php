@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use Filament\Actions\Action;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Forms;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
-use Filament\Notifications\Notification;
 
 class ClientPaymentMethodResource extends Resource
 {

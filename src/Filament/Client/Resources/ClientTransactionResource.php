@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Tables\Actions\Action;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientTransactionResource\Pages;
@@ -91,14 +91,16 @@ class ClientTransactionResource extends Resource
                 Tables\Columns\TextColumn::make('id')
                     ->label('#')
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'completed',
-                        'warning' => 'pending',
-                        'danger' => 'failed',
-                        'secondary' => 'refunded',
-                    ]),
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'pending' => 'warning',
+                        'failed' => 'danger',
+                        'refunded' => 'gray',
+                        default => 'gray',
+                    }),
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)
                     ->sortable(),

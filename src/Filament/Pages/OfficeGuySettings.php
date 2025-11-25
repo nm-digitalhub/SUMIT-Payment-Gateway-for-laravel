@@ -131,6 +131,99 @@ class OfficeGuySettings extends Page
                         ]),
                 ]),
 
+            Section::make('Subscriptions')
+                ->description('Configure recurring payment settings')
+                ->columns(3)
+                ->schema([
+                    Toggle::make('subscriptions_enabled')
+                        ->label('Enable Subscriptions')
+                        ->default(true),
+
+                    TextInput::make('subscriptions_default_interval')
+                        ->label('Default Interval (Months)')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(12)
+                        ->default(1),
+
+                    TextInput::make('subscriptions_default_cycles')
+                        ->label('Default Cycles')
+                        ->numeric()
+                        ->placeholder('Unlimited')
+                        ->helperText('Leave empty for unlimited'),
+
+                    Toggle::make('subscriptions_allow_pause')
+                        ->label('Allow Pause')
+                        ->default(true),
+
+                    Toggle::make('subscriptions_retry_failed')
+                        ->label('Retry Failed Charges')
+                        ->default(true),
+
+                    TextInput::make('subscriptions_max_retries')
+                        ->label('Max Retry Attempts')
+                        ->numeric()
+                        ->default(3),
+                ]),
+
+            Section::make('Donations')
+                ->description('Configure donation handling')
+                ->columns(3)
+                ->schema([
+                    Toggle::make('donations_enabled')
+                        ->label('Enable Donations')
+                        ->default(true),
+
+                    Toggle::make('donations_allow_mixed')
+                        ->label('Allow Mixed Cart')
+                        ->helperText('Allow donations with regular products')
+                        ->default(false),
+
+                    Select::make('donations_document_type')
+                        ->label('Document Type')
+                        ->options([
+                            '320' => 'Donation Receipt',
+                            '1' => 'Invoice',
+                        ])
+                        ->default('320'),
+                ]),
+
+            Section::make('Multi-Vendor')
+                ->description('Configure multi-vendor marketplace support')
+                ->columns(3)
+                ->schema([
+                    Toggle::make('multivendor_enabled')
+                        ->label('Enable Multi-Vendor')
+                        ->default(false),
+
+                    Toggle::make('multivendor_validate_credentials')
+                        ->label('Validate Vendor Credentials')
+                        ->default(true),
+
+                    Toggle::make('multivendor_allow_authorize')
+                        ->label('Allow Authorize Only')
+                        ->helperText('Allow authorize-only for vendor payments')
+                        ->default(false),
+                ]),
+
+            Section::make('Upsell / CartFlows')
+                ->description('Configure upsell payment settings')
+                ->columns(3)
+                ->schema([
+                    Toggle::make('upsell_enabled')
+                        ->label('Enable Upsell')
+                        ->default(true),
+
+                    Toggle::make('upsell_require_token')
+                        ->label('Require Saved Token')
+                        ->default(true),
+
+                    TextInput::make('upsell_max_per_order')
+                        ->label('Max Upsells Per Order')
+                        ->numeric()
+                        ->default(5),
+                ]),
+
             Section::make('Additional Features')
                 ->columns(3)
                 ->schema([

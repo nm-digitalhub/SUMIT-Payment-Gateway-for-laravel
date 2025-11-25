@@ -14,9 +14,9 @@ use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
-use Filament\Notifications\Notification;
 
 class TokenResource extends Resource
 {
@@ -139,12 +139,27 @@ class TokenResource extends Resource
                 Action::make('set_default')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
-                    ->visible(fn ($record) => !$record->is_default)
+                    ->visible(fn ($record) => !$record->is_default && !$record->deleted_at)
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->setAsDefault();
                         Notification::make()
                             ->title('Token set as default')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('deactivate')
+                    ->label('Deactivate')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('danger')
+                    ->visible(fn ($record) => !$record->deleted_at)
+                    ->requiresConfirmation()
+                    ->modalHeading('Deactivate Token')
+                    ->modalDescription('This will soft-delete the token. The customer will not be able to use it for payments.')
+                    ->action(function ($record) {
+                        $record->delete();
+                        Notification::make()
+                            ->title('Token deactivated')
                             ->success()
                             ->send();
                     }),
