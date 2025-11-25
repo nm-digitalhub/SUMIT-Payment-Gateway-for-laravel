@@ -111,13 +111,14 @@ class VendorCredentialResource extends Resource
                     ->label('Active')
                     ->boolean()
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('validation_status')
+                Tables\Columns\TextColumn::make('validation_status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'valid',
-                        'danger' => 'invalid',
-                        'warning' => fn ($state) => $state === null,
-                    ])
+                    ->badge()
+                    ->color(fn (?string $state): string => match ($state) {
+                        'valid' => 'success',
+                        'invalid' => 'danger',
+                        default => 'warning',
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('validated_at')
                     ->label('Validated')

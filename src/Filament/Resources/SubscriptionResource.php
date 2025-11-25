@@ -128,21 +128,24 @@ class SubscriptionResource extends Resource
                     ->label('Name')
                     ->searchable()
                     ->sortable(),
-                Tables\Columns\BadgeColumn::make('status')
+                Tables\Columns\TextColumn::make('status')
                     ->label('Status')
-                    ->colors([
-                        'success' => 'active',
-                        'warning' => ['pending', 'paused'],
-                        'danger' => ['cancelled', 'failed', 'expired'],
-                    ])
-                    ->icons([
-                        'heroicon-o-check-circle' => 'active',
-                        'heroicon-o-clock' => 'pending',
-                        'heroicon-o-pause-circle' => 'paused',
-                        'heroicon-o-x-circle' => 'cancelled',
-                        'heroicon-o-exclamation-circle' => 'failed',
-                        'heroicon-o-calendar' => 'expired',
-                    ])
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'active' => 'success',
+                        'pending', 'paused' => 'warning',
+                        'cancelled', 'failed', 'expired' => 'danger',
+                        default => 'gray',
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'active' => 'heroicon-o-check-circle',
+                        'pending' => 'heroicon-o-clock',
+                        'paused' => 'heroicon-o-pause-circle',
+                        'cancelled' => 'heroicon-o-x-circle',
+                        'failed' => 'heroicon-o-exclamation-circle',
+                        'expired' => 'heroicon-o-calendar',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->money(fn ($record) => $record->currency)
