@@ -43,11 +43,15 @@ class DocumentService
         // Determine document type - use DonationReceipt for donations
         $documentType = $isDonation ? self::TYPE_DONATION_RECEIPT : self::TYPE_ORDER;
 
-        // Auto-detect donation from order items if DonationService is available
-        if (!$isDonation && class_exists(DonationService::class)) {
-            $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
-            if ($isDonation) {
-                $documentType = self::TYPE_DONATION_RECEIPT;
+        // Auto-detect donation from order items
+        if (!$isDonation) {
+            try {
+                $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
+                if ($isDonation) {
+                    $documentType = self::TYPE_DONATION_RECEIPT;
+                }
+            } catch (\Throwable $e) {
+                // DonationService not available, continue with default type
             }
         }
 

@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource\
 
 use Filament\Resources\Pages\ListRecords;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource;
+use OfficeGuy\LaravelSumitGateway\Jobs\ProcessRecurringPaymentsJob;
 
 class ListSubscriptions extends ListRecords
 {
@@ -22,7 +23,7 @@ class ListSubscriptions extends ListRecords
                 ->modalHeading('Process Due Subscriptions')
                 ->modalDescription('This will process all subscriptions that are due for charging. Continue?')
                 ->action(function () {
-                    dispatch(new \OfficeGuy\LaravelSumitGateway\Jobs\ProcessRecurringPaymentsJob());
+                    dispatch(new ProcessRecurringPaymentsJob());
                     
                     \Filament\Notifications\Notification::make()
                         ->title('Processing started')
