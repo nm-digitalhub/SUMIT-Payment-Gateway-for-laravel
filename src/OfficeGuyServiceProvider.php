@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway;
 
 use Illuminate\Support\ServiceProvider;
+use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
 
@@ -56,6 +57,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         if ($this->app->runningInConsole()) {
             $this->commands([
                 StockSyncCommand::class,
+                ProcessRecurringPaymentsCommand::class,
             ]);
         }
     }

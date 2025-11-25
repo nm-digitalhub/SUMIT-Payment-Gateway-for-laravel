@@ -101,5 +101,114 @@ $result = PaymentService::processCharge($order, $paymentsCount, $recurring, $red
 - Multivendor / CartFlows: נקודות הרחבה קיימות; שילוב מתבצע ע"י resolver שמחזיר VendorCredentials פר מוצר וקריאה ל-`/billing/payments/multivendorcharge/` (ראה docs). CartFlows ניתן לממש דרך Token + Child Orders עם PaymentService.
 - אירועים: החבילה משדרת אירועים (`PaymentCompleted`, `PaymentFailed`, `DocumentCreated`, `StockSynced`, `BitPaymentCompleted`) לחיבור לוגיקה משלך.
 
+## Multi-Vendor
+תמיכה בריבוי מוכרים עם credentials נפרדים לכל ספק:
+```php
+// שמירת credentials לספק
+VendorCredential::create([
+    'vendor_type' => get_class($vendor),
+    'vendor_id' => $vendor->id,
+    'company_id' => '12345',
+    'api_key' => 'your-api-key',
+]);
+
+// חיוב הזמנה מרובת ספקים
+$result = MultiVendorPaymentService::processMultiVendorCharge($order, $paymentsCount);
+```
+
+## מנויים (Subscriptions)
+ניהול מנויים וחיובים חוזרים:
+```php
+// יצירת מנוי
+$subscription = SubscriptionService::create(
+    $user,              // מנוי
+    'תוכנית חודשית',    // שם
+    99.00,              // סכום
+    'ILS',              // מטבע
+    1,                  // אינטרוול בחודשים
+    12,                 // מספר חיובים (null = ללא הגבלה)
+    $tokenId            // טוקן לתשלום
+);
+
+// חיוב ראשוני
+$result = SubscriptionService::processInitialCharge($subscription);
+
+// חיוב ידני
+$result = SubscriptionService::processRecurringCharge($subscription);
+```
+
+### תזמון חיובים חוזרים (Task Scheduling)
+הפקודה `sumit:process-recurring-payments` מעבדת את כל המנויים שהגיע זמן חיובם.
+
+הוסף ל‑`routes/console.php` או `app/Console/Kernel.php`:
+```php
+use Illuminate\Support\Facades\Schedule;
+
+// חיוב יומי
+Schedule::command('sumit:process-recurring-payments')->daily();
+
+// או חיוב כל שעה
+Schedule::command('sumit:process-recurring-payments')->hourly();
+
+// עם דיווח על כשלונות
+Schedule::command('sumit:process-recurring-payments')
+    ->daily()
+    ->emailOutputOnFailure('admin@example.com');
+```
+
+הרצה ידנית:
+```bash
+# הרצה כ-job (אסינכרוני)
+php artisan sumit:process-recurring-payments
+
+# הרצה סינכרונית
+php artisan sumit:process-recurring-payments --sync
+
+# עיבוד מנוי ספציפי
+php artisan sumit:process-recurring-payments --subscription=123
+```
+
+## תרומות (Donations)
+תמיכה במוצרי תרומה עם קבלת תרומה אוטומטית:
+```php
+// בדיקה אם עגלה מכילה תרומות ומוצרים רגילים (אסור לשלב)
+$validation = DonationService::validateCart($order);
+if (!$validation['valid']) {
+    return redirect()->back()->with('error', $validation['message']);
+}
+
+// קבלת סוג המסמך (DonationReceipt לתרומות)
+$docType = DonationService::getDocumentType($order);
+```
+
+## Upsell / CartFlows
+חיוב מוצרי upsell באמצעות טוקן מהחיוב הראשי:
+```php
+// חיוב עם טוקן ידוע
+$result = UpsellService::processUpsellCharge($upsellOrder, $token, $parentOrderId);
+
+// חיוב עם זיהוי אוטומטי של הטוקן
+$result = UpsellService::processUpsellWithAutoToken($upsellOrder, $parentOrderId, $customer);
+```
+
+## אירועים (Events)
+החבילה משדרת את האירועים הבאים:
+
+| אירוע | תיאור |
+|-------|--------|
+| `PaymentCompleted` | תשלום הצליח |
+| `PaymentFailed` | תשלום נכשל |
+| `DocumentCreated` | מסמך נוצר |
+| `StockSynced` | מלאי סונכרן |
+| `BitPaymentCompleted` | תשלום Bit הושלם |
+| `SubscriptionCreated` | מנוי נוצר |
+| `SubscriptionCharged` | מנוי חויב |
+| `SubscriptionChargesFailed` | חיוב מנוי נכשל |
+| `SubscriptionCancelled` | מנוי בוטל |
+| `MultiVendorPaymentCompleted` | תשלום מרובה-ספקים הצליח |
+| `MultiVendorPaymentFailed` | תשלום מרובה-ספקים נכשל |
+| `UpsellPaymentCompleted` | תשלום upsell הצליח |
+| `UpsellPaymentFailed` | תשלום upsell נכשל |
+
 ## רישיון
 MIT
