@@ -11,6 +11,28 @@
 - ממשק ניהול Filament v4
 - דפי לקוח Filament להצגת טרנזקציות/מסמכים/אמצעי תשלום
 
+## תוכן עניינים
+
+- [התקנה](#התקנה)
+- [הגדרות](#הגדרות)
+- [עמוד תשלום](#עמוד-תשלום)
+- [שדות ת"ז ו-CVV](#שדות-תז-ו-cvv)
+- [מסמכים](#מסמכים)
+- [סוגי תשלומים](#סוגי-תשלומים)
+- [תשלומים מחולקים](#תשלומים-מחולקים-installments)
+- [תפיסת מסגרת (Authorize Only)](#תפיסת-מסגרת-authorize-only)
+- [מצב טסט](#מצב-טסט)
+- [שמירת פרטי אשראי](#שמירת-פרטי-אשראי-tokens)
+- [הוראות קבע ומנויים](#הוראות-קבע-ומנויים-subscriptions)
+- [מלאי](#מלאי-stock-management)
+- [Bit ו-Redirect](#bit-ו-redirect)
+- [מיזוג לקוחות](#מיזוג-לקוחות-אוטומטי)
+- [Multi-Vendor](#multi-vendor)
+- [תרומות](#תרומות-donations)
+- [Upsell / CartFlows](#upsell--cartflows)
+- [אירועים](#אירועים-events)
+- [קבצים לפרסום](#קבצים-לפרסום-publishable-assets)
+
 ## התקנה
 ```bash
 composer require officeguy/laravel-sumit-gateway
@@ -20,9 +42,13 @@ php artisan migrate   # יריץ את כל מיגרציות החבילה
 > אם תרצה להעתיק גם קונפיג/מיגרציות/תצוגות: `--tag=officeguy-config`, `--tag=officeguy-migrations`, `--tag=officeguy-views`. ראה [קבצים לפרסום](#קבצים-לפרסום-publishable-assets) לפרטים נוספים.
 
 ## הגדרות
+
 כל ההגדרות נשמרות במסד הנתונים (טבלת `officeguy_settings`) עם fallback לקובץ config. ניתן לערוך דרך Filament (עמוד **Gateway Settings**) או בקוד באמצעות `SettingsService`.
 
-שדות עיקריים:
+### גישה לעמוד ההגדרות
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** ב-Admin Panel.
+
+### שדות עיקריים
 - מפתחות חברה: company_id, private_key, public_key
 - PCI mode: `no` (PaymentsJS), `redirect`, `yes` (PCI server)
 - תשלומים: max_payments, min_amount_for_payments, min_amount_per_payment
@@ -35,93 +61,342 @@ php artisan migrate   # יריץ את כל מיגרציות החבילה
 - מסלולי Redirect: routes.success, routes.failed
 - Order binding: order.model או order.resolver (callable)
 
-## מודל Order (Payable)
-החבילה דורשת שמודל ההזמנה יממש `OfficeGuy\LaravelSumitGateway\Contracts\Payable`.
-דרך מהירה: השתמשו ב‑Trait
+---
+
+## עמוד תשלום
+
+### תצוגה, ממשק ותוכן
+
+עמוד התשלום מספק ממשק מלא ומותאם לגביית תשלומים מלקוחות. ניתן להתאים את התוכן, העיצוב והשדות.
+
+**הפעלה:**
 ```php
-class Order extends Model implements Payable {
-    use \OfficeGuy\LaravelSumitGateway\Support\Traits\PayableAdapter;
+// ב-Admin Panel
+// נווטו ל-SUMIT Gateway > Gateway Settings > Public Checkout Page
+// הפעילו את "Enable Public Checkout"
+```
+
+**או ב-.env:**
+```env
+OFFICEGUY_ENABLE_PUBLIC_CHECKOUT=true
+```
+
+**גישה לעמוד:**
+```
+GET /officeguy/checkout/{id}
+```
+
+**יצירת קישור תשלום:**
+```php
+$checkoutUrl = route('officeguy.public.checkout', ['id' => $order->id]);
+
+// שליחה ללקוח
+Mail::to($customer->email)->send(new PaymentLinkEmail($checkoutUrl));
+```
+
+### התאמת עיצוב עמוד התשלום
+
+```bash
+php artisan vendor:publish --tag=officeguy-views
+```
+
+לאחר מכן ערכו את הקובץ:
+`resources/views/vendor/officeguy/pages/checkout.blade.php`
+
+**תכונות עמוד התשלום:**
+- תמיכה מלאה ב-RTL (עברית/ערבית)
+- עיצוב רספונסיבי עם Tailwind CSS
+- בחירת אמצעי תשלום (כרטיס אשראי / Bit)
+- תמיכה בכרטיסים שמורים (טוקנים)
+- בחירת מספר תשלומים
+- סיכום הזמנה
+
+---
+
+## שדות ת"ז ו-CVV
+
+### הגדרת שדות חובה
+
+ניתן להגדיר אם שדות ת.ז ו-CVV יהיו חובה, אופציונליים, או מוסתרים.
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** > **Payment Settings**
+
+**אפשרויות לכל שדה:**
+- `required` - חובה (ברירת מחדל)
+- `yes` - אופציונלי (מוצג אך לא חובה)
+- `no` - מוסתר
+
+**ב-.env:**
+```env
+OFFICEGUY_CITIZEN_ID=required   # required/yes/no
+OFFICEGUY_CVV=required          # required/yes/no
+```
+
+**בקוד:**
+```php
+// קריאה להגדרות
+$settings = app(SettingsService::class);
+$citizenIdMode = $settings->get('citizen_id', 'required');
+$cvvMode = $settings->get('cvv', 'required');
+```
+
+> ⚠️ **חשוב:** חברות האשראי מחייבות הזנת נתונים אלה. כדי להסתיר את השדות, יש לקבל מהן פטור מהזנת מס' ת.ז ו-CVV.
+
+---
+
+## מסמכים
+
+### בחירת שפה אוטומטית
+
+בברירת המחדל יופקו המסמכים בעברית. הפעלת "בחירת שפה אוטומטית" תאפשר להפיק את המסמכים בהתאם לשפת הלקוח/ה.
+
+**ב-Admin Panel:**
+- נווטו ל-**Gateway Settings** > **Document Settings**
+- סמנו את **"Automatic Languages"**
+
+**ב-.env:**
+```env
+OFFICEGUY_AUTOMATIC_LANGUAGES=true
+```
+
+### הפקת מסמך הזמנה
+
+הפקת מסמך הזמנה נוסף ושליחתו ללקוח לאחר חיוב מוצלח, בנוסף למסמך חשבונית/קבלה.
+
+**ב-Admin Panel:**
+- סמנו את **"Create Order Document"**
+
+**ב-.env:**
+```env
+OFFICEGUY_CREATE_ORDER_DOCUMENT=true
+```
+
+### הגדרות מסמכים נוספות
+
+```env
+# שליחת מסמך במייל ללקוח
+OFFICEGUY_EMAIL_DOCUMENT=true
+
+# יצירת מסמך כטיוטא (לא סופי)
+OFFICEGUY_DRAFT_DOCUMENT=false
+```
+
+### שיעור מע"מ מותאם
+
+```php
+// במודל Payable שלכם
+public function getVatRate(): ?float
+{
+    return 17.0; // 17% מע"מ
+}
+
+public function isTaxEnabled(): bool
+{
+    return true;
 }
 ```
-כדאי להעמיס (eager load) יחסי items/fees.
 
-קונפיג:
-```php
-'order' => [
-    'model' => App\Models\Order::class,
-    // או
-    'resolver' => fn($id) => App\Models\Order::with('items','fees')->find($id),
-],
+---
+
+## סוגי תשלומים
+
+### אינטגרציות עם PayPal ו-BlueSnap
+
+הפקת מסמך (חשבונית/קבלה) אוטומטית בתשלום ב-PayPal, BlueSnap, או שערי תשלום אחרים.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Additional Features**
+
+**ב-.env:**
+```env
+# PayPal - אפשרויות: no, yes, async
+OFFICEGUY_PAYPAL_RECEIPTS=yes
+
+# BlueSnap
+OFFICEGUY_BLUESNAP_RECEIPTS=true
+
+# שערים אחרים
+OFFICEGUY_OTHER_RECEIPTS=stripe,paddle
 ```
 
-## מסלולים
-תחת prefix (ברירת מחדל `officeguy`):
-- GET `callback/card` – חזרת Redirect מכרטיס
-- POST `webhook/bit` – IPN ל‑Bit
-- (אופציונלי) POST `checkout/charge` – מסלול סליקה מובנה (`OFFICEGUY_ENABLE_CHECKOUT_ROUTE=true`)
-מסלולי הצלחה/כישלון: מוגדרים ב‑config `routes.success` / `routes.failed` (ברירת מחדל `checkout.success` / `checkout.failed`).
-
-## שימוש ב‑Checkout מובנה
-קריאה למסלול `officeguy.checkout.charge` עם פרמטרים:
-- `order_id` (חובה)
-- `payments_count` (אופציונלי, ברירת מחדל 1)
-- `recurring` (bool)
-- `token_id` (אופציונלי, לטוקן שמור)
-המסלול יחזיר `redirect_url` (אם PCI=redirect) או תשובת הצלחה/שגיאה JSON.
-
-ניתן גם לקרוא ישירות:
+**בקוד:**
 ```php
-$result = PaymentService::processCharge($order, $paymentsCount, $recurring, $redirectMode, $token, $extra);
+// הפקת קבלה ידנית לתשלום PayPal
+DocumentService::createReceiptForExternalPayment($order, 'paypal', $transactionId);
 ```
 
-## Filament
-- עמוד הגדרות: `OfficeGuySettings` (ניווט: SUMIT Gateway)
-- משאבי לקוח: טרנזקציות, מסמכים, אמצעי תשלום (Client panel provider)
+---
 
-## Bit
-- הפעלה: enable `bit_enabled` בהגדרות.
-- Webhook: POST `officeguy/webhook/bit` מקבל orderid/orderkey/documentid/customerid.
+## תשלומים מחולקים (Installments)
 
-## SSL
-ה‑HTTP client משתמש ב‑`ssl_verify` (ברירת מחדל true). לשימוש dev בלבד ניתן לכבות.
+### הגדרת עסקאות תשלומים
 
-## לוגים
-`logging` + `log_channel` (ברירת מחדל stack). נתונים רגישים מנוקים מלוגים (מספר כרטיס/CVV).
+הגדרת מספר תשלומים (עד 36) אפשרי לעסקה.
 
-## מיגרציות נתונים
-- טבלאות: `officeguy_transactions`, `officeguy_tokens`, `officeguy_documents`, `officeguy_settings`, `vendor_credentials`, `subscriptions`.
-- המיגרציות נטענות אוטומטית מהחבילה. להעתקה מקומית: `php artisan vendor:publish --tag=officeguy-migrations`.
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Payment Settings**
 
-## בדיקות
-- phpunit / orchestra testbench מומלצים. החבילה כוללת בסיס מיגרציות; יש להגדיר מודל Order דמה ל‑Payable.
+**הגדרות:**
+- **Max Payments** - מספר תשלומים מקסימלי (עד 36)
+- **Min Amount for Payments** - סכום מינימלי לאפשר תשלומים
+- **Min Amount per Payment** - סכום מינימלי לתשלום בודד
 
-## סטטוס
-- Stock Sync: כולל שירות + Job + Command (`sumit:stock-sync`) עם callback התאמה אישית לעדכון מלאי (config `stock.update_callback`). cron לפי `stock_sync_freq`.
-- Multivendor / CartFlows: נקודות הרחבה קיימות; שילוב מתבצע ע"י resolver שמחזיר VendorCredentials פר מוצר וקריאה ל-`/billing/payments/multivendorcharge/` (ראה docs). CartFlows ניתן לממש דרך Token + Child Orders עם PaymentService.
-- אירועים: החבילה משדרת אירועים (`PaymentCompleted`, `PaymentFailed`, `DocumentCreated`, `StockSynced`, `BitPaymentCompleted`) לחיבור לוגיקה משלך.
-
-## Multi-Vendor
-תמיכה בריבוי מוכרים עם credentials נפרדים לכל ספק:
-```php
-// שמירת credentials לספק
-VendorCredential::create([
-    'vendor_type' => get_class($vendor),
-    'vendor_id' => $vendor->id,
-    'company_id' => '12345',
-    'api_key' => 'your-api-key',
-]);
-
-// חיוב הזמנה מרובת ספקים
-$result = MultiVendorPaymentService::processMultiVendorCharge($order, $paymentsCount);
+**ב-.env:**
+```env
+OFFICEGUY_MAX_PAYMENTS=12
+OFFICEGUY_MIN_AMOUNT_FOR_PAYMENTS=100
+OFFICEGUY_MIN_AMOUNT_PER_PAYMENT=50
 ```
 
-## מנויים (Subscriptions)
-ניהול מנויים וחיובים חוזרים:
+**בקוד:**
 ```php
-// יצירת מנוי
+// קבלת מספר תשלומים מקסימלי לסכום מסוים
+$maxPayments = PaymentService::getMaximumPayments($amount);
+
+// חיוב עם תשלומים
+$result = PaymentService::processCharge($order, $paymentsCount = 6);
+```
+
+---
+
+## תפיסת מסגרת (Authorize Only)
+
+### קביעת מסגרת אשראי לחיוב מושהה
+
+תפיסת מסגרת מאפשרת לבצע את חיוב האשראי בשלב מאוחר יותר - מתאימה לעסקאות עם סכום חיוב משתנה.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Payment Settings**
+
+**הגדרות:**
+- **Authorize Only** - הפעלת מצב תפיסת מסגרת
+- **Authorize Added Percent** - אחוז תוספת למסגרת (למשל: 20%)
+- **Authorize Minimum Addition** - סכום תוספת מינימלי
+
+**ב-.env:**
+```env
+OFFICEGUY_AUTHORIZE_ONLY=true
+OFFICEGUY_AUTHORIZE_ADDED_PERCENT=20
+OFFICEGUY_AUTHORIZE_MINIMUM_ADDITION=50
+```
+
+**בקוד:**
+```php
+// תפיסת מסגרת
+$result = PaymentService::authorizePayment($order, $amount);
+
+// חיוב מאוחר יותר
+$result = PaymentService::capturePayment($transactionId, $finalAmount);
+```
+
+> 💡 **שימוש נפוץ:** בתי מלון, השכרת רכב, או כל עסקה שבה הסכום הסופי עשוי להשתנות.
+
+---
+
+## מצב טסט
+
+### בדיקות ללא חיוב אמיתי
+
+מצב טסט מאפשר לבצע בדיקות כדי לוודא שהכל עובד בלי לסלוק ולבצע חיובים אמיתיים. מסמכים יופקו כטיוטות.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Environment Settings** > סמנו **"Testing Mode"**
+
+**ב-.env:**
+```env
+OFFICEGUY_TESTING=true
+```
+
+**מספרי כרטיסים לבדיקות:**
+| כרטיס | מספר | תוקף | CVV |
+|-------|------|------|-----|
+| ויזה (הצלחה) | 4580 0000 0000 0000 | כל תאריך עתידי | 123 |
+| ויזה (כישלון) | 4580 0000 0000 0001 | כל תאריך עתידי | 123 |
+| מאסטרקארד | 5326 1000 0000 0000 | כל תאריך עתידי | 123 |
+
+**בקוד:**
+```php
+// בדיקה אם במצב טסט
+$isTest = app(SettingsService::class)->get('testing', false);
+```
+
+> ⚠️ **חשוב:** לפני שהאתר עולה לאוויר, ודאו שביטלתם את מצב הטסט כדי לא לפספס מכירות אמיתיות!
+
+---
+
+## שמירת פרטי אשראי (Tokens)
+
+### שמירת כרטיסי אשראי לרכישות חוזרות
+
+מאפשר ללקוחות לשמור את פרטי כרטיס האשראי לרכישות עתידיות מהירות יותר.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Tokenization** > סמנו **"Support Tokens"**
+
+**ב-.env:**
+```env
+OFFICEGUY_SUPPORT_TOKENS=true
+OFFICEGUY_TOKEN_PARAM=5   # 5=J5 (מומלץ), 2=J2
+```
+
+**בקוד:**
+```php
+// שמירת טוקן לאחר חיוב
+$token = OfficeGuyToken::createFromApiResponse($customer, $response);
+
+// חיוב עם טוקן שמור
+$result = PaymentService::processCharge($order, $payments, false, false, $token);
+
+// קבלת טוקנים של לקוח
+$tokens = OfficeGuyToken::where('owner_type', get_class($user))
+    ->where('owner_id', $user->id)
+    ->get();
+```
+
+**תכונות:**
+- שמירת פרטי כרטיס מאובטחת (PCI DSS)
+- מילוי אוטומטי ברכישות הבאות
+- תמיכה בחיובים חוזרים (Subscriptions)
+- ניהול כרטיסים בפאנל לקוח
+
+---
+
+## הוראות קבע ומנויים (Subscriptions)
+
+### גביית תשלומים קבועים באשראי
+
+לגביית תשלומים קבועים מלקוחות או תורמים, החבילה מספקת פתרון יעיל ואוטומטי לניהול מנויים.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Subscriptions**
+
+**הגדרות:**
+- **Enable Subscriptions** - הפעלת מנויים
+- **Default Interval (Months)** - מרווח ברירת מחדל בחודשים
+- **Default Cycles** - מספר חיובים (ריק = ללא הגבלה)
+- **Allow Pause** - אפשרות להשהות מנוי
+- **Retry Failed Charges** - ניסיון חוזר בכישלון
+- **Max Retry Attempts** - מספר ניסיונות מקסימלי
+
+**ב-.env:**
+```env
+OFFICEGUY_SUBSCRIPTIONS_ENABLED=true
+OFFICEGUY_SUBSCRIPTIONS_DEFAULT_INTERVAL=1
+OFFICEGUY_SUBSCRIPTIONS_DEFAULT_CYCLES=12
+OFFICEGUY_SUBSCRIPTIONS_ALLOW_PAUSE=true
+OFFICEGUY_SUBSCRIPTIONS_RETRY_FAILED=true
+OFFICEGUY_SUBSCRIPTIONS_MAX_RETRIES=3
+```
+
+**יצירת מנוי:**
+```php
+use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
+
+// יצירת מנוי חדש
 $subscription = SubscriptionService::create(
-    $user,              // מנוי
-    'תוכנית חודשית',    // שם
+    $user,              // הלקוח
+    'תוכנית חודשית',    // שם המנוי
     99.00,              // סכום
     'ILS',              // מטבע
     1,                  // אינטרוול בחודשים
@@ -134,17 +409,25 @@ $result = SubscriptionService::processInitialCharge($subscription);
 
 // חיוב ידני
 $result = SubscriptionService::processRecurringCharge($subscription);
+
+// השהיית מנוי
+SubscriptionService::pause($subscription);
+
+// חידוש מנוי
+SubscriptionService::resume($subscription);
+
+// ביטול מנוי
+SubscriptionService::cancel($subscription);
 ```
 
-### תזמון חיובים חוזרים (Task Scheduling)
-הפקודה `sumit:process-recurring-payments` מעבדת את כל המנויים שהגיע זמן חיובם.
+**תזמון חיובים חוזרים אוטומטיים:**
 
-הוסף ל‑`routes/console.php` או `app/Console/Kernel.php`:
+הוסיפו ל-`routes/console.php`:
 ```php
 use Illuminate\Support\Facades\Schedule;
 
-// חיוב יומי
-Schedule::command('sumit:process-recurring-payments')->daily();
+// חיוב יומי בשעה 8:00
+Schedule::command('sumit:process-recurring-payments')->dailyAt('08:00');
 
 // או חיוב כל שעה
 Schedule::command('sumit:process-recurring-payments')->hourly();
@@ -155,9 +438,9 @@ Schedule::command('sumit:process-recurring-payments')
     ->emailOutputOnFailure('admin@example.com');
 ```
 
-הרצה ידנית:
+**הרצה ידנית:**
 ```bash
-# הרצה כ-job (אסינכרוני)
+# הרצה אסינכרונית (כ-job)
 php artisan sumit:process-recurring-payments
 
 # הרצה סינכרונית
@@ -167,22 +450,318 @@ php artisan sumit:process-recurring-payments --sync
 php artisan sumit:process-recurring-payments --subscription=123
 ```
 
-## תרומות (Donations)
-תמיכה במוצרי תרומה עם קבלת תרומה אוטומטית:
+---
+
+## מלאי (Stock Management)
+
+### סנכרון מלאי עם מערכת החשבונות
+
+> 📦 **לניהול המלאי, יש להתקין את מודול מלאי בחשבון SUMIT.**
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Additional Features**
+
+**הגדרות:**
+- **Stock Sync Frequency** - תדירות סנכרון: `none`, `12` (שעות), `24` (שעות)
+- **Checkout Stock Sync** - סנכרון בזמן Checkout
+
+**ב-.env:**
+```env
+OFFICEGUY_STOCK_SYNC_FREQ=12      # none/12/24
+OFFICEGUY_CHECKOUT_STOCK_SYNC=true
+```
+
+**Callback לעדכון מלאי:**
 ```php
-// בדיקה אם עגלה מכילה תרומות ומוצרים רגילים (אסור לשלב)
+// config/officeguy.php
+'stock' => [
+    'update_callback' => function(array $stockItem) {
+        // עדכון מלאי במוצר
+        $product = Product::where('sku', $stockItem['sku'])->first();
+        if ($product) {
+            $product->update(['stock_quantity' => $stockItem['quantity']]);
+        }
+    },
+],
+```
+
+**הרצת סנכרון ידנית:**
+```bash
+php artisan sumit:stock-sync
+```
+
+**סנכרון בקוד:**
+```php
+use OfficeGuy\LaravelSumitGateway\Services\Stock\StockSyncService;
+
+// סנכרון כל המלאי
+StockSyncService::syncAll();
+
+// סנכרון מוצר ספציפי
+StockSyncService::syncProduct($sku);
+```
+
+**תזמון סנכרון אוטומטי:**
+```php
+// routes/console.php
+Schedule::command('sumit:stock-sync')->everyTwelveHours();
+```
+
+---
+
+## Bit ו-Redirect
+
+### דף סליקה מסוג Redirect
+
+גביה באמצעות Bit, Google Pay, Apple Pay, 3DS אפשרית באמצעות הגדרת דף סליקה בשיטת Redirect.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Environment Settings** > **PCI Mode** > בחרו **"Redirect"**
+
+**ב-.env:**
+```env
+OFFICEGUY_PCI_MODE=redirect
+OFFICEGUY_BIT_ENABLED=true
+```
+
+**בקוד:**
+```php
+// חיוב עם Bit
+$result = BitPaymentService::processOrder(
+    $order,
+    route('checkout.success'),
+    route('checkout.failed'),
+    route('officeguy.webhook.bit')
+);
+
+if ($result['success']) {
+    return redirect($result['redirect_url']);
+}
+```
+
+**Webhook ל-Bit:**
+```
+POST /officeguy/webhook/bit
+```
+
+החבילה מטפלת אוטומטית ב-webhook ומעדכנת את סטטוס ההזמנה.
+
+> ⚠️ **שימו לב:** מצב Redirect לא תומך בהוראות קבע, שמירת פרטי תשלום, ותפיסת מסגרת.
+
+---
+
+## מיזוג לקוחות אוטומטי
+
+### מניעת כפילות כרטיסי לקוח
+
+מיזוג כרטיס לקוח קיים במערכת SUMIT בסיום הרכישה באתר כדי למנוע כפילות. המיזוג מתבצע בהתאם למזהה הלקוח או המייל.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Customer Settings** > סמנו **"Merge Customers"**
+
+**ב-.env:**
+```env
+OFFICEGUY_MERGE_CUSTOMERS=true
+```
+
+**איך זה עובד:**
+1. בעת יצירת מסמך, המערכת מחפשת לקוח קיים לפי מייל או מזהה
+2. אם נמצא - המסמך מקושר ללקוח הקיים
+3. אם לא נמצא - נוצר לקוח חדש
+
+---
+
+## מודל Order (Payable)
+
+החבילה דורשת שמודל ההזמנה יממש `OfficeGuy\LaravelSumitGateway\Contracts\Payable`.
+
+### אפשרות 1: מיפוי שדות מ-Admin Panel (ללא שינוי קוד)
+
+ניתן לחבר כל מודל קיים מבלי לשנות את הקוד שלו. ראו סעיף [עמוד תשלום ציבורי](#עמוד-תשלום-ציבורי-public-checkout-page).
+
+### אפשרות 2: שימוש ב-Trait
+
+```php
+class Order extends Model implements Payable {
+    use \OfficeGuy\LaravelSumitGateway\Support\Traits\PayableAdapter;
+}
+```
+
+כדאי להעמיס (eager load) יחסי items/fees.
+
+### קונפיגורציה
+
+```php
+'order' => [
+    'model' => App\Models\Order::class,
+    // או
+    'resolver' => fn($id) => App\Models\Order::with('items','fees')->find($id),
+],
+```
+
+---
+
+## מסלולים (Routes)
+
+תחת prefix (ברירת מחדל `officeguy`):
+
+| מסלול | סוג | תיאור |
+|-------|-----|-------|
+| `callback/card` | GET | חזרת Redirect מכרטיס |
+| `webhook/bit` | POST | IPN ל-Bit |
+| `checkout/charge` | POST | מסלול סליקה מובנה (אופציונלי) |
+| `checkout/{id}` | GET/POST | עמוד תשלום ציבורי (אופציונלי) |
+
+מסלולי הצלחה/כישלון: מוגדרים ב-config `routes.success` / `routes.failed`.
+
+---
+
+## Filament Admin Panel
+
+### עמודים וניהול
+- **Gateway Settings** - הגדרות שער התשלום (ניווט: SUMIT Gateway)
+- **משאבי לקוח** - טרנזקציות, מסמכים, אמצעי תשלום (Client Panel)
+
+### גישה להגדרות
+```
+Admin Panel > SUMIT Gateway > Gateway Settings
+```
+
+---
+
+## SSL
+
+ה-HTTP client משתמש ב-`ssl_verify` (ברירת מחדל true). לשימוש dev בלבד ניתן לכבות:
+
+```env
+OFFICEGUY_SSL_VERIFY=false
+```
+
+---
+
+## לוגים
+
+הפעלת לוגים לניטור ודיבוג:
+
+```env
+OFFICEGUY_LOGGING=true
+OFFICEGUY_LOG_CHANNEL=stack
+```
+
+> 🔒 נתונים רגישים (מספר כרטיס/CVV) מנוקים אוטומטית מהלוגים.
+
+---
+
+## Multi-Vendor
+
+### תמיכה בריבוי מוכרים
+
+תמיכה בשוק (marketplace) עם credentials נפרדים לכל ספק.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Multi-Vendor**
+
+**הגדרות:**
+- **Enable Multi-Vendor** - הפעלת מצב ריבוי מוכרים
+- **Validate Vendor Credentials** - אימות פרטי ספק
+- **Allow Authorize Only** - אפשרות תפיסת מסגרת לספקים
+
+**ב-.env:**
+```env
+OFFICEGUY_MULTIVENDOR_ENABLED=true
+OFFICEGUY_MULTIVENDOR_VALIDATE_CREDENTIALS=true
+OFFICEGUY_MULTIVENDOR_ALLOW_AUTHORIZE=false
+```
+
+**בקוד:**
+```php
+use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
+use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
+
+// שמירת credentials לספק
+VendorCredential::create([
+    'vendor_type' => get_class($vendor),
+    'vendor_id' => $vendor->id,
+    'company_id' => '12345',
+    'api_key' => 'your-api-key',
+]);
+
+// חיוב הזמנה מרובת ספקים
+$result = MultiVendorPaymentService::processMultiVendorCharge($order, $paymentsCount);
+```
+
+**Resolver לזיהוי ספק:**
+```php
+// config/officeguy.php
+'multivendor' => [
+    'vendor_resolver' => fn(array $item) => \App\Models\Vendor::find($item['vendor_id']),
+],
+```
+
+---
+
+## תרומות (Donations)
+
+### תמיכה במוצרי תרומה
+
+הפקת קבלת תרומה אוטומטית במקום חשבונית רגילה.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Donations**
+
+**הגדרות:**
+- **Enable Donations** - הפעלת תמיכה בתרומות
+- **Allow Mixed Cart** - אפשרות לשלב תרומות עם מוצרים רגילים
+- **Document Type** - סוג מסמך (Donation Receipt / Invoice)
+
+**ב-.env:**
+```env
+OFFICEGUY_DONATIONS_ENABLED=true
+OFFICEGUY_DONATIONS_ALLOW_MIXED=false
+OFFICEGUY_DONATIONS_DOCUMENT_TYPE=320   # 320=קבלת תרומה
+```
+
+**בקוד:**
+```php
+use OfficeGuy\LaravelSumitGateway\Services\DonationService;
+
+// בדיקה אם עגלה מכילה תרומות ומוצרים רגילים
 $validation = DonationService::validateCart($order);
 if (!$validation['valid']) {
     return redirect()->back()->with('error', $validation['message']);
 }
 
-// קבלת סוג המסמך (DonationReceipt לתרומות)
+// קבלת סוג המסמך המתאים
 $docType = DonationService::getDocumentType($order);
 ```
 
+---
+
 ## Upsell / CartFlows
-חיוב מוצרי upsell באמצעות טוקן מהחיוב הראשי:
+
+### חיוב מוצרי upsell
+
+חיוב מוצרים נוספים באמצעות טוקן מהחיוב הראשי - ללא צורך להזין שוב פרטי כרטיס.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Upsell / CartFlows**
+
+**הגדרות:**
+- **Enable Upsell** - הפעלת upsell
+- **Require Saved Token** - דרישת טוקן שמור
+- **Max Upsells Per Order** - מקסימום upsells להזמנה
+
+**ב-.env:**
+```env
+OFFICEGUY_UPSELL_ENABLED=true
+OFFICEGUY_UPSELL_REQUIRE_TOKEN=true
+OFFICEGUY_UPSELL_MAX_PER_ORDER=5
+```
+
+**בקוד:**
 ```php
+use OfficeGuy\LaravelSumitGateway\Services\UpsellService;
+
 // חיוב עם טוקן ידוע
 $result = UpsellService::processUpsellCharge($upsellOrder, $token, $parentOrderId);
 
@@ -190,7 +769,10 @@ $result = UpsellService::processUpsellCharge($upsellOrder, $token, $parentOrderI
 $result = UpsellService::processUpsellWithAutoToken($upsellOrder, $parentOrderId, $customer);
 ```
 
+---
+
 ## אירועים (Events)
+
 החבילה משדרת את האירועים הבאים:
 
 | אירוע | תיאור |
@@ -208,6 +790,73 @@ $result = UpsellService::processUpsellWithAutoToken($upsellOrder, $parentOrderId
 | `MultiVendorPaymentFailed` | תשלום מרובה-ספקים נכשל |
 | `UpsellPaymentCompleted` | תשלום upsell הצליח |
 | `UpsellPaymentFailed` | תשלום upsell נכשל |
+
+**האזנה לאירועים:**
+```php
+// app/Providers/EventServiceProvider.php
+use OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted;
+
+protected $listen = [
+    PaymentCompleted::class => [
+        \App\Listeners\SendPaymentConfirmation::class,
+        \App\Listeners\UpdateOrderStatus::class,
+    ],
+];
+```
+
+**דוגמת Listener:**
+```php
+namespace App\Listeners;
+
+use OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted;
+
+class SendPaymentConfirmation
+{
+    public function handle(PaymentCompleted $event): void
+    {
+        $orderId = $event->orderId;
+        $transactionId = $event->transactionId;
+        
+        // שליחת אימייל אישור
+        Mail::to($event->customerEmail)->send(new PaymentConfirmed($orderId));
+    }
+}
+```
+
+---
+
+## מיגרציות נתונים
+
+### טבלאות
+
+| טבלה | תיאור |
+|------|--------|
+| `officeguy_transactions` | טרנזקציות תשלום |
+| `officeguy_tokens` | כרטיסי אשראי שמורים |
+| `officeguy_documents` | חשבוניות וקבלות |
+| `officeguy_settings` | הגדרות מערכת |
+| `vendor_credentials` | credentials לספקים |
+| `subscriptions` | מנויים |
+
+המיגרציות נטענות אוטומטית מהחבילה. להעתקה מקומית:
+```bash
+php artisan vendor:publish --tag=officeguy-migrations
+```
+
+---
+
+## בדיקות
+
+- phpunit / orchestra testbench מומלצים
+- החבילה כוללת בסיס מיגרציות
+- יש להגדיר מודל Order דמה ל-Payable
+
+**הרצת בדיקות:**
+```bash
+composer test
+```
+
+---
 
 ## קבצים לפרסום (Publishable Assets)
 
