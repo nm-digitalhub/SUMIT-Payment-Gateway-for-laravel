@@ -82,4 +82,12 @@ class OfficeGuySetting extends Model
             ->pluck('value', 'key')
             ->toArray();
     }
+
+    /**
+     * Alias for allAsArray() - for compatibility with SettingsService.
+     */
+    public static function getAllSettings(): array
+    {
+        return static::allAsArray();
+    }
 }
