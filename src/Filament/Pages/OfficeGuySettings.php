@@ -4,21 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
-
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
-
-use Filament\Forms\Concerns\InteractsWithForms;
-
-use Filament\Notifications\Notification;
-
-use Filament\Pages\Page;
-
-use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Grid;
-
+use Filament\Schemas\Components\Select;
+use Filament\Schemas\Components\TextInput;
+use Filament\Schemas\Components\Toggle;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
@@ -27,7 +19,7 @@ class OfficeGuySettings extends Page
     use InteractsWithForms;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
+    protected static string|\BackedEnum|null $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'officeguy::filament.pages.officeguy-settings';
@@ -49,11 +41,12 @@ class OfficeGuySettings extends Page
     }
 
     public function form(Schema $schema): Schema
-{
-    return $schema
-        ->components($this->getFormSchema())
-        ->statePath('data');
-}
+    {
+        return $schema
+            ->schema($this->getFormSchema())
+            ->statePath('data');
+    }
+
     protected function getFormSchema(): array
     {
         return [
