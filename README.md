@@ -616,12 +616,12 @@ POST /officeguy/webhook/bit
 
 ## מיזוג לקוחות אוטומטי
 
-### מניעת כפילות כרטיסי לקוח
+### מניעת כפילות כרטיסי לקוח ב-SUMIT
 
 מיזוג כרטיס לקוח קיים במערכת SUMIT בסיום הרכישה באתר כדי למנוע כפילות. המיזוג מתבצע בהתאם למזהה הלקוח או המייל.
 
 **ב-Admin Panel:**
-נווטו ל-**Gateway Settings** > **Customer Settings** > סמנו **"Merge Customers"**
+נווטו ל-**Gateway Settings** > **Customer Merging** > סמנו **"Enable Customer Merging"**
 
 **ב-.env:**
 ```env
@@ -632,6 +632,100 @@ OFFICEGUY_MERGE_CUSTOMERS=true
 1. בעת יצירת מסמך, המערכת מחפשת לקוח קיים לפי מייל או מזהה
 2. אם נמצא - המסמך מקושר ללקוח הקיים
 3. אם לא נמצא - נוצר לקוח חדש
+
+### סנכרון לקוחות עם מודל מקומי (ללא שינוי קוד)
+
+ניתן לסנכרן לקוחות מ-SUMIT עם מודל הלקוחות המקומי שלכם **ללא לגעת בקוד המודל**.
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Customer Merging**
+
+**הגדרות:**
+
+| הגדרה | תיאור | דוגמה |
+|-------|-------|-------|
+| Enable Customer Merging | הפעלת מיזוג ב-SUMIT | `true` |
+| Enable Local Customer Sync | הפעלת סנכרון מקומי | `true` |
+| Customer Model Class | שם מלא של מודל הלקוח | `App\Models\User` |
+
+**מיפוי שדות לקוח:**
+
+| שדה | ברירת מחדל | תיאור |
+|-----|------------|--------|
+| Email Field | `email` | שדה אימייל (מזהה ייחודי) |
+| Name Field | `name` | שדה שם מלא |
+| Phone Field | `phone` | שדה טלפון |
+| First Name Field | - | שדה שם פרטי (אם נפרד) |
+| Last Name Field | - | שדה שם משפחה (אם נפרד) |
+| Company Field | - | שדה שם חברה |
+| Address Field | - | שדה כתובת |
+| City Field | - | שדה עיר |
+| SUMIT ID Field | `sumit_customer_id` | שדה לשמירת מזהה SUMIT |
+
+**דוגמה - חיבור למודל User:**
+
+1. הוסיפו עמודה לטבלת users:
+```bash
+php artisan make:migration add_sumit_customer_id_to_users_table
+```
+
+```php
+Schema::table('users', function (Blueprint $table) {
+    $table->string('sumit_customer_id')->nullable()->index();
+});
+```
+
+2. ב-Admin Panel הגדירו:
+   - Customer Model Class: `App\Models\User`
+   - Email Field: `email`
+   - Name Field: `name`
+   - SUMIT ID Field: `sumit_customer_id`
+
+3. הפעילו סנכרון אוטומטי ב-Listener:
+
+```php
+// app/Providers/EventServiceProvider.php
+use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
+
+protected $listen = [
+    SumitWebhookReceived::class => [
+        CustomerSyncListener::class,
+    ],
+];
+```
+
+**שימוש ב-CustomerMergeService:**
+
+```php
+use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
+
+// סנכרון ידני של לקוח מ-SUMIT
+$mergeService = app(CustomerMergeService::class);
+
+// מציאת לקוח לפי SUMIT ID
+$customer = $mergeService->findBySumitId('12345');
+
+// מציאת לקוח לפי אימייל
+$customer = $mergeService->findByEmail('customer@example.com');
+
+// סנכרון לקוח מנתוני SUMIT
+$sumitData = [
+    'ID' => '12345',
+    'Email' => 'customer@example.com',
+    'FirstName' => 'John',
+    'LastName' => 'Doe',
+    'Phone' => '0501234567',
+];
+$localCustomer = $mergeService->syncFromSumit($sumitData);
+```
+
+**יתרונות:**
+- ✅ אין צורך לשנות את קוד המודל
+- ✅ הגדרה מלאה דרך Admin Panel
+- ✅ סנכרון אוטומטי כשמתקבל webhook מ-SUMIT
+- ✅ מניעת כפילויות לקוחות
+- ✅ שיפור חוויית לקוח - זיהוי לקוחות חוזרים
 
 ---
 

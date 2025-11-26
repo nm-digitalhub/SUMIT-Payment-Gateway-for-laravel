@@ -347,6 +347,80 @@ class OfficeGuySettings extends Page
                         ->helperText('Called when stock is synchronized'),
                 ]),
 
+            Section::make('Customer Merging')
+                ->description('Configure automatic customer merging with SUMIT and sync with your local customer model.')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    Toggle::make('merge_customers')
+                        ->label('Enable Customer Merging')
+                        ->helperText('When enabled, SUMIT will automatically merge customers by email/ID to prevent duplicates.')
+                        ->default(false),
+
+                    Toggle::make('customer_sync_enabled')
+                        ->label('Enable Local Customer Sync')
+                        ->helperText('Sync SUMIT customers with your local customer model.')
+                        ->default(false),
+
+                    TextInput::make('customer_model')
+                        ->label('Customer Model Class')
+                        ->placeholder('App\\Models\\User')
+                        ->helperText('Full class name of your local customer/user model (e.g., App\\Models\\User or App\\Models\\Customer).')
+                        ->columnSpanFull(),
+
+                    Section::make('Customer Field Mapping')
+                        ->description('Map your model fields to SUMIT customer fields. Only fill if using local sync.')
+                        ->columns(3)
+                        ->schema([
+                            TextInput::make('customer_field_email')
+                                ->label('Email Field')
+                                ->placeholder('email')
+                                ->default('email')
+                                ->helperText('Field name for email (unique identifier)'),
+
+                            TextInput::make('customer_field_name')
+                                ->label('Name Field')
+                                ->placeholder('name')
+                                ->default('name')
+                                ->helperText('Field name for full name'),
+
+                            TextInput::make('customer_field_phone')
+                                ->label('Phone Field')
+                                ->placeholder('phone')
+                                ->helperText('Field name for phone number'),
+
+                            TextInput::make('customer_field_first_name')
+                                ->label('First Name Field')
+                                ->placeholder('first_name')
+                                ->helperText('Field name for first name (if separate)'),
+
+                            TextInput::make('customer_field_last_name')
+                                ->label('Last Name Field')
+                                ->placeholder('last_name')
+                                ->helperText('Field name for last name (if separate)'),
+
+                            TextInput::make('customer_field_company')
+                                ->label('Company Field')
+                                ->placeholder('company')
+                                ->helperText('Field name for company name'),
+
+                            TextInput::make('customer_field_address')
+                                ->label('Address Field')
+                                ->placeholder('address')
+                                ->helperText('Field name for address'),
+
+                            TextInput::make('customer_field_city')
+                                ->label('City Field')
+                                ->placeholder('city')
+                                ->helperText('Field name for city'),
+
+                            TextInput::make('customer_field_sumit_id')
+                                ->label('SUMIT ID Field')
+                                ->placeholder('sumit_customer_id')
+                                ->helperText('Field to store SUMIT customer ID (create this column in your table)'),
+                        ]),
+                ]),
+
             Section::make('Route Configuration')
                 ->description('Customize all package endpoints. Changes require cache clear to take effect. Run: php artisan route:clear')
                 ->collapsed()

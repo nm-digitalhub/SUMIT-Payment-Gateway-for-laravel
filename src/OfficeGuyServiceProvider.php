@@ -9,6 +9,7 @@ use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
+use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
 use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
@@ -45,6 +46,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(MultiVendorPaymentService::class);
         $this->app->singleton(UpsellService::class);
         $this->app->singleton(WebhookService::class);
+        $this->app->singleton(CustomerMergeService::class);
     }
 
     /**
@@ -93,6 +95,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
             DonationService::class,
             MultiVendorPaymentService::class,
             UpsellService::class,
+            CustomerMergeService::class,
         ];
     }
 }
