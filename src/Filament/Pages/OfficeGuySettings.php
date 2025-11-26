@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
-use Filament\Forms\Components\Grid;
-use Filament\Forms\Components\Section;
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Select;
+use Filament\Schemas\Components\TextInput;
+use Filament\Schemas\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -20,7 +19,7 @@ class OfficeGuySettings extends Page
     use InteractsWithForms;
 
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
+    protected static string|\BackedEnum|null $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'officeguy::filament.pages.officeguy-settings';
@@ -41,9 +40,9 @@ class OfficeGuySettings extends Page
         );
     }
 
-    public function form(Schema $form): Schema
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema($this->getFormSchema())
             ->statePath('data');
     }
@@ -52,6 +51,7 @@ class OfficeGuySettings extends Page
     {
         return [
             Section::make('API Credentials')
+                ->columnSpanFull()
                 ->columns(3)
                 ->schema([
                     TextInput::make('company_id')
@@ -71,6 +71,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Environment Settings')
+                ->columnSpanFull()
                 ->columns(3)
                 ->schema([
                     Select::make('environment')
@@ -96,6 +97,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Payment Settings')
+                ->columnSpanFull()
                 ->columns(4)
                 ->schema([
                     TextInput::make('max_payments')
@@ -113,6 +115,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Document Settings')
+                ->columnSpanFull()
                 ->columns(3)
                 ->schema([
                     Toggle::make('draft_document'),
@@ -121,6 +124,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Tokenization')
+                ->columnSpanFull()
                 ->columns(2)
                 ->schema([
                     Toggle::make('support_tokens'),
@@ -133,6 +137,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Subscriptions')
+                ->columnSpanFull()
                 ->description('Configure recurring payment settings')
                 ->columns(3)
                 ->schema([
@@ -168,6 +173,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Donations')
+                ->columnSpanFull()
                 ->description('Configure donation handling')
                 ->columns(3)
                 ->schema([
@@ -190,6 +196,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Multi-Vendor')
+                ->columnSpanFull()
                 ->description('Configure multi-vendor marketplace support')
                 ->columns(3)
                 ->schema([
@@ -208,6 +215,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Upsell / CartFlows')
+                ->columnSpanFull()
                 ->description('Configure upsell payment settings')
                 ->columns(3)
                 ->schema([
@@ -226,6 +234,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Additional Features')
+                ->columnSpanFull()
                 ->columns(3)
                 ->schema([
                     Toggle::make('bit_enabled'),
@@ -234,6 +243,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Public Checkout Page')
+                ->columnSpanFull()
                 ->description('Configure the public checkout page for payment links')
                 ->columns(2)
                 ->schema([
@@ -256,6 +266,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Field Mapping (Optional)')
+                ->columnSpanFull()
                 ->description('Map your model fields to payment fields. Only fill these if your model does NOT implement the Payable interface.')
                 ->collapsed()
                 ->columns(3)
@@ -292,6 +303,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Custom Event Webhooks')
+                ->columnSpanFull()
                 ->description('Configure webhook URLs to receive notifications when events occur. Leave empty to disable.')
                 ->collapsed()
                 ->columns(2)
@@ -348,6 +360,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Customer Merging')
+                ->columnSpanFull()
                 ->description('Configure automatic customer merging with SUMIT and sync with your local customer model.')
                 ->collapsed()
                 ->columns(2)
@@ -369,6 +382,7 @@ class OfficeGuySettings extends Page
                         ->columnSpanFull(),
 
                     Section::make('Customer Field Mapping')
+                        ->columnSpanFull()
                         ->description('Map your model fields to SUMIT customer fields. Only fill if using local sync.')
                         ->columns(3)
                         ->schema([
@@ -422,6 +436,7 @@ class OfficeGuySettings extends Page
                 ]),
 
             Section::make('Route Configuration')
+                ->columnSpanFull()
                 ->description('Customize all package endpoints. Changes require cache clear to take effect. Run: php artisan route:clear')
                 ->collapsed()
                 ->columns(2)
@@ -434,6 +449,7 @@ class OfficeGuySettings extends Page
                         ->columnSpanFull(),
 
                     Section::make('Payment Callbacks')
+                        ->columnSpanFull()
                         ->description('Endpoints that receive callbacks from SUMIT after payment processing')
                         ->columns(2)
                         ->schema([
@@ -457,6 +473,7 @@ class OfficeGuySettings extends Page
                         ]),
 
                     Section::make('Checkout Endpoints')
+                        ->columnSpanFull()
                         ->description('Endpoints for payment processing')
                         ->columns(2)
                         ->schema([
@@ -480,6 +497,7 @@ class OfficeGuySettings extends Page
                         ]),
 
                     Section::make('Redirect Routes')
+                        ->columnSpanFull()
                         ->description('Named routes for redirection after payment')
                         ->columns(2)
                         ->schema([
