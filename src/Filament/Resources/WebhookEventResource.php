@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Schemas\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
@@ -41,9 +40,9 @@ class WebhookEventResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'event_type';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Section::make('Event Information')
                     ->columnSpanFull()
