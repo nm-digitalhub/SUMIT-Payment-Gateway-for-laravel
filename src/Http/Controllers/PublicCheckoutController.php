@@ -136,6 +136,15 @@ class PublicCheckoutController extends Controller
             }
         }
 
+        // Check for model configured in Admin Panel settings
+        $payableModel = $this->settings()->get('payable_model');
+        if ($payableModel && class_exists($payableModel)) {
+            $model = $payableModel::find($id);
+            if ($model instanceof Payable) {
+                return $model;
+            }
+        }
+
         // Fall back to default order resolver
         return OrderResolver::resolve($id);
     }

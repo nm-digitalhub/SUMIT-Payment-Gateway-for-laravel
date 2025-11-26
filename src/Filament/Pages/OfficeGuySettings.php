@@ -246,6 +246,12 @@ class OfficeGuySettings extends Page
                         ->placeholder('checkout/{id}')
                         ->helperText('Custom path for checkout page (default: checkout/{id})')
                         ->default('checkout/{id}'),
+
+                    TextInput::make('payable_model')
+                        ->label('Payable Model Class')
+                        ->placeholder('App\\Models\\Order')
+                        ->helperText('Full class name of your Payable model (e.g., App\\Models\\Order, App\\Models\\Product)')
+                        ->columnSpanFull(),
                 ]),
         ];
     }

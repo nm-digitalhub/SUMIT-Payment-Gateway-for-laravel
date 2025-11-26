@@ -364,12 +364,14 @@ php artisan vendor:publish --tag=officeguy-config --tag=officeguy-views
 - נווטו ל-**SUMIT Gateway** > **Gateway Settings**
 - מצאו את הסעיף **"Public Checkout Page"**
 - הפעילו את **"Enable Public Checkout"**
+- הגדירו את **"Payable Model Class"** עם שם המודל המלא (לדוגמה: `App\Models\Order`)
 - ניתן גם להגדיר נתיב מותאם אישית
 
 **2. דרך קובץ .env:**
 
 ```env
 OFFICEGUY_ENABLE_PUBLIC_CHECKOUT=true
+OFFICEGUY_ORDER_MODEL=App\Models\Order
 ```
 
 ### שימוש

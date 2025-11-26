@@ -186,6 +186,7 @@ class SettingsService
             // Public Checkout Page settings
             'enable_public_checkout',
             'public_checkout_path',
+            'payable_model',
         ];
     }
 
