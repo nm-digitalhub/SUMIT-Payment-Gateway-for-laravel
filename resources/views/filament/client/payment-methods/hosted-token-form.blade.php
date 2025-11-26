@@ -98,18 +98,17 @@
         </div>
     </div>
 
-    <script>
+    <script nonce="{{ $csp_nonce ?? '' }}">
         document.addEventListener('livewire:init', () => {
-            console.log('🚀 [OG Token Form] Livewire initialized, setting up interceptor...');
+            console.log('[OG Token Form] Livewire initialized');
 
             const form = document.getElementById('{{ $fieldId }}');
-            const tokenInput = document.getElementById('{{ $tokenInputId }}');
             const livewireId = @js($livewireId);
             const companyId = @js($companyId);
             const publicKey = @js($publicKey);
 
-            console.log('📋 [OG Token Form] Form:', form ? '✓' : '✗');
-            console.log('🔑 [OG Token Form] Livewire ID:', livewireId);
+            console.log('[OG Token Form] Form ID:', '{{ $fieldId }}');
+            console.log('[OG Token Form] Livewire ID:', livewireId);
 
             // Get Alpine context for status messages
             const alpineComponent = form?.closest('[x-data]');
@@ -117,7 +116,7 @@
 
             // Verify SUMIT SDK loaded
             if (!window.OfficeGuy?.Payments) {
-                console.error('❌ [OG Token Form] SUMIT SDK not loaded');
+                console.error('[OG Token Form] SUMIT SDK not loaded');
                 if (alpine) {
                     alpine.status = 'error';
                     alpine.message = 'Payment system not loaded. Please refresh the page.';
@@ -125,37 +124,59 @@
                 return;
             }
 
-            console.log('✅ [OG Token Form] SUMIT SDK loaded');
-
-            // Flag to track if we already have a token
-            let tokenGenerated = false;
+            console.log('[OG Token Form] SUMIT SDK loaded');
 
             // Get Livewire component
             const livewireComponent = window.Livewire?.find(livewireId);
-
             if (!livewireComponent) {
-                console.error('❌ [OG Token Form] Livewire component not found');
+                console.error('[OG Token Form] Livewire component not found');
                 return;
             }
 
-            console.log('✅ [OG Token Form] Livewire component found');
+            console.log('[OG Token Form] Livewire component found');
 
-            // Intercept the 'create' method using Livewire's component interceptor
-            livewireComponent.$wire.intercept('create', ({ proceed, cancel }) => {
-                console.log('🎯 [OG Token Form] Intercepted create() call');
+            // Flag system (like WooCommerce) to prevent infinite loop
+            // "0" = ready to generate token
+            // "1" = currently generating token
+            // "2" = token generated, ready to submit
+            let tokenState = "0";
 
-                // Check if we already have a token
-                const currentToken = livewireComponent.$wire.get('data.og-token');
-
-                if (currentToken && currentToken.length > 0) {
-                    console.log('✅ [OG Token Form] Token already exists, proceeding with submission');
-                    return proceed(); // Let Filament continue
+            // Hook into Livewire's commit cycle (Livewire v3)
+            Livewire.hook('commit', ({ component, commit, respond, succeed, fail }) => {
+                // Only intercept commits from our specific component
+                if (component.id !== livewireId) {
+                    return;
                 }
 
-                console.log('⏳ [OG Token Form] No token found, generating...');
+                console.log('[OG Token Form] Commit intercepted, state:', tokenState);
 
-                // Cancel the initial submission
-                cancel();
+                // If token already generated, allow submission
+                if (tokenState === "2") {
+                    console.log('[OG Token Form] Token exists, allowing submission');
+                    return; // Let it proceed normally
+                }
+
+                // If currently generating token, this is a duplicate - ignore
+                if (tokenState === "1") {
+                    console.log('[OG Token Form] Token generation in progress, ignoring');
+                    return;
+                }
+
+                // Check if we actually have a token value
+                const currentToken = livewireComponent.$wire.get('data.og-token');
+                console.log('[OG Token Form] Current token value:', currentToken ? 'exists' : 'empty');
+
+                if (currentToken && currentToken.length > 0) {
+                    console.log('[OG Token Form] Token found in data, proceeding');
+                    tokenState = "2";
+                    return; // Let it proceed
+                }
+
+                // No token - need to generate it
+                console.log('[OG Token Form] No token, starting generation...');
+
+                // Set state to "generating"
+                tokenState = "1";
 
                 // Show loading state
                 if (alpine) {
@@ -164,6 +185,12 @@
                     alpine.isGenerating = true;
                 }
 
+                // Prevent the default commit from happening
+                // We'll manually trigger it after token generation
+                respond(() => {
+                    console.log('[OG Token Form] Commit response intercepted');
+                });
+
                 // SUMIT SDK Settings (exactly like WooCommerce)
                 const settings = {
                     FormSelector: form,
@@ -171,39 +198,39 @@
                     APIPublicKey: publicKey,
                     ResponseLanguage: 'he',
                     Callback: function(tokenValue) {
-                        console.log('📝 [OG Token Form] Callback received, token:', tokenValue ? '✓ Valid' : '✗ Invalid');
+                        console.log('[OG Token Form] Callback received');
 
                         if (tokenValue && tokenValue.length > 0) {
                             // Success!
-                            console.log('✅ [OG Token Form] Token generated successfully');
+                            console.log('[OG Token Form] Token generated:', tokenValue.substring(0, 10) + '...');
 
                             if (alpine) {
                                 alpine.status = 'success';
-                                alpine.message = '✓ Token generated successfully';
+                                alpine.message = 'Token generated successfully';
                                 alpine.tokenGenerated = true;
                             }
+
+                            // Set state to "ready to submit"
+                            tokenState = "2";
 
                             // Update Livewire with the token
                             livewireComponent.$wire.set('data.og-token', tokenValue);
 
-                            // Mark that we have a token
-                            tokenGenerated = true;
-
                             // Wait briefly for Livewire to sync, then submit
                             setTimeout(() => {
-                                console.log('📤 [OG Token Form] Submitting form with token...');
+                                console.log('[OG Token Form] Calling create() with token...');
 
                                 if (alpine) {
                                     alpine.status = 'loading';
                                     alpine.message = 'Saving payment method...';
                                 }
 
-                                // Call create() again - this time it will proceed because we have a token
+                                // Call create() again - this time state = "2" so it will proceed
                                 livewireComponent.$wire.call('create');
-                            }, 100);
+                            }, 200);
                         } else {
                             // Token generation failed
-                            console.error('❌ [OG Token Form] Token generation failed');
+                            console.error('[OG Token Form] Token generation failed');
 
                             if (alpine) {
                                 alpine.status = 'error';
@@ -211,28 +238,39 @@
                                 alpine.isGenerating = false;
                             }
 
-                            tokenGenerated = false;
+                            // Reset state
+                            tokenState = "0";
                         }
                     }
                 };
 
                 // Call SUMIT SDK to create token
                 try {
-                    console.log('⏳ [OG Token Form] Calling SUMIT SDK CreateToken...');
+                    console.log('[OG Token Form] Calling SUMIT SDK CreateToken...');
                     const result = window.OfficeGuy.Payments.CreateToken(settings);
-                    console.log('📞 [OG Token Form] CreateToken called, result:', result);
+                    console.log('[OG Token Form] CreateToken called, immediate result:', result);
+
+                    // If CreateToken returns true, it means it handled everything synchronously
+                    // and we should reset the state
+                    if (result === true) {
+                        console.log('[OG Token Form] CreateToken handled synchronously');
+                        tokenState = "0";
+                    }
                 } catch (error) {
-                    console.error('❌ [OG Token Form] CreateToken error:', error);
+                    console.error('[OG Token Form] CreateToken error:', error);
 
                     if (alpine) {
                         alpine.status = 'error';
                         alpine.message = 'Failed to initialize token generation: ' + error.message;
                         alpine.isGenerating = false;
                     }
+
+                    // Reset state
+                    tokenState = "0";
                 }
             });
 
-            console.log('✅ [OG Token Form] Interceptor registered successfully');
+            console.log('[OG Token Form] Commit hook registered successfully');
         });
     </script>
 </div>
