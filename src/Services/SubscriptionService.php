@@ -20,6 +20,18 @@ use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCancelled;
 class SubscriptionService
 {
     /**
+     * Ensure subscriptions are enabled.
+     *
+     * @throws \RuntimeException if subscriptions are disabled
+     */
+    protected static function ensureEnabled(): void
+    {
+        if (!config('officeguy.subscriptions.enabled', true)) {
+            throw new \RuntimeException(__('Subscriptions are disabled'));
+        }
+    }
+
+    /**
      * Create a new subscription
      *
      * @param mixed $subscriber User/Customer model
@@ -42,6 +54,8 @@ class SubscriptionService
         ?int $tokenId = null,
         array $metadata = []
     ): Subscription {
+        self::ensureEnabled();
+
         $subscription = Subscription::create([
             'subscriber_type' => get_class($subscriber),
             'subscriber_id' => $subscriber->getKey(),
@@ -147,6 +161,8 @@ class SubscriptionService
      */
     public static function processRecurringCharge(Subscription $subscription): array
     {
+        self::ensureEnabled();
+
         if (!$subscription->canBeCharged()) {
             return [
                 'success' => false,
@@ -219,6 +235,8 @@ class SubscriptionService
      */
     public static function processDueSubscriptions(): array
     {
+        self::ensureEnabled();
+
         $results = [];
         $dueSubscriptions = Subscription::due()->get();
 
@@ -239,6 +257,8 @@ class SubscriptionService
      */
     public static function cancel(Subscription $subscription, ?string $reason = null): void
     {
+        self::ensureEnabled();
+
         $subscription->cancel($reason);
         event(new SubscriptionCancelled($subscription, $reason));
     }

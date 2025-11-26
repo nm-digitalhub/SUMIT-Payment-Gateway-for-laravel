@@ -70,6 +70,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'officeguy-migrations');
 
+        // Load settings from database and override config
+        $this->loadDatabaseSettings();
+
         if ($this->app->runningInConsole()) {
             $this->commands([
                 StockSyncCommand::class,
@@ -79,6 +82,59 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register webhook event listener subscriber
         Event::subscribe(WebhookEventListener::class);
+
+        // Register stock sync scheduler based on settings
+        $this->registerStockSyncScheduler();
+    }
+
+    /**
+     * Load settings from database and merge into config.
+     *
+     * This allows admin-panel changes to take effect immediately.
+     */
+    protected function loadDatabaseSettings(): void
+    {
+        try {
+            // Only load if table exists (prevents errors during migration)
+            if (!\Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
+                return;
+            }
+
+            $settingsService = $this->app->make(\OfficeGuy\LaravelSumitGateway\Services\SettingsService::class);
+            $dbSettings = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting::getAllSettings();
+
+            // Override config with database values
+            foreach ($dbSettings as $key => $value) {
+                config(["officeguy.{$key}" => $value]);
+            }
+        } catch (\Exception $e) {
+            // Silently fail - config defaults will be used
+            // This handles cases where DB isn't ready yet
+        }
+    }
+
+    /**
+     * Register stock sync scheduler based on settings.
+     *
+     * Schedules automatic stock synchronization based on the stock_sync_freq setting.
+     * Options: 'none' (disabled), '12' (every 12 hours), '24' (daily)
+     */
+    protected function registerStockSyncScheduler(): void
+    {
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+            $freq = config('officeguy.stock_sync_freq', 'none');
+
+            if ($freq === '12') {
+                $schedule->command('sumit:stock-sync')->everyTwelveHours();
+            } elseif ($freq === '24') {
+                $schedule->command('sumit:stock-sync')->daily();
+            }
+            // 'none' = no scheduling
+        });
     }
 
     public function provides(): array

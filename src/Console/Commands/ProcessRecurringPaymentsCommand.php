@@ -28,6 +28,11 @@ class ProcessRecurringPaymentsCommand extends Command
 
     public function handle(): int
     {
+        if (!config('officeguy.subscriptions.enabled', true)) {
+            $this->error('Subscriptions are disabled in settings');
+            return Command::FAILURE;
+        }
+
         $subscriptionId = $this->option('subscription');
         $sync = (bool) $this->option('sync');
 

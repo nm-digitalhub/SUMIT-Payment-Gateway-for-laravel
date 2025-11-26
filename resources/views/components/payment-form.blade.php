@@ -60,7 +60,7 @@
         </div>
 
         {{-- Expiration date --}}
-        <div class="grid grid-cols-2 gap-4 mb-4" :class="rtl ? 'text-right' : ''">
+        <div class="grid {{ $singleColumn ? 'grid-cols-1' : 'grid-cols-2' }} gap-4 mb-4" :class="rtl ? 'text-right' : ''">
             <div :class="rtl ? 'rtl' : ''">
                 <label for="og-expmonth" class="block text-sm font-medium mb-1">
                     {{ __('Expiration Month') }} <span class="text-red-500">*</span>

@@ -218,7 +218,10 @@ class SubscriptionResource extends Resource
                     ->label('Activate')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn ($record) => $record->status === Subscription::STATUS_PENDING)
+                    ->visible(fn ($record) =>
+                        config('officeguy.subscriptions.enabled', true) &&
+                        $record->status === Subscription::STATUS_PENDING
+                    )
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->activate();
@@ -231,7 +234,10 @@ class SubscriptionResource extends Resource
                     ->label('Pause')
                     ->icon('heroicon-o-pause')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->isActive())
+                    ->visible(fn ($record) =>
+                        config('officeguy.subscriptions.enabled', true) &&
+                        $record->isActive()
+                    )
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->pause();
@@ -244,7 +250,10 @@ class SubscriptionResource extends Resource
                     ->label('Resume')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn ($record) => $record->isPaused())
+                    ->visible(fn ($record) =>
+                        config('officeguy.subscriptions.enabled', true) &&
+                        $record->isPaused()
+                    )
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $record->resume();
@@ -257,7 +266,10 @@ class SubscriptionResource extends Resource
                     ->label('Cancel')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
-                    ->visible(fn ($record) => in_array($record->status, [Subscription::STATUS_ACTIVE, Subscription::STATUS_PAUSED]))
+                    ->visible(fn ($record) =>
+                        config('officeguy.subscriptions.enabled', true) &&
+                        in_array($record->status, [Subscription::STATUS_ACTIVE, Subscription::STATUS_PAUSED])
+                    )
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Cancellation Reason')
@@ -275,11 +287,15 @@ class SubscriptionResource extends Resource
                     ->label('Charge Now')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('primary')
-                    ->visible(fn ($record) => $record->isActive() && $record->recurring_id)
+                    ->visible(fn ($record) =>
+                        config('officeguy.subscriptions.enabled', true) &&
+                        $record->isActive() &&
+                        $record->recurring_id
+                    )
                     ->requiresConfirmation()
                     ->action(function ($record) {
                         $result = SubscriptionService::processRecurringCharge($record);
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->title('Charge successful')

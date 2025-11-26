@@ -21,6 +21,7 @@ class PaymentForm extends Component
     public string $cvvMode;
     public string $citizenIdMode;
     public bool $fourDigitsYear;
+    public bool $singleColumn;
     public int $maxPayments;
     public bool $supportTokens;
     public bool $isUserLoggedIn;
@@ -37,6 +38,7 @@ class PaymentForm extends Component
         $this->cvvMode = config('officeguy.cvv', 'required');
         $this->citizenIdMode = config('officeguy.citizen_id', 'required');
         $this->fourDigitsYear = config('officeguy.four_digits_year', true);
+        $this->singleColumn = config('officeguy.single_column_layout', true);
         $this->supportTokens = config('officeguy.support_tokens', false);
         $this->isUserLoggedIn = auth()->check();
         $this->orderAmount = $orderAmount ?? 0;

@@ -10,6 +10,7 @@ use Illuminate\Routing\Controller;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
 use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
@@ -19,6 +20,11 @@ class CheckoutController extends Controller
 {
     public function charge(Request $request): Response
     {
+        // Sync stock if enabled
+        if (config('officeguy.checkout_stock_sync', false)) {
+            app(StockService::class)->sync(forceIgnoreCooldown: false);
+        }
+
         $orderId = $request->input('order_id');
         $paymentsCount = max(1, (int) $request->input('payments_count', 1));
         $recurring = (bool) $request->boolean('recurring', false);

@@ -137,10 +137,19 @@ class CreateClientPaymentMethod extends CreateRecord
 
     /**
      * לא משתמשים ב-Model::create() אלא ב-handleRecordCreation בלבד
+     * אבל צריך להחזיר את ה-data כדי ש-Filament יקרא ל-handleRecordCreation
      */
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        // לא שומרים את ה-data ישירות בבסיס הנתונים (TokenService מטפל בזה)
-        return [];
+        // מחזירים את הדאטה כפי שהוא - handleRecordCreation יטפל ביצירה
+        return $data;
+    }
+
+    /**
+     * Override Filament's default validation to allow our custom flow
+     */
+    protected function getFormModel(): string
+    {
+        return OfficeGuyToken::class;
     }
 }
