@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
-use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\KeyValueEntry;
@@ -32,11 +31,11 @@ class WebhookEventResource extends Resource
 {
     protected static ?string $model = WebhookEvent::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-signal';
+    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-signal';
 
     protected static ?string $navigationLabel = 'Webhook Events';
 
-    protected static ?string $navigationGroup = 'SUMIT Gateway';
+    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 6;
 
