@@ -8,20 +8,19 @@
 - מסמכים (חשבונית/קבלה/תרומה), שילוב PayPal/BlueSnap receipts
 - Multivendor & CartFlows מקבילים (לפי מפרט המקור)
 - סנכרון מלאי (12/24 שעות/Checkout), ווידג'ט דשבורד (למימוש עתידי)
-- ממשק ניהול Filament v4 + Spatie Settings
+- ממשק ניהול Filament v4
 - דפי לקוח Filament להצגת טרנזקציות/מסמכים/אמצעי תשלום
 
 ## התקנה
 ```bash
 composer require officeguy/laravel-sumit-gateway
-php artisan vendor:publish --tag=officeguy-settings   # מיגרציית Spatie
-php artisan settings:migrate
+php artisan migrate   # יריץ את כל מיגרציות החבילה
 ```
 
-> אם תרצה להעתיק גם קונפיג/מיגרציות/תצוגות: `--tag=officeguy-config`, `--tag=officeguy-migrations`, `--tag=officeguy-views`, `--tag=officeguy-settings`.
+> אם תרצה להעתיק גם קונפיג/מיגרציות/תצוגות: `--tag=officeguy-config`, `--tag=officeguy-migrations`, `--tag=officeguy-views`. ראה [קבצים לפרסום](#קבצים-לפרסום-publishable-assets) לפרטים נוספים.
 
-## הגדרות (Spatie Settings)
-כל ההגדרות נשמרות ב‑Spatie Settings. ניתן לערוך דרך Filament (עמוד **Gateway Settings**) או בקוד.
+## הגדרות
+כל ההגדרות נשמרות במסד הנתונים (טבלת `officeguy_settings`) עם fallback לקובץ config. ניתן לערוך דרך Filament (עמוד **Gateway Settings**) או בקוד באמצעות `SettingsService`.
 
 שדות עיקריים:
 - מפתחות חברה: company_id, private_key, public_key
@@ -90,8 +89,8 @@ $result = PaymentService::processCharge($order, $paymentsCount, $recurring, $red
 `logging` + `log_channel` (ברירת מחדל stack). נתונים רגישים מנוקים מלוגים (מספר כרטיס/CVV).
 
 ## מיגרציות נתונים
-- טבלאות: transactions, tokens, documents (נלקחו מגרסת ה‑Woo).
-- Spatie Settings: `database/settings/*` לאחר publish.
+- טבלאות: `officeguy_transactions`, `officeguy_tokens`, `officeguy_documents`, `officeguy_settings`, `vendor_credentials`, `subscriptions`.
+- המיגרציות נטענות אוטומטית מהחבילה. להעתקה מקומית: `php artisan vendor:publish --tag=officeguy-migrations`.
 
 ## בדיקות
 - phpunit / orchestra testbench מומלצים. החבילה כוללת בסיס מיגרציות; יש להגדיר מודל Order דמה ל‑Payable.
@@ -209,6 +208,140 @@ $result = UpsellService::processUpsellWithAutoToken($upsellOrder, $parentOrderId
 | `MultiVendorPaymentFailed` | תשלום מרובה-ספקים נכשל |
 | `UpsellPaymentCompleted` | תשלום upsell הצליח |
 | `UpsellPaymentFailed` | תשלום upsell נכשל |
+
+## קבצים לפרסום (Publishable Assets)
+
+החבילה מציעה מספר קבצים לפרסום (publish) להתאמה אישית. להלן פירוט כל קובץ, מה הוא מכיל, ומתי כדאי להשתמש בו.
+
+### פקודת Publish כללית
+```bash
+# פרסום כל הקבצים בבת אחת
+php artisan vendor:publish --provider="OfficeGuy\LaravelSumitGateway\OfficeGuyServiceProvider"
+
+# או פרסום קבצים ספציפיים לפי תגית (tag)
+php artisan vendor:publish --tag=<tag-name>
+```
+
+### 1. קונפיגורציה (`--tag=officeguy-config`)
+
+```bash
+php artisan vendor:publish --tag=officeguy-config
+```
+
+**מיקום:** `config/officeguy.php`
+
+**מה מכיל:**
+- הגדרות חברה (Company ID, API Keys)
+- מצב PCI (no/redirect/yes)
+- הגדרות תשלומים ותשלומים מחולקים (installments)
+- הגדרות Bit
+- הגדרות מסמכים
+- הגדרות טוקנים
+- הגדרות מנויים, תרומות, Multi-Vendor ו-Upsell
+- הגדרות נתיבים (Routes)
+- הגדרות מלאי
+- הגדרות לוגים ו-SSL
+
+**מתי להשתמש:**
+- כאשר רוצים להגדיר ערכים קבועים שאינם משתנים מ-.env
+- כאשר צריך להגדיר resolvers או callbacks מותאמים אישית (למשל `order.resolver`, `stock.update_callback`)
+- כאשר רוצים לשנות את רשימת המטבעות הנתמכים
+- כאשר צריך להגדיר middleware מותאם אישית לנתיבים
+
+**דוגמה להתאמה אישית:**
+```php
+// config/officeguy.php
+return [
+    'order' => [
+        'resolver' => fn($id) => \App\Models\Order::with(['items', 'fees', 'customer'])->find($id),
+    ],
+    'stock' => [
+        'update_callback' => fn(array $stockItem) => \App\Services\InventoryService::updateStock($stockItem),
+    ],
+    'multivendor' => [
+        'enabled' => true,
+        'vendor_resolver' => fn(array $item) => \App\Models\Vendor::find($item['vendor_id']),
+    ],
+];
+```
+
+### 2. מיגרציות (`--tag=officeguy-migrations`)
+
+```bash
+php artisan vendor:publish --tag=officeguy-migrations
+```
+
+**מיקום:** `database/migrations/`
+
+**מה מכיל:**
+- `create_officeguy_transactions_table` - טבלת טרנזקציות
+- `create_officeguy_tokens_table` - טבלת טוקנים (כרטיסי אשראי שמורים)
+- `create_officeguy_documents_table` - טבלת מסמכים (חשבוניות/קבלות)
+- `create_officeguy_settings_table` - טבלת הגדרות
+- `create_vendor_credentials_table` - טבלת credentials לספקים (Multi-Vendor)
+- `create_subscriptions_table` - טבלת מנויים
+- `add_donation_and_vendor_fields` - שדות נוספים לתרומות וספקים
+
+**מתי להשתמש:**
+- כאשר רוצים לשנות את מבנה הטבלאות (הוספת שדות, שינוי indexes)
+- כאשר צריך להתאים שמות טבלאות לקונבנציות הפרויקט
+- כאשר רוצים לשלב עם מיגרציות קיימות בפרויקט
+- כאשר צריך שליטה על סדר הרצת המיגרציות
+
+**הערה חשובה:** לאחר פרסום המיגרציות, החבילה תמשיך לטעון את המיגרציות שלה מ-`vendor/`. כדי למנוע כפילויות, ודאו שאתם לא מריצים את אותן מיגרציות פעמיים.
+
+### 3. תצוגות (`--tag=officeguy-views`)
+
+```bash
+php artisan vendor:publish --tag=officeguy-views
+```
+
+**מיקום:** `resources/views/vendor/officeguy/`
+
+**מה מכיל:**
+- **`components/payment-form.blade.php`** - טופס תשלום עם:
+  - שדות כרטיס אשראי (מספר, תוקף, CVV, ת.ז.)
+  - בחירת אמצעי תשלום שמור (טוקן)
+  - בחירת מספר תשלומים
+  - תמיכה ב-RTL וולידציה צד-לקוח עם Alpine.js
+- **`filament/pages/officeguy-settings.blade.php`** - עמוד הגדרות ב-Filament Admin
+- **`filament/client/payment-methods/hosted-token-form.blade.php`** - טופס ניהול אמצעי תשלום ללקוח
+
+**מתי להשתמש:**
+- כאשר רוצים לשנות את עיצוב טופס התשלום
+- כאשר צריך להתאים את הטופס לעיצוב הייחודי של האתר
+- כאשר רוצים להוסיף שדות נוספים לטופס
+- כאשר צריך לשנות את הטקסטים או התרגומים
+- כאשר רוצים לשנות את לוגיקת הולידציה בצד הלקוח
+
+**דוגמה להתאמת טופס תשלום:**
+```blade
+{{-- resources/views/vendor/officeguy/components/payment-form.blade.php --}}
+<div class="my-custom-payment-form">
+    {{-- הוספת לוגו חברה --}}
+    <div class="company-logo mb-4">
+        <img src="{{ asset('images/logo.svg') }}" alt="Logo">
+    </div>
+    
+    {{-- שאר הטופס... --}}
+</div>
+```
+
+### טבלת סיכום
+
+| תגית | מיקום יעד | שימוש עיקרי |
+|------|-----------|-------------|
+| `officeguy-config` | `config/officeguy.php` | הגדרות API, תשלומים, resolvers |
+| `officeguy-migrations` | `database/migrations/` | התאמת מבנה מסד נתונים |
+| `officeguy-views` | `resources/views/vendor/officeguy/` | התאמת עיצוב וממשק משתמש |
+
+### העתקה סלקטיבית
+
+ניתן לפרסם מספר תגיות בבת אחת:
+```bash
+# פרסום קונפיג ותצוגות בלבד
+php artisan vendor:publish --tag=officeguy-config --tag=officeguy-views
+```
 
 ## רישיון
 MIT
