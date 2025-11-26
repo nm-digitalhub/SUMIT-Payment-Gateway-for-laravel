@@ -233,7 +233,7 @@ php artisan vendor:publish --tag=officeguy-config
 **מה מכיל:**
 - הגדרות חברה (Company ID, API Keys)
 - מצב PCI (no/redirect/yes)
-- הגדרות תשלומים ותשלומים
+- הגדרות תשלומים ותשלומים מחולקים (installments)
 - הגדרות Bit
 - הגדרות מסמכים
 - הגדרות טוקנים
