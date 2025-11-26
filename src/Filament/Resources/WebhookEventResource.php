@@ -4,37 +4,38 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use BackedEnum;
 use Filament\Forms;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
+use Filament\Tables\Actions\Action;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Actions\BulkActionGroup;
+use Filament\Tables\Actions\DeleteAction;
+use Filament\Tables\Actions\DeleteBulkAction;
+use Filament\Tables\Actions\ViewAction;
 use Filament\Tables\Table;
-use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\BulkAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DeleteBulkAction;
-use Filament\Notifications\Notification;
-
-// חשוב — אין Infolist כאן
-use Filament\Infolists;
-use Filament\Infolists\Components;
-
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
+
 class WebhookEventResource extends Resource
 {
     protected static ?string $model = WebhookEvent::class;
 
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-signal';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-signal';
 
     protected static ?string $navigationLabel = 'Webhook Events';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
+    protected static ?string $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 6;
 
@@ -44,7 +45,8 @@ class WebhookEventResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Event Information')
+                Section::make('Event Information')
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\Select::make('event_type')
                             ->label('Event Type')
@@ -65,7 +67,8 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Related Resources')
+                Section::make('Related Resources')
+                    ->columnSpanFull()
                     ->description('Connected resources for automation workflows')
                     ->schema([
                         Forms\Components\TextInput::make('transaction_id')
@@ -82,7 +85,8 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Customer & Amount')
+                Section::make('Customer & Amount')
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('customer_email')
                             ->label('Customer Email')
@@ -98,7 +102,8 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Retry Information')
+                Section::make('Retry Information')
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('retry_count')
                             ->label('Retry Count')
@@ -111,16 +116,18 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Error Details')
+                Section::make('Error Details')
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\Textarea::make('error_message')
                             ->label('Error Message')
                             ->rows(3)
                             ->disabled(),
                     ])
-                    ->visible(fn ($record) => !empty($record?->error_message)),
+                    ->visible(fn (?Model $record): bool => !empty($record?->error_message)),
 
-                Forms\Components\Section::make('Payload & Response')
+                Section::make('Payload & Response')
+                    ->columnSpanFull()
                     ->schema([
                         Forms\Components\KeyValue::make('payload')
                             ->label('Request Payload')
@@ -133,143 +140,150 @@ class WebhookEventResource extends Resource
     }
 
     public static function infolist(Schema $schema): Schema
-{
-    return $schema->components([
-        Infolists\Components\Section::make('Event Details')
-            ->schema([
-                Infolists\Components\TextEntry::make('event_type')
-                    ->label('Event Type')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'payment_completed', 'bit_payment_completed' => 'success',
-                        'payment_failed' => 'danger',
-                        'document_created' => 'info',
-                        'subscription_created', 'subscription_charged' => 'warning',
-                        'stock_synced' => 'gray',
-                        default => 'gray',
-                    }),
-                Infolists\Components\TextEntry::make('status')
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'sent' => 'success',
-                        'pending' => 'warning',
-                        'failed' => 'danger',
-                        'retrying' => 'info',
-                        default => 'gray',
-                    }),
-                Infolists\Components\TextEntry::make('webhook_url')
-                    ->label('Webhook URL')
-                    ->copyable()
-                    ->url(fn ($record) => $record->webhook_url, shouldOpenInNewTab: true),
-                Infolists\Components\TextEntry::make('http_status_code')
-                    ->label('HTTP Status')
-                    ->badge()
-                    ->color(fn ($state): string => match (true) {
-                        $state >= 200 && $state < 300 => 'success',
-                        $state >= 400 && $state < 500 => 'warning',
-                        $state >= 500 => 'danger',
-                        default => 'gray',
-                    }),
-                Infolists\Components\TextEntry::make('created_at')
-                    ->label('Created')
-                    ->dateTime(),
-                Infolists\Components\TextEntry::make('sent_at')
-                    ->label('Sent At')
-                    ->dateTime()
-                    ->placeholder('Not sent yet'),
-            ])->columns(3),
+    {
+        return $schema->components([
+            Section::make('Event Details')
+                ->columnSpanFull()
+                ->schema([
+                    TextEntry::make('event_type')
+                        ->label('Event Type')
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'payment_completed', 'bit_payment_completed' => 'success',
+                            'payment_failed' => 'danger',
+                            'document_created' => 'info',
+                            'subscription_created', 'subscription_charged' => 'warning',
+                            'stock_synced' => 'gray',
+                            default => 'gray',
+                        }),
+                    TextEntry::make('status')
+                        ->badge()
+                        ->color(fn (string $state): string => match ($state) {
+                            'sent' => 'success',
+                            'pending' => 'warning',
+                            'failed' => 'danger',
+                            'retrying' => 'info',
+                            default => 'gray',
+                        }),
+                    TextEntry::make('webhook_url')
+                        ->label('Webhook URL')
+                        ->copyable()
+                        ->url(fn (Model $record): ?string => $record->webhook_url, shouldOpenInNewTab: true),
+                    TextEntry::make('http_status_code')
+                        ->label('HTTP Status')
+                        ->badge()
+                        ->color(fn (?int $state): string => match (true) {
+                            $state !== null && $state >= 200 && $state < 300 => 'success',
+                            $state !== null && $state >= 400 && $state < 500 => 'warning',
+                            $state !== null && $state >= 500 => 'danger',
+                            default => 'gray',
+                        }),
+                    TextEntry::make('created_at')
+                        ->label('Created')
+                        ->dateTime(),
+                    TextEntry::make('sent_at')
+                        ->label('Sent At')
+                        ->dateTime()
+                        ->placeholder('Not sent yet'),
+                ])->columns(3),
 
-        Infolists\Components\Section::make('Connected Resources')
-            ->description('Click to navigate to related records')
-            ->schema([
-                Infolists\Components\TextEntry::make('transaction.payment_id')
-                    ->label('Transaction')
-                    ->placeholder('No transaction')
-                    ->url(fn ($record) => $record->transaction_id 
-                        ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
-                        : null)
-                    ->color('primary'),
-                Infolists\Components\TextEntry::make('document.document_number')
-                    ->label('Document')
-                    ->placeholder('No document')
-                    ->url(fn ($record) => $record->document_id 
-                        ? DocumentResource::getUrl('view', ['record' => $record->document_id])
-                        : null)
-                    ->color('primary'),
-                Infolists\Components\TextEntry::make('token.last_digits')
-                    ->label('Token')
-                    ->formatStateUsing(fn ($state) => $state ? '****' . $state : null)
-                    ->placeholder('No token')
-                    ->url(fn ($record) => $record->token_id 
-                        ? TokenResource::getUrl('view', ['record' => $record->token_id])
-                        : null)
-                    ->color('primary'),
-                Infolists\Components\TextEntry::make('subscription.name')
-                    ->label('Subscription')
-                    ->placeholder('No subscription')
-                    ->url(fn ($record) => $record->subscription_id 
-                        ? SubscriptionResource::getUrl('view', ['record' => $record->subscription_id])
-                        : null)
-                    ->color('primary'),
-            ])->columns(4),
+            Section::make('Connected Resources')
+                ->columnSpanFull()
+                ->description('Click to navigate to related records')
+                ->schema([
+                    TextEntry::make('transaction.payment_id')
+                        ->label('Transaction')
+                        ->placeholder('No transaction')
+                        ->url(fn (Model $record): ?string => $record->transaction_id
+                            ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
+                            : null)
+                        ->color('primary'),
+                    TextEntry::make('document.document_number')
+                        ->label('Document')
+                        ->placeholder('No document')
+                        ->url(fn (Model $record): ?string => $record->document_id
+                            ? DocumentResource::getUrl('view', ['record' => $record->document_id])
+                            : null)
+                        ->color('primary'),
+                    TextEntry::make('token.last_digits')
+                        ->label('Token')
+                        ->formatStateUsing(fn (?string $state): ?string => $state ? '****' . $state : null)
+                        ->placeholder('No token')
+                        ->url(fn (Model $record): ?string => $record->token_id
+                            ? TokenResource::getUrl('view', ['record' => $record->token_id])
+                            : null)
+                        ->color('primary'),
+                    TextEntry::make('subscription.name')
+                        ->label('Subscription')
+                        ->placeholder('No subscription')
+                        ->url(fn (Model $record): ?string => $record->subscription_id
+                            ? SubscriptionResource::getUrl('view', ['record' => $record->subscription_id])
+                            : null)
+                        ->color('primary'),
+                ])->columns(4),
 
-        Infolists\Components\Section::make('Customer & Payment')
-            ->schema([
-                Infolists\Components\TextEntry::make('customer_email')
-                    ->label('Customer Email')
-                    ->copyable()
-                    ->icon('heroicon-o-envelope'),
-                Infolists\Components\TextEntry::make('customer_id')
-                    ->label('Customer ID')
-                    ->copyable(),
-                Infolists\Components\TextEntry::make('amount')
-                    ->label('Amount')
-                    ->money(fn ($record) => $record->currency ?? 'ILS'),
-                Infolists\Components\TextEntry::make('currency')
-                    ->badge(),
-            ])->columns(4),
+            Section::make('Customer & Payment')
+                ->columnSpanFull()
+                ->schema([
+                    TextEntry::make('customer_email')
+                        ->label('Customer Email')
+                        ->copyable()
+                        ->icon('heroicon-o-envelope'),
+                    TextEntry::make('customer_id')
+                        ->label('Customer ID')
+                        ->copyable(),
+                    TextEntry::make('amount')
+                        ->label('Amount')
+                        ->money(fn (Model $record): string => $record->currency ?? 'ILS'),
+                    TextEntry::make('currency')
+                        ->badge(),
+                ])->columns(4),
 
-        Infolists\Components\Section::make('Retry Status')
-            ->schema([
-                Infolists\Components\TextEntry::make('retry_count')
-                    ->label('Retry Attempts')
-                    ->badge()
-                    ->color(fn (int $state): string => match (true) {
-                        $state === 0 => 'success',
-                        $state < 3 => 'warning',
-                        default => 'danger',
-                    }),
-                Infolists\Components\TextEntry::make('next_retry_at')
-                    ->label('Next Retry')
-                    ->dateTime()
-                    ->placeholder('No retry scheduled'),
-            ])->columns(2)
-            ->visible(fn ($record) => $record->retry_count > 0 || $record->next_retry_at),
+            Section::make('Retry Status')
+                ->columnSpanFull()
+                ->schema([
+                    TextEntry::make('retry_count')
+                        ->label('Retry Attempts')
+                        ->badge()
+                        ->color(fn (int $state): string => match (true) {
+                            $state === 0 => 'success',
+                            $state < 3 => 'warning',
+                            default => 'danger',
+                        }),
+                    TextEntry::make('next_retry_at')
+                        ->label('Next Retry')
+                        ->dateTime()
+                        ->placeholder('No retry scheduled'),
+                ])->columns(2)
+                ->visible(fn (Model $record): bool => $record->retry_count > 0 || $record->next_retry_at !== null),
 
-        Infolists\Components\Section::make('Error Information')
-            ->schema([
-                Infolists\Components\TextEntry::make('error_message')
-                    ->label('Error Message')
-                    ->columnSpanFull(),
-            ])
-            ->visible(fn ($record) => !empty($record->error_message)),
+            Section::make('Error Information')
+                ->columnSpanFull()
+                ->schema([
+                    TextEntry::make('error_message')
+                        ->label('Error Message')
+                        ->columnSpanFull(),
+                ])
+                ->visible(fn (Model $record): bool => !empty($record->error_message)),
 
-        Infolists\Components\Section::make('Payload')
-            ->schema([
-                Infolists\Components\KeyValueEntry::make('payload')
-                    ->label('Request Payload'),
-            ])
-            ->collapsed(),
+            Section::make('Payload')
+                ->columnSpanFull()
+                ->schema([
+                    KeyValueEntry::make('payload')
+                        ->label('Request Payload'),
+                ])
+                ->collapsed(),
 
-        Infolists\Components\Section::make('Response')
-            ->schema([
-                Infolists\Components\KeyValueEntry::make('response')
-                    ->label('Response Data'),
-            ])
-            ->collapsed()
-            ->visible(fn ($record) => !empty($record->response)),
-    ]);
-}
+            Section::make('Response')
+                ->columnSpanFull()
+                ->schema([
+                    KeyValueEntry::make('response')
+                        ->label('Response Data'),
+                ])
+                ->collapsed()
+                ->visible(fn (Model $record): bool => !empty($record->response)),
+        ]);
+    }
 
     public static function table(Table $table): Table
     {
@@ -290,7 +304,7 @@ class WebhookEventResource extends Resource
                         'stock_synced' => 'gray',
                         default => 'gray',
                     })
-                    ->formatStateUsing(fn ($record) => $record->getEventTypeLabel())
+                    ->formatStateUsing(fn (Model $record): string => $record->getEventTypeLabel())
                     ->sortable(),
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
@@ -312,10 +326,10 @@ class WebhookEventResource extends Resource
                 Tables\Columns\TextColumn::make('http_status_code')
                     ->label('HTTP')
                     ->badge()
-                    ->color(fn ($state): string => match (true) {
-                        $state >= 200 && $state < 300 => 'success',
-                        $state >= 400 && $state < 500 => 'warning',
-                        $state >= 500 => 'danger',
+                    ->color(fn (?int $state): string => match (true) {
+                        $state !== null && $state >= 200 && $state < 300 => 'success',
+                        $state !== null && $state >= 400 && $state < 500 => 'warning',
+                        $state !== null && $state >= 500 => 'danger',
                         default => 'gray',
                     })
                     ->sortable(),
@@ -324,19 +338,19 @@ class WebhookEventResource extends Resource
                     ->searchable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency ?? 'ILS')
+                    ->money(fn (Model $record): string => $record->currency ?? 'ILS')
                     ->sortable()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('transaction.payment_id')
                     ->label('Transaction')
-                    ->url(fn ($record) => $record->transaction_id 
+                    ->url(fn (Model $record): ?string => $record->transaction_id
                         ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
                         : null)
                     ->color('primary')
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('subscription.name')
                     ->label('Subscription')
-                    ->url(fn ($record) => $record->subscription_id 
+                    ->url(fn (Model $record): ?string => $record->subscription_id
                         ? SubscriptionResource::getUrl('view', ['record' => $record->subscription_id])
                         : null)
                     ->color('primary')
@@ -373,23 +387,23 @@ class WebhookEventResource extends Resource
                     ->multiple(),
                 Tables\Filters\Filter::make('has_transaction')
                     ->label('Has Transaction')
-                    ->query(fn ($query) => $query->whereNotNull('transaction_id'))
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('transaction_id'))
                     ->toggle(),
                 Tables\Filters\Filter::make('has_subscription')
                     ->label('Has Subscription')
-                    ->query(fn ($query) => $query->whereNotNull('subscription_id'))
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('subscription_id'))
                     ->toggle(),
                 Tables\Filters\Filter::make('has_document')
                     ->label('Has Document')
-                    ->query(fn ($query) => $query->whereNotNull('document_id'))
+                    ->query(fn (Builder $query): Builder => $query->whereNotNull('document_id'))
                     ->toggle(),
                 Tables\Filters\Filter::make('failed_deliveries')
                     ->label('Failed Deliveries')
-                    ->query(fn ($query) => $query->where('status', 'failed'))
+                    ->query(fn (Builder $query): Builder => $query->where('status', 'failed'))
                     ->toggle(),
                 Tables\Filters\Filter::make('pending_retry')
                     ->label('Pending Retry')
-                    ->query(fn ($query) => $query->where('status', 'retrying')
+                    ->query(fn (Builder $query): Builder => $query->where('status', 'retrying')
                         ->where('next_retry_at', '<=', now()))
                     ->toggle(),
                 Tables\Filters\Filter::make('date_range')
@@ -417,12 +431,12 @@ class WebhookEventResource extends Resource
                     ->label('Retry')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn ($record) => $record->canRetry())
+                    ->visible(fn (Model $record): bool => $record->canRetry())
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function (Model $record): void {
                         $webhookService = app(WebhookService::class);
                         $success = $webhookService->send($record->event_type, $record->payload ?? []);
-                        
+
                         if ($success) {
                             $record->markAsSent(200);
                             Notification::make()
@@ -442,15 +456,14 @@ class WebhookEventResource extends Resource
                     ->label('Copy Payload')
                     ->icon('heroicon-o-clipboard-document')
                     ->color('gray')
-                    ->action(function ($record) {
-                        // The actual copy is handled client-side
+                    ->action(function (Model $record): void {
                         Notification::make()
                             ->title('Payload copied to clipboard')
                             ->success()
                             ->send();
                     }),
                 DeleteAction::make()
-                    ->visible(fn ($record) => $record->status !== 'pending'),
+                    ->visible(fn (Model $record): bool => $record->status !== 'pending'),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
@@ -459,11 +472,11 @@ class WebhookEventResource extends Resource
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             $webhookService = app(WebhookService::class);
                             $successCount = 0;
                             $failCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 if ($record->canRetry()) {
                                     $success = $webhookService->send($record->event_type, $record->payload ?? []);
@@ -476,7 +489,7 @@ class WebhookEventResource extends Resource
                                     }
                                 }
                             }
-                            
+
                             Notification::make()
                                 ->title('Bulk retry completed')
                                 ->body("Success: {$successCount}, Scheduled for retry: {$failCount}")
@@ -488,11 +501,11 @@ class WebhookEventResource extends Resource
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             foreach ($records as $record) {
                                 $record->markAsFailed('Manually marked as failed');
                             }
-                            
+
                             Notification::make()
                                 ->title('Events marked as failed')
                                 ->success()
@@ -507,9 +520,7 @@ class WebhookEventResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            //
-        ];
+        return [];
     }
 
     public static function getPages(): array
@@ -525,7 +536,7 @@ class WebhookEventResource extends Resource
         return false;
     }
 
-    public static function canEdit($record): bool
+    public static function canEdit(Model $record): bool
     {
         return false;
     }
@@ -536,7 +547,7 @@ class WebhookEventResource extends Resource
         return $count > 0 ? (string) $count : null;
     }
 
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string|array|null
     {
         $failedCount = static::getModel()::where('status', 'failed')->count();
         return $failedCount > 0 ? 'danger' : 'warning';
@@ -547,12 +558,14 @@ class WebhookEventResource extends Resource
         return ['customer_email', 'customer_id', 'event_type'];
     }
 
-    public static function getGlobalSearchResultDetails($record): array
+    public static function getGlobalSearchResultDetails(Model $record): array
     {
         return [
             'Event' => $record->getEventTypeLabel(),
             'Status' => ucfirst($record->status),
             'Customer' => $record->customer_email,
         ];
+    }
+}
     }
 }
