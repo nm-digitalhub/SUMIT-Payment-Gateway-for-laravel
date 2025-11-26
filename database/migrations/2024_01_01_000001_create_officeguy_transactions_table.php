@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('officeguy_transactions')) {
+            return;
+        }
+
         Schema::create('officeguy_transactions', function (Blueprint $table) {
             $table->id();
             $table->string('order_id')->index(); // Can be any payable entity ID

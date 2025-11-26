@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('officeguy_documents')) {
+            return;
+        }
+
         Schema::create('officeguy_documents', function (Blueprint $table) {
             $table->id();
             $table->string('document_id')->unique(); // SUMIT document ID

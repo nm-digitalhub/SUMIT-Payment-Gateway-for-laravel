@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('officeguy_settings')) {
+            return;
+        }
+
         Schema::create('officeguy_settings', function (Blueprint $table) {
             $table->id();
             $table->string('key')->unique()->index();

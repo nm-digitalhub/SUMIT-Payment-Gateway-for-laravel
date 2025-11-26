@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -11,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('officeguy_webhook_events')) {
+            return;
+        }
+
         Schema::create('officeguy_webhook_events', function (Blueprint $table) {
             $table->id();
             $table->string('event_type', 50)->index();

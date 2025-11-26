@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('officeguy_vendor_credentials')) {
+            return;
+        }
+
         Schema::create('officeguy_vendor_credentials', function (Blueprint $table) {
             $table->id();
             $table->morphs('vendor'); // polymorphic relation to User, Vendor, or any entity
