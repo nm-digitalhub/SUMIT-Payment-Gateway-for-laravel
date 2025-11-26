@@ -122,7 +122,11 @@ class PublicCheckoutController extends Controller
             return collect();
         }
 
-        return OfficeGuyToken::getForOwner(auth()->user(), 'officeguy');
+        return OfficeGuyToken::where('owner_type', get_class(auth()->user()))
+            ->where('owner_id', auth()->id())
+            ->where('gateway_id', 'officeguy')
+            ->whereNull('deleted_at')
+            ->get();
     }
 
     /**
@@ -245,17 +249,23 @@ class PublicCheckoutController extends Controller
      */
     protected function processBitPayment(Payable $payable, array $validated)
     {
-        // Bit payments are handled via redirect
-        // The actual implementation depends on the BitPaymentService
-        $bitService = app(\OfficeGuy\LaravelSumitGateway\Services\BitPaymentService::class);
-
-        $result = $bitService->initiatePayment($payable, [
-            'customer_name' => $validated['customer_name'],
-            'customer_email' => $validated['customer_email'],
-            'customer_phone' => $validated['customer_phone'] ?? null,
+        // Bit payments are handled via redirect using BitPaymentService::processOrder
+        $successUrl = route(config('officeguy.routes.success', 'checkout.success'), [
+            'order' => $payable->getPayableId()
         ]);
+        $cancelUrl = route(config('officeguy.routes.failed', 'checkout.failed'), [
+            'order' => $payable->getPayableId()
+        ]);
+        $webhookUrl = route('officeguy.webhook.bit');
 
-        if (isset($result['redirect_url'])) {
+        $result = \OfficeGuy\LaravelSumitGateway\Services\BitPaymentService::processOrder(
+            $payable,
+            $successUrl,
+            $cancelUrl,
+            $webhookUrl
+        );
+
+        if ($result['success'] && isset($result['redirect_url'])) {
             return redirect()->away($result['redirect_url']);
         }
 
@@ -273,19 +283,35 @@ class PublicCheckoutController extends Controller
      */
     protected function saveCardToken(array $data, $user): void
     {
-        if (!isset($data['Token'])) {
+        // Try to use createFromApiResponse if CardToken is present
+        if (isset($data['CardToken'])) {
+            try {
+                OfficeGuyToken::createFromApiResponse($user, ['Data' => $data]);
+                return;
+            } catch (\RuntimeException $e) {
+                // Fall through to manual creation
+            }
+        }
+
+        // Fallback to manual creation for other token formats
+        $token = $data['Token'] ?? $data['CardToken'] ?? null;
+        if (!$token) {
             return;
         }
 
         OfficeGuyToken::create([
             'owner_type' => get_class($user),
             'owner_id' => $user->getKey(),
-            'gateway' => 'officeguy',
-            'token' => $data['Token'],
-            'card_last_four' => substr($data['CardNumber'] ?? '', -4),
-            'card_type' => $data['CardType'] ?? null,
-            'expiry_month' => $data['ExpirationMonth'] ?? null,
-            'expiry_year' => $data['ExpirationYear'] ?? null,
+            'gateway_id' => 'officeguy',
+            'token' => $token,
+            'last_four' => substr($data['CardNumber'] ?? $data['CardPattern'] ?? '', -4),
+            'card_type' => $data['CardType'] ?? $data['Brand'] ?? null,
+            'expiry_month' => isset($data['ExpirationMonth']) 
+                ? str_pad((string) $data['ExpirationMonth'], 2, '0', STR_PAD_LEFT) 
+                : null,
+            'expiry_year' => isset($data['ExpirationYear']) 
+                ? (string) $data['ExpirationYear'] 
+                : null,
         ]);
     }
 }

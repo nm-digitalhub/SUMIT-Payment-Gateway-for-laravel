@@ -484,9 +484,9 @@
     <script>
         function checkoutPage() {
             return {
-                rtl: {{ $rtl ? 'true' : 'false' }},
+                rtl: @json($rtl),
                 paymentMethod: 'card',
-                selectedToken: '{{ $savedTokens->isEmpty() ? "new" : "" }}',
+                selectedToken: @json($savedTokens->isEmpty() ? 'new' : ''),
                 cardNumber: '',
                 expMonth: '',
                 expYear: '',
@@ -495,19 +495,19 @@
                 singleUseToken: '',
                 paymentsCount: '1',
                 saveCard: false,
-                customerName: '{{ old("customer_name", addslashes($customerName ?? "")) }}',
-                customerEmail: '{{ old("customer_email", addslashes($customerEmail ?? "")) }}',
-                customerPhone: '{{ old("customer_phone", addslashes($customerPhone ?? "")) }}',
+                customerName: @json(old('customer_name', $customerName ?? '')),
+                customerEmail: @json(old('customer_email', $customerEmail ?? '')),
+                customerPhone: @json(old('customer_phone', $customerPhone ?? '')),
                 processing: false,
                 errors: [],
                 
                 init() {
                     // Initialize SUMIT PaymentsJS SDK if in PaymentsJS mode
-                    @if($settings['pci_mode'] === 'no')
+                    @if($settings['pci_mode'] === 'no' && !empty($settings['company_id']) && !empty($settings['public_key']))
                     if (window.OfficeGuy?.Payments) {
                         OfficeGuy.Payments.BindFormSubmit({
-                            CompanyID: '{{ $settings["company_id"] }}',
-                            APIPublicKey: '{{ $settings["public_key"] }}'
+                            CompanyID: @json($settings['company_id']),
+                            APIPublicKey: @json($settings['public_key'])
                         });
                     }
                     @endif
