@@ -8,6 +8,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Controllers\CardCallbackController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\DocumentDownloadController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\PublicCheckoutController;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\SumitWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -58,4 +59,49 @@ Route::prefix($prefix)
             config('officeguy.routes.public_checkout', 'checkout/{id}'),
             [PublicCheckoutController::class, 'process']
         )->name('officeguy.public.checkout.process');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Incoming Webhooks from SUMIT (Triggers)
+        |--------------------------------------------------------------------------
+        |
+        | These routes receive webhooks/triggers sent FROM SUMIT when cards are
+        | created, updated, deleted, or archived in the SUMIT system.
+        |
+        | To use these, configure a trigger in SUMIT with HTTP action pointing to:
+        | - General: POST /officeguy/webhook/sumit
+        | - Specific: POST /officeguy/webhook/sumit/{event_type}
+        |
+        | Supported event_types: card_created, card_updated, card_deleted, card_archived
+        |
+        | @see https://help.sumit.co.il/he/articles/11577644-שליחת-webhook-ממערכת-סאמיט
+        |
+        */
+        
+        // General webhook endpoint (auto-detects event type from payload)
+        Route::post(
+            config('officeguy.routes.sumit_webhook', 'webhook/sumit'),
+            [SumitWebhookController::class, 'handle']
+        )->name('officeguy.webhook.sumit');
+
+        // Specific event type endpoints
+        Route::post(
+            config('officeguy.routes.sumit_webhook', 'webhook/sumit') . '/card-created',
+            [SumitWebhookController::class, 'cardCreated']
+        )->name('officeguy.webhook.sumit.card_created');
+
+        Route::post(
+            config('officeguy.routes.sumit_webhook', 'webhook/sumit') . '/card-updated',
+            [SumitWebhookController::class, 'cardUpdated']
+        )->name('officeguy.webhook.sumit.card_updated');
+
+        Route::post(
+            config('officeguy.routes.sumit_webhook', 'webhook/sumit') . '/card-deleted',
+            [SumitWebhookController::class, 'cardDeleted']
+        )->name('officeguy.webhook.sumit.card_deleted');
+
+        Route::post(
+            config('officeguy.routes.sumit_webhook', 'webhook/sumit') . '/card-archived',
+            [SumitWebhookController::class, 'cardArchived']
+        )->name('officeguy.webhook.sumit.card_archived');
     });

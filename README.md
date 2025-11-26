@@ -31,6 +31,11 @@
 - [תרומות](#תרומות-donations)
 - [Upsell / CartFlows](#upsell--cartflows)
 - [אירועים](#אירועים-events)
+- [Custom Event Webhooks](#custom-event-webhooks)
+- [Webhook Events Resource](#webhook-events-resource-admin-panel)
+- [קבלת Webhooks מ-SUMIT](#קבלת-webhooks-מ-sumit-incoming-webhooks)
+- [מיגרציות נתונים](#מיגרציות-נתונים)
+- [בדיקות](#בדיקות)
 - [קבצים לפרסום](#קבצים-לפרסום-publishable-assets)
 
 ## התקנה
@@ -1336,6 +1341,359 @@ Schedule::command('crm:sync-webhooks')->hourly();
 
 ---
 
+## קבלת Webhooks מ-SUMIT (Incoming Webhooks)
+
+### מהי שליחת Webhook מ-SUMIT?
+
+SUMIT יכולה לשלוח התראות (Webhooks) לאפליקציה שלכם כאשר מתרחשות פעולות במערכת SUMIT. זה מאפשר לכם לקבל עדכונים בזמן אמת על פעולות שבוצעו במערכת ניהול החשבונות.
+
+**מידע נוסף:**
+- [מדריך שליחת Webhook מ-SUMIT](https://help.sumit.co.il/he/articles/11577644-שליחת-webhook-ממערכת-סאמיט)
+- [מבוא לטריגרים](https://help.sumit.co.il/he/articles/6324125-מבוא-לטריגרים)
+
+### סוגי אירועים נתמכים
+
+| פעולה | תיאור |
+|-------|--------|
+| `card_created` | יצירת כרטיס (לקוח, מסמך, פריט וכו') |
+| `card_updated` | עדכון כרטיס |
+| `card_deleted` | מחיקת כרטיס |
+| `card_archived` | העברת כרטיס לארכיון |
+
+### סוגי כרטיסים
+
+| סוג כרטיס | תיאור |
+|-----------|--------|
+| `customer` | כרטיס לקוח |
+| `document` | מסמך (חשבונית, קבלה) |
+| `transaction` | עסקה |
+| `item` | פריט מלאי |
+| `payment` | תשלום |
+
+### כתובות Webhook
+
+החבילה חושפת מספר endpoints לקבלת webhooks מ-SUMIT:
+
+| כתובת | תיאור |
+|-------|--------|
+| `POST /officeguy/webhook/sumit` | Endpoint כללי (זיהוי אוטומטי) |
+| `POST /officeguy/webhook/sumit/card-created` | יצירת כרטיס |
+| `POST /officeguy/webhook/sumit/card-updated` | עדכון כרטיס |
+| `POST /officeguy/webhook/sumit/card-deleted` | מחיקת כרטיס |
+| `POST /officeguy/webhook/sumit/card-archived` | העברת לארכיון |
+
+### הגדרת Trigger ב-SUMIT
+
+1. **התקנת מודולים נדרשים ב-SUMIT:**
+   - מודול טריגרים
+   - מודול API
+   - מודול ניהול תצוגות
+
+2. **יצירת תצוגה:**
+   - הגדירו אילו כרטיסים יכללו
+   - בחרו אילו שדות יועברו ב-webhook
+
+3. **יצירת טריגר:**
+   - בחרו תיקייה ותצוגה
+   - הגדירו תנאי הפעלה (יצירה/עדכון/מחיקה/ארכיון)
+   - בחרו פעולת HTTP
+   - הזינו את כתובת ה-webhook שלכם
+
+4. **הגדרת הכתובת:**
+   ```
+   https://your-domain.com/officeguy/webhook/sumit
+   ```
+   
+   או לאירוע ספציפי:
+   ```
+   https://your-domain.com/officeguy/webhook/sumit/card-created
+   ```
+
+### SUMIT Webhooks Resource (Admin Panel)
+
+צפייה בכל ה-webhooks שהתקבלו מ-SUMIT ב-Admin Panel:
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **SUMIT Webhooks**
+
+**תכונות:**
+- צפייה בכל ה-webhooks שהתקבלו
+- סינון לפי סוג אירוע, סוג כרטיס, סטטוס
+- חיפוש לפי מזהה כרטיס, לקוח, מייל
+- עיבוד webhooks שטרם טופלו
+- סימון webhooks כמעובדים או מתעלמים
+
+**סטטיסטיקות:**
+- Webhooks היום
+- ממתינים לעיבוד
+- אחוז עיבוד
+- webhooks שנכשלו
+
+### טיפול ב-Webhooks בקוד
+
+#### האזנה לאירוע
+
+```php
+// app/Providers/EventServiceProvider.php
+use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+
+protected $listen = [
+    SumitWebhookReceived::class => [
+        \App\Listeners\HandleSumitWebhook::class,
+    ],
+];
+```
+
+#### יצירת Listener
+
+```php
+// app/Listeners/HandleSumitWebhook.php
+namespace App\Listeners;
+
+use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
+
+class HandleSumitWebhook
+{
+    public function handle(SumitWebhookReceived $event): void
+    {
+        $webhook = $event->webhook;
+        
+        switch ($webhook->event_type) {
+            case SumitWebhook::TYPE_CARD_CREATED:
+                $this->handleCardCreated($webhook);
+                break;
+            case SumitWebhook::TYPE_CARD_UPDATED:
+                $this->handleCardUpdated($webhook);
+                break;
+            case SumitWebhook::TYPE_CARD_DELETED:
+                $this->handleCardDeleted($webhook);
+                break;
+            case SumitWebhook::TYPE_CARD_ARCHIVED:
+                $this->handleCardArchived($webhook);
+                break;
+        }
+    }
+    
+    protected function handleCardCreated(SumitWebhook $webhook): void
+    {
+        // טיפול ביצירת כרטיס
+        $cardType = $webhook->card_type;
+        $cardId = $webhook->card_id;
+        $payload = $webhook->payload;
+        
+        if ($cardType === 'customer') {
+            // סנכרון לקוח חדש למערכת
+            Customer::create([
+                'sumit_id' => $cardId,
+                'name' => $payload['Name'] ?? '',
+                'email' => $payload['Email'] ?? '',
+                'phone' => $payload['Phone'] ?? '',
+            ]);
+        } elseif ($cardType === 'document') {
+            // שמירת מסמך חדש
+            Document::create([
+                'sumit_id' => $cardId,
+                'number' => $payload['Number'] ?? '',
+                'amount' => $payload['Amount'] ?? 0,
+            ]);
+        }
+        
+        // סימון כמעובד
+        $webhook->markAsProcessed('Successfully synced');
+    }
+    
+    protected function handleCardUpdated(SumitWebhook $webhook): void
+    {
+        // עדכון כרטיס קיים
+        $cardType = $webhook->card_type;
+        $cardId = $webhook->card_id;
+        
+        if ($cardType === 'customer') {
+            Customer::where('sumit_id', $cardId)->update([
+                'name' => $webhook->payload['Name'] ?? '',
+                'email' => $webhook->payload['Email'] ?? '',
+            ]);
+        }
+        
+        $webhook->markAsProcessed('Successfully updated');
+    }
+    
+    protected function handleCardDeleted(SumitWebhook $webhook): void
+    {
+        // מחיקת כרטיס
+        $cardType = $webhook->card_type;
+        $cardId = $webhook->card_id;
+        
+        if ($cardType === 'customer') {
+            Customer::where('sumit_id', $cardId)->delete();
+        }
+        
+        $webhook->markAsProcessed('Successfully deleted');
+    }
+    
+    protected function handleCardArchived(SumitWebhook $webhook): void
+    {
+        // סימון כרטיס כמאורכב
+        $cardType = $webhook->card_type;
+        $cardId = $webhook->card_id;
+        
+        if ($cardType === 'customer') {
+            Customer::where('sumit_id', $cardId)
+                ->update(['archived' => true]);
+        }
+        
+        $webhook->markAsProcessed('Successfully archived');
+    }
+}
+```
+
+### שימוש ב-Eloquent
+
+```php
+use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
+
+// קבלת webhooks שטרם טופלו
+$pending = SumitWebhook::received()->get();
+
+// קבלת webhooks לפי סוג אירוע
+$createdCards = SumitWebhook::ofType('card_created')->get();
+
+// קבלת webhooks לפי סוג כרטיס
+$customerWebhooks = SumitWebhook::ofCardType('customer')->get();
+
+// קבלת webhooks שנכשלו
+$failed = SumitWebhook::failed()->get();
+
+// קבלת webhooks של לקוח ספציפי
+$customerWebhooks = SumitWebhook::forCustomer('CUST123')->get();
+
+// סימון webhook כמעובד
+$webhook->markAsProcessed('Synced to CRM', [
+    'transaction_id' => $transaction->id,
+]);
+
+// סימון webhook כנכשל
+$webhook->markAsFailed('API error: 500');
+
+// סימון webhook כמתעלם
+$webhook->markAsIgnored('Duplicate webhook');
+```
+
+### התמודדות עם ניסיונות חוזרים מ-SUMIT
+
+SUMIT מבצעת ניסיונות חוזרים אוטומטיים:
+
+1. **Timeout:** המערכת ממתינה 10 שניות לתשובה
+2. **Retry:** אם אין תשובה, ממתינה 30 שניות ומנסה שוב
+3. **Max Retries:** לאחר 5 ניסיונות כושלים, הטריגר מושהה
+4. **Resume:** כשהטריגר מופעל מחדש, כל הפעולות שהצטברו נשלחות
+
+**המלצות:**
+
+```php
+// מומלץ: עיבוד אסינכרוני
+public function handle(Request $request): JsonResponse
+{
+    // שמירה מהירה של ה-webhook
+    $webhook = SumitWebhook::createFromRequest(...);
+    
+    // דחיית העיבוד ל-queue
+    ProcessSumitWebhookJob::dispatch($webhook);
+    
+    // החזרת תשובה מיידית (תוך 10 שניות!)
+    return response()->json(['success' => true], 200);
+}
+```
+
+### דוגמאות שימוש נפוצות
+
+#### סנכרון לקוחות
+
+```php
+// app/Jobs/SyncCustomerFromSumit.php
+public function handle(): void
+{
+    $webhook = $this->webhook;
+    
+    if ($webhook->card_type !== 'customer') {
+        $webhook->markAsIgnored('Not a customer card');
+        return;
+    }
+    
+    $payload = $webhook->payload;
+    
+    Customer::updateOrCreate(
+        ['sumit_id' => $webhook->card_id],
+        [
+            'name' => $payload['Name'] ?? '',
+            'email' => $payload['Email'] ?? '',
+            'phone' => $payload['Phone'] ?? '',
+            'address' => $payload['Address'] ?? '',
+        ]
+    );
+    
+    $webhook->markAsProcessed('Customer synced');
+}
+```
+
+#### עדכון מלאי
+
+```php
+// app/Jobs/SyncInventoryFromSumit.php
+public function handle(): void
+{
+    $webhook = $this->webhook;
+    
+    if ($webhook->card_type !== 'item') {
+        $webhook->markAsIgnored('Not an item card');
+        return;
+    }
+    
+    $payload = $webhook->payload;
+    
+    Product::updateOrCreate(
+        ['sumit_sku' => $payload['SKU'] ?? $webhook->card_id],
+        [
+            'name' => $payload['Name'] ?? '',
+            'price' => $payload['Price'] ?? 0,
+            'stock' => $payload['Stock'] ?? 0,
+        ]
+    );
+    
+    $webhook->markAsProcessed('Inventory synced');
+}
+```
+
+#### התראה על מסמך חדש
+
+```php
+// app/Jobs/NotifyNewDocument.php
+public function handle(): void
+{
+    $webhook = $this->webhook;
+    
+    if ($webhook->card_type !== 'document') {
+        $webhook->markAsIgnored('Not a document');
+        return;
+    }
+    
+    $payload = $webhook->payload;
+    
+    // שליחת התראה לצוות
+    Notification::route('slack', config('services.slack.webhook'))
+        ->notify(new NewDocumentFromSumit([
+            'document_number' => $payload['Number'] ?? '',
+            'amount' => $payload['Amount'] ?? 0,
+            'customer' => $payload['CustomerName'] ?? '',
+        ]));
+    
+    $webhook->markAsProcessed('Notification sent');
+}
+```
+
+---
+
 ## מיגרציות נתונים
 
 ### טבלאות
@@ -1348,7 +1706,8 @@ Schedule::command('crm:sync-webhooks')->hourly();
 | `officeguy_settings` | הגדרות מערכת |
 | `vendor_credentials` | credentials לספקים |
 | `subscriptions` | מנויים |
-| `officeguy_webhook_events` | אירועי Webhook |
+| `officeguy_webhook_events` | אירועי Webhook (יוצאים) |
+| `officeguy_sumit_webhooks` | Webhooks מ-SUMIT (נכנסים) |
 
 המיגרציות נטענות אוטומטית מהחבילה. להעתקה מקומית:
 ```bash
