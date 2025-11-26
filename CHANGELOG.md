@@ -7,6 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.0.2] - 2025-11-26
+
+### Fixed
+- Fixed `Class "Filament\Forms\Components\Section" not found` error in Filament v4
+  - Updated `OfficeGuySettings.php` to use `Filament\Schemas\Components\Section`
+  - Updated `ClientPaymentMethodResource.php` to use `Filament\Schemas\Components\Section`
+  - Aligns with Filament v4 namespace reorganization (layout components moved to Schemas namespace)
+
+## [V1.0.1] - 2025-11-26
+
 ### Added
 - **Complete Filament v4 Integration**
   - Admin Panel Resources:
