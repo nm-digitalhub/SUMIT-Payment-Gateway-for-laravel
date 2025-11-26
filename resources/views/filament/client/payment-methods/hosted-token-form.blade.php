@@ -3,11 +3,12 @@
     $tokenInputId = $fieldId . '-token';
 @endphp
 
-<div x-data="paymentTokenForm()" x-init="init()" class="space-y-4">
-    {{-- SDKs --}}
-    <script src="https://code.jquery.com/jquery-3.6.4.min.js" crossorigin="anonymous"></script>
-    <script src="https://app.sumit.co.il/scripts/payments.js"></script>
-
+<div
+    x-data="paymentTokenForm()"
+    x-init="init()"
+    x-load-js="['https://code.jquery.com/jquery-3.6.4.min.js', 'https://app.sumit.co.il/scripts/payments.js']"
+    class="space-y-4"
+>
     {{-- Status Messages --}}
     <div x-show="message" x-transition class="rounded-lg p-4" :class="{
         'bg-green-50 border border-green-200 text-green-800 dark:bg-green-900/20 dark:border-green-800 dark:text-green-200': status === 'success',
@@ -99,50 +100,46 @@
                 tokenGenerated: false,
                 isGenerating: false,
                 createButton: null,
-                originalClickHandler: null,
 
                 init() {
                     console.log('[OG Token Form] Alpine component initialized');
 
-                    // Wait for Livewire to be ready
-                    if (window.Livewire) {
-                        this.setupCreateButton();
-                    } else {
-                        document.addEventListener('livewire:init', () => {
-                            this.setupCreateButton();
-                        });
-                    }
+                    // Wait for scripts to load, then setup
+                    this.waitForScripts();
+                },
 
-                    // Verify SUMIT SDK loaded
-                    if (!window.OfficeGuy?.Payments) {
-                        console.error('[OG Token Form] SUMIT SDK not loaded');
-                        this.status = 'error';
-                        this.message = 'Payment system not loaded. Please refresh the page.';
-                    } else {
-                        console.log('[OG Token Form] SUMIT SDK loaded successfully');
-                    }
+                waitForScripts() {
+                    const checkScripts = setInterval(() => {
+                        if (window.OfficeGuy?.Payments && window.Livewire) {
+                            clearInterval(checkScripts);
+                            console.log('[OG Token Form] Scripts loaded');
+                            this.setupCreateButton();
+                        }
+                    }, 100);
+
+                    // Timeout after 10 seconds
+                    setTimeout(() => {
+                        clearInterval(checkScripts);
+                        if (!window.OfficeGuy?.Payments) {
+                            console.error('[OG Token Form] SUMIT SDK failed to load');
+                            this.status = 'error';
+                            this.message = 'Payment system not loaded. Please refresh the page.';
+                        }
+                    }, 10000);
                 },
 
                 setupCreateButton() {
                     console.log('[OG Token Form] Setting up Create button');
 
                     // Find Filament's Create button
-                    // It can be: button[type="submit"], button with wire:click, or form submit
-                    this.createButton = document.querySelector('button[type="submit"][wire\\:click*="create"]') ||
-                                       document.querySelector('button[wire\\:click*="create"]') ||
-                                       document.querySelector('form button[type="submit"]');
+                    this.createButton = document.querySelector('button[type="submit"]');
 
                     if (!this.createButton) {
-                        console.warn('[OG Token Form] Create button not found, will try form submit');
-                        // Fallback: listen to any form submit in the page
-                        const forms = document.querySelectorAll('form');
-                        forms.forEach(form => {
-                            form.addEventListener('submit', (e) => this.handleSubmit(e));
-                        });
+                        console.warn('[OG Token Form] Create button not found');
                         return;
                     }
 
-                    console.log('[OG Token Form] Create button found, attaching click listener');
+                    console.log('[OG Token Form] Create button found, attaching listener');
 
                     // Attach click listener with high priority (capture phase)
                     this.createButton.addEventListener('click', (e) => this.handleButtonClick(e), true);
@@ -151,42 +148,37 @@
                 handleButtonClick(event) {
                     console.log('[OG Token Form] Create button clicked, token status:', this.tokenGenerated);
 
-                    // If token already generated, allow normal submission
+                    // If token already generated, allow submission
                     if (this.tokenGenerated) {
                         console.log('[OG Token Form] Token exists, allowing submission');
                         return true;
                     }
 
-                    // If currently generating, ignore
+                    // If currently generating, block
                     if (this.isGenerating) {
-                        console.log('[OG Token Form] Token generation in progress, blocking click');
+                        console.log('[OG Token Form] Token generation in progress, blocking');
                         event.preventDefault();
                         event.stopPropagation();
                         event.stopImmediatePropagation();
                         return false;
                     }
 
-                    // Check if token already exists in the hidden field
+                    // Check if token already in field
                     const existingToken = this.$refs.tokenInput.value;
                     if (existingToken && existingToken.length > 0) {
-                        console.log('[OG Token Form] Token already in field, allowing submission');
+                        console.log('[OG Token Form] Token already in field, allowing');
                         this.tokenGenerated = true;
                         return true;
                     }
 
-                    // No token - need to generate it first
-                    console.log('[OG Token Form] No token, preventing submission and generating token');
+                    // No token - need to generate
+                    console.log('[OG Token Form] No token, blocking and generating');
                     event.preventDefault();
                     event.stopPropagation();
                     event.stopImmediatePropagation();
 
                     this.generateToken();
                     return false;
-                },
-
-                handleSubmit(event) {
-                    console.log('[OG Token Form] Form submit intercepted');
-                    return this.handleButtonClick(event);
                 },
 
                 generateToken() {
@@ -205,8 +197,7 @@
                             console.log('[OG Token Form] Callback received');
 
                             if (tokenValue && tokenValue.length > 0) {
-                                // Success!
-                                console.log('[OG Token Form] Token generated:', tokenValue.substring(0, 10) + '...');
+                                console.log('[OG Token Form] Token generated successfully');
 
                                 this.status = 'success';
                                 this.message = 'Token generated successfully';
@@ -216,21 +207,19 @@
                                 // Update hidden field
                                 this.$refs.tokenInput.value = tokenValue;
 
-                                // Trigger Livewire data update
-                                if (window.Livewire) {
-                                    // Find the Livewire component
-                                    const livewireEl = this.$el.closest('[wire\\:id]');
-                                    if (livewireEl) {
-                                        const component = window.Livewire.find(livewireEl.getAttribute('wire:id'));
-                                        if (component) {
-                                            component.$wire.set('data.og-token', tokenValue);
-                                        }
+                                // Update Livewire component
+                                const livewireEl = this.$el.closest('[wire\\:id]');
+                                if (livewireEl) {
+                                    const wireId = livewireEl.getAttribute('wire:id');
+                                    const component = window.Livewire.find(wireId);
+                                    if (component) {
+                                        component.$wire.set('data.og-token', tokenValue);
                                     }
                                 }
 
-                                // Wait a moment, then click the button again
+                                // Click button again
                                 setTimeout(() => {
-                                    console.log('[OG Token Form] Triggering Create button click');
+                                    console.log('[OG Token Form] Triggering Create button');
                                     this.status = 'loading';
                                     this.message = 'Saving payment method...';
 
@@ -239,7 +228,6 @@
                                     }
                                 }, 300);
                             } else {
-                                // Token generation failed
                                 console.error('[OG Token Form] Token generation failed');
 
                                 this.status = 'error';
@@ -250,16 +238,15 @@
                         }
                     };
 
-                    // Call SUMIT SDK to create token
+                    // Call SUMIT SDK
                     try {
                         console.log('[OG Token Form] Calling SUMIT SDK CreateToken');
-                        const result = window.OfficeGuy.Payments.CreateToken(settings);
-                        console.log('[OG Token Form] CreateToken called, result:', result);
+                        window.OfficeGuy.Payments.CreateToken(settings);
                     } catch (error) {
                         console.error('[OG Token Form] CreateToken error:', error);
 
                         this.status = 'error';
-                        this.message = 'Failed to initialize token generation: ' + error.message;
+                        this.message = 'Failed to initialize: ' + error.message;
                         this.isGenerating = false;
                         this.tokenGenerated = false;
                     }
