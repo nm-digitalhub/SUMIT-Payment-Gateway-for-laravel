@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Forms;
+use Filament\Schemas\Components\TextInput;
+use Filament\Schemas\Components\Toggle;
+use Filament\Schemas\Components\Hidden;
+use Filament\Schemas\Components\ViewField;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
-use Filament\Forms\Components\ViewField;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource;
 use OfficeGuy\LaravelSumitGateway\Services\TokenService;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
@@ -28,47 +30,47 @@ class CreateClientPaymentMethod extends CreateRecord
 
         if ($pciMode === 'yes') {
             // מצב PCI – שולחים פרטי כרטיס מלאים לשרת (השירות מייצר טוקן)
-            $components[] = Forms\Components\TextInput::make('og-ccnum')
+            $components[] = TextInput::make('og-ccnum')
                 ->label('Card Number')
                 ->required()
                 ->numeric()
                 ->rule('digits_between:12,19');
 
-            $components[] = Forms\Components\TextInput::make('og-expmonth')
+            $components[] = TextInput::make('og-expmonth')
                 ->label('Expiry Month')
                 ->required()
                 ->numeric()
                 ->minValue(1)
                 ->maxValue(12);
 
-            $components[] = Forms\Components\TextInput::make('og-expyear')
+            $components[] = TextInput::make('og-expyear')
                 ->label('Expiry Year')
                 ->required()
                 ->numeric()
                 ->minValue((int) date('Y'))
                 ->maxValue((int) date('Y') + 20);
 
-            $components[] = Forms\Components\TextInput::make('og-cvv')
+            $components[] = TextInput::make('og-cvv')
                 ->label('CVV')
                 ->password()
                 ->required()
                 ->rule('digits_between:3,4');
 
-            $components[] = Forms\Components\TextInput::make('og-citizenid')
+            $components[] = TextInput::make('og-citizenid')
                 ->label('ID Number')
                 ->required();
 
             // אפשרות לסמן ככרטיס ברירת מחדל – ממוקם גבוה יותר בטופס
-            $components[] = Forms\Components\Toggle::make('set_as_default')
+            $components[] = Toggle::make('set_as_default')
                 ->label('Set as default payment method')
                 ->default(true);
         } else {
             // מצב Hosted Fields – מציגים טופס עם PaymentsJS שמייצר SingleUseToken לשדה og-token
-            $components[] = Forms\Components\Hidden::make('og-token')
+            $components[] = Hidden::make('og-token')
                 ->required();
 
             // Toggle קרוב לראש הטופס כדי שיהיה גלוי מיידית
-            $components[] = Forms\Components\Toggle::make('set_as_default')
+            $components[] = Toggle::make('set_as_default')
                 ->label('Set as default payment method')
                 ->default(true);
 
@@ -81,7 +83,7 @@ class CreateClientPaymentMethod extends CreateRecord
                 ]);
         }
 
-        return $schema->components($components)->columns(2);
+        return $schema->schema($components)->columns(2);
     }
 
     /**

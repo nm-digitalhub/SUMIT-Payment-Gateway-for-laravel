@@ -8,7 +8,10 @@ use Filament\Actions\Action;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
-use Filament\Forms;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\TextInput;
+use Filament\Schemas\Components\Checkbox;
+use Filament\Schemas\Components\Placeholder;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -25,7 +28,7 @@ class ClientPaymentMethodResource extends Resource
 
     protected static ?string $navigationLabel = 'My Payment Methods';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
+    protected static \BackedEnum|string|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 2;
 
@@ -48,39 +51,41 @@ class ClientPaymentMethodResource extends Resource
      */
     public static function form(Schema $schema): Schema
     {
-        return $schema->components([
-            Forms\Components\Section::make('Card Information')
+        return $schema->schema([
+            Section::make('Card Information')
+                ->columnSpanFull()
                 ->schema([
-                    Forms\Components\TextInput::make('card_type')
+                    TextInput::make('card_type')
                         ->label('Card Type')
                         ->disabled(),
 
-                    Forms\Components\TextInput::make('last_four')
+                    TextInput::make('last_four')
                         ->label('Card Number')
                         ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
                         ->disabled(),
 
-                    Forms\Components\Placeholder::make('expiry')
+                    Placeholder::make('expiry')
                         ->label('Expiry Date')
                         ->content(fn ($record) =>
                             $record?->expiry_month . '/' . $record?->expiry_year
                         ),
 
-                    Forms\Components\Checkbox::make('is_default')
+                    Checkbox::make('is_default')
                         ->label('Default Payment Method')
                         ->disabled(),
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Status')
+            Section::make('Status')
+                ->columnSpanFull()
                 ->schema([
-                    Forms\Components\Placeholder::make('status')
+                    Placeholder::make('status')
                         ->label('Card Status')
                         ->content(fn ($record) =>
                             $record?->isExpired() ? '⚠️ Expired' : '✓ Active'
                         ),
 
-                    Forms\Components\Placeholder::make('created_at')
+                    Placeholder::make('created_at')
                         ->label('Added On')
                         ->content(fn ($record) =>
                             $record?->created_at?->format('M d, Y')
