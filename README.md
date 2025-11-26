@@ -396,7 +396,24 @@ Mail::to($order->customer_email)->send(new PaymentLinkEmail($checkoutUrl));
 
 ### התאמה אישית של המודל
 
-ודאו שהמודל שלכם מממש את הממשק `Payable`:
+יש שתי דרכים לחבר את המודל שלכם לעמוד התשלום:
+
+**אפשרות 1: מיפוי שדות מ-Admin Panel (ללא שינוי קוד)**
+
+ניתן לחבר כל מודל קיים **מבלי לשנות את הקוד שלו**. פשוט הגדירו את מיפוי השדות ב-Admin Panel:
+
+1. גשו ל-**SUMIT Gateway** > **Gateway Settings** > **Field Mapping**
+2. הזינו את שמות השדות במודל שלכם:
+   - **Amount Field** - שדה הסכום (לדוגמה: `total`, `price`, `amount`)
+   - **Currency Field** - שדה המטבע (לדוגמה: `currency`) או השאירו ריק עבור ILS
+   - **Customer Name Field** - שדה שם הלקוח
+   - **Customer Email Field** - שדה האימייל
+   - **Customer Phone Field** - שדה הטלפון
+   - **Description Field** - שדה תיאור הפריט
+
+המערכת תעטוף אוטומטית את המודל שלכם ותמפה את השדות.
+
+**אפשרות 2: מימוש ממשק Payable (למודלים מורכבים)**
 
 ```php
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;

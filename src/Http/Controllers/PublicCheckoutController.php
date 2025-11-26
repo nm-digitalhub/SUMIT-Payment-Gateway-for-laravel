@@ -11,6 +11,7 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
+use OfficeGuy\LaravelSumitGateway\Support\ModelPayableWrapper;
 use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
@@ -134,14 +135,23 @@ class PublicCheckoutController extends Controller
             if ($resolved instanceof Payable) {
                 return $resolved;
             }
+            // Wrap non-Payable model with field mapping
+            if ($resolved instanceof \Illuminate\Database\Eloquent\Model) {
+                return ModelPayableWrapper::wrap($resolved);
+            }
         }
 
         // Check for model configured in Admin Panel settings
         $payableModel = $this->settings()->get('payable_model');
         if ($payableModel && class_exists($payableModel)) {
             $model = $payableModel::find($id);
-            if ($model instanceof Payable) {
-                return $model;
+            if ($model) {
+                // If model implements Payable, use it directly
+                if ($model instanceof Payable) {
+                    return $model;
+                }
+                // Otherwise, wrap it with field mapping from Admin Panel
+                return ModelPayableWrapper::wrap($model);
             }
         }
 

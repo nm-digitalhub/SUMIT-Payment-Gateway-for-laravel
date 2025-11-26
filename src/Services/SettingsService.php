@@ -187,6 +187,13 @@ class SettingsService
             'enable_public_checkout',
             'public_checkout_path',
             'payable_model',
+            // Field mapping settings
+            'field_map_amount',
+            'field_map_currency',
+            'field_map_customer_name',
+            'field_map_customer_email',
+            'field_map_customer_phone',
+            'field_map_description',
         ];
     }
 

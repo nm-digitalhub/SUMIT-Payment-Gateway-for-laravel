@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -250,8 +251,44 @@ class OfficeGuySettings extends Page
                     TextInput::make('payable_model')
                         ->label('Payable Model Class')
                         ->placeholder('App\\Models\\Order')
-                        ->helperText('Full class name of your Payable model (e.g., App\\Models\\Order, App\\Models\\Product)')
+                        ->helperText('Full class name of your model (e.g., App\\Models\\Order). Model can implement Payable interface OR use field mapping below.')
                         ->columnSpanFull(),
+                ]),
+
+            Section::make('Field Mapping (Optional)')
+                ->description('Map your model fields to payment fields. Only fill these if your model does NOT implement the Payable interface.')
+                ->collapsed()
+                ->columns(3)
+                ->schema([
+                    TextInput::make('field_map_amount')
+                        ->label('Amount Field')
+                        ->placeholder('total')
+                        ->helperText('Field name for payment amount'),
+
+                    TextInput::make('field_map_currency')
+                        ->label('Currency Field')
+                        ->placeholder('currency')
+                        ->helperText('Field name for currency (or leave empty for ILS)'),
+
+                    TextInput::make('field_map_customer_name')
+                        ->label('Customer Name Field')
+                        ->placeholder('customer_name')
+                        ->helperText('Field name for customer name'),
+
+                    TextInput::make('field_map_customer_email')
+                        ->label('Customer Email Field')
+                        ->placeholder('email')
+                        ->helperText('Field name for customer email'),
+
+                    TextInput::make('field_map_customer_phone')
+                        ->label('Customer Phone Field')
+                        ->placeholder('phone')
+                        ->helperText('Field name for customer phone'),
+
+                    TextInput::make('field_map_description')
+                        ->label('Description Field')
+                        ->placeholder('description')
+                        ->helperText('Field name for item description'),
                 ]),
         ];
     }
