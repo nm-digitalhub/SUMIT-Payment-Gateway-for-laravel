@@ -346,6 +346,82 @@ class OfficeGuySettings extends Page
                         ->placeholder('https://your-app.com/webhooks/stock-synced')
                         ->helperText('Called when stock is synchronized'),
                 ]),
+
+            Section::make('Route Configuration')
+                ->description('Customize all package endpoints. Changes require cache clear to take effect. Run: php artisan route:clear')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('routes_prefix')
+                        ->label('Route Prefix')
+                        ->placeholder('officeguy')
+                        ->default('officeguy')
+                        ->helperText('Base prefix for all routes (e.g., "officeguy" → /officeguy/...)')
+                        ->columnSpanFull(),
+
+                    Section::make('Payment Callbacks')
+                        ->description('Endpoints that receive callbacks from SUMIT after payment processing')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('routes_card_callback')
+                                ->label('Card Callback Path')
+                                ->placeholder('callback/card')
+                                ->default('callback/card')
+                                ->helperText('Redirect return after card payment → /{prefix}/callback/card'),
+
+                            TextInput::make('routes_bit_webhook')
+                                ->label('Bit Webhook Path')
+                                ->placeholder('webhook/bit')
+                                ->default('webhook/bit')
+                                ->helperText('Bit payment IPN webhook → /{prefix}/webhook/bit'),
+
+                            TextInput::make('routes_sumit_webhook')
+                                ->label('SUMIT Webhook Path')
+                                ->placeholder('webhook/sumit')
+                                ->default('webhook/sumit')
+                                ->helperText('Incoming webhooks from SUMIT → /{prefix}/webhook/sumit'),
+                        ]),
+
+                    Section::make('Checkout Endpoints')
+                        ->description('Endpoints for payment processing')
+                        ->columns(2)
+                        ->schema([
+                            Toggle::make('routes_enable_checkout_endpoint')
+                                ->label('Enable Checkout Charge Endpoint')
+                                ->helperText('Enable the checkout/charge endpoint for API payments')
+                                ->default(false)
+                                ->columnSpanFull(),
+
+                            TextInput::make('routes_checkout_charge')
+                                ->label('Checkout Charge Path')
+                                ->placeholder('checkout/charge')
+                                ->default('checkout/charge')
+                                ->helperText('Direct charge endpoint → /{prefix}/checkout/charge'),
+
+                            TextInput::make('routes_document_download')
+                                ->label('Document Download Path')
+                                ->placeholder('documents/{document}')
+                                ->default('documents/{document}')
+                                ->helperText('Document download → /{prefix}/documents/{id}'),
+                        ]),
+
+                    Section::make('Redirect Routes')
+                        ->description('Named routes for redirection after payment')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('routes_success')
+                                ->label('Success Route Name')
+                                ->placeholder('checkout.success')
+                                ->default('checkout.success')
+                                ->helperText('Named route to redirect after successful payment'),
+
+                            TextInput::make('routes_failed')
+                                ->label('Failed Route Name')
+                                ->placeholder('checkout.failed')
+                                ->default('checkout.failed')
+                                ->helperText('Named route to redirect after failed payment'),
+                        ]),
+                ]),
         ];
     }
 

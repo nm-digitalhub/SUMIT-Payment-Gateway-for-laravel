@@ -66,6 +66,65 @@ php artisan migrate   # יריץ את כל מיגרציות החבילה
 - מסלולי Redirect: routes.success, routes.failed
 - Order binding: order.model או order.resolver (callable)
 
+### התאמת נתיבים (Route Configuration)
+
+ניתן להתאים את כל נתיבי החבילה ישירות מה-Admin Panel:
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** > **Route Configuration**
+
+**נתיבים ניתנים להתאמה:**
+
+| הגדרה | ברירת מחדל | תיאור |
+|-------|------------|--------|
+| Route Prefix | `officeguy` | קידומת לכל הנתיבים |
+| Card Callback | `callback/card` | חזרה מתשלום בכרטיס |
+| Bit Webhook | `webhook/bit` | קבלת IPN מ-Bit |
+| SUMIT Webhook | `webhook/sumit` | קבלת webhooks מ-SUMIT |
+| Document Download | `documents/{document}` | הורדת מסמכים |
+| Checkout Charge | `checkout/charge` | חיוב ישיר |
+| Public Checkout | `checkout/{id}` | עמוד תשלום ציבורי |
+| Success Route | `checkout.success` | נתיב הצלחה |
+| Failed Route | `checkout.failed` | נתיב כישלון |
+
+**דוגמה - שינוי נתיבים:**
+
+1. גשו ל-Admin Panel > Gateway Settings > Route Configuration
+2. שנו את Route Prefix ל-`payments`
+3. שנו את Card Callback ל-`return/card`
+4. שמרו את ההגדרות
+5. נקו cache: `php artisan route:clear`
+
+**תוצאה:**
+- `POST /payments/return/card` במקום `POST /officeguy/callback/card`
+- `POST /payments/webhook/bit` במקום `POST /officeguy/webhook/bit`
+
+**או ב-.env:**
+```env
+OFFICEGUY_ROUTE_PREFIX=payments
+OFFICEGUY_CARD_CALLBACK_PATH=return/card
+OFFICEGUY_BIT_WEBHOOK_PATH=ipn/bit
+OFFICEGUY_SUMIT_WEBHOOK_PATH=triggers/sumit
+```
+
+**שימוש בקוד:**
+```php
+use OfficeGuy\LaravelSumitGateway\Support\RouteConfig;
+
+// קבלת כל הנתיבים המוגדרים
+$paths = RouteConfig::getAllPaths();
+// [
+//     'prefix' => 'officeguy',
+//     'card_callback' => 'officeguy/callback/card',
+//     'bit_webhook' => 'officeguy/webhook/bit',
+//     'sumit_webhook' => 'officeguy/webhook/sumit',
+//     ...
+// ]
+
+// קבלת נתיב ספציפי
+$cardCallbackPath = RouteConfig::getPrefix() . '/' . RouteConfig::getCardCallbackPath();
+```
+
 ---
 
 ## עמוד תשלום

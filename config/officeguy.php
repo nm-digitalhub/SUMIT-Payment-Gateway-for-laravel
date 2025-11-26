@@ -134,7 +134,8 @@ return [
     | Route Configuration
     |--------------------------------------------------------------------------
     |
-    | Configure callback and webhook URLs
+    | Configure callback and webhook URLs.
+    | All paths can be customized via Admin Panel (Gateway Settings > Route Configuration)
     |
     */
     'routes' => [
@@ -142,6 +143,8 @@ return [
         'middleware' => ['web'],
         'card_callback' => env('OFFICEGUY_CARD_CALLBACK_PATH', 'callback/card'),
         'bit_webhook' => env('OFFICEGUY_BIT_WEBHOOK_PATH', 'webhook/bit'),
+        'sumit_webhook' => env('OFFICEGUY_SUMIT_WEBHOOK_PATH', 'webhook/sumit'),
+        'document_download' => env('OFFICEGUY_DOCUMENT_DOWNLOAD_PATH', 'documents/{document}'),
         'success' => env('OFFICEGUY_SUCCESS_ROUTE', 'checkout.success'),
         'failed' => env('OFFICEGUY_FAILED_ROUTE', 'checkout.failed'),
         'enable_checkout_endpoint' => env('OFFICEGUY_ENABLE_CHECKOUT_ROUTE', false),
