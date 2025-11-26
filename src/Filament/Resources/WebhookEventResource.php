@@ -6,12 +6,13 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use BackedEnum;
 use Filament\Forms;
+use Filament\Forms\Form;
 use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Infolist;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Actions\BulkAction;
@@ -41,11 +42,11 @@ class WebhookEventResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'event_type';
 
-    public static function form(Schema $schema): Schema
+    public static function form(Form $form): Form
     {
-        return $schema
-            ->components([
-                Section::make('Event Information')
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Event Information')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\Select::make('event_type')
@@ -67,7 +68,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Section::make('Related Resources')
+                Forms\Components\Section::make('Related Resources')
                     ->columnSpanFull()
                     ->description('Connected resources for automation workflows')
                     ->schema([
@@ -85,7 +86,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Section::make('Customer & Amount')
+                Forms\Components\Section::make('Customer & Amount')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('customer_email')
@@ -102,7 +103,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Section::make('Retry Information')
+                Forms\Components\Section::make('Retry Information')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('retry_count')
@@ -116,7 +117,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Section::make('Error Details')
+                Forms\Components\Section::make('Error Details')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\Textarea::make('error_message')
@@ -126,7 +127,7 @@ class WebhookEventResource extends Resource
                     ])
                     ->visible(fn (?Model $record): bool => !empty($record?->error_message)),
 
-                Section::make('Payload & Response')
+                Forms\Components\Section::make('Payload & Response')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\KeyValue::make('payload')
@@ -139,10 +140,10 @@ class WebhookEventResource extends Resource
             ]);
     }
 
-    public static function infolist(Schema $schema): Schema
+    public static function infolist(Infolist $infolist): Infolist
     {
-        return $schema->components([
-            Section::make('Event Details')
+        return $infolist->schema([
+            InfolistSection::make('Event Details')
                 ->columnSpanFull()
                 ->schema([
                     TextEntry::make('event_type')
@@ -187,7 +188,7 @@ class WebhookEventResource extends Resource
                         ->placeholder('Not sent yet'),
                 ])->columns(3),
 
-            Section::make('Connected Resources')
+            InfolistSection::make('Connected Resources')
                 ->columnSpanFull()
                 ->description('Click to navigate to related records')
                 ->schema([
@@ -222,7 +223,7 @@ class WebhookEventResource extends Resource
                         ->color('primary'),
                 ])->columns(4),
 
-            Section::make('Customer & Payment')
+            InfolistSection::make('Customer & Payment')
                 ->columnSpanFull()
                 ->schema([
                     TextEntry::make('customer_email')
@@ -239,7 +240,7 @@ class WebhookEventResource extends Resource
                         ->badge(),
                 ])->columns(4),
 
-            Section::make('Retry Status')
+            InfolistSection::make('Retry Status')
                 ->columnSpanFull()
                 ->schema([
                     TextEntry::make('retry_count')
@@ -257,7 +258,7 @@ class WebhookEventResource extends Resource
                 ])->columns(2)
                 ->visible(fn (Model $record): bool => $record->retry_count > 0 || $record->next_retry_at !== null),
 
-            Section::make('Error Information')
+            InfolistSection::make('Error Information')
                 ->columnSpanFull()
                 ->schema([
                     TextEntry::make('error_message')
@@ -266,7 +267,7 @@ class WebhookEventResource extends Resource
                 ])
                 ->visible(fn (Model $record): bool => !empty($record->error_message)),
 
-            Section::make('Payload')
+            InfolistSection::make('Payload')
                 ->columnSpanFull()
                 ->schema([
                     KeyValueEntry::make('payload')
@@ -274,7 +275,7 @@ class WebhookEventResource extends Resource
                 ])
                 ->collapsed(),
 
-            Section::make('Response')
+            InfolistSection::make('Response')
                 ->columnSpanFull()
                 ->schema([
                     KeyValueEntry::make('response')
@@ -565,7 +566,5 @@ class WebhookEventResource extends Resource
             'Status' => ucfirst($record->status),
             'Customer' => $record->customer_email,
         ];
-    }
-}
     }
 }
