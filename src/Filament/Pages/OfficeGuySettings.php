@@ -49,12 +49,11 @@ class OfficeGuySettings extends Page
     }
 
     public function form(Schema $schema): Schema
-    {
-        return $schema
-            ->schema($this->getFormSchema())
-            ->statePath('data');
-    }
-
+{
+    return $schema
+        ->components($this->getFormSchema())
+        ->statePath('data');
+}
     protected function getFormSchema(): array
     {
         return [
