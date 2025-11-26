@@ -304,6 +304,13 @@ php artisan vendor:publish --tag=officeguy-views
   - בחירת אמצעי תשלום שמור (טוקן)
   - בחירת מספר תשלומים
   - תמיכה ב-RTL וולידציה צד-לקוח עם Alpine.js
+- **`pages/checkout.blade.php`** - עמוד תשלום ציבורי מלא עם:
+  - תצוגת סיכום הזמנה
+  - פרטי לקוח
+  - בחירת אמצעי תשלום (כרטיס/Bit)
+  - תמיכה בתשלומים
+  - עיצוב מודרני עם Tailwind CSS
+  - תמיכה מלאה ב-RTL
 - **`filament/pages/officeguy-settings.blade.php`** - עמוד הגדרות ב-Filament Admin
 - **`filament/client/payment-methods/hosted-token-form.blade.php`** - טופס ניהול אמצעי תשלום ללקוח
 
@@ -341,6 +348,87 @@ php artisan vendor:publish --tag=officeguy-views
 ```bash
 # פרסום קונפיג ותצוגות בלבד
 php artisan vendor:publish --tag=officeguy-config --tag=officeguy-views
+```
+
+## עמוד תשלום ציבורי (Public Checkout Page)
+
+החבילה מספקת עמוד תשלום ציבורי שניתן לשייך לכל מודל המממש את הממשק `Payable`. זה מאפשר ליצור קישורי תשלום לכל סוג של מוצר, שירות או הזמנה במערכת.
+
+### הפעלה
+
+```env
+OFFICEGUY_ENABLE_PUBLIC_CHECKOUT=true
+```
+
+### שימוש
+
+לאחר ההפעלה, ניתן לגשת לעמוד התשלום בכתובת:
+```
+GET /officeguy/checkout/{id}
+```
+
+כאשר `{id}` הוא המזהה של המודל ה-Payable (למשל מזהה הזמנה).
+
+### דוגמה - יצירת קישור תשלום
+
+```php
+// יצירת קישור תשלום להזמנה
+$order = Order::find(123);
+$checkoutUrl = route('officeguy.public.checkout', ['id' => $order->id]);
+
+// שליחת הקישור ללקוח
+Mail::to($order->customer_email)->send(new PaymentLinkEmail($checkoutUrl));
+```
+
+### התאמה אישית של המודל
+
+ודאו שהמודל שלכם מממש את הממשק `Payable`:
+
+```php
+use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Support\Traits\PayableAdapter;
+
+class Order extends Model implements Payable
+{
+    use PayableAdapter;
+    
+    // או מימוש ידני של המתודות
+}
+```
+
+### התאמת העיצוב
+
+פרסמו את התצוגות והתאימו את `pages/checkout.blade.php`:
+
+```bash
+php artisan vendor:publish --tag=officeguy-views
+```
+
+לאחר מכן ערכו את הקובץ `resources/views/vendor/officeguy/pages/checkout.blade.php` להתאמה לעיצוב האתר שלכם.
+
+### משתנים זמינים בתצוגה
+
+| משתנה | תיאור |
+|-------|--------|
+| `$payable` | אובייקט ה-Payable (הזמנה/מוצר) |
+| `$settings` | הגדרות שער התשלום |
+| `$maxPayments` | מספר תשלומים מקסימלי |
+| `$bitEnabled` | האם Bit מופעל |
+| `$supportTokens` | האם שמירת כרטיסים מופעלת |
+| `$savedTokens` | אוסף כרטיסים שמורים (למשתמש מחובר) |
+| `$currency` | קוד מטבע (ILS, USD וכו') |
+| `$currencySymbol` | סימן מטבע (₪, $ וכו') |
+| `$checkoutUrl` | כתובת לשליחת הטופס |
+
+### Resolver מותאם אישית
+
+ניתן להגדיר resolver מותאם אישית בקונפיגורציה:
+
+```php
+// config/officeguy.php
+'order' => [
+    'resolver' => fn($id) => \App\Models\Product::with('prices')->find($id),
+],
 ```
 
 ## רישיון

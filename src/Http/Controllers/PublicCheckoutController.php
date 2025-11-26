@@ -1,0 +1,291 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OfficeGuy\LaravelSumitGateway\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
+use Illuminate\View\View;
+use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
+
+/**
+ * Public Checkout Page Controller
+ *
+ * Provides a public checkout page for any Payable model.
+ * This allows developers to link any model implementing Payable
+ * to a customizable checkout experience.
+ */
+class PublicCheckoutController extends Controller
+{
+    /**
+     * Display the public checkout page for a given payable model.
+     *
+     * @param Request $request
+     * @param string|int $id The payable model ID
+     * @return View
+     */
+    public function show(Request $request, string|int $id): View
+    {
+        $payable = $this->resolvePayable($request, $id);
+
+        if (!$payable) {
+            abort(404, __('Order not found'));
+        }
+
+        $amount = $payable->getPayableAmount();
+        $currency = $payable->getPayableCurrency();
+
+        return view('officeguy::pages.checkout', [
+            'payable' => $payable,
+            'settings' => $this->getSettings(),
+            'maxPayments' => PaymentService::getMaximumPayments($amount),
+            'bitEnabled' => (bool) config('officeguy.bit_enabled', false),
+            'supportTokens' => (bool) config('officeguy.support_tokens', false),
+            'savedTokens' => $this->getSavedTokens(),
+            'currency' => $currency,
+            'currencySymbol' => $this->getCurrencySymbol($currency),
+            'checkoutUrl' => route('officeguy.public.checkout.process', ['id' => $id]),
+        ]);
+    }
+
+    /**
+     * Process the checkout form submission.
+     *
+     * @param Request $request
+     * @param string|int $id
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    public function process(Request $request, string|int $id)
+    {
+        $payable = $this->resolvePayable($request, $id);
+
+        if (!$payable) {
+            abort(404, __('Order not found'));
+        }
+
+        $validated = $request->validate([
+            'customer_name' => 'required|string|max:255',
+            'customer_email' => 'required|email|max:255',
+            'customer_phone' => 'nullable|string|max:50',
+            'payment_method' => 'required|in:card,bit',
+            'payments_count' => 'nullable|integer|min:1|max:36',
+            'payment_token' => 'nullable|string',
+            'save_card' => 'nullable|boolean',
+        ]);
+
+        $paymentsCount = max(1, (int) ($validated['payments_count'] ?? 1));
+        $paymentMethod = $validated['payment_method'];
+
+        // Handle Bit payment
+        if ($paymentMethod === 'bit') {
+            return $this->processBitPayment($payable, $validated);
+        }
+
+        // Handle card payment
+        return $this->processCardPayment($payable, $validated, $paymentsCount, $request);
+    }
+
+    /**
+     * Resolve the payable model from the request.
+     *
+     * @param Request $request
+     * @param string|int $id
+     * @return Payable|null
+     */
+    protected function resolvePayable(Request $request, string|int $id): ?Payable
+    {
+        // Check for custom resolver in the request (allows per-route customization)
+        $customResolver = $request->route('resolver');
+        if ($customResolver && is_callable($customResolver)) {
+            $resolved = call_user_func($customResolver, $id);
+            if ($resolved instanceof Payable) {
+                return $resolved;
+            }
+        }
+
+        // Fall back to default order resolver
+        return OrderResolver::resolve($id);
+    }
+
+    /**
+     * Get saved payment tokens for the current user.
+     *
+     * @return \Illuminate\Support\Collection
+     */
+    protected function getSavedTokens()
+    {
+        if (!auth()->check() || !config('officeguy.support_tokens', false)) {
+            return collect();
+        }
+
+        return OfficeGuyToken::getForOwner(auth()->user(), 'officeguy');
+    }
+
+    /**
+     * Get the settings array for the view.
+     *
+     * @return array
+     */
+    protected function getSettings(): array
+    {
+        return [
+            'pci_mode' => config('officeguy.pci', config('officeguy.pci_mode', 'no')),
+            'cvv_mode' => config('officeguy.cvv', 'required'),
+            'citizen_id_mode' => config('officeguy.citizen_id', 'required'),
+            'company_id' => config('officeguy.company_id', ''),
+            'public_key' => config('officeguy.public_key', ''),
+        ];
+    }
+
+    /**
+     * Get the currency symbol for a given currency code.
+     *
+     * @param string $currency
+     * @return string
+     */
+    protected function getCurrencySymbol(string $currency): string
+    {
+        $symbols = [
+            'ILS' => '₪',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'CAD' => 'C$',
+            'AUD' => 'A$',
+            'CHF' => 'CHF ',
+            'JPY' => '¥',
+        ];
+
+        return $symbols[$currency] ?? $currency . ' ';
+    }
+
+    /**
+     * Process a card payment.
+     *
+     * @param Payable $payable
+     * @param array $validated
+     * @param int $paymentsCount
+     * @param Request $request
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    protected function processCardPayment(Payable $payable, array $validated, int $paymentsCount, Request $request)
+    {
+        $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
+        $redirectMode = $pciMode === 'redirect';
+
+        // Prepare extra parameters for redirect mode
+        $extra = [];
+        if ($redirectMode) {
+            $extra['RedirectURL'] = route(config('officeguy.routes.success', 'checkout.success'), [
+                'order' => $payable->getPayableId()
+            ]);
+            $extra['CancelRedirectURL'] = route(config('officeguy.routes.failed', 'checkout.failed'), [
+                'order' => $payable->getPayableId()
+            ]);
+        }
+
+        // Check for existing token
+        $token = null;
+        $tokenId = $validated['payment_token'] ?? null;
+        if ($tokenId && $tokenId !== 'new') {
+            $token = OfficeGuyToken::find($tokenId);
+        }
+
+        // Process the charge
+        $result = PaymentService::processCharge(
+            $payable,
+            $paymentsCount,
+            false, // recurring
+            $redirectMode,
+            $token,
+            $extra
+        );
+
+        if ($result['success'] === true) {
+            // Handle redirect flow
+            if ($redirectMode && isset($result['redirect_url'])) {
+                return redirect()->away($result['redirect_url']);
+            }
+
+            // Save token if requested
+            if (($validated['save_card'] ?? false) && auth()->check() && isset($result['response']['Data']['Token'])) {
+                $this->saveCardToken($result['response']['Data'], auth()->user());
+            }
+
+            return redirect()->route(
+                config('officeguy.routes.success', 'checkout.success'),
+                ['order' => $payable->getPayableId()]
+            )->with('success', __('Payment completed successfully'));
+        }
+
+        $errorMessage = $result['message'] ?? __('Payment failed. Please try again.');
+
+        if ($request->expectsJson()) {
+            return response()->json([
+                'success' => false,
+                'message' => $errorMessage,
+            ], 422);
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', $errorMessage);
+    }
+
+    /**
+     * Process a Bit payment.
+     *
+     * @param Payable $payable
+     * @param array $validated
+     * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
+     */
+    protected function processBitPayment(Payable $payable, array $validated)
+    {
+        // Bit payments are handled via redirect
+        // The actual implementation depends on the BitPaymentService
+        $bitService = app(\OfficeGuy\LaravelSumitGateway\Services\BitPaymentService::class);
+
+        $result = $bitService->initiatePayment($payable, [
+            'customer_name' => $validated['customer_name'],
+            'customer_email' => $validated['customer_email'],
+            'customer_phone' => $validated['customer_phone'] ?? null,
+        ]);
+
+        if (isset($result['redirect_url'])) {
+            return redirect()->away($result['redirect_url']);
+        }
+
+        return redirect()->back()
+            ->withInput()
+            ->with('error', $result['message'] ?? __('Could not initiate Bit payment'));
+    }
+
+    /**
+     * Save a card token for future use.
+     *
+     * @param array $data
+     * @param mixed $user
+     * @return void
+     */
+    protected function saveCardToken(array $data, $user): void
+    {
+        if (!isset($data['Token'])) {
+            return;
+        }
+
+        OfficeGuyToken::create([
+            'owner_type' => get_class($user),
+            'owner_id' => $user->getKey(),
+            'gateway' => 'officeguy',
+            'token' => $data['Token'],
+            'card_last_four' => substr($data['CardNumber'] ?? '', -4),
+            'card_type' => $data['CardType'] ?? null,
+            'expiry_month' => $data['ExpirationMonth'] ?? null,
+            'expiry_year' => $data['ExpirationYear'] ?? null,
+        ]);
+    }
+}

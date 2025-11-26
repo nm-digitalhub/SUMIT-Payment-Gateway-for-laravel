@@ -146,6 +146,8 @@ return [
         'failed' => env('OFFICEGUY_FAILED_ROUTE', 'checkout.failed'),
         'enable_checkout_endpoint' => env('OFFICEGUY_ENABLE_CHECKOUT_ROUTE', false),
         'checkout_charge' => env('OFFICEGUY_CHECKOUT_CHARGE_PATH', 'checkout/charge'),
+        'enable_public_checkout' => env('OFFICEGUY_ENABLE_PUBLIC_CHECKOUT', false),
+        'public_checkout' => env('OFFICEGUY_PUBLIC_CHECKOUT_PATH', 'checkout/{id}'),
     ],
 
     /*
