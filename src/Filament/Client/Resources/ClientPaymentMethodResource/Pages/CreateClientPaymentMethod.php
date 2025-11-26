@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
-use Filament\Schemas\Components\TextInput;
-use Filament\Schemas\Components\Toggle;
-use Filament\Schemas\Components\Hidden;
-use Filament\Schemas\Components\ViewField;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Components\Hidden;
+use Filament\Forms\Components\ViewField;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource;
