@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -128,6 +129,11 @@ class ClientDocumentResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                Action::make('download')
+                    ->label('Download')
+                    ->icon('heroicon-o-arrow-down-tray')
+                    ->visible(fn ($record) => $record->document_id && !$record->is_draft)
+                    ->url(fn ($record) => route('officeguy.document.download', ['document' => $record->document_id]), true),
             ])
             ->emptyStateHeading('No documents found')
             ->emptyStateDescription('You don\'t have any invoices or receipts yet. Documents will appear here after you make a purchase.')

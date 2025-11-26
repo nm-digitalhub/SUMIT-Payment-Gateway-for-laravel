@@ -183,6 +183,48 @@ class SettingsService
             'paypal_receipts',
             'bluesnap_receipts',
             'other_receipts',
+            // Public Checkout Page settings
+            'enable_public_checkout',
+            'public_checkout_path',
+            'payable_model',
+            // Field mapping settings
+            'field_map_amount',
+            'field_map_currency',
+            'field_map_customer_name',
+            'field_map_customer_email',
+            'field_map_customer_phone',
+            'field_map_description',
+            // Custom Event Webhooks
+            'webhook_payment_completed',
+            'webhook_payment_failed',
+            'webhook_document_created',
+            'webhook_subscription_created',
+            'webhook_subscription_charged',
+            'webhook_bit_payment_completed',
+            'webhook_stock_synced',
+            'webhook_secret',
+            // Customer Merging and Sync
+            'customer_sync_enabled',
+            'customer_model',
+            'customer_field_email',
+            'customer_field_name',
+            'customer_field_phone',
+            'customer_field_first_name',
+            'customer_field_last_name',
+            'customer_field_company',
+            'customer_field_address',
+            'customer_field_city',
+            'customer_field_sumit_id',
+            // Route Configuration
+            'routes_prefix',
+            'routes_card_callback',
+            'routes_bit_webhook',
+            'routes_sumit_webhook',
+            'routes_enable_checkout_endpoint',
+            'routes_checkout_charge',
+            'routes_document_download',
+            'routes_success',
+            'routes_failed',
         ];
     }
 

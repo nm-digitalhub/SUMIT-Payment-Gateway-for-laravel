@@ -1,0 +1,477 @@
+<?php
+
+declare(strict_types=1);
+
+namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
+
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Filament\Actions\Action;
+use Filament\Actions\ViewAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Notifications\Notification;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\SumitWebhookResource\Pages;
+
+/**
+ * Filament Resource for managing incoming webhooks from SUMIT.
+ *
+ * This resource displays webhooks received from the SUMIT system when
+ * cards (customers, documents, transactions, etc.) are created, updated,
+ * deleted, or archived.
+ */
+class SumitWebhookResource extends Resource
+{
+    protected static ?string $model = SumitWebhook::class;
+
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
+
+    protected static ?string $navigationLabel = 'SUMIT Webhooks';
+
+    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
+
+    protected static ?int $navigationSort = 7;
+
+    protected static ?string $recordTitleAttribute = 'event_type';
+
+    protected static ?string $modelLabel = 'SUMIT Webhook';
+
+    protected static ?string $pluralModelLabel = 'SUMIT Webhooks';
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Webhook Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('id')
+                            ->label('Webhook ID'),
+                        Infolists\Components\TextEntry::make('event_type')
+                            ->label('Event Type')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'card_created' => 'success',
+                                'card_updated' => 'info',
+                                'card_deleted' => 'danger',
+                                'card_archived' => 'warning',
+                                default => 'gray',
+                            })
+                            ->formatStateUsing(fn ($record) => $record->getEventTypeLabel()),
+                        Infolists\Components\TextEntry::make('card_type')
+                            ->label('Card Type')
+                            ->badge()
+                            ->color('gray')
+                            ->formatStateUsing(fn ($record) => $record->getCardTypeLabel()),
+                        Infolists\Components\TextEntry::make('status')
+                            ->badge()
+                            ->color(fn (string $state): string => match ($state) {
+                                'processed' => 'success',
+                                'received' => 'warning',
+                                'failed' => 'danger',
+                                'ignored' => 'gray',
+                                default => 'gray',
+                            }),
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Received At')
+                            ->dateTime(),
+                        Infolists\Components\TextEntry::make('processed_at')
+                            ->label('Processed At')
+                            ->dateTime()
+                            ->placeholder('Not processed yet'),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Request Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('source_ip')
+                            ->label('Source IP')
+                            ->copyable(),
+                        Infolists\Components\TextEntry::make('content_type')
+                            ->label('Content Type'),
+                        Infolists\Components\TextEntry::make('card_id')
+                            ->label('Card ID (SUMIT)')
+                            ->copyable(),
+                    ])->columns(3),
+
+                Infolists\Components\Section::make('Card Data')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('customer_id')
+                            ->label('Customer ID')
+                            ->copyable(),
+                        Infolists\Components\TextEntry::make('customer_name')
+                            ->label('Customer Name'),
+                        Infolists\Components\TextEntry::make('customer_email')
+                            ->label('Customer Email')
+                            ->copyable()
+                            ->icon('heroicon-o-envelope'),
+                        Infolists\Components\TextEntry::make('amount')
+                            ->label('Amount')
+                            ->money(fn ($record) => $record->currency ?? 'ILS')
+                            ->placeholder('N/A'),
+                    ])->columns(4),
+
+                Infolists\Components\Section::make('Connected Resources')
+                    ->description('Local resources linked to this webhook')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('transaction.payment_id')
+                            ->label('Transaction')
+                            ->placeholder('Not linked')
+                            ->url(fn ($record) => $record->transaction_id 
+                                ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
+                                : null)
+                            ->color('primary'),
+                        Infolists\Components\TextEntry::make('document.document_number')
+                            ->label('Document')
+                            ->placeholder('Not linked')
+                            ->url(fn ($record) => $record->document_id 
+                                ? DocumentResource::getUrl('view', ['record' => $record->document_id])
+                                : null)
+                            ->color('primary'),
+                        Infolists\Components\TextEntry::make('token.last_digits')
+                            ->label('Token')
+                            ->formatStateUsing(fn ($state) => $state ? '****' . $state : null)
+                            ->placeholder('Not linked')
+                            ->url(fn ($record) => $record->token_id 
+                                ? TokenResource::getUrl('view', ['record' => $record->token_id])
+                                : null)
+                            ->color('primary'),
+                        Infolists\Components\TextEntry::make('subscription.name')
+                            ->label('Subscription')
+                            ->placeholder('Not linked')
+                            ->url(fn ($record) => $record->subscription_id 
+                                ? SubscriptionResource::getUrl('view', ['record' => $record->subscription_id])
+                                : null)
+                            ->color('primary'),
+                    ])->columns(4),
+
+                Infolists\Components\Section::make('Processing Notes')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('processing_notes')
+                            ->label('Notes')
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn ($record) => !empty($record->processing_notes)),
+
+                Infolists\Components\Section::make('Error Information')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('error_message')
+                            ->label('Error Message')
+                            ->columnSpanFull(),
+                    ])
+                    ->visible(fn ($record) => !empty($record->error_message)),
+
+                Infolists\Components\Section::make('Full Payload')
+                    ->schema([
+                        Infolists\Components\KeyValueEntry::make('payload')
+                            ->label('Payload Data'),
+                    ])
+                    ->collapsed(),
+
+                Infolists\Components\Section::make('Request Headers')
+                    ->schema([
+                        Infolists\Components\KeyValueEntry::make('headers')
+                            ->label('HTTP Headers'),
+                    ])
+                    ->collapsed(),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('id')
+                    ->label('ID')
+                    ->sortable()
+                    ->searchable(),
+                Tables\Columns\TextColumn::make('event_type')
+                    ->label('Event')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'card_created' => 'success',
+                        'card_updated' => 'info',
+                        'card_deleted' => 'danger',
+                        'card_archived' => 'warning',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn ($record) => $record->getEventTypeLabel())
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('card_type')
+                    ->label('Card Type')
+                    ->badge()
+                    ->color('gray')
+                    ->formatStateUsing(fn ($record) => $record->getCardTypeLabel())
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'processed' => 'success',
+                        'received' => 'warning',
+                        'failed' => 'danger',
+                        'ignored' => 'gray',
+                        default => 'gray',
+                    })
+                    ->icon(fn (string $state): string => match ($state) {
+                        'processed' => 'heroicon-o-check-circle',
+                        'received' => 'heroicon-o-clock',
+                        'failed' => 'heroicon-o-x-circle',
+                        'ignored' => 'heroicon-o-minus-circle',
+                        default => 'heroicon-o-question-mark-circle',
+                    })
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('card_id')
+                    ->label('Card ID')
+                    ->searchable()
+                    ->copyable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('customer_name')
+                    ->label('Customer')
+                    ->searchable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('customer_email')
+                    ->label('Email')
+                    ->searchable()
+                    ->toggleable()
+                    ->toggledHiddenByDefault(),
+                Tables\Columns\TextColumn::make('amount')
+                    ->money(fn ($record) => $record->currency ?? 'ILS')
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('source_ip')
+                    ->label('Source IP')
+                    ->searchable()
+                    ->toggleable()
+                    ->toggledHiddenByDefault(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Received')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('processed_at')
+                    ->label('Processed')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable()
+                    ->toggledHiddenByDefault(),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('event_type')
+                    ->label('Event Type')
+                    ->options(SumitWebhook::getEventTypes())
+                    ->multiple(),
+                Tables\Filters\SelectFilter::make('card_type')
+                    ->label('Card Type')
+                    ->options(SumitWebhook::getCardTypes())
+                    ->multiple(),
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(SumitWebhook::getStatuses())
+                    ->multiple(),
+                Tables\Filters\Filter::make('unprocessed')
+                    ->label('Unprocessed')
+                    ->query(fn ($query) => $query->where('status', 'received'))
+                    ->toggle(),
+                Tables\Filters\Filter::make('failed')
+                    ->label('Failed')
+                    ->query(fn ($query) => $query->where('status', 'failed'))
+                    ->toggle(),
+                Tables\Filters\Filter::make('has_transaction')
+                    ->label('Has Transaction')
+                    ->query(fn ($query) => $query->whereNotNull('transaction_id'))
+                    ->toggle(),
+                Tables\Filters\Filter::make('has_document')
+                    ->label('Has Document')
+                    ->query(fn ($query) => $query->whereNotNull('document_id'))
+                    ->toggle(),
+                Tables\Filters\Filter::make('date_range')
+                    ->form([
+                        Forms\Components\DatePicker::make('received_from')
+                            ->label('From'),
+                        Forms\Components\DatePicker::make('received_until')
+                            ->label('Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['received_from'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                            )
+                            ->when(
+                                $data['received_until'],
+                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                            );
+                    }),
+            ])
+            ->actions([
+                ViewAction::make(),
+                Action::make('process')
+                    ->label('Process')
+                    ->icon('heroicon-o-play')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->isPending())
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        // Dispatch the event again for processing
+                        event(new \OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived($record));
+                        
+                        Notification::make()
+                            ->title('Webhook dispatched for processing')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('mark_processed')
+                    ->label('Mark Processed')
+                    ->icon('heroicon-o-check')
+                    ->color('success')
+                    ->visible(fn ($record) => $record->isPending())
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Processing Notes')
+                            ->rows(2),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->markAsProcessed($data['notes'] ?? null);
+                        
+                        Notification::make()
+                            ->title('Webhook marked as processed')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('mark_ignored')
+                    ->label('Ignore')
+                    ->icon('heroicon-o-minus-circle')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->isPending())
+                    ->requiresConfirmation()
+                    ->form([
+                        Forms\Components\Textarea::make('reason')
+                            ->label('Reason for ignoring')
+                            ->rows(2),
+                    ])
+                    ->action(function ($record, array $data) {
+                        $record->markAsIgnored($data['reason'] ?? null);
+                        
+                        Notification::make()
+                            ->title('Webhook marked as ignored')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('copy_payload')
+                    ->label('Copy Payload')
+                    ->icon('heroicon-o-clipboard-document')
+                    ->color('gray')
+                    ->action(function ($record) {
+                        Notification::make()
+                            ->title('Payload copied to clipboard')
+                            ->success()
+                            ->send();
+                    }),
+                DeleteAction::make(),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    BulkAction::make('mark_all_processed')
+                        ->label('Mark Processed')
+                        ->icon('heroicon-o-check')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $count = 0;
+                            foreach ($records as $record) {
+                                if ($record->isPending()) {
+                                    $record->markAsProcessed('Bulk processed');
+                                    $count++;
+                                }
+                            }
+                            
+                            Notification::make()
+                                ->title("{$count} webhooks marked as processed")
+                                ->success()
+                                ->send();
+                        }),
+                    BulkAction::make('mark_all_ignored')
+                        ->label('Mark Ignored')
+                        ->icon('heroicon-o-minus-circle')
+                        ->color('gray')
+                        ->requiresConfirmation()
+                        ->action(function (Collection $records) {
+                            $count = 0;
+                            foreach ($records as $record) {
+                                if ($record->isPending()) {
+                                    $record->markAsIgnored('Bulk ignored');
+                                    $count++;
+                                }
+                            }
+                            
+                            Notification::make()
+                                ->title("{$count} webhooks marked as ignored")
+                                ->success()
+                                ->send();
+                        }),
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->poll('30s');
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            //
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListSumitWebhooks::route('/'),
+            'view' => Pages\ViewSumitWebhook::route('/{record}'),
+        ];
+    }
+
+    public static function canCreate(): bool
+    {
+        return false;
+    }
+
+    public static function canEdit($record): bool
+    {
+        return false;
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $count = static::getModel()::where('status', 'received')->count();
+        return $count > 0 ? (string) $count : null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        $failedCount = static::getModel()::where('status', 'failed')->count();
+        return $failedCount > 0 ? 'danger' : 'warning';
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['card_id', 'customer_id', 'customer_email', 'customer_name', 'event_type'];
+    }
+
+    public static function getGlobalSearchResultDetails($record): array
+    {
+        return [
+            'Event' => $record->getEventTypeLabel(),
+            'Card Type' => $record->getCardTypeLabel(),
+            'Status' => ucfirst($record->status),
+        ];
+    }
+}

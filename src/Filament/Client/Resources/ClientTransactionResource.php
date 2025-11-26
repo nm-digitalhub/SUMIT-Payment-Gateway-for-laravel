@@ -132,7 +132,7 @@ class ClientTransactionResource extends Resource
                     ->label('Download Document')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->visible(fn ($record) => $record->document_id)
-                    ->url(fn ($record) => route('officeguy.document.download', $record->document_id), true),
+                    ->url(fn ($record) => route('officeguy.document.download', ['document' => $record->document_id]), true),
             ])
             ->defaultSort('created_at', 'desc');
     }

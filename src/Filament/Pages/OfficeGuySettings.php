@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
+use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -230,6 +231,270 @@ class OfficeGuySettings extends Page
                     Toggle::make('bit_enabled'),
                     Toggle::make('logging'),
                     TextInput::make('log_channel'),
+                ]),
+
+            Section::make('Public Checkout Page')
+                ->description('Configure the public checkout page for payment links')
+                ->columns(2)
+                ->schema([
+                    Toggle::make('enable_public_checkout')
+                        ->label('Enable Public Checkout')
+                        ->helperText('Allow public access to checkout page via /officeguy/checkout/{id}')
+                        ->default(false),
+
+                    TextInput::make('public_checkout_path')
+                        ->label('Checkout Path')
+                        ->placeholder('checkout/{id}')
+                        ->helperText('Custom path for checkout page (default: checkout/{id})')
+                        ->default('checkout/{id}'),
+
+                    TextInput::make('payable_model')
+                        ->label('Payable Model Class')
+                        ->placeholder('App\\Models\\Order')
+                        ->helperText('Full class name of your model (e.g., App\\Models\\Order). Model can implement Payable interface OR use field mapping below.')
+                        ->columnSpanFull(),
+                ]),
+
+            Section::make('Field Mapping (Optional)')
+                ->description('Map your model fields to payment fields. Only fill these if your model does NOT implement the Payable interface.')
+                ->collapsed()
+                ->columns(3)
+                ->schema([
+                    TextInput::make('field_map_amount')
+                        ->label('Amount Field')
+                        ->placeholder('total')
+                        ->helperText('Field name for payment amount'),
+
+                    TextInput::make('field_map_currency')
+                        ->label('Currency Field')
+                        ->placeholder('currency')
+                        ->helperText('Field name for currency (or leave empty for ILS)'),
+
+                    TextInput::make('field_map_customer_name')
+                        ->label('Customer Name Field')
+                        ->placeholder('customer_name')
+                        ->helperText('Field name for customer name'),
+
+                    TextInput::make('field_map_customer_email')
+                        ->label('Customer Email Field')
+                        ->placeholder('email')
+                        ->helperText('Field name for customer email'),
+
+                    TextInput::make('field_map_customer_phone')
+                        ->label('Customer Phone Field')
+                        ->placeholder('phone')
+                        ->helperText('Field name for customer phone'),
+
+                    TextInput::make('field_map_description')
+                        ->label('Description Field')
+                        ->placeholder('description')
+                        ->helperText('Field name for item description'),
+                ]),
+
+            Section::make('Custom Event Webhooks')
+                ->description('Configure webhook URLs to receive notifications when events occur. Leave empty to disable.')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('webhook_secret')
+                        ->label('Webhook Secret')
+                        ->password()
+                        ->revealable()
+                        ->placeholder('your-secret-key')
+                        ->helperText('Secret key for webhook signature verification (X-Webhook-Signature header)')
+                        ->columnSpanFull(),
+
+                    TextInput::make('webhook_payment_completed')
+                        ->label('Payment Completed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/payment-completed')
+                        ->helperText('Called when a payment is successfully completed'),
+
+                    TextInput::make('webhook_payment_failed')
+                        ->label('Payment Failed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/payment-failed')
+                        ->helperText('Called when a payment fails'),
+
+                    TextInput::make('webhook_document_created')
+                        ->label('Document Created URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/document-created')
+                        ->helperText('Called when a document (invoice/receipt) is created'),
+
+                    TextInput::make('webhook_subscription_created')
+                        ->label('Subscription Created URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/subscription-created')
+                        ->helperText('Called when a new subscription is created'),
+
+                    TextInput::make('webhook_subscription_charged')
+                        ->label('Subscription Charged URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/subscription-charged')
+                        ->helperText('Called when a subscription is charged'),
+
+                    TextInput::make('webhook_bit_payment_completed')
+                        ->label('Bit Payment Completed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/bit-completed')
+                        ->helperText('Called when a Bit payment is completed'),
+
+                    TextInput::make('webhook_stock_synced')
+                        ->label('Stock Synced URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/stock-synced')
+                        ->helperText('Called when stock is synchronized'),
+                ]),
+
+            Section::make('Customer Merging')
+                ->description('Configure automatic customer merging with SUMIT and sync with your local customer model.')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    Toggle::make('merge_customers')
+                        ->label('Enable Customer Merging')
+                        ->helperText('When enabled, SUMIT will automatically merge customers by email/ID to prevent duplicates.')
+                        ->default(false),
+
+                    Toggle::make('customer_sync_enabled')
+                        ->label('Enable Local Customer Sync')
+                        ->helperText('Sync SUMIT customers with your local customer model.')
+                        ->default(false),
+
+                    TextInput::make('customer_model')
+                        ->label('Customer Model Class')
+                        ->placeholder('App\\Models\\User')
+                        ->helperText('Full class name of your local customer/user model (e.g., App\\Models\\User or App\\Models\\Customer).')
+                        ->columnSpanFull(),
+
+                    Section::make('Customer Field Mapping')
+                        ->description('Map your model fields to SUMIT customer fields. Only fill if using local sync.')
+                        ->columns(3)
+                        ->schema([
+                            TextInput::make('customer_field_email')
+                                ->label('Email Field')
+                                ->placeholder('email')
+                                ->default('email')
+                                ->helperText('Field name for email (unique identifier)'),
+
+                            TextInput::make('customer_field_name')
+                                ->label('Name Field')
+                                ->placeholder('name')
+                                ->default('name')
+                                ->helperText('Field name for full name'),
+
+                            TextInput::make('customer_field_phone')
+                                ->label('Phone Field')
+                                ->placeholder('phone')
+                                ->helperText('Field name for phone number'),
+
+                            TextInput::make('customer_field_first_name')
+                                ->label('First Name Field')
+                                ->placeholder('first_name')
+                                ->helperText('Field name for first name (if separate)'),
+
+                            TextInput::make('customer_field_last_name')
+                                ->label('Last Name Field')
+                                ->placeholder('last_name')
+                                ->helperText('Field name for last name (if separate)'),
+
+                            TextInput::make('customer_field_company')
+                                ->label('Company Field')
+                                ->placeholder('company')
+                                ->helperText('Field name for company name'),
+
+                            TextInput::make('customer_field_address')
+                                ->label('Address Field')
+                                ->placeholder('address')
+                                ->helperText('Field name for address'),
+
+                            TextInput::make('customer_field_city')
+                                ->label('City Field')
+                                ->placeholder('city')
+                                ->helperText('Field name for city'),
+
+                            TextInput::make('customer_field_sumit_id')
+                                ->label('SUMIT ID Field')
+                                ->placeholder('sumit_customer_id')
+                                ->helperText('Field to store SUMIT customer ID (create this column in your table)'),
+                        ]),
+                ]),
+
+            Section::make('Route Configuration')
+                ->description('Customize all package endpoints. Changes require cache clear to take effect. Run: php artisan route:clear')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('routes_prefix')
+                        ->label('Route Prefix')
+                        ->placeholder('officeguy')
+                        ->default('officeguy')
+                        ->helperText('Base prefix for all routes (e.g., "officeguy" → /officeguy/...)')
+                        ->columnSpanFull(),
+
+                    Section::make('Payment Callbacks')
+                        ->description('Endpoints that receive callbacks from SUMIT after payment processing')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('routes_card_callback')
+                                ->label('Card Callback Path')
+                                ->placeholder('callback/card')
+                                ->default('callback/card')
+                                ->helperText('Redirect return after card payment → /{prefix}/callback/card'),
+
+                            TextInput::make('routes_bit_webhook')
+                                ->label('Bit Webhook Path')
+                                ->placeholder('webhook/bit')
+                                ->default('webhook/bit')
+                                ->helperText('Bit payment IPN webhook → /{prefix}/webhook/bit'),
+
+                            TextInput::make('routes_sumit_webhook')
+                                ->label('SUMIT Webhook Path')
+                                ->placeholder('webhook/sumit')
+                                ->default('webhook/sumit')
+                                ->helperText('Incoming webhooks from SUMIT → /{prefix}/webhook/sumit'),
+                        ]),
+
+                    Section::make('Checkout Endpoints')
+                        ->description('Endpoints for payment processing')
+                        ->columns(2)
+                        ->schema([
+                            Toggle::make('routes_enable_checkout_endpoint')
+                                ->label('Enable Checkout Charge Endpoint')
+                                ->helperText('Enable the checkout/charge endpoint for API payments')
+                                ->default(false)
+                                ->columnSpanFull(),
+
+                            TextInput::make('routes_checkout_charge')
+                                ->label('Checkout Charge Path')
+                                ->placeholder('checkout/charge')
+                                ->default('checkout/charge')
+                                ->helperText('Direct charge endpoint → /{prefix}/checkout/charge'),
+
+                            TextInput::make('routes_document_download')
+                                ->label('Document Download Path')
+                                ->placeholder('documents/{document}')
+                                ->default('documents/{document}')
+                                ->helperText('Document download → /{prefix}/documents/{id}'),
+                        ]),
+
+                    Section::make('Redirect Routes')
+                        ->description('Named routes for redirection after payment')
+                        ->columns(2)
+                        ->schema([
+                            TextInput::make('routes_success')
+                                ->label('Success Route Name')
+                                ->placeholder('checkout.success')
+                                ->default('checkout.success')
+                                ->helperText('Named route to redirect after successful payment'),
+
+                            TextInput::make('routes_failed')
+                                ->label('Failed Route Name')
+                                ->placeholder('checkout.failed')
+                                ->default('checkout.failed')
+                                ->helperText('Named route to redirect after failed payment'),
+                        ]),
                 ]),
         ];
     }
