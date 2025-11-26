@@ -31,60 +31,52 @@ class OfficeGuySetting extends Model
 
     /**
      * Get a setting value by key.
-     *
-     * @param string $key
-     * @return mixed|null
      */
     public static function get(string $key): mixed
     {
-        $setting = static::where('key', $key)->first();
-
-        return $setting?->value;
+        return static::query()
+            ->where('key', $key)
+            ->value('value');
     }
 
     /**
      * Set a setting value by key.
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return void
      */
     public static function set(string $key, mixed $value): void
     {
         static::updateOrCreate(
             ['key' => $key],
-            ['value' => $value]
+            ['value' => $value],
         );
     }
 
     /**
      * Check if a setting exists.
-     *
-     * @param string $key
-     * @return bool
      */
     public static function has(string $key): bool
     {
-        return static::where('key', $key)->exists();
+        return static::query()
+            ->where('key', $key)
+            ->exists();
     }
 
     /**
      * Delete a setting by key.
-     *
-     * @param string $key
-     * @return void
      */
     public static function remove(string $key): void
     {
-        static::where('key', $key)->delete();
+        static::query()
+            ->where('key', $key)
+            ->delete();
     }
 
     /**
-     * Get all settings as an associative array.
+     * Get all settings as associative array.
      *
-     * @return array<string,mixed>
+     * IMPORTANT:
+     * Must NOT override Model::all().
      */
-    public static function all(): array
+    public static function allAsArray(): array
     {
         return static::query()
             ->pluck('value', 'key')
