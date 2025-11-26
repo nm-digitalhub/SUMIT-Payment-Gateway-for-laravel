@@ -7,6 +7,24 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.0.3] - 2025-11-26
+
+### Fixed
+- Fixed settings not persisting after save and page refresh
+  - Added `getAllSettings()` alias method to `OfficeGuySetting` model
+  - `SettingsService::all()` was calling non-existent `getAllSettings()` method
+  - Method was actually named `allAsArray()`, causing exception and fallback to config defaults
+  - Settings changes now properly save to database and persist across page refreshes
+
+### Changed
+- Updated all database migrations for Laravel 12 compatibility
+  - Added `Schema::hasTable()` checks before creating tables
+  - Added `Schema::hasColumn()` checks before adding columns
+  - Added foreign key existence checks before creating constraints
+  - Added `declare(strict_types=1)` to migrations that were missing it
+  - Migrations can now safely run multiple times without errors
+  - Prevents collision errors in existing installations
+
 ## [V1.0.2] - 2025-11-26
 
 ### Fixed
