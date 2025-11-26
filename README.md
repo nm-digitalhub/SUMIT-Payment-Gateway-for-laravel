@@ -356,6 +356,18 @@ php artisan vendor:publish --tag=officeguy-config --tag=officeguy-views
 
 ### הפעלה
 
+ניתן להפעיל את עמוד התשלום הציבורי בשתי דרכים:
+
+**1. דרך Admin Panel (מומלץ):**
+
+גשו לעמוד ההגדרות ב-Filament Admin Panel:
+- נווטו ל-**SUMIT Gateway** > **Gateway Settings**
+- מצאו את הסעיף **"Public Checkout Page"**
+- הפעילו את **"Enable Public Checkout"**
+- ניתן גם להגדיר נתיב מותאם אישית
+
+**2. דרך קובץ .env:**
+
 ```env
 OFFICEGUY_ENABLE_PUBLIC_CHECKOUT=true
 ```

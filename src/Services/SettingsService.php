@@ -183,6 +183,9 @@ class SettingsService
             'paypal_receipts',
             'bluesnap_receipts',
             'other_receipts',
+            // Public Checkout Page settings
+            'enable_public_checkout',
+            'public_checkout_path',
         ];
     }
 

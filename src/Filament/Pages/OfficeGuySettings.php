@@ -231,6 +231,22 @@ class OfficeGuySettings extends Page
                     Toggle::make('logging'),
                     TextInput::make('log_channel'),
                 ]),
+
+            Section::make('Public Checkout Page')
+                ->description('Configure the public checkout page for payment links')
+                ->columns(2)
+                ->schema([
+                    Toggle::make('enable_public_checkout')
+                        ->label('Enable Public Checkout')
+                        ->helperText('Allow public access to checkout page via /officeguy/checkout/{id}')
+                        ->default(false),
+
+                    TextInput::make('public_checkout_path')
+                        ->label('Checkout Path')
+                        ->placeholder('checkout/{id}')
+                        ->helperText('Custom path for checkout page (default: checkout/{id})')
+                        ->default('checkout/{id}'),
+                ]),
         ];
     }
 

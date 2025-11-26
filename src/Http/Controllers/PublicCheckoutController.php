@@ -10,6 +10,7 @@ use Illuminate\View\View;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
@@ -22,6 +23,24 @@ use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 class PublicCheckoutController extends Controller
 {
     /**
+     * Get the settings service instance.
+     */
+    protected function settings(): SettingsService
+    {
+        return app(SettingsService::class);
+    }
+
+    /**
+     * Check if public checkout is enabled (via Admin Panel or config).
+     */
+    protected function isEnabled(): bool
+    {
+        $defaultValue = config('officeguy.routes.enable_public_checkout', false);
+
+        return (bool) $this->settings()->get('enable_public_checkout', $defaultValue);
+    }
+
+    /**
      * Display the public checkout page for a given payable model.
      *
      * @param Request $request
@@ -30,6 +49,11 @@ class PublicCheckoutController extends Controller
      */
     public function show(Request $request, string|int $id): View
     {
+        // Check if feature is enabled
+        if (!$this->isEnabled()) {
+            abort(404, __('Public checkout is not enabled'));
+        }
+
         $payable = $this->resolvePayable($request, $id);
 
         if (!$payable) {
@@ -43,8 +67,8 @@ class PublicCheckoutController extends Controller
             'payable' => $payable,
             'settings' => $this->getSettings(),
             'maxPayments' => PaymentService::getMaximumPayments($amount),
-            'bitEnabled' => (bool) config('officeguy.bit_enabled', false),
-            'supportTokens' => (bool) config('officeguy.support_tokens', false),
+            'bitEnabled' => (bool) $this->settings()->get('bit_enabled', false),
+            'supportTokens' => (bool) $this->settings()->get('support_tokens', false),
             'savedTokens' => $this->getSavedTokens(),
             'currency' => $currency,
             'currencySymbol' => $this->getCurrencySymbol($currency),
@@ -61,6 +85,11 @@ class PublicCheckoutController extends Controller
      */
     public function process(Request $request, string|int $id)
     {
+        // Check if feature is enabled
+        if (!$this->isEnabled()) {
+            abort(404, __('Public checkout is not enabled'));
+        }
+
         $payable = $this->resolvePayable($request, $id);
 
         if (!$payable) {
@@ -118,7 +147,7 @@ class PublicCheckoutController extends Controller
      */
     protected function getSavedTokens()
     {
-        if (!auth()->check() || !config('officeguy.support_tokens', false)) {
+        if (!auth()->check() || !$this->settings()->get('support_tokens', false)) {
             return collect();
         }
 
@@ -136,12 +165,14 @@ class PublicCheckoutController extends Controller
      */
     protected function getSettings(): array
     {
+        $settings = $this->settings();
+
         return [
-            'pci_mode' => config('officeguy.pci', config('officeguy.pci_mode', 'no')),
-            'cvv_mode' => config('officeguy.cvv', 'required'),
-            'citizen_id_mode' => config('officeguy.citizen_id', 'required'),
-            'company_id' => config('officeguy.company_id', ''),
-            'public_key' => config('officeguy.public_key', ''),
+            'pci_mode' => $settings->get('pci', $settings->get('pci_mode', 'no')),
+            'cvv_mode' => $settings->get('cvv', 'required'),
+            'citizen_id_mode' => $settings->get('citizen_id', 'required'),
+            'company_id' => $settings->get('company_id', ''),
+            'public_key' => $settings->get('public_key', ''),
         ];
     }
 

@@ -47,17 +47,15 @@ Route::prefix($prefix)
             )->name('officeguy.checkout.charge');
         }
 
-        // Public checkout page (disabled by default)
-        // Enable with OFFICEGUY_ENABLE_PUBLIC_CHECKOUT=true
-        if (config('officeguy.routes.enable_public_checkout', false)) {
-            Route::get(
-                config('officeguy.routes.public_checkout', 'checkout/{id}'),
-                [PublicCheckoutController::class, 'show']
-            )->name('officeguy.public.checkout');
+        // Public checkout page - routes are always registered but controller checks if enabled
+        // Can be enabled via Admin Panel (Settings) or config/env
+        Route::get(
+            config('officeguy.routes.public_checkout', 'checkout/{id}'),
+            [PublicCheckoutController::class, 'show']
+        )->name('officeguy.public.checkout');
 
-            Route::post(
-                config('officeguy.routes.public_checkout', 'checkout/{id}'),
-                [PublicCheckoutController::class, 'process']
-            )->name('officeguy.public.checkout.process');
-        }
+        Route::post(
+            config('officeguy.routes.public_checkout', 'checkout/{id}'),
+            [PublicCheckoutController::class, 'process']
+        )->name('officeguy.public.checkout.process');
     });
