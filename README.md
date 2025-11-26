@@ -896,6 +896,75 @@ $webhookService->send('payment_completed', [
 
 ---
 
+## Webhook Events Resource (Admin Panel)
+
+### צפייה ב-Webhook Events
+
+משאב מלא לצפייה וניהול כל אירועי ה-Webhook, כולל חיבור למשאבים קיימים לבניית אוטומציות.
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Webhook Events**
+
+### תכונות
+
+**רשימת אירועים:**
+- צפייה בכל האירועים שנשלחו
+- סינון לפי סוג אירוע, סטטוס, טווח תאריכים
+- חיפוש לפי מייל לקוח או מזהה
+- מיון לפי תאריך, סטטוס, HTTP status
+- Badge עם מספר אירועים שנכשלו
+
+**פעולות:**
+- **Retry** - שליחה חוזרת של webhook שנכשל
+- **Retry All Failed** - שליחה חוזרת לכל האירועים הכושלים
+- **Clear Sent Events** - מחיקת אירועים ישנים (7+ ימים)
+- **Copy Payload** - העתקת ה-payload
+
+**חיבור למשאבים קיימים:**
+כל אירוע מקושר אוטומטית למשאבים הרלוונטיים:
+- **Transaction** - לחיצה מעבירה לעמוד הטרנזקציה
+- **Document** - לחיצה מעבירה לעמוד המסמך
+- **Token** - לחיצה מעבירה לעמוד הטוקן
+- **Subscription** - לחיצה מעבירה לעמוד המנוי
+
+**סטטיסטיקות (Widget):**
+- אירועים היום
+- אחוז הצלחה
+- אירועים שנכשלו
+- זמן תגובה ממוצע
+- גרף 7 ימים אחרונים
+
+**שימוש לבניית אוטומציות:**
+```php
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
+
+// קבלת כל האירועים שנכשלו
+$failedEvents = WebhookEvent::failed()->get();
+
+// קבלת אירועים של לקוח ספציפי
+$customerEvents = WebhookEvent::forCustomer('customer@example.com')->get();
+
+// קבלת אירועים מסוג מסוים
+$paymentEvents = WebhookEvent::ofType('payment_completed')
+    ->with(['transaction', 'document'])
+    ->get();
+
+// גישה למשאבים מקושרים
+foreach ($paymentEvents as $event) {
+    $transaction = $event->transaction;
+    $document = $event->document;
+    $subscription = $event->subscription;
+}
+
+// שליחה חוזרת של אירוע
+$event = WebhookEvent::find(123);
+if ($event->canRetry()) {
+    $event->scheduleRetry(5); // retry in 5 minutes
+}
+```
+
+---
+
 ## מיגרציות נתונים
 
 ### טבלאות
@@ -908,6 +977,7 @@ $webhookService->send('payment_completed', [
 | `officeguy_settings` | הגדרות מערכת |
 | `vendor_credentials` | credentials לספקים |
 | `subscriptions` | מנויים |
+| `officeguy_webhook_events` | אירועי Webhook |
 
 המיגרציות נטענות אוטומטית מהחבילה. להעתקה מקומית:
 ```bash

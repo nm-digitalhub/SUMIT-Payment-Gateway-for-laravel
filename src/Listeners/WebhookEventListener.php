@@ -18,6 +18,7 @@ use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
  *
  * This listener automatically sends webhook notifications for configured events.
  * Configure webhook URLs in the Admin Panel under "Custom Event Webhooks".
+ * All events are logged to the database with connections to related resources.
  */
 class WebhookEventListener
 {
@@ -33,13 +34,26 @@ class WebhookEventListener
      */
     public function handlePaymentCompleted(PaymentCompleted $event): void
     {
-        $this->webhookService->sendPaymentCompleted([
+        $payload = [
             'order_id' => $event->orderId ?? null,
             'transaction_id' => $event->transactionId ?? null,
             'amount' => $event->amount ?? null,
             'currency' => $event->currency ?? null,
             'customer_email' => $event->customerEmail ?? null,
-        ]);
+        ];
+
+        $options = [
+            'transaction_id' => $event->transactionModelId ?? null,
+            'document_id' => $event->documentModelId ?? null,
+            'token_id' => $event->tokenModelId ?? null,
+            'order_type' => $event->orderType ?? null,
+            'order_id' => $event->orderId ?? null,
+            'customer_email' => $event->customerEmail ?? null,
+            'amount' => $event->amount ?? null,
+            'currency' => $event->currency ?? null,
+        ];
+
+        $this->webhookService->sendPaymentCompleted($payload, $options);
     }
 
     /**
@@ -47,11 +61,19 @@ class WebhookEventListener
      */
     public function handlePaymentFailed(PaymentFailed $event): void
     {
-        $this->webhookService->sendPaymentFailed([
+        $payload = [
             'order_id' => $event->orderId ?? null,
             'error_message' => $event->errorMessage ?? null,
             'error_code' => $event->errorCode ?? null,
-        ]);
+        ];
+
+        $options = [
+            'transaction_id' => $event->transactionModelId ?? null,
+            'order_type' => $event->orderType ?? null,
+            'order_id' => $event->orderId ?? null,
+        ];
+
+        $this->webhookService->sendPaymentFailed($payload, $options);
     }
 
     /**
@@ -59,12 +81,22 @@ class WebhookEventListener
      */
     public function handleDocumentCreated(DocumentCreated $event): void
     {
-        $this->webhookService->sendDocumentCreated([
+        $payload = [
             'document_id' => $event->documentId ?? null,
             'document_type' => $event->documentType ?? null,
             'order_id' => $event->orderId ?? null,
             'customer_email' => $event->customerEmail ?? null,
-        ]);
+        ];
+
+        $options = [
+            'document_id' => $event->documentModelId ?? null,
+            'transaction_id' => $event->transactionModelId ?? null,
+            'order_type' => $event->orderType ?? null,
+            'order_id' => $event->orderId ?? null,
+            'customer_email' => $event->customerEmail ?? null,
+        ];
+
+        $this->webhookService->sendDocumentCreated($payload, $options);
     }
 
     /**
@@ -72,12 +104,21 @@ class WebhookEventListener
      */
     public function handleSubscriptionCreated(SubscriptionCreated $event): void
     {
-        $this->webhookService->sendSubscriptionCreated([
+        $payload = [
             'subscription_id' => $event->subscriptionId ?? null,
             'customer_id' => $event->customerId ?? null,
             'amount' => $event->amount ?? null,
             'interval' => $event->interval ?? null,
-        ]);
+        ];
+
+        $options = [
+            'subscription_id' => $event->subscriptionModelId ?? $event->subscriptionId ?? null,
+            'token_id' => $event->tokenModelId ?? null,
+            'customer_id' => $event->customerId ?? null,
+            'amount' => $event->amount ?? null,
+        ];
+
+        $this->webhookService->sendSubscriptionCreated($payload, $options);
     }
 
     /**
@@ -85,12 +126,20 @@ class WebhookEventListener
      */
     public function handleSubscriptionCharged(SubscriptionCharged $event): void
     {
-        $this->webhookService->sendSubscriptionCharged([
+        $payload = [
             'subscription_id' => $event->subscriptionId ?? null,
             'charge_id' => $event->chargeId ?? null,
             'amount' => $event->amount ?? null,
             'next_charge_date' => $event->nextChargeDate ?? null,
-        ]);
+        ];
+
+        $options = [
+            'subscription_id' => $event->subscriptionModelId ?? $event->subscriptionId ?? null,
+            'transaction_id' => $event->transactionModelId ?? null,
+            'amount' => $event->amount ?? null,
+        ];
+
+        $this->webhookService->sendSubscriptionCharged($payload, $options);
     }
 
     /**
@@ -98,11 +147,21 @@ class WebhookEventListener
      */
     public function handleBitPaymentCompleted(BitPaymentCompleted $event): void
     {
-        $this->webhookService->sendBitPaymentCompleted([
+        $payload = [
             'order_id' => $event->orderId ?? null,
             'transaction_id' => $event->transactionId ?? null,
             'amount' => $event->amount ?? null,
-        ]);
+        ];
+
+        $options = [
+            'transaction_id' => $event->transactionModelId ?? null,
+            'document_id' => $event->documentModelId ?? null,
+            'order_type' => $event->orderType ?? null,
+            'order_id' => $event->orderId ?? null,
+            'amount' => $event->amount ?? null,
+        ];
+
+        $this->webhookService->sendBitPaymentCompleted($payload, $options);
     }
 
     /**
@@ -110,10 +169,12 @@ class WebhookEventListener
      */
     public function handleStockSynced(StockSynced $event): void
     {
-        $this->webhookService->sendStockSynced([
+        $payload = [
             'items_synced' => $event->itemsSynced ?? null,
             'sync_type' => $event->syncType ?? null,
-        ]);
+        ];
+
+        $this->webhookService->sendStockSynced($payload);
     }
 
     /**

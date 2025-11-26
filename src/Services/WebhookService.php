@@ -6,12 +6,14 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
 /**
  * WebhookService - Sends custom webhook notifications for payment events
  *
  * This service allows developers to receive notifications for various events
  * without creating custom Listeners. Configure webhook URLs in the Admin Panel.
+ * All events are logged to the database for monitoring and automation.
  */
 class WebhookService
 {
@@ -27,13 +29,21 @@ class WebhookService
      *
      * @param string $event The event name (e.g., 'payment_completed')
      * @param array $payload The data to send
+     * @param array $options Additional options (transaction_id, document_id, etc.)
      * @return bool Whether the webhook was sent successfully
      */
-    public function send(string $event, array $payload): bool
+    public function send(string $event, array $payload, array $options = []): bool
     {
         $url = $this->settings->get("webhook_{$event}");
 
+        // Create webhook event record
+        $webhookEvent = WebhookEvent::createEvent($event, $payload, array_merge($options, [
+            'webhook_url' => $url,
+        ]));
+
         if (empty($url)) {
+            // No URL configured - mark as sent (no action needed)
+            $webhookEvent->markAsSent(0, ['message' => 'No webhook URL configured']);
             return false;
         }
 
@@ -55,6 +65,10 @@ class WebhookService
                 ->post($url, $payload);
 
             if ($response->successful()) {
+                $webhookEvent->markAsSent($response->status(), [
+                    'body' => $response->body(),
+                ]);
+
                 $this->log('info', "Webhook sent successfully", [
                     'event' => $event,
                     'url' => $url,
@@ -62,6 +76,11 @@ class WebhookService
                 ]);
                 return true;
             }
+
+            $webhookEvent->markAsFailed(
+                "HTTP {$response->status()}: " . substr($response->body(), 0, 500),
+                $response->status()
+            );
 
             $this->log('warning', "Webhook request failed", [
                 'event' => $event,
@@ -71,6 +90,8 @@ class WebhookService
             ]);
             return false;
         } catch (\Exception $e) {
+            $webhookEvent->markAsFailed($e->getMessage());
+
             $this->log('error', "Webhook error: {$e->getMessage()}", [
                 'event' => $event,
                 'url' => $url,
@@ -117,57 +138,86 @@ class WebhookService
     /**
      * Send payment completed webhook.
      */
-    public function sendPaymentCompleted(array $data): bool
+    public function sendPaymentCompleted(array $data, array $options = []): bool
     {
-        return $this->send('payment_completed', $data);
+        return $this->send('payment_completed', $data, $options);
     }
 
     /**
      * Send payment failed webhook.
      */
-    public function sendPaymentFailed(array $data): bool
+    public function sendPaymentFailed(array $data, array $options = []): bool
     {
-        return $this->send('payment_failed', $data);
+        return $this->send('payment_failed', $data, $options);
     }
 
     /**
      * Send document created webhook.
      */
-    public function sendDocumentCreated(array $data): bool
+    public function sendDocumentCreated(array $data, array $options = []): bool
     {
-        return $this->send('document_created', $data);
+        return $this->send('document_created', $data, $options);
     }
 
     /**
      * Send subscription created webhook.
      */
-    public function sendSubscriptionCreated(array $data): bool
+    public function sendSubscriptionCreated(array $data, array $options = []): bool
     {
-        return $this->send('subscription_created', $data);
+        return $this->send('subscription_created', $data, $options);
     }
 
     /**
      * Send subscription charged webhook.
      */
-    public function sendSubscriptionCharged(array $data): bool
+    public function sendSubscriptionCharged(array $data, array $options = []): bool
     {
-        return $this->send('subscription_charged', $data);
+        return $this->send('subscription_charged', $data, $options);
     }
 
     /**
      * Send Bit payment completed webhook.
      */
-    public function sendBitPaymentCompleted(array $data): bool
+    public function sendBitPaymentCompleted(array $data, array $options = []): bool
     {
-        return $this->send('bit_payment_completed', $data);
+        return $this->send('bit_payment_completed', $data, $options);
     }
 
     /**
      * Send stock synced webhook.
      */
-    public function sendStockSynced(array $data): bool
+    public function sendStockSynced(array $data, array $options = []): bool
     {
-        return $this->send('stock_synced', $data);
+        return $this->send('stock_synced', $data, $options);
+    }
+
+    /**
+     * Retry failed webhook events.
+     *
+     * @param int $limit Maximum number of events to retry
+     * @return int Number of events processed
+     */
+    public function retryFailedEvents(int $limit = 100): int
+    {
+        $events = WebhookEvent::readyForRetry()
+            ->limit($limit)
+            ->get();
+
+        $processed = 0;
+
+        foreach ($events as $event) {
+            $success = $this->send($event->event_type, $event->payload ?? []);
+            
+            if ($success) {
+                $event->markAsSent(200);
+            } else {
+                $event->scheduleRetry();
+            }
+            
+            $processed++;
+        }
+
+        return $processed;
     }
 
     /**
