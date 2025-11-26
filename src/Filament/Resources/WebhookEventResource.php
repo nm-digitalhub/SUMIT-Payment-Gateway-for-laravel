@@ -16,15 +16,16 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
+
+// חשוב — אין Infolist כאן
 use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use Filament\Infolists\Components;
+
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\HtmlString;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
-
 class WebhookEventResource extends Resource
 {
     protected static ?string $model = WebhookEvent::class;
