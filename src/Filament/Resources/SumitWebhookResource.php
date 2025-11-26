@@ -16,8 +16,9 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use Filament\Schemas\Components\Section as InfolistSection;
+use Filament\TextEntry;
+use Filament\KeyValueEntry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
@@ -48,15 +49,15 @@ class SumitWebhookResource extends Resource
 
     protected static ?string $pluralModelLabel = 'SUMIT Webhooks';
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Webhook Details')
+                InfolistSection::make('Webhook Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('id')
+                        TextEntry::make('id')
                             ->label('Webhook ID'),
-                        Infolists\Components\TextEntry::make('event_type')
+                        TextEntry::make('event_type')
                             ->label('Event Type')
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
@@ -67,12 +68,12 @@ class SumitWebhookResource extends Resource
                                 default => 'gray',
                             })
                             ->formatStateUsing(fn ($record) => $record->getEventTypeLabel()),
-                        Infolists\Components\TextEntry::make('card_type')
+                        TextEntry::make('card_type')
                             ->label('Card Type')
                             ->badge()
                             ->color('gray')
                             ->formatStateUsing(fn ($record) => $record->getCardTypeLabel()),
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->badge()
                             ->color(fn (string $state): string => match ($state) {
                                 'processed' => 'success',
@@ -81,62 +82,62 @@ class SumitWebhookResource extends Resource
                                 'ignored' => 'gray',
                                 default => 'gray',
                             }),
-                        Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('Received At')
                             ->dateTime(),
-                        Infolists\Components\TextEntry::make('processed_at')
+                        TextEntry::make('processed_at')
                             ->label('Processed At')
                             ->dateTime()
                             ->placeholder('Not processed yet'),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Request Information')
+                InfolistSection::make('Request Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('source_ip')
+                        TextEntry::make('source_ip')
                             ->label('Source IP')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('content_type')
+                        TextEntry::make('content_type')
                             ->label('Content Type'),
-                        Infolists\Components\TextEntry::make('card_id')
+                        TextEntry::make('card_id')
                             ->label('Card ID (SUMIT)')
                             ->copyable(),
                     ])->columns(3),
 
-                Infolists\Components\Section::make('Card Data')
+                InfolistSection::make('Card Data')
                     ->schema([
-                        Infolists\Components\TextEntry::make('customer_id')
+                        TextEntry::make('customer_id')
                             ->label('Customer ID')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('customer_name')
+                        TextEntry::make('customer_name')
                             ->label('Customer Name'),
-                        Infolists\Components\TextEntry::make('customer_email')
+                        TextEntry::make('customer_email')
                             ->label('Customer Email')
                             ->copyable()
                             ->icon('heroicon-o-envelope'),
-                        Infolists\Components\TextEntry::make('amount')
+                        TextEntry::make('amount')
                             ->label('Amount')
                             ->money(fn ($record) => $record->currency ?? 'ILS')
                             ->placeholder('N/A'),
                     ])->columns(4),
 
-                Infolists\Components\Section::make('Connected Resources')
+                InfolistSection::make('Connected Resources')
                     ->description('Local resources linked to this webhook')
                     ->schema([
-                        Infolists\Components\TextEntry::make('transaction.payment_id')
+                        TextEntry::make('transaction.payment_id')
                             ->label('Transaction')
                             ->placeholder('Not linked')
                             ->url(fn ($record) => $record->transaction_id 
                                 ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
                                 : null)
                             ->color('primary'),
-                        Infolists\Components\TextEntry::make('document.document_number')
+                        TextEntry::make('document.document_number')
                             ->label('Document')
                             ->placeholder('Not linked')
                             ->url(fn ($record) => $record->document_id 
                                 ? DocumentResource::getUrl('view', ['record' => $record->document_id])
                                 : null)
                             ->color('primary'),
-                        Infolists\Components\TextEntry::make('token.last_digits')
+                        TextEntry::make('token.last_digits')
                             ->label('Token')
                             ->formatStateUsing(fn ($state) => $state ? '****' . $state : null)
                             ->placeholder('Not linked')
@@ -144,7 +145,7 @@ class SumitWebhookResource extends Resource
                                 ? TokenResource::getUrl('view', ['record' => $record->token_id])
                                 : null)
                             ->color('primary'),
-                        Infolists\Components\TextEntry::make('subscription.name')
+                        TextEntry::make('subscription.name')
                             ->label('Subscription')
                             ->placeholder('Not linked')
                             ->url(fn ($record) => $record->subscription_id 
@@ -153,32 +154,32 @@ class SumitWebhookResource extends Resource
                             ->color('primary'),
                     ])->columns(4),
 
-                Infolists\Components\Section::make('Processing Notes')
+                InfolistSection::make('Processing Notes')
                     ->schema([
-                        Infolists\Components\TextEntry::make('processing_notes')
+                        TextEntry::make('processing_notes')
                             ->label('Notes')
                             ->columnSpanFull(),
                     ])
                     ->visible(fn ($record) => !empty($record->processing_notes)),
 
-                Infolists\Components\Section::make('Error Information')
+                InfolistSection::make('Error Information')
                     ->schema([
-                        Infolists\Components\TextEntry::make('error_message')
+                        TextEntry::make('error_message')
                             ->label('Error Message')
                             ->columnSpanFull(),
                     ])
                     ->visible(fn ($record) => !empty($record->error_message)),
 
-                Infolists\Components\Section::make('Full Payload')
+                InfolistSection::make('Full Payload')
                     ->schema([
-                        Infolists\Components\KeyValueEntry::make('payload')
+                        KeyValueEntry::make('payload')
                             ->label('Payload Data'),
                     ])
                     ->collapsed(),
 
-                Infolists\Components\Section::make('Request Headers')
+                InfolistSection::make('Request Headers')
                     ->schema([
-                        Infolists\Components\KeyValueEntry::make('headers')
+                        KeyValueEntry::make('headers')
                             ->label('HTTP Headers'),
                     ])
                     ->collapsed(),

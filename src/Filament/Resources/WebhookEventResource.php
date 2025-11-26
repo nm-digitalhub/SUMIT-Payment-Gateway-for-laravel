@@ -8,9 +8,9 @@ use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Infolists\Components\KeyValueEntry;
-use Filament\Infolists\Components\Section as InfolistSection;
+use Filament\Schemas\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
-use Filament\Infolists\Infolist;
+use Filament\Schemas\Schema;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Tables;
@@ -140,9 +140,9 @@ class WebhookEventResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist->schema([
+        return $schema->schema([
             InfolistSection::make('Event Details')
                 ->columnSpanFull()
                 ->schema([
