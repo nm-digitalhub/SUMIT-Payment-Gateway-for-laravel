@@ -905,7 +905,7 @@ $webhookService->send('payment_completed', [
 **ב-Admin Panel:**
 נווטו ל-**SUMIT Gateway** > **Webhook Events**
 
-### תכונות
+### תכונות הממשק
 
 **רשימת אירועים:**
 - צפייה בכל האירועים שנשלחו
@@ -934,7 +934,133 @@ $webhookService->send('payment_completed', [
 - זמן תגובה ממוצע
 - גרף 7 ימים אחרונים
 
-**שימוש לבניית אוטומציות:**
+### שימוש בסיסי
+
+#### 1. הגדרת Webhook בשרת חיצוני
+
+כדי לקבל התראות, צרו endpoint בשרת שלכם שמקבל בקשות POST:
+
+```php
+// routes/api.php
+Route::post('/webhooks/sumit', [WebhookController::class, 'handle']);
+```
+
+```php
+// app/Http/Controllers/WebhookController.php
+namespace App\Http\Controllers;
+
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
+
+class WebhookController extends Controller
+{
+    public function handle(Request $request)
+    {
+        // 1. אימות החתימה
+        $signature = $request->header('X-Webhook-Signature');
+        $payload = $request->getContent();
+        $secret = config('services.sumit.webhook_secret');
+        
+        $expectedSignature = hash_hmac('sha256', $payload, $secret);
+        
+        if (!hash_equals($expectedSignature, $signature)) {
+            Log::warning('Invalid webhook signature');
+            return response('Invalid signature', 401);
+        }
+        
+        // 2. עיבוד האירוע
+        $event = $request->input('event');
+        $data = $request->all();
+        
+        switch ($event) {
+            case 'payment_completed':
+                $this->handlePaymentCompleted($data);
+                break;
+            case 'payment_failed':
+                $this->handlePaymentFailed($data);
+                break;
+            case 'document_created':
+                $this->handleDocumentCreated($data);
+                break;
+            case 'subscription_charged':
+                $this->handleSubscriptionCharged($data);
+                break;
+        }
+        
+        return response('OK', 200);
+    }
+    
+    protected function handlePaymentCompleted(array $data): void
+    {
+        $orderId = $data['order_id'];
+        $transactionId = $data['transaction_id'];
+        $amount = $data['amount'];
+        
+        // עדכון הזמנה
+        $order = Order::find($orderId);
+        $order->update([
+            'status' => 'paid',
+            'paid_at' => now(),
+        ]);
+        
+        // שליחת אישור ללקוח
+        Mail::to($data['customer_email'])->send(new PaymentConfirmation($order));
+        
+        // עדכון CRM
+        CrmService::updateCustomer($data['customer_email'], [
+            'last_purchase' => now(),
+            'total_spent' => $amount,
+        ]);
+    }
+    
+    protected function handlePaymentFailed(array $data): void
+    {
+        $orderId = $data['order_id'];
+        $error = $data['error'] ?? 'Unknown error';
+        
+        // עדכון הזמנה
+        Order::find($orderId)?->update(['status' => 'payment_failed']);
+        
+        // התראה לצוות
+        Notification::route('slack', config('services.slack.webhook'))
+            ->notify(new PaymentFailedNotification($orderId, $error));
+    }
+    
+    protected function handleDocumentCreated(array $data): void
+    {
+        // שמירת קישור למסמך
+        $orderId = $data['order_id'];
+        $documentUrl = $data['document_url'] ?? null;
+        
+        Order::find($orderId)?->update(['invoice_url' => $documentUrl]);
+    }
+    
+    protected function handleSubscriptionCharged(array $data): void
+    {
+        $subscriptionId = $data['subscription_id'];
+        $amount = $data['amount'];
+        
+        // רישום חיוב
+        SubscriptionCharge::create([
+            'subscription_id' => $subscriptionId,
+            'amount' => $amount,
+            'charged_at' => now(),
+        ]);
+    }
+}
+```
+
+#### 2. הגדרת URL ב-Admin Panel
+
+1. גשו ל-**SUMIT Gateway** > **Gateway Settings** > **Custom Event Webhooks**
+2. הזינו את ה-URL של ה-endpoint שלכם בשדה המתאים
+3. הגדירו סוד (Secret) לאימות החתימה
+4. שמרו את ההגדרות
+
+### שימוש מתקדם בקוד
+
+#### שליפת אירועים ב-Eloquent
+
 ```php
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
@@ -949,19 +1075,264 @@ $paymentEvents = WebhookEvent::ofType('payment_completed')
     ->with(['transaction', 'document'])
     ->get();
 
-// גישה למשאבים מקושרים
-foreach ($paymentEvents as $event) {
-    $transaction = $event->transaction;
-    $document = $event->document;
-    $subscription = $event->subscription;
-}
+// אירועים מוכנים לשליחה חוזרת
+$pendingRetries = WebhookEvent::readyForRetry()->get();
 
-// שליחה חוזרת של אירוע
-$event = WebhookEvent::find(123);
-if ($event->canRetry()) {
-    $event->scheduleRetry(5); // retry in 5 minutes
+// אירועים ממוינים לפי תאריך
+$recentEvents = WebhookEvent::orderBy('created_at', 'desc')
+    ->limit(100)
+    ->get();
+```
+
+#### גישה למשאבים מקושרים
+
+```php
+// לכל אירוע יש גישה למשאבים הקשורים אליו
+foreach ($paymentEvents as $event) {
+    // גישה לטרנזקציה
+    $transaction = $event->transaction;
+    if ($transaction) {
+        echo "Transaction ID: {$transaction->payment_id}";
+        echo "Amount: {$transaction->amount}";
+    }
+    
+    // גישה למסמך
+    $document = $event->document;
+    if ($document) {
+        echo "Document Number: {$document->document_number}";
+        echo "Document URL: {$document->url}";
+    }
+    
+    // גישה לטוקן
+    $token = $event->token;
+    if ($token) {
+        echo "Card: ****{$token->last_digits}";
+    }
+    
+    // גישה למנוי
+    $subscription = $event->subscription;
+    if ($subscription) {
+        echo "Subscription: {$subscription->name}";
+        echo "Next Charge: {$subscription->next_charge_at}";
+    }
+    
+    // גישה להזמנה (polymorphic)
+    $order = $event->order;
+    if ($order) {
+        echo "Order ID: {$order->id}";
+    }
 }
 ```
+
+#### שליחה חוזרת של אירועים
+
+```php
+use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
+
+// שליחה חוזרת של אירוע בודד
+$event = WebhookEvent::find(123);
+if ($event->canRetry()) {
+    $webhookService = app(WebhookService::class);
+    $success = $webhookService->send($event->event_type, $event->payload);
+    
+    if ($success) {
+        $event->markAsSent(200);
+    } else {
+        $event->scheduleRetry(5); // retry in 5 minutes
+    }
+}
+
+// שליחה חוזרת לכל האירועים שנכשלו
+$failedEvents = WebhookEvent::failed()->get();
+foreach ($failedEvents as $event) {
+    if ($event->canRetry()) {
+        $event->scheduleRetry();
+    }
+}
+```
+
+#### יצירת אירוע ידנית
+
+```php
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
+
+// יצירת אירוע חדש
+$event = WebhookEvent::createEvent('payment_completed', [
+    'order_id' => 123,
+    'amount' => 99.00,
+    'currency' => 'ILS',
+    'customer_email' => 'customer@example.com',
+], [
+    'transaction_id' => $transaction->id,
+    'document_id' => $document->id,
+    'webhook_url' => 'https://your-site.com/webhook',
+]);
+
+// סימון כנשלח
+$event->markAsSent(200, ['received' => true]);
+
+// סימון ככישלון
+$event->markAsFailed('Connection timeout', 504);
+```
+
+### בניית אוטומציות
+
+#### דוגמה: סנכרון עם CRM
+
+```php
+// app/Console/Commands/SyncWebhooksToCrm.php
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
+use App\Services\CrmService;
+
+class SyncWebhooksToCrm extends Command
+{
+    protected $signature = 'crm:sync-webhooks';
+    protected $description = 'Sync payment webhooks to CRM';
+
+    public function handle(CrmService $crm)
+    {
+        // קבלת כל האירועים שטרם סונכרנו
+        $events = WebhookEvent::ofType('payment_completed')
+            ->sent()
+            ->where('synced_to_crm', false)
+            ->with(['transaction', 'document'])
+            ->get();
+        
+        foreach ($events as $event) {
+            $crm->recordPurchase([
+                'email' => $event->customer_email,
+                'amount' => $event->amount,
+                'currency' => $event->currency,
+                'transaction_id' => $event->transaction?->payment_id,
+                'invoice_url' => $event->document?->url,
+            ]);
+            
+            $event->update(['synced_to_crm' => true]);
+        }
+        
+        $this->info("Synced {$events->count()} events to CRM");
+    }
+}
+```
+
+#### דוגמה: דוח יומי
+
+```php
+// app/Console/Commands/WebhookDailyReport.php
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
+use Illuminate\Support\Facades\Mail;
+
+class WebhookDailyReport extends Command
+{
+    protected $signature = 'webhooks:daily-report';
+    protected $description = 'Send daily webhook statistics report';
+
+    public function handle()
+    {
+        $today = now()->startOfDay();
+        
+        $stats = [
+            'total' => WebhookEvent::whereDate('created_at', $today)->count(),
+            'sent' => WebhookEvent::sent()->whereDate('created_at', $today)->count(),
+            'failed' => WebhookEvent::failed()->whereDate('created_at', $today)->count(),
+            'by_type' => WebhookEvent::whereDate('created_at', $today)
+                ->selectRaw('event_type, count(*) as count')
+                ->groupBy('event_type')
+                ->pluck('count', 'event_type'),
+            'total_amount' => WebhookEvent::ofType('payment_completed')
+                ->whereDate('created_at', $today)
+                ->sum('amount'),
+        ];
+        
+        // שליחת דוח במייל
+        Mail::to('admin@example.com')->send(new WebhookStatsReport($stats));
+        
+        $this->info("Report sent. Total events: {$stats['total']}");
+    }
+}
+```
+
+#### דוגמה: ניטור כשלונות
+
+```php
+// app/Console/Commands/MonitorWebhookFailures.php
+namespace App\Console\Commands;
+
+use Illuminate\Console\Command;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
+use Illuminate\Support\Facades\Notification;
+use App\Notifications\WebhookFailureAlert;
+
+class MonitorWebhookFailures extends Command
+{
+    protected $signature = 'webhooks:monitor';
+    protected $description = 'Monitor webhook failures and alert';
+
+    public function handle()
+    {
+        $failedCount = WebhookEvent::failed()
+            ->where('created_at', '>=', now()->subHour())
+            ->count();
+        
+        if ($failedCount > 10) {
+            // שליחת התראה
+            Notification::route('slack', config('services.slack.webhook'))
+                ->notify(new WebhookFailureAlert($failedCount));
+            
+            $this->error("Alert sent: {$failedCount} failures in the last hour");
+        } else {
+            $this->info("All good: {$failedCount} failures in the last hour");
+        }
+    }
+}
+```
+
+### תזמון משימות
+
+הוסיפו ל-`routes/console.php`:
+
+```php
+use Illuminate\Support\Facades\Schedule;
+
+// עיבוד webhooks שממתינים לשליחה חוזרת
+Schedule::command('sumit:process-webhook-retries')->everyFiveMinutes();
+
+// דוח יומי
+Schedule::command('webhooks:daily-report')->dailyAt('09:00');
+
+// ניטור כשלונות
+Schedule::command('webhooks:monitor')->everyThirtyMinutes();
+
+// סנכרון עם CRM
+Schedule::command('crm:sync-webhooks')->hourly();
+```
+
+### סוגי אירועים
+
+| סוג אירוע | קבוע | תיאור | שדות עיקריים |
+|-----------|------|--------|--------------|
+| Payment Completed | `payment_completed` | תשלום הושלם בהצלחה | `order_id`, `transaction_id`, `amount`, `customer_email` |
+| Payment Failed | `payment_failed` | תשלום נכשל | `order_id`, `error`, `customer_email` |
+| Document Created | `document_created` | מסמך נוצר | `order_id`, `document_id`, `document_number`, `document_url` |
+| Subscription Created | `subscription_created` | מנוי חדש נוצר | `subscription_id`, `customer_email`, `amount`, `interval` |
+| Subscription Charged | `subscription_charged` | מנוי חויב | `subscription_id`, `transaction_id`, `amount` |
+| Bit Payment | `bit_payment_completed` | תשלום Bit הושלם | `order_id`, `transaction_id`, `amount` |
+| Stock Synced | `stock_synced` | מלאי סונכרן | `items_count`, `sync_time` |
+
+### סטטוסים
+
+| סטטוס | קבוע | תיאור |
+|-------|------|--------|
+| Pending | `pending` | ממתין לשליחה |
+| Sent | `sent` | נשלח בהצלחה |
+| Failed | `failed` | השליחה נכשלה |
+| Retrying | `retrying` | מתוזמן לשליחה חוזרת |
 
 ---
 
