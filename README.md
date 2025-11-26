@@ -825,6 +825,77 @@ class SendPaymentConfirmation
 
 ---
 
+## Custom Event Webhooks
+
+### הגדרת Webhooks מה-Admin Panel
+
+במקום ליצור Listeners בקוד, ניתן להגדיר Webhooks מותאמים אישית ישירות מה-Admin Panel. המערכת תשלח התראות HTTP לכל URL שתגדירו כאשר מתרחשים אירועים.
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** > **Custom Event Webhooks**
+
+**אירועים נתמכים:**
+| אירוע | שדה בהגדרות | תיאור |
+|-------|-------------|--------|
+| Payment Completed | `webhook_payment_completed` | תשלום הושלם בהצלחה |
+| Payment Failed | `webhook_payment_failed` | תשלום נכשל |
+| Document Created | `webhook_document_created` | מסמך (חשבונית/קבלה) נוצר |
+| Subscription Created | `webhook_subscription_created` | מנוי חדש נוצר |
+| Subscription Charged | `webhook_subscription_charged` | מנוי חויב |
+| Bit Payment Completed | `webhook_bit_payment_completed` | תשלום Bit הושלם |
+| Stock Synced | `webhook_stock_synced` | מלאי סונכרן |
+
+**הגדרת סוד לאימות:**
+הגדירו `Webhook Secret` ב-Admin Panel. המערכת תשלח חתימה בכותרת `X-Webhook-Signature` לאימות מקור הבקשה.
+
+**דוגמת Payload:**
+```json
+{
+    "event": "payment_completed",
+    "timestamp": "2024-01-15T10:30:00+02:00",
+    "order_id": 123,
+    "transaction_id": "TXN_12345",
+    "amount": 99.00,
+    "currency": "ILS",
+    "customer_email": "customer@example.com"
+}
+```
+
+**כותרות HTTP:**
+```
+Content-Type: application/json
+X-Webhook-Event: payment_completed
+X-Webhook-Signature: sha256=abc123...
+X-Webhook-Timestamp: 2024-01-15T10:30:00+02:00
+```
+
+**אימות חתימה בשרת שלכם:**
+```php
+function verifyWebhook(Request $request): bool
+{
+    $signature = $request->header('X-Webhook-Signature');
+    $payload = $request->getContent();
+    $secret = config('your-webhook-secret');
+    
+    $expectedSignature = hash_hmac('sha256', $payload, $secret);
+    return hash_equals($expectedSignature, $signature);
+}
+```
+
+**שימוש ב-WebhookService ישירות (אופציונלי):**
+```php
+use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
+
+// שליחת webhook ידנית
+$webhookService = app(WebhookService::class);
+$webhookService->send('payment_completed', [
+    'order_id' => 123,
+    'amount' => 99.00,
+]);
+```
+
+---
+
 ## מיגרציות נתונים
 
 ### טבלאות

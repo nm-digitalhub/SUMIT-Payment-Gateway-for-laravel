@@ -290,6 +290,62 @@ class OfficeGuySettings extends Page
                         ->placeholder('description')
                         ->helperText('Field name for item description'),
                 ]),
+
+            Section::make('Custom Event Webhooks')
+                ->description('Configure webhook URLs to receive notifications when events occur. Leave empty to disable.')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    TextInput::make('webhook_secret')
+                        ->label('Webhook Secret')
+                        ->password()
+                        ->revealable()
+                        ->placeholder('your-secret-key')
+                        ->helperText('Secret key for webhook signature verification (X-Webhook-Signature header)')
+                        ->columnSpanFull(),
+
+                    TextInput::make('webhook_payment_completed')
+                        ->label('Payment Completed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/payment-completed')
+                        ->helperText('Called when a payment is successfully completed'),
+
+                    TextInput::make('webhook_payment_failed')
+                        ->label('Payment Failed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/payment-failed')
+                        ->helperText('Called when a payment fails'),
+
+                    TextInput::make('webhook_document_created')
+                        ->label('Document Created URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/document-created')
+                        ->helperText('Called when a document (invoice/receipt) is created'),
+
+                    TextInput::make('webhook_subscription_created')
+                        ->label('Subscription Created URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/subscription-created')
+                        ->helperText('Called when a new subscription is created'),
+
+                    TextInput::make('webhook_subscription_charged')
+                        ->label('Subscription Charged URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/subscription-charged')
+                        ->helperText('Called when a subscription is charged'),
+
+                    TextInput::make('webhook_bit_payment_completed')
+                        ->label('Bit Payment Completed URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/bit-completed')
+                        ->helperText('Called when a Bit payment is completed'),
+
+                    TextInput::make('webhook_stock_synced')
+                        ->label('Stock Synced URL')
+                        ->url()
+                        ->placeholder('https://your-app.com/webhooks/stock-synced')
+                        ->helperText('Called when stock is synchronized'),
+                ]),
         ];
     }
 

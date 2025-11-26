@@ -194,6 +194,15 @@ class SettingsService
             'field_map_customer_email',
             'field_map_customer_phone',
             'field_map_description',
+            // Custom Event Webhooks
+            'webhook_payment_completed',
+            'webhook_payment_failed',
+            'webhook_document_created',
+            'webhook_subscription_created',
+            'webhook_subscription_charged',
+            'webhook_bit_payment_completed',
+            'webhook_stock_synced',
+            'webhook_secret',
         ];
     }
 

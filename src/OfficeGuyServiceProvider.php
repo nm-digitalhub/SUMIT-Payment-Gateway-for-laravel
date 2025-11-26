@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway;
 
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
+use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
 use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
 use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 use OfficeGuy\LaravelSumitGateway\Services\UpsellService;
+use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
 
 /**
  * OfficeGuy/SUMIT Gateway Service Provider
@@ -41,6 +44,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(DonationService::class);
         $this->app->singleton(MultiVendorPaymentService::class);
         $this->app->singleton(UpsellService::class);
+        $this->app->singleton(WebhookService::class);
     }
 
     /**
@@ -70,6 +74,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 ProcessRecurringPaymentsCommand::class,
             ]);
         }
+
+        // Register webhook event listener subscriber
+        Event::subscribe(WebhookEventListener::class);
     }
 
     public function provides(): array
