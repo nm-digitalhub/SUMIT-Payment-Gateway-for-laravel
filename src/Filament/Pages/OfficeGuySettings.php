@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
-use Filament\Forms\Components\Section;       
+use Filament\Schemas\Components\Section;       
   
   use Filament\Forms\Components\Select;
   use Filament\Forms\Components\TextInput;
