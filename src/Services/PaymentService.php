@@ -132,12 +132,16 @@ class PaymentService
         $address = $order->getCustomerAddress();
         $vatRate = self::getOrderVatRate($order);
 
+        // Get merge_customers setting from SettingsService (respects Admin Panel)
+        $settingsService = app(SettingsService::class);
+        $mergeCustomers = (bool) $settingsService->get('merge_customers', false);
+
         $customer = [
             'Name' => $customerName,
             'EmailAddress' => $order->getCustomerEmail(),
             'Phone' => $order->getCustomerPhone(),
             'ExternalIdentifier' => $order->getCustomerId() ?: '',
-            'SearchMode' => config('officeguy.merge_customers', false) ? 'Automatic' : 'None',
+            'SearchMode' => $mergeCustomers ? 'Automatic' : 'None',
         ];
 
         if ($address) {
