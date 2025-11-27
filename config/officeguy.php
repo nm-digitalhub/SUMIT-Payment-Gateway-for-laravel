@@ -81,10 +81,16 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Customer Settings
+    | Customer Management (v1.2.4+)
     |--------------------------------------------------------------------------
+    |
+    | Configure customer synchronization and merging with SUMIT.
+    | These settings can be managed via Admin Panel → Office Guy Settings → Customer Management
+    |
     */
-    'merge_customers' => env('OFFICEGUY_MERGE_CUSTOMERS', false),
+    'customer_merging_enabled' => env('OFFICEGUY_CUSTOMER_MERGING_ENABLED', false),
+    'customer_local_sync_enabled' => env('OFFICEGUY_CUSTOMER_LOCAL_SYNC_ENABLED', false),
+    'customer_model_class' => env('OFFICEGUY_CUSTOMER_MODEL_CLASS', 'App\\Models\\Client'),
 
     /*
     |--------------------------------------------------------------------------

@@ -217,6 +217,16 @@ return [
         'webhook_secret' => 'Webhook Secret',
         'webhook_secret_help' => 'Secret key for webhook signature validation',
 
+        // Customer Management (v1.2.4+)
+        'customer_management' => 'Customer Management',
+        'customer_management_desc' => 'Configure how customers are synced and managed with SUMIT',
+        'customer_merging_enabled' => 'Enable Customer Merging',
+        'customer_merging_enabled_help' => 'When enabled, SUMIT will automatically merge customers by email/ID to prevent duplicates',
+        'customer_local_sync_enabled' => 'Enable Local Customer Sync',
+        'customer_local_sync_enabled_help' => 'Sync SUMIT customers with your local customer model',
+        'customer_model_class' => 'Customer Model Class',
+        'customer_model_class_help' => 'Full class name of your customer model (e.g., App\\Models\\Client)',
+
         // Route Configuration
         'route_configuration' => 'Route Configuration',
         'routes_prefix' => 'Routes Prefix',

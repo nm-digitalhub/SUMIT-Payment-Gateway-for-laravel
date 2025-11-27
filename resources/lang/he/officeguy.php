@@ -217,6 +217,16 @@ return [
         'webhook_secret' => 'סוד Webhook',
         'webhook_secret_help' => 'מפתח סודי לאימות חתימות webhook',
 
+        // Customer Management (v1.2.4+)
+        'customer_management' => 'ניהול לקוחות',
+        'customer_management_desc' => 'הגדר כיצד לקוחות מסונכרנים ומנוהלים עם SUMIT',
+        'customer_merging_enabled' => 'אפשר מיזוג לקוחות',
+        'customer_merging_enabled_help' => 'כאשר מופעל, SUMIT ימזג אוטומטית לקוחות לפי אימייל/מזהה למניעת כפילויות',
+        'customer_local_sync_enabled' => 'אפשר סנכרון לקוחות מקומי',
+        'customer_local_sync_enabled_help' => 'סנכרן לקוחות SUMIT עם מודל הלקוחות המקומי שלך',
+        'customer_model_class' => 'מחלקת מודל לקוח',
+        'customer_model_class_help' => 'שם המחלקה המלא של מודל הלקוחות שלך (לדוגמה: App\\Models\\Client)',
+
         // Route Configuration
         'route_configuration' => 'הגדרות נתיבים',
         'routes_prefix' => 'קידומת נתיבים',
@@ -242,13 +252,13 @@ return [
         'subscriptions' => 'מנויים',
         'subscriptions_enabled' => 'מנויים מופעלים',
         'subscriptions_enabled_help' => 'אפשר תמיכה במנויים חוזרים',
-        'subscriptions_default_interval' => 'מרווח ברירת מחדל',
+        'subscriptions_default_interval' => 'מרווח ברירת מחדל (חודשים)',
         'subscriptions_default_interval_help' => 'מרווח חיוב ברירת מחדל (חודשי, שבועי)',
         'subscriptions_default_cycles' => 'מחזורים ברירת מחדל',
         'subscriptions_default_cycles_help' => 'מספר מחזורי חיוב (0 = אינסופי)',
         'subscriptions_allow_pause' => 'אפשר השהייה',
         'subscriptions_allow_pause_help' => 'אפשר ללקוחות להשהות מנויים',
-        'subscriptions_retry_failed' => 'נסה שוב מנויים שנכשלו',
+        'subscriptions_retry_failed' => 'נסה שוב חיובים שנכשלו',
         'subscriptions_retry_failed_help' => 'נסה שוב אוטומטית חיובי מנויים שנכשלו',
         'subscriptions_max_retries' => 'ניסיונות חוזרים מקסימליים',
         'subscriptions_max_retries_help' => 'מספר ניסיונות חוזרים עבור מנויים שנכשלו',

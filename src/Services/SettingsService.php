@@ -203,9 +203,10 @@ class SettingsService
             'webhook_bit_payment_completed',
             'webhook_stock_synced',
             'webhook_secret',
-            // Customer Merging and Sync
-            'customer_sync_enabled',
-            'customer_model',
+            // Customer Management (v1.2.4+)
+            'customer_merging_enabled',
+            'customer_local_sync_enabled',
+            'customer_model_class',
             'customer_field_email',
             'customer_field_name',
             'customer_field_phone',
