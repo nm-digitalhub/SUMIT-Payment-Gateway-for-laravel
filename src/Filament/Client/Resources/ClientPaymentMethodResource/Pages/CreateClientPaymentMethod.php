@@ -26,9 +26,17 @@ class CreateClientPaymentMethod extends CreateRecord
     {
         $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
 
+        \Log::info('[CreateClientPaymentMethod] form() called', [
+            'pci_mode' => $pciMode,
+            'company_id' => config('officeguy.company_id'),
+            'public_key' => substr(config('officeguy.public_key'), 0, 10) . '...',
+        ]);
+
         $components = [];
 
         if ($pciMode === 'yes') {
+            \Log::info('[CreateClientPaymentMethod] Using PCI mode');
+
             // מצב PCI – שולחים פרטי כרטיס מלאים לשרת (השירות מייצר טוקן)
             $components[] = TextInput::make('og-ccnum')
                 ->label('Card Number')
@@ -65,22 +73,64 @@ class CreateClientPaymentMethod extends CreateRecord
                 ->label('Set as default payment method')
                 ->default(true);
         } else {
-            // מצב Hosted Fields – מציגים טופס עם PaymentsJS שמייצר SingleUseToken לשדה og-token
-            $components[] = Hidden::make('og-token')
-                ->required();
+            \Log::info('[CreateClientPaymentMethod] Using Direct API mode (no SDK)');
+
+            // מצב Direct API – שדות Filament רגילים שנשלח ישירות ל-SUMIT API
+            $components[] = TextInput::make('og-ccnum')
+                ->label('Card Number')
+                ->placeholder('0000 0000 0000 0000')
+                ->required()
+                ->numeric()
+                ->minLength(12)
+                ->maxLength(19)
+                ->rule('digits_between:12,19')
+                ->helperText('Enter your 16-digit card number');
+
+            $components[] = TextInput::make('og-cvv')
+                ->label('CVV')
+                ->placeholder('123')
+                ->password()
+                ->required()
+                ->numeric()
+                ->minLength(3)
+                ->maxLength(4)
+                ->rule('digits_between:3,4')
+                ->helperText('3-4 digits on the back of your card');
+
+            $components[] = TextInput::make('og-expmonth')
+                ->label('Expiry Month')
+                ->placeholder('MM')
+                ->required()
+                ->numeric()
+                ->minValue(1)
+                ->maxValue(12)
+                ->rule('digits:2')
+                ->helperText('2 digits (01-12)');
+
+            $components[] = TextInput::make('og-expyear')
+                ->label('Expiry Year')
+                ->placeholder('YYYY')
+                ->required()
+                ->numeric()
+                ->minValue((int) date('Y'))
+                ->maxValue((int) date('Y') + 20)
+                ->rule('digits:4')
+                ->helperText('4 digits (e.g. 2025)');
+
+            $components[] = TextInput::make('og-citizenid')
+                ->label('ID Number')
+                ->placeholder('123456789')
+                ->required()
+                ->numeric()
+                ->minLength(9)
+                ->maxLength(9)
+                ->rule('digits:9')
+                ->helperText('9-digit Israeli ID number');
 
             // Toggle קרוב לראש הטופס כדי שיהיה גלוי מיידית
             $components[] = Toggle::make('set_as_default')
                 ->label('Set as default payment method')
                 ->default(true);
-
-            $components[] = ViewField::make('card_form')
-                ->label('Card Details')
-                ->view('officeguy::filament.client.payment-methods.hosted-token-form', [
-                    'livewireId' => $this->getId(),
-                    'companyId' => config('officeguy.company_id'),
-                    'publicKey' => config('officeguy.public_key'),
-                ]);
         }
 
         return $schema->schema($components)->columns(2);
@@ -92,7 +142,18 @@ class CreateClientPaymentMethod extends CreateRecord
      */
     protected function handleRecordCreation(array $data): OfficeGuyToken
     {
-        $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
+        // תמיד נשתמש ב-PCI mode כי אנחנו שולחים שדות ישירים
+        // (לא משתמשים ב-SDK Hosted Fields)
+        $pciMode = 'yes';
+
+        \Log::info('[CreateClientPaymentMethod] handleRecordCreation called', [
+            'pci_mode' => $pciMode,
+            'has_ccnum' => !empty($data['og-ccnum']),
+            'has_cvv' => !empty($data['og-cvv']),
+            'has_expmonth' => !empty($data['og-expmonth']),
+            'has_expyear' => !empty($data['og-expyear']),
+            'has_citizenid' => !empty($data['og-citizenid']),
+        ]);
 
         // TokenService משתמש ב-RequestHelpers::post, אז נזריק את הדאטה ל-request
         request()->merge($data);
