@@ -8,10 +8,10 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Hidden;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
-use Filament\Schemas\Components\Placeholder;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
@@ -122,14 +122,14 @@ class CreatePayableMappingAction
                         Hidden::make('available_fields')
                             ->default([]),
 
-                        Placeholder::make('model_error')
-                            ->content(fn (Get $get) => $get('model_error'))
+                        TextEntry::make('model_error')
+                            ->state(fn (Get $get) => $get('model_error'))
                             ->visible(fn (Get $get) => !$get('model_valid') && $get('model_class'))
                             ->extraAttributes(['class' => 'text-danger-600 dark:text-danger-400']),
 
-                        Placeholder::make('model_info')
+                        TextEntry::make('model_info')
                             ->label('מידע על המודל')
-                            ->content(function (Get $get) {
+                            ->state(function (Get $get) {
                                 $modelClass = $get('model_class');
                                 if (!$modelClass || !class_exists($modelClass)) {
                                     return null;
@@ -223,9 +223,9 @@ class CreatePayableMappingAction
             ->schema([
                 Section::make('סיכום המיפוי')
                     ->schema([
-                        Placeholder::make('review_summary')
+                        TextEntry::make('review_summary')
                             ->label('')
-                            ->content(function (Get $get) {
+                            ->state(function (Get $get) {
                                 $modelClass = $get('model_class');
                                 $label = $get('mapping_label');
                                 $mappings = static::collectMappings($get);
@@ -259,19 +259,19 @@ class CreatePayableMappingAction
                     Fieldset::make()
                         ->label($field['label_he'])
                         ->schema([
-                            Placeholder::make("info_method_{$field['key']}")
+                            TextEntry::make("info_method_{$field['key']}")
                                 ->label('מתודה')
-                                ->content($field['method'])
+                                ->state($field['method'])
                                 ->extraAttributes(['class' => 'font-mono text-sm']),
 
-                            Placeholder::make("info_return_{$field['key']}")
+                            TextEntry::make("info_return_{$field['key']}")
                                 ->label('סוג החזרה')
-                                ->content($field['return_type'])
+                                ->state($field['return_type'])
                                 ->extraAttributes(['class' => 'font-mono text-xs text-gray-500 dark:text-gray-400']),
 
-                            Placeholder::make("info_desc_{$field['key']}")
+                            TextEntry::make("info_desc_{$field['key']}")
                                 ->label('תיאור')
-                                ->content($field['description_he'])
+                                ->state($field['description_he'])
                                 ->extraAttributes(['class' => 'text-xs text-gray-600 dark:text-gray-300']),
                         ]),
 
