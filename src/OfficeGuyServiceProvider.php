@@ -63,10 +63,15 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         $this->loadRoutesFrom(__DIR__ . '/../routes/officeguy.php');
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'officeguy');
+        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'officeguy');
 
         $this->publishes([
             __DIR__ . '/../resources/views' => resource_path('views/vendor/officeguy'),
         ], 'officeguy-views');
+
+        $this->publishes([
+            __DIR__ . '/../resources/lang' => $this->app->langPath('vendor/officeguy'),
+        ], 'officeguy-lang');
 
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
