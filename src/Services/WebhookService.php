@@ -29,74 +29,86 @@ class WebhookService
      *
      * @param string $event The event name (e.g., 'payment_completed')
      * @param array $payload The data to send
-     * @param array $options Additional options (transaction_id, document_id, etc.)
-     * @return bool Whether the webhook was sent successfully
+     * @param array $options Additional options (transaction_id, document_id, async, etc.)
+     * @return bool Whether the webhook was sent successfully (sync) or queued (async)
      */
     public function send(string $event, array $payload, array $options = []): bool
     {
         $url = $this->settings->get("webhook_{$event}");
 
-        // Create webhook event record
-        $webhookEvent = WebhookEvent::createEvent($event, $payload, array_merge($options, [
-            'webhook_url' => $url,
-        ]));
-
         if (empty($url)) {
-            // No URL configured - mark as sent (no action needed)
-            $webhookEvent->markAsSent(0, ['message' => 'No webhook URL configured']);
+            $this->log('info', "No webhook URL configured for event", ['event' => $event]);
             return false;
         }
 
+        $async = $options['async'] ?? config('webhook-server.async', true);
+        $meta = array_merge($options, [
+            'webhook_url' => $url,
+        ]);
+
+        if ($async) {
+            // New queue-based approach
+            return $this->sendAsync($event, $payload, $meta);
+        }
+
+        // Legacy synchronous approach
+        return $this->sendSync($event, $payload, $meta);
+    }
+
+    /**
+     * Send webhook asynchronously via queue (recommended).
+     *
+     * @param string $event
+     * @param array $payload
+     * @param array $meta
+     * @return bool
+     */
+    protected function sendAsync(string $event, array $payload, array $meta): bool
+    {
         try {
-            $payload = array_merge($payload, [
+            \OfficeGuy\LaravelSumitGateway\WebhookCall::create()
+                ->useSettingsForEvent($event)
+                ->payload($payload)
+                ->meta($meta)
+                ->dispatch();
+
+            $this->log('info', "Webhook queued successfully", [
                 'event' => $event,
-                'timestamp' => now()->toIso8601String(),
             ]);
 
-            $signature = $this->generateSignature($payload);
-
-            $response = Http::timeout(30)
-                ->withHeaders([
-                    'Content-Type' => 'application/json',
-                    'X-Webhook-Event' => $event,
-                    'X-Webhook-Signature' => $signature,
-                    'X-Webhook-Timestamp' => $payload['timestamp'],
-                ])
-                ->post($url, $payload);
-
-            if ($response->successful()) {
-                $webhookEvent->markAsSent($response->status(), [
-                    'body' => $response->body(),
-                ]);
-
-                $this->log('info', "Webhook sent successfully", [
-                    'event' => $event,
-                    'url' => $url,
-                    'status' => $response->status(),
-                ]);
-                return true;
-            }
-
-            $webhookEvent->markAsFailed(
-                "HTTP {$response->status()}: " . substr($response->body(), 0, 500),
-                $response->status()
-            );
-
-            $this->log('warning', "Webhook request failed", [
-                'event' => $event,
-                'url' => $url,
-                'status' => $response->status(),
-                'response' => $response->body(),
-            ]);
-            return false;
+            return true;
         } catch (\Exception $e) {
-            $webhookEvent->markAsFailed($e->getMessage());
-
-            $this->log('error', "Webhook error: {$e->getMessage()}", [
+            $this->log('error', "Failed to queue webhook: {$e->getMessage()}", [
                 'event' => $event,
-                'url' => $url,
                 'exception' => $e->getMessage(),
             ]);
+
+            return false;
+        }
+    }
+
+    /**
+     * Send webhook synchronously (legacy, immediate execution).
+     *
+     * @param string $event
+     * @param array $payload
+     * @param array $meta
+     * @return bool
+     */
+    protected function sendSync(string $event, array $payload, array $meta): bool
+    {
+        try {
+            return \OfficeGuy\LaravelSumitGateway\WebhookCall::create()
+                ->useSettingsForEvent($event)
+                ->payload($payload)
+                ->meta($meta)
+                ->dispatchSync();
+        } catch (\Exception $e) {
+            $this->log('error', "Webhook error: {$e->getMessage()}", [
+                'event' => $event,
+                'exception' => $e->getMessage(),
+            ]);
+
             return false;
         }
     }
