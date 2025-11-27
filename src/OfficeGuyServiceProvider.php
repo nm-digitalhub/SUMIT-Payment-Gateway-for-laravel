@@ -30,6 +30,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/officeguy.php', 'officeguy');
+        $this->mergeConfigFrom(__DIR__ . '/../config/officeguy-webhooks.php', 'officeguy.webhooks');
 
         // Bind core services
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SettingsService::class);
@@ -56,6 +57,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
     {
         $this->publishes([
             __DIR__ . '/../config/officeguy.php' => config_path('officeguy.php'),
+            __DIR__ . '/../config/officeguy-webhooks.php' => config_path('officeguy-webhooks.php'),
         ], 'officeguy-config');
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
@@ -91,6 +93,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
      * Load settings from database and merge into config.
      *
      * This allows admin-panel changes to take effect immediately.
+     * Loads both officeguy.* and officeguy.webhooks.* configurations.
      */
     protected function loadDatabaseSettings(): void
     {
@@ -106,6 +109,31 @@ class OfficeGuyServiceProvider extends ServiceProvider
             // Override config with database values
             foreach ($dbSettings as $key => $value) {
                 config(["officeguy.{$key}" => $value]);
+            }
+
+            // Load webhook settings from database (v1.2.0+)
+            // These settings are configurable via Admin Panel: /admin/office-guy-settings
+            $webhookMappings = [
+                'webhook_async' => 'async',
+                'webhook_queue' => 'queue',
+                'webhook_max_tries' => 'tries',
+                'webhook_timeout' => 'timeout_in_seconds',
+                'webhook_verify_ssl' => 'verify_ssl',
+            ];
+
+            foreach ($webhookMappings as $dbKey => $configKey) {
+                if (isset($dbSettings[$dbKey])) {
+                    $value = $dbSettings[$dbKey];
+
+                    // Cast to appropriate types
+                    if ($configKey === 'async' || $configKey === 'verify_ssl') {
+                        $value = (bool) $value;
+                    } elseif ($configKey === 'tries' || $configKey === 'timeout_in_seconds') {
+                        $value = (int) $value;
+                    }
+
+                    config(["officeguy.webhooks.{$configKey}" => $value]);
+                }
             }
         } catch (\Exception $e) {
             // Silently fail - config defaults will be used

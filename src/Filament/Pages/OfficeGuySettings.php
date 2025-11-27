@@ -361,6 +361,46 @@ class OfficeGuySettings extends Page
                         ->helperText('Called when stock is synchronized'),
                 ]),
 
+            Section::make('Webhook System Configuration (v1.2.0+)')
+                ->columnSpanFull()
+                ->description('Configure how webhooks are delivered. These settings control the queue-based webhook system introduced in v1.2.0.')
+                ->collapsed()
+                ->columns(2)
+                ->schema([
+                    Toggle::make('webhook_async')
+                        ->label('Async Delivery (Queue-based)')
+                        ->helperText('Enable async webhook delivery via Laravel queues (recommended for production)')
+                        ->default(true)
+                        ->columnSpanFull(),
+
+                    TextInput::make('webhook_queue')
+                        ->label('Queue Name')
+                        ->placeholder('default')
+                        ->helperText('Name of the queue to use for webhook jobs')
+                        ->default('default'),
+
+                    TextInput::make('webhook_max_tries')
+                        ->label('Maximum Retry Attempts')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(10)
+                        ->helperText('Number of times to retry failed webhooks (exponential backoff: 10s, 100s, 1000s)')
+                        ->default(3),
+
+                    TextInput::make('webhook_timeout')
+                        ->label('Request Timeout (seconds)')
+                        ->numeric()
+                        ->minValue(5)
+                        ->maxValue(300)
+                        ->helperText('HTTP request timeout in seconds')
+                        ->default(30),
+
+                    Toggle::make('webhook_verify_ssl')
+                        ->label('Verify SSL Certificates')
+                        ->helperText('Verify SSL certificates when sending webhooks (disable for testing only)')
+                        ->default(true),
+                ]),
+
             Section::make('Customer Merging')
                 ->columnSpanFull()
                 ->description('Configure automatic customer merging with SUMIT and sync with your local customer model.')

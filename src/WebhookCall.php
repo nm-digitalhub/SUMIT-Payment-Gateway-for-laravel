@@ -45,8 +45,8 @@ class WebhookCall
         $this->uuid = (string) Str::uuid();
 
         // Load defaults from config
-        $this->tries = config('webhook-server.tries', 3);
-        $this->timeout = config('webhook-server.timeout_in_seconds', 30);
+        $this->tries = config('officeguy.webhooks.tries', 3);
+        $this->timeout = config('officeguy.webhooks.timeout_in_seconds', 30);
     }
 
     /**

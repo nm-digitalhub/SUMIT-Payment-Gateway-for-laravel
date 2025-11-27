@@ -41,7 +41,7 @@ class WebhookService
             return false;
         }
 
-        $async = $options['async'] ?? config('webhook-server.async', true);
+        $async = $options['async'] ?? config('officeguy.webhooks.async', true);
         $meta = array_merge($options, [
             'webhook_url' => $url,
         ]);
