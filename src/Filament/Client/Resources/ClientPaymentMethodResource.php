@@ -5,20 +5,26 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
-use Filament\Resources\Resource;
-use Filament\Schemas\Components\Section;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\TextInput;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Filament\Support\Enums\IconSize;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 
 class ClientPaymentMethodResource extends Resource
 {
@@ -26,15 +32,15 @@ class ClientPaymentMethodResource extends Resource
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
-    protected static ?string $navigationLabel = 'My Payment Methods';
+    protected static ?string $navigationLabel = 'אמצעי תשלום';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
+    protected static \UnitEnum|string|null $navigationGroup = 'תשלומים';
 
     protected static ?int $navigationSort = 2;
 
-    protected static ?string $modelLabel = 'Payment Method';
+    protected static ?string $modelLabel = 'אמצעי תשלום';
 
-    protected static ?string $pluralModelLabel = 'Payment Methods';
+    protected static ?string $pluralModelLabel = 'אמצעי תשלום';
 
     /**
      * מציג רק כרטיסים של המשתמש המחובר
@@ -47,48 +53,619 @@ class ClientPaymentMethodResource extends Resource
     }
 
     /**
-     * משמש רק להצגת דף View (לא Create)
+     * Infolist משודרג לתצוגת כרטיס - חוויית לקוח מעולה
+     */
+    public static function infolist(Schema $schema): Schema
+    {
+        return $schema
+            ->schema([
+                // כרטיס ויזואלי מרכזי
+                Section::make('אמצעי התשלום שלך')
+                    ->description('כרטיס זה שמור בצורה מאובטחת במערכת')
+                    ->icon('heroicon-o-credit-card')
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make(4)
+                            ->schema([
+                                // סוג כרטיס עם צבעים ייחודיים
+                                TextEntry::make('card_type')
+                                    ->label('חברת אשראי')
+                                    ->badge()
+                                    ->size('lg')
+                                    ->weight('bold')
+                                    ->color(fn ($state) => match($state) {
+                                        '1' => 'info',      // Visa - כחול
+                                        '2' => 'warning',   // MasterCard - כתום
+                                        '6' => 'success',   // Amex - ירוק
+                                        '22' => 'primary',  // Cal - סגול
+                                        default => 'gray',
+                                    })
+                                    ->icon(fn ($state) => match($state) {
+                                        '1' => 'heroicon-o-credit-card',
+                                        '2' => 'heroicon-o-credit-card',
+                                        '6' => 'heroicon-o-credit-card',
+                                        '22' => 'heroicon-o-building-library',
+                                        default => 'heroicon-o-credit-card',
+                                    })
+                                    ->formatStateUsing(fn ($state) => match($state) {
+                                        '1' => 'Visa',
+                                        '2' => 'MasterCard',
+                                        '6' => 'American Express',
+                                        '22' => 'CAL / כאל',
+                                        default => 'כרטיס אשראי',
+                                    }),
+
+                                // מספר כרטיס מוסתר
+                                TextEntry::make('last_four')
+                                    ->label('מספר כרטיס')
+                                    ->icon('heroicon-o-shield-check')
+                                    ->iconColor('success')
+                                    ->size('lg')
+                                    ->weight('bold')
+                                    ->formatStateUsing(fn ($state) => '•••• •••• •••• ' . $state)
+                                    ->copyable()
+                                    ->copyMessage('הועתק בהצלחה!')
+                                    ->copyMessageDuration(1500)
+                                    ->helperText('לחץ להעתקה'),
+
+                                // תוקף
+                                TextEntry::make('expiry')
+                                    ->label('תוקף')
+                                    ->icon('heroicon-o-calendar-days')
+                                    ->badge()
+                                    ->size('lg')
+                                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
+                                    ->formatStateUsing(fn ($record) =>
+                                        $record->expiry_month . '/' . substr($record->expiry_year, -2)
+                                    )
+                                    ->helperText(fn ($record) =>
+                                        $record->isExpired()
+                                        ? 'הכרטיס פג תוקף'
+                                        : 'בתוקף עד סוף החודש'
+                                    ),
+
+                                // סטטוס וברירת מחדל
+                                TextEntry::make('status')
+                                    ->label('סטטוס')
+                                    ->badge()
+                                    ->size('lg')
+                                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
+                                    ->icon(fn ($record) => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                                    ->formatStateUsing(fn ($record) =>
+                                        ($record->isExpired() ? 'פג תוקף' : 'פעיל') .
+                                        ($record->is_default ? ' (ברירת מחדל)' : '')
+                                    )
+                                    ->helperText(fn ($record) =>
+                                        $record->is_default ? 'כרטיס ברירת מחדל לתשלומים' : ''
+                                    ),
+                            ]),
+                    ]),
+
+                // פרטי אבטחה
+                Section::make('פרטי אבטחה')
+                    ->description('מידע מאובטח על הכרטיס')
+                    ->icon('heroicon-o-lock-closed')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('gateway_id')
+                                    ->label('שער תשלום')
+                                    ->icon('heroicon-o-server')
+                                    ->badge()
+                                    ->color('info')
+                                    ->formatStateUsing(fn ($state) => match($state) {
+                                        'officeguy' => 'SUMIT Gateway',
+                                        'officeguybit' => 'Bit Payment',
+                                        default => strtoupper($state),
+                                    }),
+
+                                TextEntry::make('token')
+                                    ->label('טוקן אבטחה')
+                                    ->icon('heroicon-o-key')
+                                    ->iconColor('warning')
+                                    ->copyable()
+                                    ->copyMessage('טוקן הועתק בצורה מאובטחת!')
+                                    ->copyMessageDuration(2000)
+                                    ->limit(24)
+                                    ->tooltip(fn ($state) => 'טוקן מלא: ' . $state)
+                                    ->helperText('לחץ להעתקת הטוקן המלא'),
+
+                                TextEntry::make('citizen_id')
+                                    ->label('ת.ז. מקושרת')
+                                    ->icon('heroicon-o-identification')
+                                    ->iconColor('primary')
+                                    ->placeholder('לא זמין')
+                                    ->copyable()
+                                    ->helperText('ניתן להעתקה'),
+                            ]),
+                    ]),
+
+                // מידע מתקדם מ-SUMIT
+                Section::make('מידע מתקדם מ-SUMIT')
+                    ->description('פרטים טכניים מספק התשלום')
+                    ->icon('heroicon-o-cloud')
+                    ->collapsible()
+                    ->collapsed(true)
+                    ->columnSpanFull()
+                    ->visible(fn ($record) => !empty($record->metadata))
+                    ->schema([
+                        Grid::make(4)
+                            ->schema([
+                                TextEntry::make('transaction_id')
+                                    ->label('מזהה טרנזקציה')
+                                    ->icon('heroicon-o-document-text')
+                                    ->iconColor('primary')
+                                    ->badge()
+                                    ->color('primary')
+                                    ->state(fn ($record) => $record->metadata['TransactionID'] ?? null)
+                                    ->formatStateUsing(fn ($state) => $state ? '#' . $state : 'לא זמין')
+                                    ->copyable()
+                                    ->copyMessage('מזהה טרנזקציה הועתק!')
+                                    ->helperText('מזהה בסיסטם SUMIT'),
+
+                                TextEntry::make('auth_number')
+                                    ->label('מספר אישור')
+                                    ->icon('heroicon-o-check-badge')
+                                    ->iconColor('success')
+                                    ->badge()
+                                    ->color('success')
+                                    ->state(fn ($record) => $record->metadata['AuthNumber'] ?? null)
+                                    ->formatStateUsing(fn ($state) => $state ? trim($state) : 'לא זמין')
+                                    ->copyable()
+                                    ->helperText('מספר אישור מהבנק'),
+
+                                TextEntry::make('acquirer')
+                                    ->label('מפעיל')
+                                    ->icon('heroicon-o-building-office')
+                                    ->iconColor('warning')
+                                    ->badge()
+                                    ->color('warning')
+                                    ->state(fn ($record) => $record->metadata['Acquirer'] ?? null)
+                                    ->formatStateUsing(fn ($state) => match($state) {
+                                        1 => 'ישראכרט',
+                                        2 => 'לאומי קארד',
+                                        3 => 'כאל',
+                                        4 => 'דיינרס',
+                                        5 => 'אמקס',
+                                        6 => 'לאומי קארד (חיוב מיידי)',
+                                        default => $state ? "קוד: {$state}" : 'לא זמין',
+                                    })
+                                    ->helperText('חברת הסליקה'),
+
+                                TextEntry::make('issuer')
+                                    ->label('מנפיק')
+                                    ->icon('heroicon-o-credit-card')
+                                    ->iconColor('info')
+                                    ->badge()
+                                    ->color('info')
+                                    ->state(fn ($record) => $record->metadata['Issuer'] ?? null)
+                                    ->formatStateUsing(fn ($state) => match($state) {
+                                        1 => 'ישראכרט',
+                                        2 => 'לאומי קארד',
+                                        6 => 'לאומי קארד',
+                                        15 => 'אמקס',
+                                        16 => 'כאל',
+                                        default => $state ? "קוד: {$state}" : 'לא זמין',
+                                    })
+                                    ->helperText('הבנק שהנפיק את הכרטיס'),
+                            ]),
+
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('result_code')
+                                    ->label('קוד תוצאה')
+                                    ->icon('heroicon-o-signal')
+                                    ->state(fn ($record) => $record->metadata['ResultCode'] ?? null)
+                                    ->badge()
+                                    ->color(fn ($state) => $state === '000' ? 'success' : 'danger')
+                                    ->formatStateUsing(fn ($state) => $state ?: 'לא זמין'),
+
+                                TextEntry::make('result_description')
+                                    ->label('תיאור תוצאה')
+                                    ->icon('heroicon-o-chat-bubble-left-right')
+                                    ->state(fn ($record) => $record->metadata['ResultDescription'] ?? null)
+                                    ->badge()
+                                    ->color(fn ($state) => $state === 'Approved' ? 'success' : 'warning')
+                                    ->formatStateUsing(fn ($state) => $state ?: 'לא זמין'),
+
+                                TextEntry::make('checkout_index')
+                                    ->label('אינדקס תשלום')
+                                    ->icon('heroicon-o-queue-list')
+                                    ->state(fn ($record) =>
+                                        isset($record->metadata['FileNumber'], $record->metadata['CheckoutIndex'])
+                                        ? $record->metadata['FileNumber'] . '-' . $record->metadata['CheckoutIndex']
+                                        : null
+                                    )
+                                    ->placeholder('לא זמין')
+                                    ->helperText('מזהה בקובץ התשלומים'),
+                            ]),
+                    ]),
+
+                // סטטיסטיקות שימוש
+                Section::make('סטטיסטיקות שימוש')
+                    ->description('היסטוריית שימוש בכרטיס')
+                    ->icon('heroicon-o-chart-bar-square')
+                    ->collapsible()
+                    ->collapsed(false)
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make(4)
+                            ->schema([
+                                TextEntry::make('transactions_count')
+                                    ->label('מספר תשלומים')
+                                    ->icon('heroicon-o-shopping-cart')
+                                    ->iconColor('primary')
+                                    ->badge()
+                                    ->color('primary')
+                                    ->size('lg')
+                                    ->weight('bold')
+                                    ->state(function ($record) {
+                                        return \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
+                                            ->where('card_type', $record->card_type)
+                                            ->whereIn('status', ['completed', 'success', 'approved'])
+                                            ->count();
+                                    })
+                                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format($state) : 'טרם בוצע')
+                                    ->helperText('מספר התשלומים המוצלחים'),
+
+                                TextEntry::make('total_amount')
+                                    ->label('סכום כולל')
+                                    ->icon('heroicon-o-banknotes')
+                                    ->iconColor('success')
+                                    ->badge()
+                                    ->color('success')
+                                    ->size('lg')
+                                    ->weight('bold')
+                                    ->state(function ($record) {
+                                        return \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
+                                            ->where('card_type', $record->card_type)
+                                            ->whereIn('status', ['completed', 'success', 'approved'])
+                                            ->sum('amount') ?? 0;
+                                    })
+                                    ->formatStateUsing(fn ($state) => $state > 0 ? '₪' . number_format($state, 2) : 'אין נתונים')
+                                    ->helperText('סכום כל התשלומים'),
+
+                                TextEntry::make('last_transaction')
+                                    ->label('תשלום אחרון')
+                                    ->icon('heroicon-o-clock')
+                                    ->iconColor('warning')
+                                    ->badge()
+                                    ->color('warning')
+                                    ->state(function ($record) {
+                                        $lastTx = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
+                                            ->where('card_type', $record->card_type)
+                                            ->whereIn('status', ['completed', 'success', 'approved'])
+                                            ->latest('created_at')
+                                            ->first();
+                                        return $lastTx ? $lastTx->created_at->format('d/m/Y H:i') : null;
+                                    })
+                                    ->placeholder('טרם בוצע')
+                                    ->helperText(function ($record) {
+                                        $lastTx = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
+                                            ->where('card_type', $record->card_type)
+                                            ->whereIn('status', ['completed', 'success', 'approved'])
+                                            ->latest('created_at')
+                                            ->first();
+                                        return $lastTx ? 'לפני ' . $lastTx->created_at->diffForHumans() : 'לא נמצאו תשלומים';
+                                    }),
+
+                                TextEntry::make('usage_frequency')
+                                    ->label('תדירות שימוש')
+                                    ->icon('heroicon-o-arrow-trending-up')
+                                    ->iconColor('info')
+                                    ->badge()
+                                    ->color('info')
+                                    ->state(function ($record) {
+                                        $count = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
+                                            ->where('card_type', $record->card_type)
+                                            ->whereIn('status', ['completed', 'success', 'approved'])
+                                            ->count();
+                                        $days = $record->created_at->diffInDays(now());
+                                        if ($days === 0 || $count === 0) {
+                                            return 'חדש';
+                                        }
+                                        $frequency = $count / max($days, 1);
+                                        if ($frequency >= 1) {
+                                            return 'יומי';
+                                        } elseif ($frequency >= 0.25) {
+                                            return 'שבועי';
+                                        } elseif ($frequency >= 0.1) {
+                                            return 'חודשי';
+                                        }
+                                        return 'נדיר';
+                                    })
+                                    ->helperText('על בסיס היסטוריית שימוש'),
+                            ]),
+                    ]),
+
+                // היסטוריה ומידע מערכת
+                Section::make('היסטוריה ומידע מערכת')
+                    ->description('פרטי מערכת ותאריכים')
+                    ->icon('heroicon-o-information-circle')
+                    ->collapsible()
+                    ->collapsed()
+                    ->columnSpanFull()
+                    ->schema([
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('created_at')
+                                    ->label('תאריך הוספה')
+                                    ->icon('heroicon-o-plus-circle')
+                                    ->iconColor('success')
+                                    ->dateTime('d/m/Y בשעה H:i')
+                                    ->timezone('Asia/Jerusalem')
+                                    ->helperText(fn ($record) =>
+                                        'לפני ' . $record->created_at->diffForHumans()
+                                    ),
+
+                                TextEntry::make('updated_at')
+                                    ->label('עדכון אחרון')
+                                    ->icon('heroicon-o-arrow-path')
+                                    ->iconColor('warning')
+                                    ->dateTime('d/m/Y בשעה H:i')
+                                    ->timezone('Asia/Jerusalem')
+                                    ->helperText(fn ($record) =>
+                                        'לפני ' . $record->updated_at->diffForHumans()
+                                    ),
+
+                                TextEntry::make('id')
+                                    ->label('מזהה מערכת')
+                                    ->icon('heroicon-o-hashtag')
+                                    ->iconColor('gray')
+                                    ->formatStateUsing(fn ($state) => '#' . str_pad((string)$state, 6, '0', STR_PAD_LEFT))
+                                    ->copyable()
+                                    ->copyMessage('מזהה הועתק!')
+                                    ->helperText('מזהה פנימי למעקב'),
+                            ]),
+                    ]),
+
+                // Metadata - מוצג בצורה מסודרת עם תרגום לעברית
+                Section::make('נתונים טכניים מלאים')
+                    ->description('מידע מפורט על התהליך שנשמר מ-SUMIT')
+                    ->icon('heroicon-o-code-bracket')
+                    ->collapsible()
+                    ->collapsed(true)
+                    ->columnSpanFull()
+                    ->visible(fn ($record) => !empty($record->metadata))
+                    ->schema([
+                        // קטגוריה 1: סטטוס העסקה
+                        Section::make('סטטוס העסקה')
+                            ->icon('heroicon-o-check-circle')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextEntry::make('meta_success')
+                                        ->label('סטטוס הצלחה')
+                                        ->state(fn ($record) => $record->metadata['Success'] ?? null)
+                                        ->formatStateUsing(fn ($state) => $state ? 'הצלחה' : 'כשלון')
+                                        ->badge()
+                                        ->color(fn ($state) => $state ? 'success' : 'danger'),
+
+                                    TextEntry::make('meta_result_code')
+                                        ->label('קוד תוצאה')
+                                        ->state(fn ($record) => $record->metadata['ResultCode'] ?? null)
+                                        ->formatStateUsing(fn ($state) => $state === '000' ? '000 - מאושר' : ($state ?? 'לא זמין'))
+                                        ->badge()
+                                        ->color(fn ($state) => $state === '000' ? 'success' : 'warning'),
+
+                                    TextEntry::make('meta_result_description')
+                                        ->label('תיאור התוצאה')
+                                        ->state(fn ($record) => $record->metadata['ResultDescription'] ?? 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+                                ]),
+                            ]),
+
+                        // קטגוריה 2: מזהי עסקה
+                        Section::make('מזהי עסקה')
+                            ->icon('heroicon-o-identification')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextEntry::make('meta_transaction_id')
+                                        ->label('מזהה עסקה')
+                                        ->state(fn ($record) => $record->metadata['TransactionID'] ?? 'לא זמין')
+                                        ->copyable()
+                                        ->badge()
+                                        ->color('primary'),
+
+                                    TextEntry::make('meta_auth_number')
+                                        ->label('מספר אישור')
+                                        ->state(fn ($record) => $record->metadata['AuthNumber'] ?? 'לא זמין')
+                                        ->copyable()
+                                        ->badge()
+                                        ->color('primary'),
+
+                                    TextEntry::make('meta_file_number')
+                                        ->label('מספר תיק')
+                                        ->state(fn ($record) => $record->metadata['FileNumber'] ?? 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+                                ]),
+                            ]),
+
+                        // קטגוריה 3: פרטי כרטיס וסליקה
+                        Section::make('פרטי כרטיס וסליקה')
+                            ->icon('heroicon-o-credit-card')
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextEntry::make('meta_brand')
+                                        ->label('מותג כרטיס')
+                                        ->state(function ($record) {
+                                            $brand = $record->metadata['Brand'] ?? null;
+                                            return match((string)$brand) {
+                                                '1' => 'Visa',
+                                                '2' => 'MasterCard',
+                                                '6' => 'American Express',
+                                                '22' => 'CAL / כאל',
+                                                default => $brand ? "מותג {$brand}" : 'לא זמין',
+                                            };
+                                        })
+                                        ->badge()
+                                        ->color('info'),
+
+                                    TextEntry::make('meta_acquirer')
+                                        ->label('חברת סליקה')
+                                        ->state(function ($record) {
+                                            $acquirer = $record->metadata['Acquirer'] ?? null;
+                                            return match((string)$acquirer) {
+                                                '1' => 'ישראכרט',
+                                                '2' => 'לאומי קארד',
+                                                '3' => 'כ.א.ל',
+                                                '4' => 'דיינרס',
+                                                '5' => 'אמריקן אקספרס',
+                                                '6' => 'כ.א.ל (חו"ל)',
+                                                default => $acquirer ? "חברת סליקה {$acquirer}" : 'לא זמין',
+                                            };
+                                        })
+                                        ->badge()
+                                        ->color('gray'),
+
+                                    TextEntry::make('meta_issuer')
+                                        ->label('מנפיק הכרטיס')
+                                        ->state(function ($record) {
+                                            $issuer = $record->metadata['Issuer'] ?? null;
+                                            return match((string)$issuer) {
+                                                '1' => 'בנק לאומי',
+                                                '2' => 'בנק הפועלים',
+                                                '3' => 'בנק דיסקונט',
+                                                '4' => 'בנק מזרחי',
+                                                '5' => 'בנק מרכנתיל',
+                                                '6' => 'בנק יהב',
+                                                '7' => 'בנק איגוד',
+                                                '8' => 'בנק ערבי ישראלי',
+                                                '9' => 'בנק פועלי אגודת ישראל',
+                                                '10' => 'בנק ירושלים',
+                                                '11' => 'בנק אוצר החייל',
+                                                '12' => 'בנק הבינלאומי',
+                                                '13' => 'בנק מסד',
+                                                '14' => 'בנק דקסיה',
+                                                '15' => 'SBI סטייט בנק',
+                                                '16' => 'כ.א.ל (חו"ל)',
+                                                '17' => 'בנק ערבי',
+                                                '20' => 'בנק פועלי',
+                                                '31' => 'הבנק הבינלאומי הראשון',
+                                                '46' => 'בנק מסד',
+                                                default => $issuer ? "בנק {$issuer}" : 'לא זמין',
+                                            };
+                                        })
+                                        ->badge()
+                                        ->color('gray'),
+                                ]),
+                            ]),
+
+                        // קטגוריה 4: פרטי תוקף ואבטחה
+                        Section::make('פרטי תוקף ואבטחה')
+                            ->icon('heroicon-o-shield-check')
+                            ->schema([
+                                Grid::make(4)->schema([
+                                    TextEntry::make('meta_expiration_month')
+                                        ->label('חודש תפוגה')
+                                        ->state(fn ($record) => isset($record->metadata['ExpirationMonth'])
+                                            ? str_pad((string)$record->metadata['ExpirationMonth'], 2, '0', STR_PAD_LEFT)
+                                            : 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+
+                                    TextEntry::make('meta_expiration_year')
+                                        ->label('שנת תפוגה')
+                                        ->state(function ($record) {
+                                            $year = $record->metadata['ExpirationYear'] ?? null;
+                                            if (!$year) return 'לא זמין';
+                                            return strlen((string)$year) === 2 ? '20' . $year : $year;
+                                        })
+                                        ->badge()
+                                        ->color('gray'),
+
+                                    TextEntry::make('meta_citizen_id')
+                                        ->label('תעודת זהות')
+                                        ->state(fn ($record) => $record->metadata['CitizenID'] ?? 'לא זמין')
+                                        ->copyable()
+                                        ->badge()
+                                        ->color('warning'),
+
+                                    TextEntry::make('meta_card_pattern')
+                                        ->label('תבנית כרטיס')
+                                        ->state(fn ($record) => $record->metadata['CardPattern'] ?? 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+                                ]),
+                            ]),
+
+                        // קטגוריה 5: מידע טכני מתקדם
+                        Section::make('מידע טכני מתקדם')
+                            ->icon('heroicon-o-cog-6-tooth')
+                            ->collapsed()
+                            ->schema([
+                                Grid::make(3)->schema([
+                                    TextEntry::make('meta_card_token')
+                                        ->label('טוקן כרטיס')
+                                        ->state(fn ($record) => $record->metadata['CardToken'] ?? 'לא זמין')
+                                        ->copyable()
+                                        ->badge()
+                                        ->color('primary'),
+
+                                    TextEntry::make('meta_checkout_index')
+                                        ->label('אינדקס תשלום')
+                                        ->state(fn ($record) => $record->metadata['CheckoutIndex'] ?? 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+
+                                    TextEntry::make('meta_checkout_record_index')
+                                        ->label('אינדקס רשומת תשלום')
+                                        ->state(fn ($record) => $record->metadata['CheckoutRecordIndex'] ?? 'לא זמין')
+                                        ->badge()
+                                        ->color('gray'),
+                                ]),
+                            ]),
+                    ]),
+            ]);
+    }
+
+    /**
+     * משמש רק להצגת דף View (לא Create) - deprecated, השתמש ב-infolist
      */
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Section::make('Card Information')
+            Section::make('פרטי כרטיס')
                 ->columnSpanFull()
                 ->schema([
                     TextInput::make('card_type')
-                        ->label('Card Type')
+                        ->label('סוג כרטיס')
                         ->disabled(),
 
                     TextInput::make('last_four')
-                        ->label('Card Number')
+                        ->label('מספר כרטיס')
                         ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
                         ->disabled(),
 
                     Placeholder::make('expiry')
-                        ->label('Expiry Date')
+                        ->label('תוקף')
                         ->content(fn ($record) =>
                             $record?->expiry_month . '/' . $record?->expiry_year
                         ),
 
                     Checkbox::make('is_default')
-                        ->label('Default Payment Method')
+                        ->label('ברירת מחדל')
                         ->disabled(),
                 ])
                 ->columns(2),
 
-            Section::make('Status')
+            Section::make('סטטוס')
                 ->columnSpanFull()
                 ->schema([
                     Placeholder::make('status')
-                        ->label('Card Status')
+                        ->label('סטטוס כרטיס')
                         ->content(fn ($record) =>
-                            $record?->isExpired() ? '⚠️ Expired' : '✓ Active'
+                            $record?->isExpired() ? '⚠️ פג תוקף' : '✓ פעיל'
                         ),
 
                     Placeholder::make('created_at')
-                        ->label('Added On')
+                        ->label('נוסף בתאריך')
                         ->content(fn ($record) =>
-                            $record?->created_at?->format('M d, Y')
+                            $record?->created_at?->format('d/m/Y')
                         ),
                 ])
                 ->columns(2),
@@ -96,71 +673,198 @@ class ClientPaymentMethodResource extends Resource
     }
 
     /**
-     * טבלת אמצעי תשלום
+     * טבלת אמצעי תשלום משודרגת
      */
     public static function table(Table $table): Table
     {
         return $table
             ->columns([
                 Tables\Columns\IconColumn::make('is_default')
-                    ->label('Default')
-                    ->boolean(),
+                    ->label('ברירת מחדל')
+                    ->boolean()
+                    ->trueIcon('heroicon-o-star')
+                    ->falseIcon('heroicon-o-star')
+                    ->trueColor('warning')
+                    ->falseColor('gray')
+                    ->alignCenter()
+                    ->tooltip(fn ($record) => $record->is_default ? 'כרטיס ברירת מחדל' : 'לא ברירת מחדל'),
 
                 Tables\Columns\TextColumn::make('card_type')
-                    ->label('Type')
-                    ->badge(),
+                    ->label('סוג כרטיס')
+                    ->badge()
+                    ->color('primary')
+                    ->icon('heroicon-o-credit-card')
+                    ->formatStateUsing(fn ($state) => match($state) {
+                        '1' => 'Visa',
+                        '2' => 'MasterCard',
+                        '6' => 'American Express',
+                        '22' => 'CAL / כאל',
+                        default => 'כרטיס אשראי',
+                    })
+                    ->searchable()
+                    ->sortable(),
 
                 Tables\Columns\TextColumn::make('last_four')
-                    ->label('Card Number')
-                    ->formatStateUsing(fn ($state) => '**** **** **** ' . $state),
+                    ->label('מספר כרטיס')
+                    ->icon('heroicon-o-shield-check')
+                    ->iconColor('success')
+                    ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
+                    ->copyable()
+                    ->copyMessage('הועתק!')
+                    ->copyMessageDuration(1500)
+                    ->searchable(),
 
                 Tables\Columns\TextColumn::make('expiry_month')
-                    ->label('Expires')
+                    ->label('תוקף')
+                    ->icon('heroicon-o-calendar')
                     ->formatStateUsing(fn ($record) =>
                         $record->expiry_month . '/' . substr($record->expiry_year, -2)
                     )
                     ->badge()
-                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success'),
+                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
+                    ->tooltip(fn ($record) =>
+                        $record->isExpired()
+                        ? 'הכרטיס פג תוקף!'
+                        : 'כרטיס פעיל עד ' . $record->expiry_month . '/' . $record->expiry_year
+                    )
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('סטטוס')
+                    ->badge()
+                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
+                    ->icon(fn ($record) => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->formatStateUsing(fn ($record) => $record->isExpired() ? 'פג תוקף' : 'פעיל'),
 
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Added')
-                    ->date()
-                    ->sortable(),
+                    ->label('נוסף בתאריך')
+                    ->icon('heroicon-o-clock')
+                    ->dateTime('d/m/Y H:i')
+                    ->timezone('Asia/Jerusalem')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
                 Tables\Filters\TernaryFilter::make('is_default')
-                    ->label('Default Method'),
+                    ->label('ברירת מחדל')
+                    ->trueLabel('רק ברירת מחדל')
+                    ->falseLabel('ללא ברירת מחדל')
+                    ->placeholder('הכל')
+                    ->indicator('כרטיס ברירת מחדל'),
+
+                Tables\Filters\Filter::make('expired')
+                    ->label('כרטיסים שפג תוקפם')
+                    ->query(fn (Builder $query) =>
+                        $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') < CURDATE()")
+                    )
+                    ->toggle()
+                    ->indicator('פג תוקף'),
+
+                Tables\Filters\Filter::make('active')
+                    ->label('כרטיסים פעילים')
+                    ->query(fn (Builder $query) =>
+                        $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') >= CURDATE()")
+                    )
+                    ->toggle()
+                    ->default()
+                    ->indicator('פעיל'),
             ])
             ->actions([
-                ViewAction::make(),
+                Action::make('view')
+                    ->label('צפייה')
+                    ->icon('heroicon-o-eye')
+                    ->color('info')
+                    ->url(fn (OfficeGuyToken $record): string => static::getUrl('view', ['record' => $record])),
 
                 Action::make('set_default')
-                    ->label('Set as Default')
+                    ->label('הגדר כברירת מחדל')
                     ->icon('heroicon-o-star')
+                    ->color('warning')
                     ->visible(fn ($record) => !$record->is_default && !$record->isExpired())
                     ->requiresConfirmation()
+                    ->modalHeading('הגדרת כרטיס ברירת מחדל')
+                    ->modalDescription('האם להגדיר כרטיס זה כאמצעי התשלום המועדף שלך?')
+                    ->modalSubmitActionLabel('כן, הגדר כברירת מחדל')
+                    ->modalCancelActionLabel('ביטול')
                     ->action(function (OfficeGuyToken $record) {
                         $record->setAsDefault();
 
                         Notification::make()
-                            ->title('Payment method set as default')
+                            ->title('הכרטיס הוגדר כברירת מחדל')
+                            ->body('אמצעי התשלום עודכן בהצלחה')
                             ->success()
+                            ->icon('heroicon-o-check-circle')
+                            ->send();
+                    }),
+
+                Action::make('remove_default')
+                    ->label('הסר ברירת מחדל')
+                    ->icon('heroicon-o-x-mark')
+                    ->color('gray')
+                    ->visible(fn ($record) => $record->is_default)
+                    ->requiresConfirmation()
+                    ->modalHeading('הסרת ברירת מחדל')
+                    ->modalDescription('האם להסיר את הכרטיס מרשימת ברירת המחדל?')
+                    ->modalSubmitActionLabel('כן, הסר')
+                    ->modalCancelActionLabel('ביטול')
+                    ->action(function (OfficeGuyToken $record) {
+                        $record->update(['is_default' => false]);
+
+                        Notification::make()
+                            ->title('ברירת המחדל הוסרה')
+                            ->body('הכרטיס כבר לא מוגדר כברירת מחדל')
+                            ->success()
+                            ->icon('heroicon-o-check-circle')
                             ->send();
                     }),
 
                 DeleteAction::make()
+                    ->label('מחיקה')
+                    ->icon('heroicon-o-trash')
                     ->requiresConfirmation()
-                    ->modalHeading('Delete Payment Method')
-                    ->modalDescription('Are you sure you want to delete this saved payment method?')
+                    ->modalHeading('מחיקת אמצעי תשלום')
+                    ->modalDescription('האם אתה בטוח שברצונך למחוק אמצעי תשלום זה? פעולה זו אינה ניתנת לביטול.')
+                    ->modalSubmitActionLabel('כן, מחק')
+                    ->modalCancelActionLabel('ביטול')
                     ->successNotification(
                         Notification::make()
                             ->success()
-                            ->title('Payment method deleted')
+                            ->title('אמצעי התשלום נמחק')
+                            ->body('הכרטיס הוסר בהצלחה מהמערכת')
+                            ->icon('heroicon-o-check-circle')
                     ),
             ])
-            ->emptyStateHeading('No saved payment methods')
-            ->emptyStateDescription('You have not saved any payment methods yet. Save a card during checkout or via the add-card form.')
+            ->bulkActions([
+                BulkActionGroup::make([
+                    BulkAction::make('delete')
+                        ->label('מחיקת כרטיסים מסומנים')
+                        ->requiresConfirmation()
+                        ->modalHeading('מחיקה המונית')
+                        ->modalDescription('האם למחוק את כל הכרטיסים המסומנים?')
+                        ->modalSubmitActionLabel('כן, מחק הכל')
+                        ->modalCancelActionLabel('ביטול')
+                        ->action(fn (Collection $records) => $records->each->delete())
+                        ->successNotification(
+                            Notification::make()
+                                ->success()
+                                ->title('כרטיסים נמחקו')
+                                ->body('כל הכרטיסים המסומנים נמחקו בהצלחה')
+                        )
+                        ->deselectRecordsAfterCompletion(),
+                ]),
+            ])
+            ->emptyStateHeading('אין אמצעי תשלום שמורים')
+            ->emptyStateDescription('טרם שמרת אמצעי תשלום. תוכל לשמור כרטיס בעת ביצוע תשלום או דרך טופס הוספת כרטיס.')
             ->emptyStateIcon('heroicon-o-credit-card')
+            ->emptyStateActions([
+                Action::make('add_card')
+                    ->label('הוסף כרטיס חדש')
+                    ->icon('heroicon-o-plus')
+                    ->url(fn () => static::getUrl('create'))
+                    ->button(),
+            ])
+            ->striped()
+            ->defaultSort('is_default', 'desc')
             ->defaultSort('created_at', 'desc');
     }
 
@@ -185,7 +889,7 @@ class ClientPaymentMethodResource extends Resource
     }
 
     /**
-     * מספר הכרטיסים שפג תוקפם
+     * מספר הכרטיסים שפג תוקפם (badge בתפריט)
      */
     public static function getNavigationBadge(): ?string
     {
@@ -197,8 +901,47 @@ class ClientPaymentMethodResource extends Resource
         return $expiredCount > 0 ? (string) $expiredCount : null;
     }
 
+    /**
+     * צבע ה-badge (אדום לכרטיסים שפג תוקפם)
+     */
     public static function getNavigationBadgeColor(): ?string
     {
-        return static::getNavigationBadge() ? 'warning' : null;
+        return static::getNavigationBadge() ? 'danger' : null;
+    }
+
+    /**
+     * Tooltip for navigation badge
+     */
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        $count = static::getNavigationBadge();
+        if (!$count) {
+            return null;
+        }
+
+        return $count == 1
+            ? 'כרטיס אחד שפג תוקפו'
+            : "{$count} כרטיסים שפג תוקפם";
+    }
+
+    /**
+     * כותרת עמוד מותאמת
+     */
+    public static function getNavigationLabel(): string
+    {
+        return 'אמצעי תשלום';
+    }
+
+    /**
+     * תיאור ה-Resource
+     */
+    public static function getModelLabel(): string
+    {
+        return 'אמצעי תשלום';
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return 'אמצעי תשלום';
     }
 }

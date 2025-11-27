@@ -8,6 +8,8 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
+use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
@@ -89,6 +91,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register webhook event listener subscriber
         Event::subscribe(WebhookEventListener::class);
+
+        // Register customer sync listener (v1.2.4+)
+        // Automatically syncs SUMIT customers with local customer model when webhooks are received
+        Event::listen(
+            SumitWebhookReceived::class,
+            CustomerSyncListener::class
+        );
 
         // Register stock sync scheduler based on settings
         $this->registerStockSyncScheduler();

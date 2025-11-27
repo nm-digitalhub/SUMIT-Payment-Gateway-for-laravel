@@ -589,6 +589,8 @@ class OfficeGuySettings extends Page
     protected function getHeaderActions(): array
     {
         return [
+            \OfficeGuy\LaravelSumitGateway\Filament\Actions\CreatePayableMappingAction::make(),
+
             \Filament\Actions\Action::make('reset')
                 ->label('Reset to Defaults')
                 ->color('gray')
@@ -607,6 +609,13 @@ class OfficeGuySettings extends Page
                 ->label('Save Settings')
                 ->color('primary')
                 ->action(fn () => $this->save()),
+        ];
+    }
+
+    protected function getFooterWidgets(): array
+    {
+        return [
+            \OfficeGuy\LaravelSumitGateway\Filament\Widgets\PayableMappingsTableWidget::class,
         ];
     }
 
