@@ -225,6 +225,25 @@ class SettingsService
             'routes_document_download',
             'routes_success',
             'routes_failed',
+            // Subscriptions
+            'subscriptions_enabled',
+            'subscriptions_default_interval',
+            'subscriptions_default_cycles',
+            'subscriptions_allow_pause',
+            'subscriptions_retry_failed',
+            'subscriptions_max_retries',
+            // Donations
+            'donations_enabled',
+            'donations_allow_mixed',
+            'donations_default_document_type',
+            // Multi-Vendor
+            'multivendor_enabled',
+            'multivendor_validate_credentials',
+            'multivendor_allow_authorize',
+            // Upsell / CartFlows
+            'upsell_enabled',
+            'upsell_require_token',
+            'upsell_max_per_order',
         ];
     }
 

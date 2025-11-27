@@ -4,8 +4,8 @@
 
 This document provides a comprehensive analysis of the SUMIT API endpoints available in the OpenAPI specification (`sumit-openapi.json`) compared to the endpoints currently implemented in the Laravel package. It includes the full package structure, Admin Panel (Filament) resources, Client Panel resources, and recommendations for upgrades.
 
-**Analysis Date:** November 2024  
-**OpenAPI Version:** 3.0.4  
+**Analysis Date:** November 2024
+**OpenAPI Version:** 3.0.4
 **Base URL:** `https://api.sumit.co.il`
 
 ---
@@ -233,6 +233,7 @@ SUMIT-Payment-Gateway-for-laravel/
 │   └── officeguy.php                    # Configuration file
 ├── database/
 │   └── migrations/
+<<<<<<< HEAD
 │       ├── *_create_officeguy_transactions_table.php
 │       ├── *_create_officeguy_tokens_table.php
 │       ├── *_create_officeguy_documents_table.php
@@ -240,6 +241,17 @@ SUMIT-Payment-Gateway-for-laravel/
 │       ├── *_create_vendor_credentials_table.php
 │       ├── *_create_subscriptions_table.php
 │       └── *_add_donation_and_vendor_fields.php
+=======
+│       ├── 2024_01_01_000001_create_officeguy_transactions_table.php
+│       ├── 2024_01_01_000002_create_officeguy_tokens_table.php
+│       ├── 2024_01_01_000003_create_officeguy_documents_table.php
+│       ├── 2025_01_01_000004_create_officeguy_settings_table.php
+│       ├── 2025_01_01_000005_create_vendor_credentials_table.php
+│       ├── 2025_01_01_000006_create_subscriptions_table.php
+│       ├── 2025_01_01_000007_add_donation_and_vendor_fields.php
+│       ├── 2025_01_01_000008_create_webhook_events_table.php
+│       └── 2025_01_01_000009_create_sumit_incoming_webhooks_table.php
+>>>>>>> docs/add-claude-guide
 ├── resources/
 │   ├── js/                              # JavaScript assets
 │   └── views/
@@ -336,13 +348,23 @@ SUMIT-Payment-Gateway-for-laravel/
 | `UpsellService` | ✅ Complete | Upsell payments |
 | `StockService` | ✅ Complete | Stock synchronization |
 | `SettingsService` | ✅ Complete | Settings management |
+<<<<<<< HEAD
 | `CustomerService` | ❌ Missing | Customer CRUD operations |
+=======
+| `CustomerMergeService` | ✅ Complete | Customer synchronization with local models |
+| `WebhookService` | ✅ Complete | Outgoing webhook notifications |
+| `CustomerService` | ❌ Missing | Customer CRUD operations in SUMIT API |
+>>>>>>> docs/add-claude-guide
 | `PaymentQueryService` | ❌ Missing | Payment queries |
 | `PaymentMethodService` | ❌ Missing | Saved payment methods |
 | `AccountingService` | ❌ Missing | Accounting utilities |
 | `DebtService` | ❌ Missing | Debt management |
 | `IncomeItemService` | ❌ Missing | Income items management |
+<<<<<<< HEAD
 | `TriggerService` | ❌ Missing | Webhook triggers |
+=======
+| `TriggerService` | ❌ Missing | SUMIT webhook trigger subscription |
+>>>>>>> docs/add-claude-guide
 | `SmsService` | ❌ Missing | SMS messaging |
 | `CrmService` | ❌ Missing | CRM operations |
 
@@ -359,6 +381,11 @@ SUMIT-Payment-Gateway-for-laravel/
 | **TokenResource** | `src/Filament/Resources/TokenResource.php` | Manage saved tokens |
 | **SubscriptionResource** | `src/Filament/Resources/SubscriptionResource.php` | Manage subscriptions, activate/pause/cancel, manual charge |
 | **VendorCredentialResource** | `src/Filament/Resources/VendorCredentialResource.php` | Multi-vendor credential management |
+<<<<<<< HEAD
+=======
+| **WebhookEventResource** | `src/Filament/Resources/WebhookEventResource.php` | View outgoing webhooks, retry failed webhooks, monitor delivery status |
+| **SumitWebhookResource** | `src/Filament/Resources/SumitWebhookResource.php` | View incoming SUMIT webhooks, process manually, debug webhook payload |
+>>>>>>> docs/add-claude-guide
 | **OfficeGuySettings** | `src/Filament/Pages/OfficeGuySettings.php` | Settings management page |
 
 ### Admin Settings Page Sections
@@ -408,15 +435,26 @@ The Settings page (`OfficeGuySettings.php`) includes:
 | `OfficeGuySetting` | `officeguy_settings` | Database-stored settings |
 | `Subscription` | `subscriptions` | Recurring subscriptions |
 | `VendorCredential` | `vendor_credentials` | Multi-vendor credentials |
+<<<<<<< HEAD
+=======
+| `WebhookEvent` | `webhook_events` | Outgoing webhook event logs |
+| `SumitWebhook` | `sumit_incoming_webhooks` | Incoming webhooks from SUMIT |
+>>>>>>> docs/add-claude-guide
 
 ### Missing Models (for new features)
 
 | Model | Purpose |
 |-------|---------|
+<<<<<<< HEAD
 | `SumitCustomer` | Customer synchronization with SUMIT |
 | `SumitIncomeItem` | Product/item synchronization |
 | `SumitPayment` | Payment query caching |
 | `SumitWebhook` | Webhook subscription tracking |
+=======
+| `SumitCustomer` | Customer synchronization with SUMIT API (note: CustomerMergeService already handles local sync) |
+| `SumitIncomeItem` | Product/item synchronization |
+| `SumitPayment` | Payment query caching |
+>>>>>>> docs/add-claude-guide
 | `SumitDebtRecord` | Debt tracking |
 
 ---
@@ -1057,10 +1095,17 @@ Create `src/Filament/Client/Pages/AccountSettings.php`:
 
 This comprehensive analysis covers:
 - **77 SUMIT API endpoints** (12 implemented, 65 pending)
+<<<<<<< HEAD
 - **6 Admin Panel resources** (with 7 more recommended)
 - **3 Client Panel resources** (with 6 more recommended)
 - **6 Models** (with 3 more recommended)
 - **11 Services** (with 9 more recommended)
+=======
+- **7 Admin Panel resources** (WebhookEventResource, SumitWebhookResource added recently)
+- **3 Client Panel resources** (with 3 more recommended for subscriptions)
+- **8 Models** (WebhookEvent, SumitWebhook added recently)
+- **13 Services** (CustomerMergeService, WebhookService added recently; 7 more recommended)
+>>>>>>> docs/add-claude-guide
 
 The upgrade plan provides a structured approach to implementing the missing functionality while maintaining the existing package stability. Priority should be given to:
 
