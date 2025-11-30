@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.0.6] - 2025-11-30
+
+### Changed
+- Enhanced PayableMappingsTableWidget to display both settings-based and database mappings
+  - Widget now shows field mappings from `officeguy_settings` table (Settings-based)
+  - Widget also shows advanced mappings from `payable_field_mappings` table (Database)
+  - Added "Source" column with badge to distinguish between "הגדרות" (Settings) and "טבלה" (Database)
+  - Settings-based mappings cannot be deleted or toggled (managed via Settings page)
+  - Database mappings can be toggled and deleted as before
+  - Added auto-refresh every 30 seconds
+  - Improved empty state message
+
 ## [V1.0.5] - 2025-11-30
 
 ### Fixed

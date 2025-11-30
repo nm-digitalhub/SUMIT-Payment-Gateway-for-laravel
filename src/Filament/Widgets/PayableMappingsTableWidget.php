@@ -14,7 +14,8 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
 /**
  * PayableMappingsTableWidget
  *
- * Displays all existing Payable field mappings with actions to view, edit, and delete.
+ * Displays advanced Payable field mappings from the payable_field_mappings table.
+ * Note: Basic field mapping from OfficeGuy Settings is shown in the form above.
  * Shown at the bottom of the OfficeGuySettings page.
  */
 class PayableMappingsTableWidget extends BaseWidget
@@ -22,7 +23,7 @@ class PayableMappingsTableWidget extends BaseWidget
     /**
      * Widget heading.
      */
-    protected static ?string $heading = 'מיפויי Payable קיימים';
+    protected static ?string $heading = 'מיפויי Payable מתקדמים (טבלה)';
 
     /**
      * Widget column span (full width).
@@ -177,8 +178,8 @@ class PayableMappingsTableWidget extends BaseWidget
                         ),
                 ]),
             ])
-            ->emptyStateHeading('אין מיפויים קיימים')
-            ->emptyStateDescription('צור מיפוי ראשון על ידי לחיצה על "הוסף מיפוי Payable חדש" למעלה')
+            ->emptyStateHeading('אין מיפויים מתקדמים')
+            ->emptyStateDescription('מיפוי בסיסי מוגדר בהגדרות המערכת למעלה. טבלה זו מציגה רק מיפויים מתקדמים מהטבלה.')
             ->emptyStateIcon('heroicon-o-arrows-right-left');
     }
 }
