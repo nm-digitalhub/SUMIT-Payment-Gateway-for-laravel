@@ -424,9 +424,10 @@ class DocumentService
         ?\Carbon\Carbon $dateFrom = null,
         ?\Carbon\Carbon $dateTo = null
     ): int {
-        // Default to 1 year ago
+        // Default to 5 years ago to catch ALL historical documents
+        // This ensures we get documents for subscriptions created recently but with older invoices
         if (!$dateFrom) {
-            $dateFrom = now()->subYear();
+            $dateFrom = now()->subYears(5);
         }
 
         if (!$dateTo) {
@@ -540,9 +541,10 @@ class DocumentService
             return 0;
         }
 
-        // Default to 1 year ago to catch all historical documents
+        // Default to 5 years ago to catch ALL historical documents
+        // This ensures we get documents created before the subscription was synced to our system
         if (!$dateFrom) {
-            $dateFrom = now()->subYear();
+            $dateFrom = now()->subYears(5);
         }
 
         $sumitDocs = self::fetchFromSumit(

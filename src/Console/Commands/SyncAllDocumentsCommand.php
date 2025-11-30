@@ -29,7 +29,7 @@ class SyncAllDocumentsCommand extends Command
      */
     protected $signature = 'sumit:sync-all-documents
                             {--user-id= : Sync only for specific user ID}
-                            {--days=30 : Number of days to look back (default: 30)}
+                            {--days=1825 : Number of days to look back (default: 1825 = 5 years)}
                             {--force : Force full sync even if recently synced}
                             {--dry-run : Show what would be synced without saving}';
 
