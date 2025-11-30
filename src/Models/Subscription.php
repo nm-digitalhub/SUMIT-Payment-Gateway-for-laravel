@@ -415,4 +415,83 @@ class Subscription extends Model implements Payable
 
         return $months . ' ' . __('months');
     }
+
+    // ========================================
+    // Document Relationships
+    // ========================================
+
+    /**
+     * Get all documents (invoices) for this subscription (legacy one-to-many)
+     *
+     * @deprecated Use documentsMany() for many-to-many relationship
+     */
+    public function documents(): HasMany
+    {
+        return $this->hasMany(OfficeGuyDocument::class, 'subscription_id');
+    }
+
+    /**
+     * Get all documents associated with this subscription (many-to-many)
+     *
+     * A subscription can appear in multiple consolidated documents.
+     */
+    public function documentsMany()
+    {
+        return $this->belongsToMany(
+            OfficeGuyDocument::class,
+            'document_subscription',
+            'subscription_id',    // Foreign key on pivot table for this model
+            'document_id'         // Foreign key on pivot table for the related model
+        )
+            ->withPivot('amount', 'item_data')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get only invoices (type 1)
+     */
+    public function invoices(): HasMany
+    {
+        return $this->documents()->where('document_type', '1');
+    }
+
+    /**
+     * Get only closed/paid documents
+     */
+    public function paidDocuments(): HasMany
+    {
+        return $this->documents()->where('is_closed', true);
+    }
+
+    /**
+     * Get the latest invoice
+     */
+    public function latestInvoice(): ?OfficeGuyDocument
+    {
+        return $this->invoices()->latest('document_date')->first();
+    }
+
+    /**
+     * Get total amount billed through documents
+     */
+    public function getTotalBilledAttribute(): float
+    {
+        return (float) $this->documents()->sum('amount');
+    }
+
+    /**
+     * Get total amount paid (closed documents)
+     */
+    public function getTotalPaidAttribute(): float
+    {
+        return (float) $this->paidDocuments()->sum('amount');
+    }
+
+    /**
+     * Get count of invoices
+     */
+    public function getInvoicesCountAttribute(): int
+    {
+        return $this->invoices()->count();
+    }
 }

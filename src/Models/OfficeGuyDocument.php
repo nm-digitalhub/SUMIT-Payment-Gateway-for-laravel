@@ -21,23 +21,34 @@ class OfficeGuyDocument extends Model
 
     protected $fillable = [
         'document_id',
+        'document_number',
+        'document_date',
         'order_id',
         'order_type',
+        'subscription_id',
         'customer_id',
         'document_type',
         'is_draft',
+        'is_closed',
         'language',
         'currency',
         'amount',
         'description',
+        'external_reference',
+        'document_download_url',
+        'document_payment_url',
+        'items',
         'emailed',
         'raw_response',
     ];
 
     protected $casts = [
         'is_draft' => 'boolean',
+        'is_closed' => 'boolean',
         'emailed' => 'boolean',
         'amount' => 'decimal:2',
+        'document_date' => 'datetime',
+        'items' => 'array',
         'raw_response' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -50,6 +61,33 @@ class OfficeGuyDocument extends Model
     public function order(): MorphTo
     {
         return $this->morphTo('order', 'order_type', 'order_id');
+    }
+
+    /**
+     * Get the subscription this document belongs to (legacy single relationship)
+     *
+     * @deprecated Use subscriptions() for many-to-many relationship
+     */
+    public function subscription()
+    {
+        return $this->belongsTo(Subscription::class);
+    }
+
+    /**
+     * Get all subscriptions associated with this document (many-to-many)
+     *
+     * A document can contain charges for multiple subscriptions.
+     */
+    public function subscriptions()
+    {
+        return $this->belongsToMany(
+            Subscription::class,
+            'document_subscription',
+            'document_id',        // Foreign key on pivot table for this model
+            'subscription_id'     // Foreign key on pivot table for the related model
+        )
+            ->withPivot('amount', 'item_data')
+            ->withTimestamps();
     }
 
     /**
@@ -120,5 +158,37 @@ class OfficeGuyDocument extends Model
     public function isDonationReceipt(): bool
     {
         return $this->document_type === 'DonationReceipt';
+    }
+
+    /**
+     * Create document from SUMIT API List response
+     *
+     * @param array $doc Document data from SUMIT /accounting/documents/list/ response
+     * @param int|null $subscriptionId Optional subscription ID to link
+     * @return static
+     */
+    public static function createFromListResponse(
+        array $doc,
+        ?int $subscriptionId = null
+    ): static {
+        return static::create([
+            'document_id' => $doc['DocumentID'] ?? null,
+            'document_number' => $doc['DocumentNumber'] ?? null,
+            'document_date' => $doc['Date'] ?? now(),
+            'subscription_id' => $subscriptionId,
+            'customer_id' => $doc['CustomerID'] ?? null,
+            'document_type' => $doc['Type'] ?? '1',
+            'is_draft' => $doc['IsDraft'] ?? false,
+            'is_closed' => $doc['IsClosed'] ?? false,
+            'language' => $doc['Language'] ?? 'he',
+            'currency' => $doc['Currency'] ?? 'ILS',
+            'amount' => $doc['DocumentValue'] ?? 0,
+            'description' => $doc['Description'] ?? null,
+            'external_reference' => $doc['ExternalReference'] ?? null,
+            'document_download_url' => $doc['DocumentDownloadURL'] ?? null,
+            'document_payment_url' => $doc['DocumentPaymentURL'] ?? null,
+            'emailed' => false, // Not available in list response
+            'raw_response' => $doc,
+        ]);
     }
 }
