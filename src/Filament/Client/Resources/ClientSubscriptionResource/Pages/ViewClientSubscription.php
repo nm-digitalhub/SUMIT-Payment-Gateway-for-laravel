@@ -111,11 +111,11 @@ class ViewClientSubscription extends ViewRecord
                             ->icon('heroicon-o-arrow-path'),
 
                         Infolists\Components\TextEntry::make('completed_cycles')
-                            ->label('מחזורים שהושלמו')
+                            ->label('מחזורים שולמו')
                             ->badge()
                             ->color('success')
                             ->icon('heroicon-o-check-circle')
-                            ->formatStateUsing(fn ($state, $record) => $record->documents()->where('is_closed', true)->count()),
+                            ->formatStateUsing(fn ($state, $record) => $record->documentsMany()->wherePivot('amount', '>', 0)->count()),
 
                         Infolists\Components\TextEntry::make('recurring_id')
                             ->label('מזהה SUMIT')
@@ -158,27 +158,37 @@ class ViewClientSubscription extends ViewRecord
                                     ->label('סה"כ חשבוניות')
                                     ->icon('heroicon-o-document-text')
                                     ->badge()
-                                    ->color('primary'),
+                                    ->color('primary')
+                                    ->formatStateUsing(fn ($state, $record) => $record->documentsMany()->count()),
 
                                 Infolists\Components\TextEntry::make('total_billed')
                                     ->label('סה"כ חויב')
                                     ->icon('heroicon-o-banknotes')
                                     ->money(fn ($record) => $record->currency ?? 'ILS')
                                     ->badge()
-                                    ->color('warning'),
+                                    ->color('warning')
+                                    ->formatStateUsing(function ($state, $record) {
+                                        return $record->documentsMany()->get()->sum('pivot.amount');
+                                    }),
 
                                 Infolists\Components\TextEntry::make('total_paid')
                                     ->label('סה"כ שולם')
                                     ->icon('heroicon-o-check-circle')
                                     ->money(fn ($record) => $record->currency ?? 'ILS')
                                     ->badge()
-                                    ->color('success'),
+                                    ->color('success')
+                                    ->formatStateUsing(function ($state, $record) {
+                                        return $record->documentsMany()
+                                            ->wherePivot('amount', '>', 0)
+                                            ->get()
+                                            ->sum('pivot.amount');
+                                    }),
                             ]),
 
-                        Infolists\Components\RepeatableEntry::make('documents')
+                        Infolists\Components\RepeatableEntry::make('documentsMany')
                             ->label('חשבוניות')
                             ->schema([
-                                Schemas\Components\Grid::make(6)
+                                Schemas\Components\Grid::make(7)
                                     ->schema([
                                         Infolists\Components\TextEntry::make('document_number')
                                             ->label('מספר חשבונית')
@@ -210,10 +220,18 @@ class ViewClientSubscription extends ViewRecord
                                             ->icon('heroicon-o-calendar')
                                             ->dateTime('d/m/Y'),
 
-                                        Infolists\Components\TextEntry::make('amount')
-                                            ->label('סכום')
+                                        Infolists\Components\TextEntry::make('pivot.amount')
+                                            ->label('סכום מנוי זה')
                                             ->money(fn ($record) => $record->currency ?? 'ILS')
-                                            ->icon('heroicon-o-banknotes'),
+                                            ->icon('heroicon-o-banknotes')
+                                            ->badge()
+                                            ->color('info'),
+
+                                        Infolists\Components\TextEntry::make('amount')
+                                            ->label('סה"כ חשבונית')
+                                            ->money(fn ($record) => $record->currency ?? 'ILS')
+                                            ->icon('heroicon-o-calculator')
+                                            ->color('secondary'),
 
                                         Infolists\Components\TextEntry::make('is_closed')
                                             ->label('סטטוס תשלום')
@@ -243,7 +261,7 @@ class ViewClientSubscription extends ViewRecord
                                                     $buttons[] = sprintf(
                                                         '<a href="%s" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-success-600 hover:bg-success-700 rounded-lg transition">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3 3v8a3 3 0 003 3z"/>
                                                             </svg>
                                                             תשלום
                                                         </a>',
@@ -257,14 +275,14 @@ class ViewClientSubscription extends ViewRecord
                                     ]),
                             ])
                             ->columnSpanFull()
-                            ->visible(fn ($record) => $record->documents()->count() > 0),
+                            ->visible(fn ($record) => $record->documentsMany()->count() > 0),
 
                         Infolists\Components\TextEntry::make('no_documents')
                             ->label('')
                             ->default('אין חשבוניות עבור מנוי זה')
                             ->icon('heroicon-o-information-circle')
                             ->color('secondary')
-                            ->visible(fn ($record) => $record->documents()->count() === 0),
+                            ->visible(fn ($record) => $record->documentsMany()->count() === 0),
                     ])
                     ->columnSpanFull()
                     ->collapsible(),

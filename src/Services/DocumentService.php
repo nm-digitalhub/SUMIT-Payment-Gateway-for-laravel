@@ -409,6 +409,119 @@ class DocumentService
     }
 
     /**
+     * Sync ALL documents from SUMIT for a customer
+     *
+     * This syncs all documents regardless of subscription matching.
+     * Documents will be saved with intelligent subscription mapping when possible.
+     *
+     * @param int $sumitCustomerId SUMIT customer ID
+     * @param \Carbon\Carbon|null $dateFrom Optional start date
+     * @param \Carbon\Carbon|null $dateTo Optional end date
+     * @return int Number of documents synced
+     */
+    public static function syncAllForCustomer(
+        int $sumitCustomerId,
+        ?\Carbon\Carbon $dateFrom = null,
+        ?\Carbon\Carbon $dateTo = null
+    ): int {
+        // Default to 1 year ago
+        if (!$dateFrom) {
+            $dateFrom = now()->subYear();
+        }
+
+        if (!$dateTo) {
+            $dateTo = now();
+        }
+
+        $sumitDocs = self::fetchFromSumit($sumitCustomerId, $dateFrom, $dateTo);
+
+        $syncedCount = 0;
+
+        foreach ($sumitDocs as $doc) {
+            $documentId = $doc['DocumentID'] ?? null;
+            if (!$documentId) {
+                continue;
+            }
+
+            // Fetch full document details including items
+            $fullDetails = self::getDocumentDetails($documentId);
+
+            // Convert SUMIT numeric codes to readable values
+            $currencyCode = $doc['Currency'] ?? 0;
+            $currency = match ((int)$currencyCode) {
+                0 => 'ILS',
+                1 => 'USD',
+                2 => 'EUR',
+                default => 'ILS',
+            };
+
+            $languageCode = $doc['Language'] ?? 0;
+            $language = match ((int)$languageCode) {
+                0 => 'he',
+                1 => 'en',
+                default => 'he',
+            };
+
+            // Save document (update or create)
+            $document = OfficeGuyDocument::updateOrCreate(
+                [
+                    'document_id' => $doc['DocumentID'],
+                ],
+                [
+                    'document_number' => $doc['DocumentNumber'] ?? null,
+                    'document_date' => isset($doc['Date']) ? \Carbon\Carbon::parse($doc['Date']) : now(),
+                    'order_id' => null,
+                    'order_type' => null,
+                    'subscription_id' => null, // Will be set by pivot table
+                    'customer_id' => $doc['CustomerID'] ?? null,
+                    'document_type' => (string)($doc['Type'] ?? '1'),
+                    'is_draft' => ($doc['IsDraft'] ?? false) === true || ($doc['IsDraft'] ?? false) === 'true',
+                    'is_closed' => ($fullDetails['IsClosed'] ?? $doc['IsClosed'] ?? false) === true ||
+                                   ($fullDetails['IsClosed'] ?? $doc['IsClosed'] ?? false) === 'true' ||
+                                   ($fullDetails ? empty($fullDetails['DocumentPaymentURL']) : empty($doc['DocumentPaymentURL'])),
+                    'language' => $language,
+                    'currency' => $currency,
+                    'amount' => $doc['DocumentValue'] ?? 0,
+                    'description' => $doc['Description'] ?? null,
+                    'external_reference' => $doc['ExternalReference'] ?? null,
+                    'document_download_url' => $fullDetails['DocumentDownloadURL'] ?? $doc['DocumentDownloadURL'] ?? null,
+                    'document_payment_url' => $fullDetails
+                        ? ($fullDetails['DocumentPaymentURL'] ?? null)
+                        : ($doc['DocumentPaymentURL'] ?? null),
+                    'items' => $fullDetails['Items'] ?? null,
+                    'raw_response' => $doc,
+                ]
+            );
+
+            // Intelligent subscription mapping (many-to-many)
+            if ($fullDetails && $sumitCustomerId) {
+                $subscriptionsInDoc = self::identifySubscriptionsInDocument($fullDetails, $sumitCustomerId);
+
+                // Sync to pivot table
+                if (!empty($subscriptionsInDoc)) {
+                    foreach ($subscriptionsInDoc as $subData) {
+                        $document->subscriptions()->syncWithoutDetaching([
+                            $subData['subscription']->id => [
+                                'amount' => $subData['amount'],
+                                'item_data' => json_encode($subData['items']),
+                            ],
+                        ]);
+                    }
+
+                    // Update legacy subscription_id to first matched subscription
+                    if ($document->subscription_id === null) {
+                        $document->update(['subscription_id' => $subscriptionsInDoc[0]['subscription']->id]);
+                    }
+                }
+            }
+
+            $syncedCount++;
+        }
+
+        return $syncedCount;
+    }
+
+    /**
      * Sync documents from SUMIT for a subscription
      *
      * @param \OfficeGuy\LaravelSumitGateway\Models\Subscription $subscription

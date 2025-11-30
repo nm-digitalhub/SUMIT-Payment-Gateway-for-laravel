@@ -127,7 +127,10 @@ class SyncAllDocumentsCommand extends Command
     }
 
     /**
-     * Sync documents for all subscriptions
+     * Sync ALL documents for all customers
+     *
+     * This syncs ALL documents from SUMIT, not just subscription-related ones.
+     * Includes invoices, credit notes, eSIM purchases, and any other document type.
      *
      * @param int|null $userId Specific user ID or null for all users
      * @param int $days Number of days to look back
@@ -139,31 +142,28 @@ class SyncAllDocumentsCommand extends Command
     {
         $totalDocuments = 0;
 
-        // Get ALL subscriptions (no status filter!)
-        $query = Subscription::query();
+        // Get all users with SUMIT customer ID
+        $query = \App\Models\User::whereNotNull('sumit_customer_id');
 
         if ($userId) {
-            $query->where(function ($q) use ($userId) {
-                $q->where('subscriber_type', 'App\\Models\\User')
-                  ->where('subscriber_id', $userId);
-            });
+            $query->where('id', $userId);
         }
 
-        $subscriptions = $query->get();
+        $users = $query->get();
 
-        if ($subscriptions->isEmpty()) {
-            $this->warn('   ⚠️  No subscriptions found');
+        if ($users->isEmpty()) {
+            $this->warn('   ⚠️  No users with SUMIT customer ID found');
             return 0;
         }
 
-        $this->info("   Found {$subscriptions->count()} subscriptions");
+        $this->info("   Found {$users->count()} users with SUMIT customer ID");
         $this->newLine();
 
-        $progressBar = $this->output->createProgressBar($subscriptions->count());
+        $progressBar = $this->output->createProgressBar($users->count());
         $progressBar->setFormat(' %current%/%max% [%bar%] %percent:3s%% - %message%');
 
-        foreach ($subscriptions as $subscription) {
-            $progressBar->setMessage("Subscription #{$subscription->id}: {$subscription->name}");
+        foreach ($users as $user) {
+            $progressBar->setMessage("User #{$user->id}: {$user->email}");
             $progressBar->advance();
 
             if ($dryRun) {
@@ -173,12 +173,15 @@ class SyncAllDocumentsCommand extends Command
             try {
                 $dateFrom = now()->subDays($days);
 
-                // Sync documents for this subscription
-                $count = DocumentService::syncForSubscription($subscription, $dateFrom);
+                // Sync ALL documents for this customer (not just subscription-related)
+                $count = DocumentService::syncAllForCustomer(
+                    (int) $user->sumit_customer_id,
+                    $dateFrom
+                );
                 $totalDocuments += $count;
             } catch (\Throwable $e) {
-                // Log error but continue with next subscription
-                \Log::error("Failed to sync documents for subscription #{$subscription->id}: {$e->getMessage()}");
+                // Log error but continue with next user
+                \Log::error("Failed to sync documents for user #{$user->id}: {$e->getMessage()}");
             }
         }
 

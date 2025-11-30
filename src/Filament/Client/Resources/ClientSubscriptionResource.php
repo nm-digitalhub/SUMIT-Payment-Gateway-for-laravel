@@ -160,22 +160,28 @@ class ClientSubscriptionResource extends Resource
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('completed_cycles')
-                    ->label('מחזורים שהושלמו')
-                    ->formatStateUsing(fn ($state, $record) => $record->documents()->where('is_closed', true)->count())
+                    ->label('מחזורים שולמו')
+                    ->formatStateUsing(fn ($state, $record) => $record->documentsMany()->wherePivot('amount', '>', 0)->count())
                     ->badge()
                     ->color('success')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('invoices_count')
                     ->label('סה"כ חשבוניות')
-                    ->formatStateUsing(fn ($state, $record) => $record->documents()->count())
+                    ->formatStateUsing(fn ($state, $record) => $record->documentsMany()->count())
                     ->badge()
                     ->color('primary')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('total_paid')
                     ->label('סה"כ שולם')
-                    ->formatStateUsing(fn ($state, $record) => $record->documents()->where('is_closed', true)->sum('amount'))
+                    ->formatStateUsing(function ($state, $record) {
+                        // Sum the pivot amounts for this subscription across all documents
+                        return $record->documentsMany()
+                            ->wherePivot('amount', '>', 0)
+                            ->get()
+                            ->sum('pivot.amount');
+                    })
                     ->money(fn ($record) => $record->currency ?? 'ILS')
                     ->toggleable(isToggledHiddenByDefault: true),
 
