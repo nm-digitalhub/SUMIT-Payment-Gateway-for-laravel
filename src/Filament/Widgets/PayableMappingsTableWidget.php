@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Widgets;
 
+use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -91,7 +92,7 @@ class PayableMappingsTableWidget extends BaseWidget
             ])
             ->defaultSort('created_at', 'desc')
             ->actions([
-                Tables\Actions\Action::make('view')
+                Actions\Action::make('view')
                     ->label('צפה')
                     ->icon('heroicon-o-eye')
                     ->color('info')
@@ -104,7 +105,7 @@ class PayableMappingsTableWidget extends BaseWidget
                     ->modalCancelActionLabel('סגור')
                     ->modalWidth('5xl'),
 
-                Tables\Actions\Action::make('toggle_active')
+                Actions\Action::make('toggle_active')
                     ->label(fn ($record) => $record->is_active ? 'השבת' : 'הפעל')
                     ->icon(fn ($record) => $record->is_active ? 'heroicon-o-pause-circle' : 'heroicon-o-play-circle')
                     ->color(fn ($record) => $record->is_active ? 'warning' : 'success')
@@ -124,7 +125,7 @@ class PayableMappingsTableWidget extends BaseWidget
                             ->send();
                     }),
 
-                Tables\Actions\DeleteAction::make()
+                Actions\DeleteAction::make()
                     ->label('מחק')
                     ->modalHeading('מחיקת מיפוי')
                     ->modalDescription('האם אתה בטוח שברצונך למחוק את המיפוי? פעולה זו בלתי הפיכה.')
@@ -136,8 +137,8 @@ class PayableMappingsTableWidget extends BaseWidget
                     ),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('activate')
+                Actions\BulkActionGroup::make([
+                    Actions\BulkAction::make('activate')
                         ->label('הפעל נבחרים')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
@@ -151,7 +152,7 @@ class PayableMappingsTableWidget extends BaseWidget
                                 ->send();
                         }),
 
-                    Tables\Actions\BulkAction::make('deactivate')
+                    Actions\BulkAction::make('deactivate')
                         ->label('השבת נבחרים')
                         ->icon('heroicon-o-pause-circle')
                         ->color('warning')
@@ -165,7 +166,7 @@ class PayableMappingsTableWidget extends BaseWidget
                                 ->send();
                         }),
 
-                    Tables\Actions\DeleteBulkAction::make()
+                    Actions\DeleteBulkAction::make()
                         ->modalHeading('מחיקת מיפויים')
                         ->modalDescription('האם אתה בטוח שברצונך למחוק את המיפויים הנבחרים? פעולה זו בלתי הפיכה.')
                         ->successNotification(

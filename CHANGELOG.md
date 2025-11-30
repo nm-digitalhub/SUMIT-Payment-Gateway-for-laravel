@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.0.5] - 2025-11-30
+
+### Fixed
+- Fixed Filament v4 Actions namespace in PayableMappingsTableWidget
+  - Changed `Tables\Actions\Action` to `Actions\Action` (Filament v4 breaking change)
+  - Changed `Tables\Actions\BulkAction` to `Actions\BulkAction`
+  - Changed `Tables\Actions\DeleteAction` to `Actions\DeleteAction`
+  - Changed `Tables\Actions\DeleteBulkAction` to `Actions\DeleteBulkAction`
+  - Changed `Tables\Actions\BulkActionGroup` to `Actions\BulkActionGroup`
+  - Resolves "Class 'Filament\Tables\Actions\Action' not found" error
+  - All table actions now use correct Filament v4 namespace
+
 ## [V1.0.4] - 2025-11-30
 
 ### Fixed
