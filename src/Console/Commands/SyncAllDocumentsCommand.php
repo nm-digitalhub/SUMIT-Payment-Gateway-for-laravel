@@ -48,10 +48,10 @@ class SyncAllDocumentsCommand extends Command
         $this->info('🔄 Starting SUMIT Documents Auto-Sync...');
         $this->newLine();
 
-        $userId = $this->option('user-id');
+        $userId = $this->option('user-id') ? (int) $this->option('user-id') : null;
         $days = (int) $this->option('days');
-        $force = $this->option('force');
-        $dryRun = $this->option('dry-run');
+        $force = (bool) $this->option('force');
+        $dryRun = (bool) $this->option('dry-run');
 
         if ($dryRun) {
             $this->warn('⚠️  DRY RUN MODE - No changes will be saved');
