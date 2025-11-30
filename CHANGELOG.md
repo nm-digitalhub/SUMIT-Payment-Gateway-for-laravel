@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.0.4] - 2025-11-30
+
+### Fixed
+- Fixed Livewire component registration for PayableMappingsTableWidget
+  - Added explicit Livewire component registration in OfficeGuyServiceProvider
+  - Widget now properly loads in OfficeGuySettings page footer
+  - Resolves "Unable to find component" error when accessing /admin/office-guy-settings
+  - Added registerLivewireComponents() method to service provider
+
 ## [V1.0.3] - 2025-11-26
 
 ### Fixed

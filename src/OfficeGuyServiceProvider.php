@@ -101,6 +101,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register stock sync scheduler based on settings
         $this->registerStockSyncScheduler();
+
+        // Register Livewire components for Filament widgets
+        $this->registerLivewireComponents();
     }
 
     /**
@@ -153,6 +156,24 @@ class OfficeGuyServiceProvider extends ServiceProvider
             // Silently fail - config defaults will be used
             // This handles cases where DB isn't ready yet
         }
+    }
+
+    /**
+     * Register Livewire components for Filament widgets.
+     *
+     * Registers package widgets with Livewire so they can be used in Filament panels.
+     */
+    protected function registerLivewireComponents(): void
+    {
+        if (!class_exists(\Livewire\Livewire::class)) {
+            return;
+        }
+
+        // Register Filament widgets with explicit Livewire component names
+        \Livewire\Livewire::component(
+            'office-guy.laravel-sumit-gateway.filament.widgets.payable-mappings-table-widget',
+            \OfficeGuy\LaravelSumitGateway\Filament\Widgets\PayableMappingsTableWidget::class
+        );
     }
 
     /**
