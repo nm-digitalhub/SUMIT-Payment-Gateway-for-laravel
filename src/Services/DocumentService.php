@@ -283,37 +283,71 @@ class DocumentService
         ?\Carbon\Carbon $dateTo = null,
         bool $includeDrafts = false
     ): array {
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'IncludeDrafts' => $includeDrafts,
-        ];
-
-        if ($dateFrom) {
-            $request['DateFrom'] = $dateFrom->toIso8601String();
-        }
-
-        if ($dateTo) {
-            $request['DateTo'] = $dateTo->toIso8601String();
-        }
-
+        $allDocuments = [];
+        $startIndex = 0;
+        $pageSize = 1000;
+        $hasMoreResults = true;
         $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post(
-            $request,
-            '/accounting/documents/list/',
-            $environment,
-            false
-        );
 
-        if (!$response || ($response['Status'] ?? null) !== 0) {
-            return [];
+        // Fetch all pages using pagination
+        while ($hasMoreResults) {
+            $request = [
+                'Credentials' => PaymentService::getCredentials(),
+                'DocumentTypes' => null,
+                'DocumentNumberFrom' => null,
+                'DocumentNumberTo' => null,
+                'DateFrom' => null,
+                'DateTo' => null,
+                'IncludeDrafts' => $includeDrafts,
+                'Paging' => [
+                    'StartIndex' => $startIndex,
+                    'PageSize' => $pageSize,
+                ],
+            ];
+
+            if ($dateFrom) {
+                $request['DateFrom'] = $dateFrom->format('Y-m-d');
+            }
+
+            if ($dateTo) {
+                $request['DateTo'] = $dateTo->format('Y-m-d');
+            }
+
+            $response = OfficeGuyApi::post(
+                $request,
+                '/accounting/documents/list/',
+                $environment,
+                false
+            );
+
+            if (!$response || ($response['Status'] ?? null) !== 0) {
+                break;
+            }
+
+            $documents = $response['Data']['Documents'] ?? [];
+
+            if (empty($documents)) {
+                break;
+            }
+
+            $allDocuments = array_merge($allDocuments, $documents);
+
+            // Check if there are more results based on API response
+            $hasMoreResults = ($response['Data']['HasNextPage'] ?? false) === true;
+            $startIndex += count($documents);
+
+            // Safety limit to prevent infinite loops (max 100,000 documents)
+            if ($startIndex > 100000) {
+                break;
+            }
         }
 
-        // Filter by customer ID (API doesn't support this filter directly)
-        $documents = $response['Data']['Documents'] ?? [];
-
-        return array_filter($documents, function ($doc) use ($sumitCustomerId) {
+        // Filter documents by customer ID and reindex array
+        $filtered = array_filter($allDocuments, function ($doc) use ($sumitCustomerId) {
             return ($doc['CustomerID'] ?? null) === $sumitCustomerId;
         });
+
+        return array_values($filtered);
     }
 
     /**
@@ -387,21 +421,42 @@ class DocumentService
         foreach ($items as $itemData) {
             $itemName = $itemData['Item']['Name'] ?? '';
             $itemAmount = (float)($itemData['TotalPrice'] ?? 0);
+            $itemId = $itemData['Item']['ID'] ?? null;
 
             if (empty($itemName)) {
                 continue;
             }
 
-            // Try to match item name to subscription name (exact match)
+            // Try to match item to subscriptions using multiple criteria
+            $matchedSubs = [];
+
             foreach ($subscriptions as $subscription) {
-                if (strtolower(trim($itemName)) === strtolower(trim($subscription->name))) {
-                    $matches[] = [
-                        'subscription' => $subscription,
-                        'amount' => $itemAmount,
-                        'items' => [$itemData],
-                    ];
-                    break; // Found match, move to next item
+                $nameMatch = strtolower(trim($itemName)) === strtolower(trim($subscription->name));
+
+                // If name matches, check if Item ID also matches (for better accuracy)
+                if ($nameMatch) {
+                    $metadataItemId = $subscription->metadata['sumit_item_id'] ?? null;
+
+                    // If we have an Item ID, use it for stricter matching
+                    if ($itemId && $metadataItemId) {
+                        if ((int)$itemId === (int)$metadataItemId) {
+                            $matchedSubs[] = $subscription;
+                        }
+                    } else {
+                        // No Item ID available, rely on name only
+                        $matchedSubs[] = $subscription;
+                    }
                 }
+            }
+
+            // If multiple subscriptions matched the same item (e.g., 5 subscriptions for same domain),
+            // add them ALL to the matches (the document belongs to all of them)
+            foreach ($matchedSubs as $subscription) {
+                $matches[] = [
+                    'subscription' => $subscription,
+                    'amount' => $itemAmount,
+                    'items' => [$itemData],
+                ];
             }
         }
 

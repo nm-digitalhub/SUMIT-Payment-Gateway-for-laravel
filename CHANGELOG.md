@@ -7,6 +7,50 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.7.2] - 2025-11-30
+
+### Fixed
+- **Critical Fix: Subscription Sync Now Includes ALL Subscriptions**
+  - Fixed `SubscriptionService::fetchFromSumit()` to correctly pass `IncludeInactive` parameter as string (`'true'`/`'false'`) instead of boolean
+  - SUMIT API requires string values for boolean parameters - this was preventing inactive/paused/cancelled subscriptions from being synced
+  - Now correctly syncs all subscription statuses: active, paused, cancelled, expired
+  - Result: Successfully syncing 18 subscriptions (9 active + 9 paused/inactive) vs previous 9 subscriptions
+  - File: `src/Services/SubscriptionService.php:339`
+
+- **Critical Fix: Document Sync with Proper Pagination Support**
+  - Fixed `DocumentService::fetchFromSumit()` to use correct SUMIT API pagination structure with `Paging` object
+  - Changed from `PageNumber` to `StartIndex + PageSize` pagination (as per SUMIT API spec)
+  - Fixed pagination loop to check `HasNextPage` from API response instead of document count
+  - Added `array_values()` to reindex filtered results properly
+  - `IncludeDrafts` is now boolean (as required by API when using Paging object)
+  - Result: Successfully syncing ALL documents across multiple pages (tested with 30+ documents)
+  - Files: `src/Services/DocumentService.php:280-350`
+
+- **Critical Fix: Auto-Sync Documents in Client Subscription Page**
+  - Added automatic document synchronization when viewing client subscription page
+  - `ClientSubscriptionResource::getEloquentQuery()` now calls `DocumentService::syncAllForCustomer()` on page load
+  - Syncs all documents for the authenticated user with 5-year lookback period
+  - Ensures invoice and payment counts are accurate and up-to-date
+  - Fixes issue where subscription page showed "sync 2 documents" but all 30+ documents weren't syncing
+  - File: `src/Filament/Client/Resources/ClientSubscriptionResource.php:36-47`
+
+- **Critical Fix: Multiple Subscriptions with Same Item ID**
+  - Fixed `DocumentService::identifySubscriptionsInDocument()` to link documents to ALL matching subscriptions, not just the first one
+  - Removed `break;` statement that prevented multiple subscriptions from being matched
+  - Added Item ID verification when available for more accurate matching
+  - Handles cases where multiple subscriptions share the same name and Item ID (e.g., 5 domain subscriptions for same domain)
+  - Each subscription now correctly shows its portion of shared documents in pivot table
+  - File: `src/Services/DocumentService.php:420-461`
+
+## [V1.7.1] - 2025-11-30
+
+### Fixed
+- **Historical Document Sync Enhancement**
+  - Extended document sync lookback period from 1 year to 5 years in `DocumentService::syncAllForCustomer()` and `syncForSubscription()`
+  - Ensures historical invoices are retrieved for subscriptions created recently but with older billing history
+  - Updated `SyncAllDocumentsCommand` default `--days` parameter from 30 to 1825 (5 years)
+  - Files: `src/Services/DocumentService.php`, `src/Console/Commands/SyncAllDocumentsCommand.php`
+
 ## [V1.4.2] - 2025-11-30
 
 ### Added

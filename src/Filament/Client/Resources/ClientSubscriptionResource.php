@@ -33,13 +33,21 @@ class ClientSubscriptionResource extends Resource
 
         // Show only subscriptions for the current authenticated user
         if (auth()->check()) {
-            // Auto-sync subscriptions from SUMIT before querying
+            // Auto-sync subscriptions and documents from SUMIT before querying
             if (auth()->user()->sumit_customer_id) {
                 try {
-                    \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::syncFromSumit(auth()->user());
+                    // Sync subscriptions
+                    \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::syncFromSumit(auth()->user(), includeInactive: true);
+
+                    // Sync documents (invoices) for all subscriptions
+                    \OfficeGuy\LaravelSumitGateway\Services\DocumentService::syncAllForCustomer(
+                        (int) auth()->user()->sumit_customer_id,
+                        \Carbon\Carbon::now()->subYears(5),
+                        \Carbon\Carbon::now()->addYear()
+                    );
                 } catch (\Exception $e) {
                     // Log error but don't fail the query
-                    \Illuminate\Support\Facades\Log::error('Failed to sync subscriptions from SUMIT', [
+                    \Illuminate\Support\Facades\Log::error('Failed to sync from SUMIT', [
                         'user_id' => auth()->id(),
                         'error' => $e->getMessage(),
                     ]);

@@ -336,7 +336,7 @@ class SubscriptionService
             'Customer' => [
                 'ID' => $sumitCustomerId,
             ],
-            'IncludeInactive' => $includeInactive,
+            'IncludeInactive' => $includeInactive ? 'true' : 'false',
         ];
 
         $environment = config('officeguy.environment', 'www');
