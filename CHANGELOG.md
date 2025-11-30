@@ -7,6 +7,56 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.4.0] - 2025-11-30
+
+### Added
+- **HasPayableFields Trait** - Automatic Payable interface implementation with dynamic field mapping
+  - Enables any Model to become Payable with zero configuration
+  - Automatic field mapping from OfficeGuy Settings
+  - Smart relationship detection (customer, user, client)
+  - Automatic line items extraction from relationships
+  - Fallback to config values when mapping not found
+  - JSON field support (address, line_items, fees)
+  - File: `src/Support/Traits/HasPayableFields.php`
+
+- **3 New Client Panel Resources** - Complete client-facing dashboard
+  - **ClientSubscriptionResource** - Customer subscriptions management
+    - View active/cancelled/expired subscriptions
+    - Next charge date, billing cycle, completed cycles
+    - Status badges (active, pending, cancelled, failed, expired, paused)
+    - Read-only access (customers cannot edit)
+    - Files: `src/Filament/Client/Resources/ClientSubscriptionResource.php` + Pages
+
+  - **ClientWebhookEventResource** - Outgoing webhook logs visibility
+    - View webhooks sent to external systems
+    - Status tracking (success, pending, failed)
+    - Retry count and timestamps
+    - Full payload inspection
+    - HTTP status codes
+    - Files: `src/Filament/Client/Resources/ClientWebhookEventResource.php` + Pages
+
+  - **ClientSumitWebhookResource** - Incoming SUMIT webhooks transparency
+    - View webhooks received from SUMIT
+    - Signature verification status
+    - Event types (transaction.completed, subscription.renewed, etc.)
+    - Full payload from SUMIT
+    - Processing timestamps
+    - Files: `src/Filament/Client/Resources/ClientSumitWebhookResource.php` + Pages
+
+- **Documentation**
+  - Added comprehensive integration guide: `docs/INTEGRATION_GUIDE_2025-11-30.md`
+  - Added package completeness audit report: `docs/PACKAGE_COMPLETENESS_AUDIT_2025-11-30.md`
+
+### Changed
+- Client Panel now features 6 complete resources (was 3):
+  - Existing: ClientPaymentMethodResource, ClientTransactionResource, ClientDocumentResource
+  - New: ClientSubscriptionResource, ClientWebhookEventResource, ClientSumitWebhookResource
+- Improved Hebrew localization across all new resources
+- Enhanced navigation grouping in Client Panel ("תשלומים" group)
+
+### Fixed
+- None (this is a feature release)
+
 ## [V1.0.6] - 2025-11-30
 
 ### Changed
