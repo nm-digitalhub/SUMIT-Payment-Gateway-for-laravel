@@ -186,6 +186,7 @@ class SubscriptionService
             'SendDocumentByEmail' => config('officeguy.email_document', true) ? 'true' : 'false',
             'DocumentDescription' => __('Subscription payment') . ': ' . $subscription->name,
             'DocumentLanguage' => PaymentService::getOrderLanguage(),
+            'ExternalReference' => 'subscription_' . $subscription->id . '_recurring_' . $subscription->recurring_id,
         ];
 
         $environment = config('officeguy.environment', 'www');

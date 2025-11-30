@@ -8,8 +8,10 @@ use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
+use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
 use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
@@ -86,6 +88,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
             $this->commands([
                 StockSyncCommand::class,
                 ProcessRecurringPaymentsCommand::class,
+                SyncAllDocumentsCommand::class,
             ]);
         }
 
@@ -99,8 +102,15 @@ class OfficeGuyServiceProvider extends ServiceProvider
             CustomerSyncListener::class
         );
 
+        // Register document sync listener (v1.5.0+)
+        // Automatically syncs documents and subscriptions when webhooks are received
+        Event::subscribe(DocumentSyncListener::class);
+
         // Register stock sync scheduler based on settings
         $this->registerStockSyncScheduler();
+
+        // Register auto document sync scheduler
+        $this->registerDocumentSyncScheduler();
 
         // Register Livewire components for Filament widgets
         $this->registerLivewireComponents();
@@ -197,6 +207,35 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 $schedule->command('sumit:stock-sync')->daily();
             }
             // 'none' = no scheduling
+        });
+    }
+
+    /**
+     * Register automatic document sync scheduler.
+     *
+     * Schedules automatic document synchronization from SUMIT.
+     * Runs daily at 3:00 AM to sync all documents and subscriptions.
+     * Uses queue for background processing to avoid blocking.
+     */
+    protected function registerDocumentSyncScheduler(): void
+    {
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+            // Daily sync at 3:00 AM (low traffic time)
+            $schedule->command('sumit:sync-all-documents --days=30')
+                ->dailyAt('03:00')
+                ->name('sumit-documents-sync')
+                ->withoutOverlapping(120) // Prevent overlapping runs, timeout after 2 hours
+                ->runInBackground()
+                ->onFailure(function () {
+                    \Log::error('SUMIT documents auto-sync failed');
+                })
+                ->onSuccess(function () {
+                    \Log::info('SUMIT documents auto-sync completed successfully');
+                });
         });
     }
 

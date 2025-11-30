@@ -161,7 +161,23 @@ class ClientSubscriptionResource extends Resource
 
                 Tables\Columns\TextColumn::make('completed_cycles')
                     ->label('מחזורים שהושלמו')
+                    ->formatStateUsing(fn ($state, $record) => $record->documents()->where('is_closed', true)->count())
+                    ->badge()
+                    ->color('success')
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('invoices_count')
+                    ->label('סה"כ חשבוניות')
+                    ->formatStateUsing(fn ($state, $record) => $record->documents()->count())
+                    ->badge()
+                    ->color('primary')
+                    ->toggleable(isToggledHiddenByDefault: true),
+
+                Tables\Columns\TextColumn::make('total_paid')
+                    ->label('סה"כ שולם')
+                    ->formatStateUsing(fn ($state, $record) => $record->documents()->where('is_closed', true)->sum('amount'))
+                    ->money(fn ($record) => $record->currency ?? 'ILS')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('נוצר')
