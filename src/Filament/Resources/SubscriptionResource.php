@@ -9,6 +9,7 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -34,7 +35,7 @@ class SubscriptionResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Subscription Details')
+                Schemas\Components\Section::make('Subscription Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('Subscription Name')
@@ -49,7 +50,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Billing Cycle')
+                Schemas\Components\Section::make('Billing Cycle')
                     ->schema([
                         Forms\Components\TextInput::make('interval_months')
                             ->label('Interval (Months)')
@@ -66,7 +67,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Schedule')
+                Schemas\Components\Section::make('Schedule')
                     ->schema([
                         Forms\Components\DateTimePicker::make('next_charge_at')
                             ->label('Next Charge')
@@ -82,7 +83,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Subscriber Information')
+                Schemas\Components\Section::make('Subscriber Information')
                     ->schema([
                         Forms\Components\TextInput::make('subscriber_type')
                             ->label('Subscriber Type')
@@ -96,7 +97,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Cancellation')
+                Schemas\Components\Section::make('Cancellation')
                     ->schema([
                         Forms\Components\DateTimePicker::make('cancelled_at')
                             ->label('Cancelled At')
@@ -108,7 +109,7 @@ class SubscriptionResource extends Resource
                     ])->columns(2)
                     ->visible(fn ($record) => $record?->cancelled_at !== null),
 
-                Forms\Components\Section::make('Metadata')
+                Schemas\Components\Section::make('Metadata')
                     ->schema([
                         Forms\Components\KeyValue::make('metadata')
                             ->label('Additional Data')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Schemas\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
@@ -44,7 +45,7 @@ class WebhookEventResource extends Resource
     {
         return $schema
             ->schema([
-                Forms\Components\Section::make('Event Information')
+                Schemas\Components\Section::make('Event Information')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\Select::make('event_type')
@@ -66,7 +67,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Related Resources')
+                Schemas\Components\Section::make('Related Resources')
                     ->columnSpanFull()
                     ->description('Connected resources for automation workflows')
                     ->schema([
@@ -84,7 +85,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Customer & Amount')
+                Schemas\Components\Section::make('Customer & Amount')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('customer_email')
@@ -101,7 +102,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Retry Information')
+                Schemas\Components\Section::make('Retry Information')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\TextInput::make('retry_count')
@@ -115,7 +116,7 @@ class WebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Error Details')
+                Schemas\Components\Section::make('Error Details')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\Textarea::make('error_message')
@@ -125,7 +126,7 @@ class WebhookEventResource extends Resource
                     ])
                     ->visible(fn (?Model $record): bool => !empty($record?->error_message)),
 
-                Forms\Components\Section::make('Payload & Response')
+                Schemas\Components\Section::make('Payload & Response')
                     ->columnSpanFull()
                     ->schema([
                         Forms\Components\KeyValue::make('payload')

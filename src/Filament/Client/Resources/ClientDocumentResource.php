@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -42,7 +43,7 @@ class ClientDocumentResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Document Information')
+                Schemas\Components\Section::make('Document Information')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
                             ->label('Document ID')
@@ -61,7 +62,7 @@ class ClientDocumentResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Document Details')
+                Schemas\Components\Section::make('Document Details')
                     ->schema([
                         Forms\Components\Textarea::make('description')
                             ->label('Description')

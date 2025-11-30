@@ -7,6 +7,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.4.1] - 2025-11-30
+
+### Fixed
+- Fixed Filament v4 namespace issues across all Resources (11 files)
+  - **Actions**: Changed `Tables\Actions\ViewAction` to `Actions\ViewAction` (6 Client + 5 Admin Resources)
+  - **Layout Components**: Changed `Forms\Components\Section` to `Schemas\Components\Section` (11 Resources)
+  - Added missing `use Filament\Schemas;` and `use Filament\Actions;` imports where needed
+  - Resolves "Class 'Filament\Tables\Actions\ViewAction' not found" error
+  - Resolves potential "Class 'Filament\Forms\Components\Section' not found" errors
+  - All Resources now fully compliant with Filament v4 namespace structure
+  - Affected files:
+    - Client: ClientSubscriptionResource, ClientWebhookEventResource, ClientSumitWebhookResource, ClientTransactionResource, ClientDocumentResource
+    - Admin: DocumentResource, SubscriptionResource, TokenResource, TransactionResource, VendorCredentialResource, WebhookEventResource
+
 ## [V1.4.0] - 2025-11-30
 
 ### Added

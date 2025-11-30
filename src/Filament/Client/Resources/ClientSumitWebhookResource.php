@@ -7,8 +7,10 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Actions;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSumitWebhookResource\Pages;
 use Illuminate\Database\Eloquent\Builder;
@@ -46,7 +48,7 @@ class ClientSumitWebhookResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('פרטי Webhook')
+                Schemas\Components\Section::make('פרטי Webhook')
                     ->schema([
                         Forms\Components\TextInput::make('event_type')
                             ->label('סוג אירוע')
@@ -62,7 +64,7 @@ class ClientSumitWebhookResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Payload')
+                Schemas\Components\Section::make('Payload')
                     ->schema([
                         Forms\Components\Textarea::make('payload')
                             ->label('נתונים')
@@ -71,7 +73,7 @@ class ClientSumitWebhookResource extends Resource
                             ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state),
                     ]),
 
-                Forms\Components\Section::make('אימות')
+                Schemas\Components\Section::make('אימות')
                     ->schema([
                         Forms\Components\TextInput::make('signature_verified')
                             ->label('חתימה מאומתת')
@@ -85,7 +87,7 @@ class ClientSumitWebhookResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('שגיאות')
+                Schemas\Components\Section::make('שגיאות')
                     ->visible(fn ($record) => !empty($record?->error_message))
                     ->schema([
                         Forms\Components\Textarea::make('error_message')
@@ -187,7 +189,7 @@ class ClientSumitWebhookResource extends Resource
                     ->falseLabel('לא מאומת'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
+                Actions\ViewAction::make()
                     ->label('צפייה'),
             ])
             ->bulkActions([])

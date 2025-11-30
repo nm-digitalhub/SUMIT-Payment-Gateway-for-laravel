@@ -9,6 +9,7 @@ use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -33,7 +34,7 @@ class DocumentResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Document Information')
+                Schemas\Components\Section::make('Document Information')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
                             ->label('Document ID')
@@ -53,7 +54,7 @@ class DocumentResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Financial Details')
+                Schemas\Components\Section::make('Financial Details')
                     ->schema([
                         Forms\Components\TextInput::make('amount')
                             ->label('Amount')
@@ -65,7 +66,7 @@ class DocumentResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Order Information')
+                Schemas\Components\Section::make('Order Information')
                     ->schema([
                         Forms\Components\TextInput::make('order_id')
                             ->label('Order ID')
@@ -76,14 +77,14 @@ class DocumentResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Description')
+                Schemas\Components\Section::make('Description')
                     ->schema([
                         Forms\Components\Textarea::make('description')
                             ->disabled()
                             ->rows(3),
                     ]),
 
-                Forms\Components\Section::make('Raw Response')
+                Schemas\Components\Section::make('Raw Response')
                     ->schema([
                         Forms\Components\KeyValue::make('raw_response')
                             ->label('API Response Data')

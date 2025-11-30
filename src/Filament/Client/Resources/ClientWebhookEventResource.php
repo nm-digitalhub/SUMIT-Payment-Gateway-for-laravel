@@ -7,8 +7,10 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Actions;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientWebhookEventResource\Pages;
 use Illuminate\Database\Eloquent\Builder;
@@ -43,7 +45,7 @@ class ClientWebhookEventResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('פרטי Webhook')
+                Schemas\Components\Section::make('פרטי Webhook')
                     ->schema([
                         Forms\Components\TextInput::make('event_type')
                             ->label('סוג אירוע')
@@ -59,7 +61,7 @@ class ClientWebhookEventResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Payload')
+                Schemas\Components\Section::make('Payload')
                     ->schema([
                         Forms\Components\Textarea::make('payload')
                             ->label('נתונים')
@@ -68,7 +70,7 @@ class ClientWebhookEventResource extends Resource
                             ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : $state),
                     ]),
 
-                Forms\Components\Section::make('תגובה')
+                Schemas\Components\Section::make('תגובה')
                     ->schema([
                         Forms\Components\Textarea::make('response')
                             ->label('Response')
@@ -76,7 +78,7 @@ class ClientWebhookEventResource extends Resource
                             ->disabled(),
                     ]),
 
-                Forms\Components\Section::make('ניסיונות חוזרים')
+                Schemas\Components\Section::make('ניסיונות חוזרים')
                     ->schema([
                         Forms\Components\TextInput::make('retry_count')
                             ->label('מספר ניסיונות')
@@ -164,7 +166,7 @@ class ClientWebhookEventResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
+                Actions\ViewAction::make()
                     ->label('צפייה'),
             ])
             ->bulkActions([])

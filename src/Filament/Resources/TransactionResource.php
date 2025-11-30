@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -36,7 +37,7 @@ class TransactionResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Transaction Details')
+                Schemas\Components\Section::make('Transaction Details')
                     ->schema([
                         Forms\Components\TextInput::make('payment_id')
                             ->label('Payment ID')
@@ -57,7 +58,7 @@ class TransactionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Card Details')
+                Schemas\Components\Section::make('Card Details')
                     ->schema([
                         Forms\Components\TextInput::make('card_type')
                             ->label('Card Type')
@@ -73,7 +74,7 @@ class TransactionResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('Installments')
+                Schemas\Components\Section::make('Installments')
                     ->schema([
                         Forms\Components\TextInput::make('payments_count')
                             ->label('Number of Payments')
@@ -86,7 +87,7 @@ class TransactionResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Additional Information')
+                Schemas\Components\Section::make('Additional Information')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
                             ->label('Document ID')
@@ -109,7 +110,7 @@ class TransactionResource extends Resource
                             ->rows(2),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Raw Data')
+                Schemas\Components\Section::make('Raw Data')
                     ->schema([
                         Forms\Components\KeyValue::make('raw_request')
                             ->label('Request Data')

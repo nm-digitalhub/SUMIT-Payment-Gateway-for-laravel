@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -38,7 +39,7 @@ class ClientTransactionResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Transaction Details')
+                Schemas\Components\Section::make('Transaction Details')
                     ->schema([
                         Forms\Components\TextInput::make('payment_id')
                             ->label('Payment ID')
@@ -57,7 +58,7 @@ class ClientTransactionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Card Information')
+                Schemas\Components\Section::make('Card Information')
                     ->schema([
                         Forms\Components\TextInput::make('card_type')
                             ->label('Card Type')
@@ -68,7 +69,7 @@ class ClientTransactionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Installments')
+                Schemas\Components\Section::make('Installments')
                     ->visible(fn ($record) => $record?->payments_count > 1)
                     ->schema([
                         Forms\Components\TextInput::make('payments_count')

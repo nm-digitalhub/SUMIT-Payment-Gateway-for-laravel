@@ -10,6 +10,7 @@ use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -34,7 +35,7 @@ class TokenResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Token Information')
+                Schemas\Components\Section::make('Token Information')
                     ->schema([
                         Forms\Components\TextInput::make('token')
                             ->label('Token')
@@ -47,7 +48,7 @@ class TokenResource extends Resource
                             ->disabled(),
                     ])->columns(3),
 
-                Forms\Components\Section::make('Card Details')
+                Schemas\Components\Section::make('Card Details')
                     ->schema([
                         Forms\Components\TextInput::make('card_type')
                             ->label('Card Type')
@@ -66,7 +67,7 @@ class TokenResource extends Resource
                             ->disabled(),
                     ])->columns(5),
 
-                Forms\Components\Section::make('Owner Information')
+                Schemas\Components\Section::make('Owner Information')
                     ->schema([
                         Forms\Components\TextInput::make('owner_type')
                             ->label('Owner Type')
@@ -76,7 +77,7 @@ class TokenResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Metadata')
+                Schemas\Components\Section::make('Metadata')
                     ->schema([
                         Forms\Components\KeyValue::make('metadata')
                             ->label('Additional Data')

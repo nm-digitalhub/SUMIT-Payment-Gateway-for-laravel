@@ -6,9 +6,11 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
+use Filament\Schemas;
 use Filament\Forms;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Filament\Actions;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource\Pages;
 use Illuminate\Database\Eloquent\Builder;
@@ -44,7 +46,7 @@ class ClientSubscriptionResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('פרטי מנוי')
+                Schemas\Components\Section::make('פרטי מנוי')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->label('שם המנוי')
@@ -61,7 +63,7 @@ class ClientSubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('מחזור חיוב')
+                Schemas\Components\Section::make('מחזור חיוב')
                     ->schema([
                         Forms\Components\TextInput::make('interval_months')
                             ->label('מחזור (חודשים)')
@@ -78,7 +80,7 @@ class ClientSubscriptionResource extends Resource
                             ->disabled(),
                     ])->columns(4),
 
-                Forms\Components\Section::make('לוח זמנים')
+                Schemas\Components\Section::make('לוח זמנים')
                     ->schema([
                         Forms\Components\TextInput::make('next_charge_at')
                             ->label('חיוב הבא')
@@ -167,7 +169,7 @@ class ClientSubscriptionResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make()
+                Actions\ViewAction::make()
                     ->label('צפייה'),
             ])
             ->bulkActions([])

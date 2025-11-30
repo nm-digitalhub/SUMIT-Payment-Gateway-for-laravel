@@ -12,6 +12,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -36,7 +37,7 @@ class VendorCredentialResource extends Resource
     {
         return $schema
             ->components([
-                Forms\Components\Section::make('Vendor Information')
+                Schemas\Components\Section::make('Vendor Information')
                     ->schema([
                         Forms\Components\TextInput::make('vendor_type')
                             ->label('Vendor Type')
@@ -48,7 +49,7 @@ class VendorCredentialResource extends Resource
                             ->numeric(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('SUMIT API Credentials')
+                Schemas\Components\Section::make('SUMIT API Credentials')
                     ->schema([
                         Forms\Components\TextInput::make('company_id')
                             ->label('Company ID')
@@ -65,7 +66,7 @@ class VendorCredentialResource extends Resource
                             ->label('Merchant Number'),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Status')
+                Schemas\Components\Section::make('Status')
                     ->schema([
                         Forms\Components\Toggle::make('is_active')
                             ->label('Active')
@@ -82,7 +83,7 @@ class VendorCredentialResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Forms\Components\Section::make('Metadata')
+                Schemas\Components\Section::make('Metadata')
                     ->schema([
                         Forms\Components\KeyValue::make('metadata')
                             ->label('Additional Data'),
