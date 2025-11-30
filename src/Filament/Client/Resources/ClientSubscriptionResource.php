@@ -6,11 +6,11 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
-use Filament\Schemas;
 use Filament\Forms;
+use Filament\Schemas;
 use Filament\Tables;
-use Filament\Tables\Table;
 use Filament\Actions;
+use Filament\Tables\Table;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource\Pages;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,9 +33,22 @@ class ClientSubscriptionResource extends Resource
 
         // Show only subscriptions for the current authenticated user
         if (auth()->check()) {
+            // Auto-sync subscriptions from SUMIT before querying
+            if (auth()->user()->sumit_customer_id) {
+                try {
+                    \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::syncFromSumit(auth()->user());
+                } catch (\Exception $e) {
+                    // Log error but don't fail the query
+                    \Illuminate\Support\Facades\Log::error('Failed to sync subscriptions from SUMIT', [
+                        'user_id' => auth()->id(),
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
             $query->where(function ($q) {
-                $q->where('customer_id', auth()->id())
-                  ->orWhere('customer_email', auth()->user()->email);
+                $q->where('subscriber_type', get_class(auth()->user()))
+                  ->where('subscriber_id', auth()->id());
             });
         }
 

@@ -304,7 +304,7 @@ class Subscription extends Model implements Payable
     /**
      * Record a successful charge
      */
-    public function recordCharge(string $recurringId = null): void
+    public function recordCharge(?string $recurringId = null): void
     {
         $this->completed_cycles++;
         $this->last_charged_at = now();

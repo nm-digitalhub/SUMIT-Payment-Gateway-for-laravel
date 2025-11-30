@@ -320,4 +320,117 @@ class SubscriptionService
 
         return $months . ' ' . __('months');
     }
+
+    /**
+     * Fetch subscriptions from SUMIT API for a customer
+     *
+     * @param int $sumitCustomerId SUMIT customer ID
+     * @param bool $includeInactive Include inactive subscriptions
+     * @return array List of recurring items from SUMIT
+     */
+    public static function fetchFromSumit(int $sumitCustomerId, bool $includeInactive = false): array
+    {
+        $request = [
+            'Credentials' => PaymentService::getCredentials(),
+            'Customer' => [
+                'ID' => $sumitCustomerId,
+            ],
+            'IncludeInactive' => $includeInactive,
+        ];
+
+        $environment = config('officeguy.environment', 'www');
+        $response = OfficeGuyApi::post($request, '/billing/recurring/listforcustomer/', $environment, false);
+
+        if (!$response || ($response['Status'] ?? null) !== 0) {
+            return [];
+        }
+
+        return $response['Data']['RecurringItems'] ?? [];
+    }
+
+    /**
+     * Sync subscriptions from SUMIT API to local database
+     *
+     * @param mixed $subscriber User/Customer model with sumit_customer_id
+     * @param bool $includeInactive Include inactive subscriptions
+     * @return int Number of subscriptions synced
+     */
+    public static function syncFromSumit(mixed $subscriber, bool $includeInactive = false): int
+    {
+        // Get SUMIT customer ID from subscriber
+        $sumitCustomerId = $subscriber->sumit_customer_id ?? null;
+
+        if (!$sumitCustomerId) {
+            return 0;
+        }
+
+        $sumitItems = self::fetchFromSumit((int) $sumitCustomerId, $includeInactive);
+        $syncedCount = 0;
+
+        foreach ($sumitItems as $item) {
+            $recurringId = (string) ($item['ID'] ?? '');
+
+            if (!$recurringId) {
+                continue;
+            }
+
+            // Map SUMIT status to our status
+            $status = match ((int) ($item['Status'] ?? -1)) {
+                0 => Subscription::STATUS_ACTIVE,
+                1 => Subscription::STATUS_PAUSED,
+                2 => Subscription::STATUS_CANCELLED,
+                3 => Subscription::STATUS_EXPIRED,
+                default => Subscription::STATUS_PENDING,
+            };
+
+            // Calculate interval from billing dates (default to 1 month)
+            $intervalMonths = 1;
+
+            // Extract item details
+            $itemData = $item['Item'] ?? [];
+            $name = $itemData['Name'] ?? __('Subscription');
+            $unitPrice = (float) ($item['UnitPrice'] ?? 0);
+            $quantity = (int) ($item['Quantity'] ?? 1);
+            $amount = $unitPrice * $quantity;
+
+            // Parse dates
+            $nextChargeAt = isset($item['Date_NextBilling'])
+                ? \Carbon\Carbon::parse($item['Date_NextBilling'])
+                : null;
+            $lastChargedAt = isset($item['Date_PreviousBilling'])
+                ? \Carbon\Carbon::parse($item['Date_PreviousBilling'])
+                : null;
+
+            // Update or create subscription
+            Subscription::updateOrCreate(
+                [
+                    'subscriber_type' => get_class($subscriber),
+                    'subscriber_id' => $subscriber->getKey(),
+                    'recurring_id' => $recurringId,
+                ],
+                [
+                    'name' => $name,
+                    'amount' => $amount,
+                    'currency' => 'ILS', // SUMIT default
+                    'interval_months' => $intervalMonths,
+                    'status' => $status,
+                    'next_charge_at' => $nextChargeAt,
+                    'last_charged_at' => $lastChargedAt,
+                    'metadata' => [
+                        'sumit_item_id' => $itemData['ID'] ?? null,
+                        'sumit_sku' => $itemData['SKU'] ?? null,
+                        'sumit_description' => $itemData['Description'] ?? null,
+                        'sumit_quantity' => $quantity,
+                        'sumit_unit_price' => $unitPrice,
+                        'date_start' => $item['Date_Start'] ?? null,
+                        'date_last' => $item['Date_Last'] ?? null,
+                    ],
+                ]
+            );
+
+            $syncedCount++;
+        }
+
+        return $syncedCount;
+    }
 }

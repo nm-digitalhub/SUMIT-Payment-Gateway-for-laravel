@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.4.2] - 2025-11-30
+
+### Added
+- **Automatic Subscription Sync from SUMIT API**
+  - Added `SubscriptionService::fetchFromSumit()` - Fetch subscriptions from SUMIT API by customer ID
+  - Added `SubscriptionService::syncFromSumit()` - Automatically sync SUMIT subscriptions to local database
+  - ClientSubscriptionResource now auto-syncs subscriptions on load using `sumit_customer_id`
+  - All 9 subscription fields properly mapped from SUMIT API response
+  - Metadata stored includes: item ID, SKU, description, quantity, unit price, billing dates
+  - Supports all subscription statuses: active, paused, cancelled, expired, pending
+  - Files: `src/Services/SubscriptionService.php`, `src/Filament/Client/Resources/ClientSubscriptionResource.php`
+
+### Fixed
+- Fixed PHP 8.4 deprecation warning in `Subscription::recordCharge()` - explicitly marked `$recurringId` parameter as nullable
+- Fixed polymorphic relationship query in ClientSubscriptionResource to use `subscriber_type` and `subscriber_id`
+- File: `src/Models/Subscription.php`
+
 ## [V1.4.1] - 2025-11-30
 
 ### Fixed
