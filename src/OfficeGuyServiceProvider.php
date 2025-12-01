@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\CrmSyncFoldersCommand;
+use OfficeGuy\LaravelSumitGateway\Console\Commands\CrmSyncViewsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
@@ -91,6 +92,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
             ProcessRecurringPaymentsCommand::class,
             SyncAllDocumentsCommand::class,
             CrmSyncFoldersCommand::class,
+            CrmSyncViewsCommand::class,
         ]);
 
         // Register webhook event listener subscriber
