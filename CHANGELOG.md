@@ -7,6 +7,87 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.8.0] - 2025-12-01
+
+### Added
+- **Universal Invoice/Document Interface (Invoiceable)**
+  - New `Invoiceable` interface with 10 methods for standardized invoice operations
+  - `HasSumitInvoice` trait providing default implementations (138 lines)
+  - Smart `getClient()` method supporting multiple relationship patterns
+  - Hebrew document type names (חשבונית מס, תעודת זיכוי, etc.)
+  - Currency support (ILS/USD/EUR/GBP)
+
+- **Invoice Settings Service**
+  - New `InvoiceSettingsService` with 3-layer configuration priority
+  - Priority: Database (Admin Panel) → App\Settings → Config defaults
+  - Settings: default currency, tax rate, payment due days
+  - Added 3 settings to Admin Panel (Office Guy Settings → Document Settings)
+  - Config defaults: `invoice_currency_code`, `invoice_tax_rate`, `invoice_due_days`
+
+- **InvoicesRelationManager** (Universal Relation Manager)
+  - Works with any model implementing `Invoiceable` interface (370 lines)
+  - Real-time document fetching from SUMIT API
+  - Auto-sync to local database for caching
+  - 5 table columns: Invoice Number, Type, Date, Amount, Status
+  - 4 actions: View PDF, Pay, Send Email, Create Credit/Refund
+  - Dual credit mode: Credit Note (document only) vs Direct Refund (money to card)
+
+- **Debt Service Integration**
+  - New `DebtService` for customer balance/debt tracking from SUMIT
+  - Customer debt history retrieval
+  - Balance tracking and document fetching
+  - Integration with credit/refund workflows
+
+- **Customer Interface (HasSumitCustomer)**
+  - New `HasSumitCustomer` contract for customer models
+  - `HasSumitCustomerTrait` with default implementations
+  - Methods: `getSumitCustomerId()`, `getSumitCustomerEmail()`, `getSumitCustomerName()`
+
+### Enhanced
+- **DocumentDownloadController Authorization**
+  - Enhanced from 24 lines → 119 lines
+  - Added authentication requirement
+  - Document ownership verification via `documentable` relationship
+  - Admin bypass support (`isAdmin()` or `hasRole('admin')`)
+  - Smart owner detection across multiple relationship types
+  - Fallback to SUMIT download URL if no local file
+  - Detailed error messages (403, 404)
+
+### Documentation
+- Added comprehensive implementation guide (`docs/INVOICE_INTEGRATION_COMPLETE.md` - 600+ lines)
+- Added debt service integration documentation
+- Updated configuration documentation with 3-layer priority system
+- Migration guide for existing applications
+
+### Breaking Changes
+- None - 100% backward compatible
+
+### Migration Notes
+- Existing Invoice models should implement `Invoiceable` interface
+- Use `HasSumitInvoice` trait for default implementations
+- Customer models should implement `HasSumitCustomer` for debt tracking
+- Settings can now be configured via Admin Panel (Database priority)
+
+### Files Added
+- `src/Contracts/Invoiceable.php`
+- `src/Contracts/HasSumitCustomer.php`
+- `src/Support/Traits/HasSumitInvoice.php`
+- `src/Support/Traits/HasSumitCustomerTrait.php`
+- `src/Services/InvoiceSettingsService.php`
+- `src/Services/DebtService.php`
+- `src/Filament/RelationManagers/InvoicesRelationManager.php`
+- `docs/DEBT_SERVICE_IMPLEMENTATION_SUMMARY.md`
+- `docs/DEBT_SERVICE_INTEGRATION_PLAN.md`
+
+### Files Modified
+- `config/officeguy.php` - Added invoice settings defaults
+- `src/Filament/Pages/OfficeGuySettings.php` - Added 3 invoice setting fields
+- `src/Http/Controllers/DocumentDownloadController.php` - Enhanced authorization
+- `src/Services/DocumentService.php` - Integration updates
+- `src/Services/PaymentService.php` - Integration updates
+
+**Total Changes**: ~2,846 insertions across 14 files
+
 ## [V1.7.2] - 2025-11-30
 
 ### Fixed
