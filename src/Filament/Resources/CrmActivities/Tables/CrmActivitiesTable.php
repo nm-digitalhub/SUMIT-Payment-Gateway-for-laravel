@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Tables;
 
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -46,11 +47,23 @@ class CrmActivitiesTable
                     ->sortable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('activity_date')
+                Tables\Columns\TextColumn::make('start_at')
                     ->label('Activity Date')
                     ->dateTime()
                     ->sortable()
                     ->since(),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'completed' => 'success',
+                        'in_progress' => 'warning',
+                        'cancelled' => 'danger',
+                        default => 'gray',
+                    })
+                    ->sortable()
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')
@@ -80,8 +93,9 @@ class CrmActivitiesTable
             ])
             ->recordActions([
                 ViewAction::make(),
+                EditAction::make(),
             ])
-            ->defaultSort('activity_date', 'desc')
+            ->defaultSort('start_at', 'desc')
             ->deferFilters(false);
     }
 }

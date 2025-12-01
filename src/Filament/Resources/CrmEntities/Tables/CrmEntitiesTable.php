@@ -241,6 +241,16 @@ class CrmEntitiesTable
                         }
                     })
                     ->visible(fn ($record) => $record->sumit_entity_id !== null),
+
+                // Add Activity
+                Action::make('add_activity')
+                    ->label('Add Activity')
+                    ->icon('heroicon-o-plus-circle')
+                    ->color('success')
+                    ->url(fn ($record) => route('filament.admin.resources.crm-activities.create', [
+                        'crm_entity_id' => $record->id,
+                    ]))
+                    ->openUrlInNewTab(false),
             ])
             ->toolbarActions([
                 // Header Actions

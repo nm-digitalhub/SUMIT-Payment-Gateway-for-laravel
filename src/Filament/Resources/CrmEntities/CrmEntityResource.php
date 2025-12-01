@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Pages\CreateCrmEntity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Pages\EditCrmEntity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Pages\ListCrmEntities;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\RelationManagers\ActivitiesRelationManager;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Schemas\CrmEntityForm;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Tables\CrmEntitiesTable;
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
@@ -41,7 +42,7 @@ class CrmEntityResource extends Resource
     public static function getRelations(): array
     {
         return [
-            //
+            ActivitiesRelationManager::class,
         ];
     }
 

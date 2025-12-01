@@ -726,9 +726,10 @@ public static function syncAllFoldersViews(): array
 - [x] Attribute accessors (display_name, etc.)
 
 #### Filament Resources
-- [x] CrmEntityResource - Full CRUD + 11 actions
+- [x] CrmEntityResource - Full CRUD + 12 actions + Activities relation
 - [x] CrmFolderResource - Schema management + sync
-- [x] CrmActivityResource - Read-only with Infolist
+- [x] CrmActivityResource - Full CRUD with forms
+- [x] ActivitiesRelationManager - Activity management from entities
 - [x] All forms with proper validation
 - [x] All tables with filters and sorting
 - [x] Instant filtering enabled
@@ -740,6 +741,8 @@ public static function syncAllFoldersViews(): array
 - [x] Check usage count
 - [x] Schema sync
 - [x] Entity sync
+- [x] Activity creation (standalone + from entities)
+- [x] Activity editing and deletion
 
 ### ⏳ Pending Features
 
@@ -756,7 +759,6 @@ public static function syncAllFoldersViews(): array
 - [ ] View management guide
 
 #### Future Enhancements
-- [ ] Activity creation/editing (currently read-only)
 - [ ] Entity relationship management UI
 - [ ] Custom field editor in Filament
 - [ ] Advanced filtering (custom field values)

@@ -85,6 +85,26 @@ class CrmActivity extends Model
     }
 
     /**
+     * Get the user who created/owns this activity.
+     *
+     * @return BelongsTo<\App\Models\User, CrmActivity>
+     */
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'user_id');
+    }
+
+    /**
+     * Alias for user() relationship for better readability.
+     *
+     * @return BelongsTo<\App\Models\User, CrmActivity>
+     */
+    public function createdBy(): BelongsTo
+    {
+        return $this->user();
+    }
+
+    /**
      * Get the related document.
      *
      * @return BelongsTo<OfficeGuyDocument, CrmActivity>

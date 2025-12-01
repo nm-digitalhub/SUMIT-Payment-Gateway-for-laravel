@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities;
 
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\CreateCrmActivity;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\EditCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ListCrmActivities;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ViewCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas\CrmActivityForm;
@@ -54,19 +56,9 @@ class CrmActivityResource extends Resource
     {
         return [
             'index' => ListCrmActivities::route('/'),
+            'create' => CreateCrmActivity::route('/create'),
             'view' => ViewCrmActivity::route('/{record}'),
+            'edit' => EditCrmActivity::route('/{record}/edit'),
         ];
-    }
-
-    public static function canCreate(): bool
-    {
-        // Activities are typically created through entities or automatically
-        return false;
-    }
-
-    public static function canEdit($record): bool
-    {
-        // Activities are usually read-only
-        return false;
     }
 }
