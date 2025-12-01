@@ -113,6 +113,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Register auto document sync scheduler
         $this->registerDocumentSyncScheduler();
 
+        // Register CRM folders sync scheduler
+        $this->registerCrmFoldersSyncScheduler();
+
         // Register Livewire components for Filament widgets
         $this->registerLivewireComponents();
     }
@@ -236,6 +239,35 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 })
                 ->onSuccess(function () {
                     \Log::info('SUMIT documents auto-sync completed successfully');
+                });
+        });
+    }
+
+    /**
+     * Register automatic CRM folders sync scheduler.
+     *
+     * Schedules automatic CRM folders synchronization from SUMIT API.
+     * Runs daily at 2:00 AM to sync all CRM folder schemas and fields.
+     * CRM folders define the structure for contacts, leads, companies, deals, etc.
+     */
+    protected function registerCrmFoldersSyncScheduler(): void
+    {
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+            // Daily sync at 2:00 AM (before documents sync at 3:00 AM)
+            $schedule->command('crm:sync-folders')
+                ->dailyAt('02:00')
+                ->name('crm-folders-sync')
+                ->withoutOverlapping(60) // Prevent overlapping runs, timeout after 1 hour
+                ->runInBackground()
+                ->onFailure(function () {
+                    \Log::error('CRM folders auto-sync failed');
+                })
+                ->onSuccess(function () {
+                    \Log::info('CRM folders auto-sync completed successfully');
                 });
         });
     }
