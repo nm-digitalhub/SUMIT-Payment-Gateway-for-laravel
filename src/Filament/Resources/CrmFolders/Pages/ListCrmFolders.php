@@ -37,8 +37,8 @@ class ListCrmFolders extends ListRecords
                             ->success()
                             ->send();
 
-                        // Refresh the table
-                        $this->dispatch('$refresh');
+                        // Redirect to refresh the page
+                        return redirect()->to(CrmFolderResource::getUrl('index'));
                     } catch (\Exception $e) {
                         Notification::make()
                             ->title('Sync failed')
