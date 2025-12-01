@@ -266,14 +266,35 @@ class SettingsService
     /**
      * Get all editable settings with current values.
      *
+     * Optimized to prevent N+1 queries by fetching all DB settings at once.
+     *
      * @return array<string,mixed>
      */
     public function getEditableSettings(): array
     {
+        // Start with config defaults for all editable keys
         $settings = [];
+        $editableKeys = $this->getEditableKeys();
 
-        foreach ($this->getEditableKeys() as $key) {
-            $settings[$key] = $this->get($key);
+        foreach ($editableKeys as $key) {
+            $settings[$key] = config("officeguy.{$key}");
+        }
+
+        // Override with database values in one query (if table exists)
+        if ($this->tableExists()) {
+            try {
+                // Fetch all DB settings at once instead of one-by-one
+                $dbSettings = OfficeGuySetting::getAllSettings();
+
+                // Only override editable keys
+                foreach ($editableKeys as $key) {
+                    if (isset($dbSettings[$key])) {
+                        $settings[$key] = $dbSettings[$key];
+                    }
+                }
+            } catch (\Exception $e) {
+                // Failed to query - return config only
+            }
         }
 
         return $settings;
