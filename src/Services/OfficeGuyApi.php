@@ -99,6 +99,7 @@ class OfficeGuyApi
         $headers = [
             'Content-Type' => 'application/json',
             'Content-Language' => app()->getLocale(),
+            'User-Agent' => 'Laravel/12.0 SUMIT-Gateway/1.0',
             'X-OG-Client' => 'Laravel',
         ];
 

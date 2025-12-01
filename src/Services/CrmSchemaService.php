@@ -127,76 +127,49 @@ class CrmSchemaService
     /**
      * Sync folder schema from SUMIT to local database
      *
-     * Creates or updates folder and its field definitions.
+     * Creates or updates folder with basic information from listFolders API.
+     * Note: SUMIT API does not provide /crm/schema/getfolder/ endpoint,
+     * so we work with limited data (ID and Name only).
      *
      * @param int $sumitFolderId SUMIT folder ID
+     * @param string|null $folderName Folder name from listFolders
      * @return array{success: bool, folder?: CrmFolder, fields_synced?: int, error?: string}
      */
-    public static function syncFolderSchema(int $sumitFolderId): array
+    public static function syncFolderSchema(int $sumitFolderId, ?string $folderName = null): array
     {
         try {
-            // Get folder schema from SUMIT
-            $result = self::getFolder($sumitFolderId);
+            // SUMIT API limitation: Only ID and Name are available from listFolders
+            // The getFolder() endpoint returns null, so we work with what we have
 
-            if (!$result['success']) {
+            if (!$folderName) {
                 return [
                     'success' => false,
-                    'error' => $result['error'],
+                    'error' => 'Folder name is required',
                 ];
             }
 
-            $folderData = $result['folder'];
-            $fieldsData = $result['fields'];
-
-            // Create or update folder
+            // Create or update folder with available data
             $folder = CrmFolder::updateOrCreate(
                 ['sumit_folder_id' => $sumitFolderId],
                 [
-                    'name' => $folderData['Name'] ?? 'Unknown',
-                    'name_plural' => $folderData['NamePlural'] ?? $folderData['Name'] ?? 'Unknown',
-                    'icon' => $folderData['Icon'] ?? null,
-                    'color' => $folderData['Color'] ?? null,
-                    'entity_type' => strtolower($folderData['EntityType'] ?? 'contact'),
-                    'is_system' => $folderData['IsSystem'] ?? false,
-                    'is_active' => $folderData['IsActive'] ?? true,
-                    'settings' => $folderData['Settings'] ?? null,
+                    'name' => $folderName,
+                    'name_plural' => $folderName, // Use same name for plural
+                    'icon' => null, // Not available from API
+                    'color' => null, // Not available from API
+                    'entity_type' => 'contact', // Default type, cannot determine from API
+                    'is_system' => false, // Default to false
+                    'is_active' => true, // Default to active
+                    'settings' => null, // Not available from API
                 ]
             );
 
             OfficeGuyApi::writeToLog(
-                'Synced CRM folder: ' . $folder->name . ' (ID: ' . $folder->id . ')',
+                'Synced CRM folder: ' . $folder->name . ' (SUMIT ID: ' . $sumitFolderId . ', DB ID: ' . $folder->id . ')',
                 'info'
             );
 
-            // Sync fields
+            // Note: Field syncing not possible without getFolder() endpoint
             $fieldsSynced = 0;
-            foreach ($fieldsData as $fieldData) {
-                $field = CrmFolderField::updateOrCreate(
-                    [
-                        'crm_folder_id' => $folder->id,
-                        'sumit_field_id' => $fieldData['FieldID'] ?? null,
-                    ],
-                    [
-                        'name' => self::sanitizeFieldName($fieldData['Name'] ?? 'unknown'),
-                        'label' => $fieldData['Label'] ?? $fieldData['Name'] ?? 'Unknown',
-                        'field_type' => self::mapFieldType($fieldData['Type'] ?? 'text'),
-                        'is_required' => $fieldData['IsRequired'] ?? false,
-                        'is_unique' => $fieldData['IsUnique'] ?? false,
-                        'is_searchable' => $fieldData['IsSearchable'] ?? true,
-                        'default_value' => $fieldData['DefaultValue'] ?? null,
-                        'validation_rules' => $fieldData['ValidationRules'] ?? null,
-                        'options' => $fieldData['Options'] ?? null,
-                        'display_order' => $fieldData['DisplayOrder'] ?? 0,
-                    ]
-                );
-
-                $fieldsSynced++;
-            }
-
-            OfficeGuyApi::writeToLog(
-                'Synced ' . $fieldsSynced . ' fields for folder: ' . $folder->name,
-                'info'
-            );
 
             return [
                 'success' => true,

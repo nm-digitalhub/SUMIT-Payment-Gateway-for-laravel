@@ -86,7 +86,27 @@ class CrmSyncFoldersCommand extends Command
         }
 
         try {
-            $result = CrmSchemaService::syncFolderSchema($folderId);
+            // First, get the folder name from listFolders
+            $listResult = CrmSchemaService::listFolders();
+
+            if (!$listResult['success']) {
+                $this->error('✗ Failed to list folders: ' . $listResult['error']);
+                return Command::FAILURE;
+            }
+
+            $folderData = collect($listResult['folders'])->firstWhere(function ($folder) use ($folderId) {
+                return ($folder['FolderID'] ?? $folder['ID'] ?? null) == $folderId;
+            });
+
+            if (!$folderData) {
+                $this->error("✗ Folder ID {$folderId} not found in SUMIT");
+                return Command::FAILURE;
+            }
+
+            $folderName = $folderData['Name'] ?? 'Unknown';
+
+            // Now sync the folder
+            $result = CrmSchemaService::syncFolderSchema($folderId, $folderName);
 
             if (!$result['success']) {
                 $this->error('✗ Failed to sync folder: ' . $result['error']);
@@ -183,7 +203,7 @@ class CrmSyncFoldersCommand extends Command
                 $progressBar->advance();
 
                 try {
-                    $syncResult = CrmSchemaService::syncFolderSchema($folderId);
+                    $syncResult = CrmSchemaService::syncFolderSchema($folderId, $folderName);
 
                     if ($syncResult['success']) {
                         $synced++;
