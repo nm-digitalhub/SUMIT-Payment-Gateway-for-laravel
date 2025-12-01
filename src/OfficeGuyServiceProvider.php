@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use OfficeGuy\LaravelSumitGateway\Console\Commands\CrmSyncFoldersCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
@@ -52,6 +53,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(UpsellService::class);
         $this->app->singleton(WebhookService::class);
         $this->app->singleton(CustomerMergeService::class);
+
+        // Bind CRM services
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\CrmSchemaService::class);
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\CrmDataService::class);
     }
 
     /**
@@ -89,6 +94,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 StockSyncCommand::class,
                 ProcessRecurringPaymentsCommand::class,
                 SyncAllDocumentsCommand::class,
+                CrmSyncFoldersCommand::class,
             ]);
         }
 
