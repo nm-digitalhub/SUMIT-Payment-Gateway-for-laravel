@@ -9,6 +9,7 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -307,17 +308,23 @@ class CrmEntitiesTable
                     ->label('Sync All from SUMIT')
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
-                    ->requiresConfirmation()
-                    ->modalHeading('Sync All Entities')
-                    ->modalDescription('This will sync all entities from SUMIT. This may take a while.')
-                    ->action(function (Table $table) {
+                    ->form([
+                        Forms\Components\Select::make('folder_id')
+                            ->label('Select Folder')
+                            ->options(\OfficeGuy\LaravelSumitGateway\Models\CrmFolder::pluck('name', 'id'))
+                            ->required()
+                            ->native(false)
+                            ->helperText('Choose which folder to sync entities from'),
+                    ])
+                    ->modalHeading('Sync All Entities from SUMIT')
+                    ->modalDescription('This will sync all entities from the selected folder. This may take a while.')
+                    ->modalSubmitActionLabel('Sync Entities')
+                    ->action(function (array $data) {
                         try {
-                            // Get current filters/search to determine folder
-                            $query = $table->getQuery();
-                            $folder = $query->first()?->folder;
+                            $folder = \OfficeGuy\LaravelSumitGateway\Models\CrmFolder::find($data['folder_id']);
 
                             if (!$folder) {
-                                throw new \Exception('Please select a folder filter first');
+                                throw new \Exception('Folder not found');
                             }
 
                             $result = CrmDataService::syncAllEntities($folder->id);
