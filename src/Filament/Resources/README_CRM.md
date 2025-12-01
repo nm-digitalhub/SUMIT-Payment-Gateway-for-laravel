@@ -137,6 +137,60 @@ SUMIT CRM (Navigation Group)
 
 ---
 
+---
+
+## Installation & Setup
+
+### Step 1: Run Migrations
+```bash
+php artisan migrate --force
+```
+
+This will create 7 CRM tables:
+- `officeguy_crm_folders`
+- `officeguy_crm_folder_fields`
+- `officeguy_crm_entities`
+- `officeguy_crm_entity_fields`
+- `officeguy_crm_entity_relations`
+- `officeguy_crm_activities`
+- `officeguy_crm_views`
+
+### Step 2: Verify Resources are Discovered
+```bash
+php artisan route:list --path=admin/crm
+```
+
+Should show 8 routes for CRM resources.
+
+### Step 3: Sync Folders from SUMIT
+```bash
+php artisan crm:sync-folders
+```
+
+Or use the "Sync All Folders" button in the admin panel at `/admin/crm-folders`.
+
+---
+
+## Troubleshooting
+
+### Error: "Class not found"
+**Problem**: CRM models or resources not loading.
+**Solution**: Run `composer update officeguy/laravel-sumit-gateway` to pull latest package version.
+
+### Error: "Table doesn't exist"
+**Problem**: Migrations haven't run yet.
+**Solution**: Run `php artisan migrate --force`
+
+### No folders showing after sync
+**Problem**: SUMIT credentials not configured or API unreachable.
+**Solution**:
+1. Check SUMIT credentials in `/admin/office-guy-settings` → Credentials tab
+2. Test connection: `php artisan sumit:health-check`
+3. Check logs: `tail -f storage/logs/laravel-$(date +%Y-%m-%d).log`
+
+---
+
 **Created**: 2025-12-01
 **Filament Version**: v4.1.10
 **Laravel Version**: v12.37
+**Package Version**: v1.2.0+
