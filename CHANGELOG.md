@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.8.1] - 2025-12-01
+
+### Fixed
+- **N+1 Query Performance Issue in SettingsService**
+  - Fixed critical N+1 query bug where `Schema::hasTable('officeguy_settings')` was called 74 times per page load
+  - Added static cache to `tableExists()` method to prevent repeated `information_schema.tables` queries
+  - Resolves Sentry issue: JAVASCRIPT-REACT-T (nm-digitalhub/nm-digitalhubweb#79)
+  - Performance improvement: **74 queries → 1 query** per request
+  - Affects: `/admin/office-guy-settings` page load time
+  - File: `src/Services/SettingsService.php:26-48`
+
 ## [V1.8.0] - 2025-12-01
 
 ### Added
