@@ -39,6 +39,8 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property \Carbon\Carbon|null $deleted_at
  *
  * @property-read CrmFolder $folder
+ * @property-read \App\Models\User|null $owner
+ * @property-read \App\Models\User|null $assigned
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntityField> $customFields
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmActivity> $activities
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntity> $relatedFrom
@@ -105,6 +107,26 @@ class CrmEntity extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(CrmFolder::class, 'crm_folder_id');
+    }
+
+    /**
+     * Get the user who owns this entity.
+     *
+     * @return BelongsTo<\App\Models\User, CrmEntity>
+     */
+    public function owner(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'owner_user_id');
+    }
+
+    /**
+     * Get the user this entity is assigned to.
+     *
+     * @return BelongsTo<\App\Models\User, CrmEntity>
+     */
+    public function assigned(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\User::class, 'assigned_to_user_id');
     }
 
     /**
