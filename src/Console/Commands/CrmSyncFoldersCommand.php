@@ -149,7 +149,7 @@ class CrmSyncFoldersCommand extends Command
                 $this->table(
                     ['Folder ID', 'Name', 'Entity Type', 'System'],
                     collect($folders)->map(fn($f) => [
-                        $f['FolderID'] ?? 'N/A',
+                        $f['FolderID'] ?? $f['ID'] ?? 'N/A',
                         $f['Name'] ?? 'Unknown',
                         $f['EntityType'] ?? 'Unknown',
                         ($f['IsSystem'] ?? false) ? 'Yes' : 'No',
@@ -170,7 +170,8 @@ class CrmSyncFoldersCommand extends Command
             $errors = [];
 
             foreach ($folders as $folderData) {
-                $folderId = $folderData['FolderID'] ?? null;
+                // Support both 'FolderID' and 'ID' field names
+                $folderId = $folderData['FolderID'] ?? $folderData['ID'] ?? null;
                 $folderName = $folderData['Name'] ?? 'Unknown';
 
                 if (!$folderId) {
