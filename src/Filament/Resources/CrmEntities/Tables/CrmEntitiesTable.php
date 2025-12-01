@@ -310,13 +310,21 @@ class CrmEntitiesTable
                     ->requiresConfirmation()
                     ->modalHeading('Sync All Entities')
                     ->modalDescription('This will sync all entities from SUMIT. This may take a while.')
-                    ->action(function () {
+                    ->action(function (Table $table) {
                         try {
-                            $result = CrmDataService::syncAllEntities();
+                            // Get current filters/search to determine folder
+                            $query = $table->getQuery();
+                            $folder = $query->first()?->folder;
+
+                            if (!$folder) {
+                                throw new \Exception('Please select a folder filter first');
+                            }
+
+                            $result = CrmDataService::syncAllEntities($folder->id);
 
                             Notification::make()
                                 ->title('Sync completed')
-                                ->body("Synced: {$result['synced']}, Failed: {$result['failed']}")
+                                ->body("Synced {$result['entities_synced']} entities from {$folder->name}")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {
