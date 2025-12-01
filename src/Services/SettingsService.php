@@ -19,15 +19,30 @@ use Illuminate\Support\Facades\Schema;
 class SettingsService
 {
     /**
+     * Cached result of table existence check.
+     *
+     * @var bool|null
+     */
+    protected static ?bool $tableExistsCache = null;
+
+    /**
      * Check if settings table exists.
+     *
+     * Cached to prevent N+1 queries when loading 74 settings.
      *
      * @return bool
      */
     protected function tableExists(): bool
     {
+        if (self::$tableExistsCache !== null) {
+            return self::$tableExistsCache;
+        }
+
         try {
-            return Schema::hasTable('officeguy_settings');
+            self::$tableExistsCache = Schema::hasTable('officeguy_settings');
+            return self::$tableExistsCache;
         } catch (\Exception $e) {
+            self::$tableExistsCache = false;
             return false;
         }
     }
