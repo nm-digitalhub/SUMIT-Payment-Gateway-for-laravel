@@ -607,4 +607,251 @@ class CrmDataService
             ];
         }
     }
+
+    /**
+     * Archive entity (soft delete alternative)
+     *
+     * Endpoint: POST /crm/data/archiveentity/
+     *
+     * Archives an entity instead of permanently deleting it.
+     * Archived entities can potentially be restored later.
+     *
+     * @param int $sumitEntityId SUMIT entity ID
+     * @return array{success: bool, error?: string}
+     */
+    public static function archiveEntity(int $sumitEntityId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'EntityID' => $sumitEntityId,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/crm/data/archiveentity/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to archive entity',
+                ];
+            }
+
+            // Update local entity if exists
+            $entity = CrmEntity::where('sumit_entity_id', $sumitEntityId)->first();
+            if ($entity) {
+                $entity->update(['is_active' => false]);
+            }
+
+            OfficeGuyApi::writeToLog(
+                'SUMIT CRM entity archived: ' . $sumitEntityId,
+                'info'
+            );
+
+            return ['success' => true];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT CRM archiveEntity exception: ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Count entity usage across the system
+     *
+     * Endpoint: POST /crm/data/countentityusage/
+     *
+     * Returns count of how many times this entity is referenced
+     * in other entities, documents, or system objects.
+     *
+     * @param int $sumitEntityId SUMIT entity ID
+     * @return array{success: bool, usage_count?: int, error?: string}
+     */
+    public static function countEntityUsage(int $sumitEntityId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'EntityID' => $sumitEntityId,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/crm/data/countentityusage/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to count entity usage',
+                ];
+            }
+
+            $usageCount = $response['Data']['Count'] ?? 0;
+
+            OfficeGuyApi::writeToLog(
+                "SUMIT CRM entity {$sumitEntityId} usage count: {$usageCount}",
+                'info'
+            );
+
+            return [
+                'success' => true,
+                'usage_count' => $usageCount,
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT CRM countEntityUsage exception: ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get entity HTML for printing
+     *
+     * Endpoint: POST /crm/data/getentityprinthtml/
+     *
+     * Returns formatted HTML suitable for printing a single entity.
+     * Can optionally return PDF instead of HTML.
+     *
+     * @param int $sumitEntityId SUMIT entity ID
+     * @param int $schemaId Schema/folder ID
+     * @param bool $pdf Return PDF instead of HTML (default: false)
+     * @return array{success: bool, html?: string, pdf?: string, error?: string}
+     */
+    public static function getEntityPrintHTML(int $sumitEntityId, int $schemaId, bool $pdf = false): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'EntityID' => $sumitEntityId,
+                'SchemaID' => $schemaId,
+                'PDF' => $pdf,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/crm/data/getentityprinthtml/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to get entity print HTML',
+                ];
+            }
+
+            $result = ['success' => true];
+
+            if ($pdf) {
+                $result['pdf'] = $response['Data']['PDF'] ?? '';
+            } else {
+                $result['html'] = $response['Data']['HTML'] ?? '';
+            }
+
+            OfficeGuyApi::writeToLog(
+                "SUMIT CRM entity {$sumitEntityId} print " . ($pdf ? 'PDF' : 'HTML') . ' retrieved',
+                'info'
+            );
+
+            return $result;
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT CRM getEntityPrintHTML exception: ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get entities list HTML for printing
+     *
+     * Endpoint: POST /crm/data/getentitieshtml/
+     *
+     * Returns formatted HTML suitable for printing a list of entities
+     * based on a specific view. Can optionally return PDF instead of HTML.
+     *
+     * @param int $schemaId Schema/folder ID
+     * @param int $viewId View ID for filtering/sorting
+     * @param bool $pdf Return PDF instead of HTML (default: false)
+     * @return array{success: bool, html?: string, pdf?: string, error?: string}
+     */
+    public static function getEntitiesHTML(int $schemaId, int $viewId, bool $pdf = false): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'SchemaID' => $schemaId,
+                'ViewID' => $viewId,
+                'PDF' => $pdf,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/crm/data/getentitieshtml/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to get entities HTML',
+                ];
+            }
+
+            $result = ['success' => true];
+
+            if ($pdf) {
+                $result['pdf'] = $response['Data']['PDF'] ?? '';
+            } else {
+                $result['html'] = $response['Data']['HTML'] ?? '';
+            }
+
+            OfficeGuyApi::writeToLog(
+                "SUMIT CRM entities list (schema: {$schemaId}, view: {$viewId}) " . ($pdf ? 'PDF' : 'HTML') . ' retrieved',
+                'info'
+            );
+
+            return $result;
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT CRM getEntitiesHTML exception: ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }
