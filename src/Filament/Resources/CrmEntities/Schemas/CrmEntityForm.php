@@ -34,7 +34,7 @@ class CrmEntityForm
                             ->label('SUMIT Entity ID')
                             ->disabled(),
 
-                        Forms\Components\TextInput::make('entity_name')
+                        Forms\Components\TextInput::make('name')
                             ->label('Entity Name')
                             ->required()
                             ->maxLength(255)

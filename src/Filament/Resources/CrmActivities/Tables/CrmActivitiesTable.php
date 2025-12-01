@@ -35,7 +35,7 @@ class CrmActivitiesTable
                     ->weight('semibold')
                     ->limit(50),
 
-                Tables\Columns\TextColumn::make('entity.entity_name')
+                Tables\Columns\TextColumn::make('entity.name')
                     ->label('Related To')
                     ->searchable()
                     ->sortable(),
@@ -73,7 +73,7 @@ class CrmActivitiesTable
 
                 Tables\Filters\SelectFilter::make('crm_entity_id')
                     ->label('Related Entity')
-                    ->relationship('entity', 'entity_name')
+                    ->relationship('entity', 'name')
                     ->searchable()
                     ->preload()
                     ->multiple(),

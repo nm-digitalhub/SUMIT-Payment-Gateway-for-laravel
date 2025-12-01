@@ -36,10 +36,10 @@ class CrmActivityInfolist
                             ->label('Activity Date')
                             ->dateTime(),
 
-                        Infolists\Components\TextEntry::make('entity.entity_name')
+                        Infolists\Components\TextEntry::make('entity.name')
                             ->label('Related Entity')
-                            ->url(fn ($record) => $record->entity 
-                                ? route('filament.admin.resources.crm-entities.edit', $record->entity) 
+                            ->url(fn ($record) => $record->entity
+                                ? route('filament.admin.resources.crm-entities.edit', $record->entity)
                                 : null),
 
                         Infolists\Components\TextEntry::make('createdBy.name')

@@ -27,7 +27,7 @@ class CrmEntitiesTable
                     ->copyable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('entity_name')
+                Tables\Columns\TextColumn::make('name')
                     ->label('Name')
                     ->searchable()
                     ->sortable()
@@ -130,7 +130,7 @@ class CrmEntitiesTable
 
                             Notification::make()
                                 ->title('Entity synced successfully')
-                                ->body("Updated: {$record->entity_name}")
+                                ->body("Updated: {$record->name}")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {
