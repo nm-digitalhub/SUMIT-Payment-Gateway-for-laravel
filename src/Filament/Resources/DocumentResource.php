@@ -166,20 +166,51 @@ class DocumentResource extends Resource
                     ->label('Download PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
-                    ->url(fn ($record) => route('officeguy.document.download', $record))
+                    ->visible(fn ($record) => !empty($record->document_download_url))
+                    ->url(fn ($record) => $record->document_download_url)
                     ->openUrlInNewTab(),
                 Action::make('resend_email')
                     ->label('Resend Email')
                     ->icon('heroicon-o-envelope')
                     ->color('primary')
-                    ->visible(fn ($record) => !$record->is_draft)
-                    ->requiresConfirmation()
-                    ->action(function ($record) {
-                        Notification::make()
-                            ->title('Email resend requested')
-                            ->body('The document will be sent to the customer.')
-                            ->success()
-                            ->send();
+                    ->visible(fn ($record) => !$record->is_draft && !empty($record->customer_id))
+                    ->form([
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email Address (Optional)')
+                            ->email()
+                            ->helperText('Leave empty to send to customer\'s registered email in SUMIT'),
+                    ])
+                    ->action(function ($record, array $data) {
+                        try {
+                            // If no email provided, send null to use customer's SUMIT email
+                            $email = !empty($data['email']) ? $data['email'] : null;
+
+                            // Pass the full document model (required for DocumentType + DocumentNumber)
+                            $result = \OfficeGuy\LaravelSumitGateway\Services\DocumentService::sendByEmail(
+                                $record,
+                                $email
+                            );
+
+                            if ($result['success'] ?? false) {
+                                $message = $email
+                                    ? 'The document has been sent to ' . $email
+                                    : 'The document has been sent to customer\'s registered email';
+
+                                Notification::make()
+                                    ->title('Document sent successfully')
+                                    ->body($message)
+                                    ->success()
+                                    ->send();
+                            } else {
+                                throw new \Exception($result['error'] ?? 'Unknown error');
+                            }
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('Failed to send document')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
                     }),
             ])
             ->bulkActions([

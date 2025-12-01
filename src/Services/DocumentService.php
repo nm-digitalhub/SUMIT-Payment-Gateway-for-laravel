@@ -924,18 +924,52 @@ class DocumentService
     /**
      * Send document by email via SUMIT
      *
-     * @param int $documentId SUMIT document ID
-     * @param string $email Email address to send to
+     * CRITICAL: SUMIT's /send/ endpoint requires DocumentType + DocumentNumber,
+     * NOT DocumentID! Using DocumentID will result in "Document not found" error.
+     *
+     * @param int|OfficeGuyDocument $document SUMIT document ID OR OfficeGuyDocument model
+     * @param string|null $email Email address to send to (null = use customer's SUMIT email)
+     * @param string|null $personalMessage Optional personal message to include in email
+     * @param bool $original Send original document (default: true)
      * @return array{success: bool, error?: string}
      */
-    public static function sendByEmail(int $documentId, string $email): array
-    {
+    public static function sendByEmail(
+        int|OfficeGuyDocument $document,
+        ?string $email = null,
+        ?string $personalMessage = null,
+        bool $original = true
+    ): array {
         try {
+            // If integer provided (legacy), fetch the document model
+            if (is_int($document)) {
+                $documentModel = OfficeGuyDocument::where('document_id', $document)->first();
+                if (!$documentModel) {
+                    return [
+                        'success' => false,
+                        'error' => 'Document not found in local database',
+                    ];
+                }
+                $document = $documentModel;
+            }
+
+            // Build payload using DocumentType + DocumentNumber (NOT DocumentID!)
+            // This is required by SUMIT's API - using DocumentID fails with "Document not found"
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'DocumentID' => $documentId,
-                'EmailAddress' => $email,
+                'DocumentType' => (int) $document->document_type,
+                'DocumentNumber' => (int) $document->document_number,
+                'Original' => $original,
             ];
+
+            // Add email address if provided (otherwise SUMIT uses customer's registered email)
+            if ($email) {
+                $payload['EmailAddress'] = $email;
+            }
+
+            // Add personal message if provided
+            if ($personalMessage) {
+                $payload['PersonalMessage'] = $personalMessage;
+            }
 
             $environment = config('officeguy.environment', 'www');
             $response = OfficeGuyApi::post(
@@ -946,8 +980,9 @@ class DocumentService
             );
 
             if (($response['Status'] ?? null) === 0) {
+                $logEmail = $email ?? 'customer registered email';
                 OfficeGuyApi::writeToLog(
-                    'SUMIT document sent by email. Document ID: ' . $documentId . ', Email: ' . $email,
+                    'SUMIT document sent by email. Document #' . $document->document_number . ' (Type: ' . $document->document_type . '), Email: ' . $logEmail,
                     'info'
                 );
 
@@ -960,8 +995,9 @@ class DocumentService
             ];
 
         } catch (\Throwable $e) {
+            $docInfo = is_object($document) ? "#{$document->document_number}" : "ID {$document}";
             OfficeGuyApi::writeToLog(
-                'SUMIT send email exception for document ' . $documentId . ': ' . $e->getMessage(),
+                'SUMIT send email exception for document ' . $docInfo . ': ' . $e->getMessage(),
                 'error'
             );
 

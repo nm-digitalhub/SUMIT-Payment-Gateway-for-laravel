@@ -134,24 +134,25 @@ class RouteConfig
 
     /**
      * Get setting from database with fallback to config
+     *
+     * IMPORTANT: Uses the Model's get() method instead of DB::table() to ensure
+     * the JSON cast is applied correctly (fixing double-encoded route values).
      */
     protected static function getSetting(string $settingKey, string $configKey, $default)
     {
-        // Try to get from database first
+        // Try to get from database first using the Model (with JSON cast)
         try {
             if (\Schema::hasTable('officeguy_settings')) {
-                $setting = DB::table('officeguy_settings')
-                    ->where('key', $settingKey)
-                    ->first();
-                
-                if ($setting && !empty($setting->value)) {
-                    return $setting->value;
+                $value = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting::get($settingKey);
+
+                if ($value !== null) {
+                    return $value;
                 }
             }
         } catch (\Exception $e) {
             // Database not available, use config
         }
-        
+
         // Fall back to config
         return config($configKey, $default);
     }

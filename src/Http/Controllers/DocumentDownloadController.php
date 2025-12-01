@@ -16,17 +16,16 @@ class DocumentDownloadController extends Controller
     /**
      * Download a document PDF.
      *
-     * @param string $documentId SUMIT document ID
+     * Uses Route Model Binding to automatically load the document by ID.
+     * The route parameter {document} will be resolved to the OfficeGuyDocument model.
+     *
+     * @param OfficeGuyDocument $document Document model (auto-loaded via route model binding)
      * @return Response|BinaryFileResponse
      */
-    public function download(string $documentId): Response|BinaryFileResponse
+    public function download(OfficeGuyDocument $document): Response|BinaryFileResponse
     {
-        // Find document
-        $document = OfficeGuyDocument::where('document_id', $documentId)->first();
-
-        if (! $document) {
-            abort(404, 'Document not found');
-        }
+        // Document is automatically loaded via route model binding
+        // No need for manual query - Laravel does it for us!
 
         // Authorization check - ensure user can view this document
         $this->authorizeDocumentAccess($document);
@@ -37,8 +36,8 @@ class DocumentDownloadController extends Controller
         }
 
         // If no local file, try download URL from SUMIT
-        if (! empty($document->download_url)) {
-            return redirect($document->download_url);
+        if (! empty($document->document_download_url)) {
+            return redirect($document->document_download_url);
         }
 
         abort(404, 'Document file not found');

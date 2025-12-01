@@ -7,6 +7,60 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.8.3] - 2025-12-01
+
+### Fixed
+- **CRITICAL: Document Email Sending (sendByEmail)**
+  - Fixed "Document not found" error when sending documents via email
+  - Root cause: SUMIT API requires `DocumentType` + `DocumentNumber`, NOT `DocumentID`
+  - Changed `DocumentService::sendByEmail()` signature to accept `OfficeGuyDocument` model or int
+  - When int provided (legacy), fetches document model from database
+  - API now sends: `DocumentType: 1, DocumentNumber: 40026` instead of `DocumentID: 1164461665`
+  - File: `src/Services/DocumentService.php:924-1009`
+
+- **Document Download - Direct SUMIT URL**
+  - Changed "Download PDF" button to use direct SUMIT signed URL instead of internal route
+  - Removed unnecessary redirect through local controller
+  - Faster download experience - direct to PDF
+  - File: `src/Filament/Resources/DocumentResource.php:165-171`
+
+- **Route URL Double Encoding Bug**
+  - Fixed double-encoded route URLs (e.g., `%22officeguy%22/%22documents%5C/28%22`)
+  - Root cause: `RouteConfig::getSetting()` used `DB::table()` instead of Model's `get()`
+  - Without Model, JSON cast wasn't applied, resulting in double-encoded values
+  - Changed to use `OfficeGuySetting::get()` to ensure proper JSON decoding
+  - File: `src/Support/RouteConfig.php:141-158`
+
+- **Document Download Controller - Route Model Binding**
+  - Switched to Laravel's route model binding for cleaner code
+  - Changed from manual `where('document_id')` query to automatic model injection
+  - Fixed redirect to use correct column: `document_download_url` instead of `download_url`
+  - File: `src/Http/Controllers/DocumentDownloadController.php:16-44`
+
+### Changed
+- **Email Address Now Optional in DocumentResource**
+  - Email field in "Resend Email" action is now optional
+  - If left empty, SUMIT sends to customer's registered email automatically
+  - If provided, SUMIT sends to custom email address
+  - Helper text: "Leave empty to send to customer's registered email in SUMIT"
+  - File: `src/Filament/Resources/DocumentResource.php:172-213`
+
+- **DocumentService::sendByEmail() Enhanced**
+  - Added `$personalMessage` parameter for custom email message
+  - Added `$original` parameter (default: true) to send original document
+  - Email parameter is now nullable: `?string $email = null`
+  - When email is null, SUMIT uses customer's registered email from their profile
+  - Backward compatible: accepts int (document_id) or OfficeGuyDocument model
+  - File: `src/Services/DocumentService.php:924-1009`
+
+### Impact
+- ✅ Document email sending now works correctly
+- ✅ Customers receive emails at their registered SUMIT email address by default
+- ✅ Optional override to send to custom email address
+- ✅ Direct PDF downloads (faster, no redirect)
+- ✅ All route-based features work correctly (no more URL encoding issues)
+- ✅ Backward compatible with existing code using int document_id
+
 ## [V1.8.2] - 2025-12-01
 
 ### Fixed
