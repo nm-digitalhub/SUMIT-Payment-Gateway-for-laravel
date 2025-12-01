@@ -12,6 +12,7 @@ use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
 
 class CrmEntitiesTable
@@ -117,6 +118,7 @@ class CrmEntitiesTable
                 ViewAction::make(),
                 EditAction::make(),
 
+                // Sync Entity from SUMIT
                 Action::make('sync_from_sumit')
                     ->label('Sync from SUMIT')
                     ->icon('heroicon-o-arrow-path')
@@ -142,10 +144,239 @@ class CrmEntitiesTable
                         }
                     })
                     ->visible(fn ($record) => $record->sumit_entity_id !== null),
+
+                // Archive Entity (soft delete alternative)
+                Action::make('archive')
+                    ->label('Archive')
+                    ->icon('heroicon-o-archive-box')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Archive Entity')
+                    ->modalDescription('This will archive the entity in SUMIT. You can restore it later.')
+                    ->action(function ($record) {
+                        try {
+                            $result = CrmDataService::archiveEntity((int) $record->sumit_entity_id);
+
+                            if ($result['success']) {
+                                Notification::make()
+                                    ->title('Entity archived')
+                                    ->body("Archived: {$record->name}")
+                                    ->success()
+                                    ->send();
+                            } else {
+                                throw new \Exception($result['error']);
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Archive failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn ($record) => $record->sumit_entity_id !== null && !$record->trashed()),
+
+                // Export as PDF
+                Action::make('export_pdf')
+                    ->label('Export PDF')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->color('info')
+                    ->action(function ($record) {
+                        try {
+                            $result = CrmDataService::getEntityPrintHTML(
+                                (int) $record->sumit_entity_id,
+                                $record->crm_folder_id,
+                                true // PDF format
+                            );
+
+                            if ($result['success']) {
+                                // Decode base64 PDF and download
+                                $pdf = base64_decode($result['pdf']);
+                                $filename = "entity-{$record->sumit_entity_id}.pdf";
+
+                                return response()->streamDownload(function () use ($pdf) {
+                                    echo $pdf;
+                                }, $filename, ['Content-Type' => 'application/pdf']);
+                            } else {
+                                throw new \Exception($result['error']);
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Export failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn ($record) => $record->sumit_entity_id !== null),
+
+                // Check Usage Count (before deletion)
+                Action::make('check_usage')
+                    ->label('Check Usage')
+                    ->icon('heroicon-o-magnifying-glass-circle')
+                    ->color('gray')
+                    ->modalHeading('Entity Usage Count')
+                    ->modalWidth('md')
+                    ->action(function ($record) {
+                        try {
+                            $result = CrmDataService::countEntityUsage((int) $record->sumit_entity_id);
+
+                            if ($result['success']) {
+                                $count = $result['usage_count'];
+                                Notification::make()
+                                    ->title('Usage Count')
+                                    ->body("This entity is referenced {$count} times in the system.")
+                                    ->info()
+                                    ->persistent()
+                                    ->send();
+                            } else {
+                                throw new \Exception($result['error']);
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Check failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn ($record) => $record->sumit_entity_id !== null),
             ])
             ->toolbarActions([
+                // Header Actions
+                Action::make('export_all')
+                    ->label('Export All as PDF')
+                    ->icon('heroicon-o-document-text')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Export All Entities')
+                    ->modalDescription('This will generate a PDF with all entities in the selected view.')
+                    ->action(function (Table $table) {
+                        try {
+                            // Get current filters/search
+                            $query = $table->getQuery();
+                            $folder = $query->first()?->folder;
+
+                            if (!$folder) {
+                                throw new \Exception('Please select a folder filter first');
+                            }
+
+                            // Get first view for this folder
+                            $view = $folder->views()->first();
+
+                            if (!$view || !$view->sumit_view_id) {
+                                throw new \Exception('No view available for this folder');
+                            }
+
+                            $result = CrmDataService::getEntitiesHTML(
+                                $folder->sumit_folder_id,
+                                $view->sumit_view_id,
+                                true // PDF
+                            );
+
+                            if ($result['success']) {
+                                $pdf = base64_decode($result['pdf']);
+                                $filename = "crm-entities-{$folder->name}.pdf";
+
+                                return response()->streamDownload(function () use ($pdf) {
+                                    echo $pdf;
+                                }, $filename, ['Content-Type' => 'application/pdf']);
+                            } else {
+                                throw new \Exception($result['error']);
+                            }
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Export failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                Action::make('sync_all')
+                    ->label('Sync All from SUMIT')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->modalHeading('Sync All Entities')
+                    ->modalDescription('This will sync all entities from SUMIT. This may take a while.')
+                    ->action(function () {
+                        try {
+                            $result = CrmDataService::syncAllEntities();
+
+                            Notification::make()
+                                ->title('Sync completed')
+                                ->body("Synced: {$result['synced']}, Failed: {$result['failed']}")
+                                ->success()
+                                ->send();
+                        } catch (\Exception $e) {
+                            Notification::make()
+                                ->title('Sync failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+
+                // Bulk Actions
                 BulkActionGroup::make([
                     DeleteBulkAction::make(),
+
+                    Action::make('bulk_archive')
+                        ->label('Archive Selected')
+                        ->icon('heroicon-o-archive-box')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records) {
+                            $success = 0;
+                            $failed = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->sumit_entity_id) {
+                                    $result = CrmDataService::archiveEntity((int) $record->sumit_entity_id);
+                                    $result['success'] ? $success++ : $failed++;
+                                } else {
+                                    $failed++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Bulk Archive Complete')
+                                ->body("Archived: {$success}, Failed: {$failed}")
+                                ->success()
+                                ->send();
+                        }),
+
+                    Action::make('bulk_sync')
+                        ->label('Sync Selected')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('primary')
+                        ->requiresConfirmation()
+                        ->deselectRecordsAfterCompletion()
+                        ->action(function (Collection $records) {
+                            $success = 0;
+                            $failed = 0;
+
+                            foreach ($records as $record) {
+                                if ($record->sumit_entity_id) {
+                                    try {
+                                        $result = CrmDataService::syncEntityFromSumit((int) $record->sumit_entity_id);
+                                        $success++;
+                                    } catch (\Exception $e) {
+                                        $failed++;
+                                    }
+                                } else {
+                                    $failed++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Bulk Sync Complete')
+                                ->body("Synced: {$success}, Failed: {$failed}")
+                                ->success()
+                                ->send();
+                        }),
                 ]),
             ])
             ->defaultSort('updated_at', 'desc')
