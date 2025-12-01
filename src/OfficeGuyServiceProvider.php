@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway;
 
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use OfficeGuy\LaravelSumitGateway\Console\Commands\CrmSyncFoldersCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
@@ -89,7 +90,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 StockSyncCommand::class,
                 ProcessRecurringPaymentsCommand::class,
                 SyncAllDocumentsCommand::class,
-                Console\Commands\CrmSyncFoldersCommand::class,
+                CrmSyncFoldersCommand::class,
             ]);
         }
 
