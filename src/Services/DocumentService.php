@@ -761,4 +761,279 @@ class DocumentService
 
         return $syncedCount;
     }
+
+    /**
+     * Create a credit note document in SUMIT
+     *
+     * Creates a credit note (תעודת זיכוי) for a customer, optionally linked to an original document.
+     * This is an accounting credit, NOT a refund to the payment method.
+     *
+     * @param \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer $customer Customer instance
+     * @param float $amount Credit amount
+     * @param string $description Credit description (default: זיכוי)
+     * @param int|null $originalDocumentId Optional original document ID to link to
+     * @return array{success: bool, document_id?: int, document_number?: string, amount?: float, error?: string}
+     */
+    public static function createCreditNote(
+        \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer $customer,
+        float $amount,
+        string $description = 'זיכוי',
+        ?int $originalDocumentId = null
+    ): array {
+        $sumitCustomerId = $customer->getSumitCustomerId();
+
+        if (!$sumitCustomerId) {
+            return [
+                'success' => false,
+                'error' => 'Customer not synced with SUMIT',
+            ];
+        }
+
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'Details' => [
+                    'Type' => 3, // CreditNote (תעודת זיכוי)
+                    'Customer' => [
+                        'ID' => (int) $sumitCustomerId,
+                    ],
+                    'Description' => $description,
+                    'Currency' => 0, // ILS = 0 (NOT 1!)
+                    'Language' => 0, // Hebrew
+                    'SendByEmail' => [
+                        'EmailAddress' => $customer->getSumitCustomerEmail(),
+                        'Original' => true,
+                        'SendAsPaymentRequest' => false,
+                    ],
+                ],
+                'Items' => [
+                    [
+                        'Item' => [
+                            'Name' => $description,
+                        ],
+                        'Quantity' => 1,
+                        'UnitPrice' => $amount,
+                        'TotalPrice' => $amount,
+                    ],
+                ],
+                'VATIncluded' => false,
+            ];
+
+            // Link to original document if provided
+            if ($originalDocumentId) {
+                $payload['Details']['OriginalDocumentID'] = (int) $originalDocumentId;
+            }
+
+            $environment = config('officeguy.environment', 'www');
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/accounting/documents/create/',
+                $environment,
+                false
+            );
+
+            $status = $response['Status'] ?? null;
+
+            if ($status === 0 || $status === '0') {
+                $documentId = $response['Data']['DocumentID'] ?? null;
+                $documentNumber = $response['Data']['DocumentNumber'] ?? null;
+
+                OfficeGuyApi::writeToLog(
+                    'SUMIT credit note created successfully. Document ID: ' . $documentId,
+                    'info'
+                );
+
+                return [
+                    'success' => true,
+                    'document_id' => $documentId,
+                    'document_number' => $documentNumber,
+                    'amount' => $amount,
+                ];
+            }
+
+            OfficeGuyApi::writeToLog(
+                'SUMIT credit note creation failed: ' . ($response['UserErrorMessage'] ?? 'Unknown error'),
+                'warning'
+            );
+
+            return [
+                'success' => false,
+                'error' => $response['UserErrorMessage'] ?? 'Unknown error',
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT credit note creation exception: ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Get document PDF URL from SUMIT
+     *
+     * @param int $documentId SUMIT document ID
+     * @return array{success: bool, pdf_url?: string, error?: string}
+     */
+    public static function getDocumentPDF(int $documentId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'DocumentID' => $documentId,
+            ];
+
+            $environment = config('officeguy.environment', 'www');
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/accounting/documents/getpdf/',
+                $environment,
+                false
+            );
+
+            if (($response['Status'] ?? null) === 0) {
+                return [
+                    'success' => true,
+                    'pdf_url' => $response['Data']['PDFURL'] ?? null,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => $response['UserErrorMessage'] ?? 'Failed to get PDF',
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT get PDF exception for document ' . $documentId . ': ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Send document by email via SUMIT
+     *
+     * @param int $documentId SUMIT document ID
+     * @param string $email Email address to send to
+     * @return array{success: bool, error?: string}
+     */
+    public static function sendByEmail(int $documentId, string $email): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'DocumentID' => $documentId,
+                'EmailAddress' => $email,
+            ];
+
+            $environment = config('officeguy.environment', 'www');
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/accounting/documents/send/',
+                $environment,
+                false
+            );
+
+            if (($response['Status'] ?? null) === 0) {
+                OfficeGuyApi::writeToLog(
+                    'SUMIT document sent by email. Document ID: ' . $documentId . ', Email: ' . $email,
+                    'info'
+                );
+
+                return ['success' => true];
+            }
+
+            return [
+                'success' => false,
+                'error' => $response['UserErrorMessage'] ?? 'Failed to send email',
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT send email exception for document ' . $documentId . ': ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Cancel (delete) document in SUMIT
+     *
+     * Creates a cancellation credit note for the specified document.
+     *
+     * @param int $documentId SUMIT document ID to cancel
+     * @param string $description Reason for cancellation (default: ביטול מסמך)
+     * @return array{success: bool, original_document_id?: int, credit_document_id?: int, credit_document_number?: string, credit_document_url?: string, error?: string}
+     */
+    public static function cancelDocument(int $documentId, string $description = 'ביטול מסמך'): array
+    {
+        try {
+            $payload = [
+                'Credentials' => PaymentService::getCredentials(),
+                'DocumentID' => $documentId,
+                'Description' => $description,
+            ];
+
+            $environment = config('officeguy.environment', 'www');
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/accounting/documents/cancel/',
+                $environment,
+                false
+            );
+
+            if (($response['Status'] ?? null) === 0) {
+                $data = $response['Data'] ?? [];
+
+                OfficeGuyApi::writeToLog(
+                    'SUMIT document cancelled successfully. Document ID: ' . $documentId,
+                    'info'
+                );
+
+                return [
+                    'success' => true,
+                    'original_document_id' => $documentId,
+                    'credit_document_id' => $data['DocumentID'] ?? null,
+                    'credit_document_number' => $data['DocumentNumber'] ?? null,
+                    'credit_document_url' => $data['DocumentDownloadURL'] ?? null,
+                    'description' => $description,
+                    'cancelled_at' => now()->toDateTimeString(),
+                    'gateway_response' => $response,
+                ];
+            }
+
+            return [
+                'success' => false,
+                'error' => $response['UserErrorMessage'] ?? 'Failed to cancel document',
+                'technical_details' => $response['TechnicalErrorDetails'] ?? null,
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT cancel document exception for document ' . $documentId . ': ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

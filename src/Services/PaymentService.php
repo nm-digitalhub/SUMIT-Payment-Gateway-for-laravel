@@ -562,4 +562,102 @@ class PaymentService
             'response' => $response,
         ];
     }
+
+    /**
+     * Process refund to customer's payment method
+     *
+     * This returns money back to the original credit card.
+     * This is NOT an accounting credit note - use DocumentService::createCreditNote() for that.
+     *
+     * @param \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer $customer Customer instance
+     * @param string $transactionId Original transaction auth number
+     * @param float $amount Amount to refund
+     * @param string $reason Refund reason (default: החזר כספי ללקוח)
+     * @return array{success: bool, transaction_id?: string, auth_number?: string, amount?: float, error?: string}
+     */
+    public static function processRefund(
+        \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer $customer,
+        string $transactionId,
+        float $amount,
+        string $reason = 'החזר כספי ללקוח'
+    ): array {
+        $sumitCustomerId = $customer->getSumitCustomerId();
+
+        if (!$sumitCustomerId) {
+            return [
+                'success' => false,
+                'error' => 'Customer not synced to SUMIT',
+            ];
+        }
+
+        try {
+            // SUMIT uses negative amount for refunds
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Details' => [
+                    'Customer' => [
+                        'ID' => (int) $sumitCustomerId,
+                    ],
+                    'Description' => $reason,
+                    'Currency' => 0, // ILS
+                    'Language' => 0, // Hebrew
+                ],
+                'Items' => [
+                    [
+                        'Item' => ['Name' => $reason],
+                        'Quantity' => 1,
+                        'UnitPrice' => -abs($amount), // Negative for refund
+                        'TotalPrice' => -abs($amount),
+                    ],
+                ],
+                'Payment' => [
+                    'CreditCardAuthNumber' => $transactionId, // Reference to original transaction
+                ],
+                'VATIncluded' => false,
+            ];
+
+            $environment = config('officeguy.environment', 'www');
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/payments/charge/',
+                $environment,
+                false
+            );
+
+            if (($response['Status'] ?? 1) === 0 && isset($response['Data'])) {
+                OfficeGuyApi::writeToLog(
+                    'SUMIT refund processed successfully. Transaction ID: ' . $transactionId,
+                    'info'
+                );
+
+                return [
+                    'success' => true,
+                    'transaction_id' => $response['Data']['TransactionID'] ?? null,
+                    'auth_number' => $response['Data']['AuthNumber'] ?? null,
+                    'amount' => $amount,
+                ];
+            }
+
+            OfficeGuyApi::writeToLog(
+                'SUMIT refund failed for transaction ' . $transactionId . ': ' . ($response['ErrorMessage'] ?? 'Unknown error'),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $response['ErrorMessage'] ?? 'Unknown error during refund',
+            ];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT refund exception for transaction ' . $transactionId . ': ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
 }

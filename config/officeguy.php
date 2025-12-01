@@ -81,6 +81,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Invoice Settings
+    |--------------------------------------------------------------------------
+    |
+    | Default settings for invoice generation.
+    | These can be overridden via Admin Panel → Office Guy Settings → Document Settings
+    |
+    */
+    'invoice_currency_code' => 'ILS',
+    'invoice_tax_rate' => 0.17,
+    'invoice_due_days' => 30,
+
+    /*
+    |--------------------------------------------------------------------------
     | Customer Management (v1.2.4+)
     |--------------------------------------------------------------------------
     |

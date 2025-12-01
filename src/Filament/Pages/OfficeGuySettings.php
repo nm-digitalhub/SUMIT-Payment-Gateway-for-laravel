@@ -137,6 +137,34 @@ class OfficeGuySettings extends Page
                     Toggle::make('create_order_document')
                         ->label(__('officeguy::officeguy.settings.create_order_document'))
                         ->helperText(__('officeguy::officeguy.settings.create_order_document_help')),
+
+                    Select::make('invoice_currency_code')
+                        ->label('Default Currency')
+                        ->helperText('Default currency for new invoices')
+                        ->options([
+                            'ILS' => 'שקל חדש (₪)',
+                            'USD' => 'דולר אמריקאי ($)',
+                            'EUR' => 'יורו (€)',
+                            'GBP' => 'לירה שטרלינג (£)',
+                        ])
+                        ->default('ILS'),
+
+                    TextInput::make('invoice_tax_rate')
+                        ->label('Tax Rate (VAT)')
+                        ->helperText('Default tax rate (e.g., 0.17 for 17%)')
+                        ->numeric()
+                        ->step(0.01)
+                        ->minValue(0)
+                        ->maxValue(1)
+                        ->default(0.17),
+
+                    TextInput::make('invoice_due_days')
+                        ->label('Payment Due Days')
+                        ->helperText('Number of days until payment is due')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(365)
+                        ->default(30),
                 ]),
 
             Section::make(__('officeguy::officeguy.settings.token_configuration'))
