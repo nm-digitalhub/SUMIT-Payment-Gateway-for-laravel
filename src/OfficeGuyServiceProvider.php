@@ -85,14 +85,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Load settings from database and override config
         $this->loadDatabaseSettings();
 
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                StockSyncCommand::class,
-                ProcessRecurringPaymentsCommand::class,
-                SyncAllDocumentsCommand::class,
-                CrmSyncFoldersCommand::class,
-            ]);
-        }
+        // Register commands (available in both console and web contexts)
+        $this->commands([
+            StockSyncCommand::class,
+            ProcessRecurringPaymentsCommand::class,
+            SyncAllDocumentsCommand::class,
+            CrmSyncFoldersCommand::class,
+        ]);
 
         // Register webhook event listener subscriber
         Event::subscribe(WebhookEventListener::class);
