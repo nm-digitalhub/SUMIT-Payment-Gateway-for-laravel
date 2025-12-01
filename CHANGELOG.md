@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [V1.8.2] - 2025-12-01
+
+### Fixed
+- **N+1 Query Optimization in getEditableSettings()**
+  - Fixed second N+1 query pattern where `getEditableSettings()` called `get()` 74 times individually
+  - Each `get()` call made 2 database queries (`has()` + `get()`) = 148 total queries
+  - Optimized to fetch all database settings at once using `getAllSettings()` (1 query)
+  - Performance improvement: **148 queries → 1 query** per page load
+  - Combined with v1.8.1 fix: **222 queries → 2 queries** (111x improvement!)
+  - File: `src/Services/SettingsService.php:273-301`
+
 ## [V1.8.1] - 2025-12-01
 
 ### Fixed
