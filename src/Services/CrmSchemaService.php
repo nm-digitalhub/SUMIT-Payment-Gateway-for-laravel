@@ -142,10 +142,15 @@ class CrmSchemaService
             // The getFolder() endpoint returns null, so we work with what we have
 
             if (!$folderName) {
-                return [
-                    'success' => false,
-                    'error' => 'Folder name is required',
-                ];
+                // Try to pull existing name from the local DB (previous sync)
+                $folderName = CrmFolder::where('sumit_folder_id', $sumitFolderId)->value('name');
+
+                if (!$folderName) {
+                    return [
+                        'success' => false,
+                        'error' => 'Folder name is required',
+                    ];
+                }
             }
 
             // Create or update folder with available data

@@ -64,6 +64,44 @@ class PublicCheckoutController extends Controller
         $amount = $payable->getPayableAmount();
         $currency = $payable->getPayableCurrency();
 
+        // Prefill from query params -> payable -> client -> authenticated user
+        $user = auth()->user();
+        if (!$user && class_exists(\Filament\Facades\Filament::class)) {
+            $user = \Filament\Facades\Filament::auth()->user();
+        }
+        $client = $user?->client;
+
+        $prefillName = $request->query('name')
+            ?? $payable->getCustomerName()
+            ?: ($client->name ?? null)
+            ?: ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
+
+        $prefillEmail = $request->query('email')
+            ?? $payable->getCustomerEmail()
+            ?: ($client->email ?? null)
+            ?: ($user->email ?? null);
+
+        $prefillPhone = $request->query('phone')
+            ?? $payable->getCustomerPhone()
+            ?: ($client->phone ?? null)
+            ?: ($user->phone ?? null);
+
+        $prefillCitizenId = $request->query('id')
+            ?? $user?->id_number
+            ?? $user?->vat_number
+            ?? $client?->id_number
+            ?? $client?->vat_number
+            ?? null;
+
+        $prefillCompany = $client?->company ?? $user?->company;
+        $prefillVat = $client?->vat_number ?? $user?->vat_number;
+        $prefillAddress = $client?->client_address ?? $client?->address ?? $user?->address;
+        $prefillAddress2 = $client?->client_address2 ?? null;
+        $prefillCity = $client?->client_city ?? $client?->city ?? $user?->city;
+        $prefillState = $client?->client_state ?? $client?->state ?? $user?->state;
+        $prefillCountry = $client?->client_country ?? $client?->country ?? $user?->country ?? 'IL';
+        $prefillPostal = $client?->client_postal_code ?? $client?->postal_code ?? $user?->postal_code;
+
         return view('officeguy::pages.checkout', [
             'payable' => $payable,
             'settings' => $this->getSettings(),
@@ -74,6 +112,18 @@ class PublicCheckoutController extends Controller
             'currency' => $currency,
             'currencySymbol' => $this->getCurrencySymbol($currency),
             'checkoutUrl' => route('officeguy.public.checkout.process', ['id' => $id]),
+            'prefillName' => $prefillName,
+            'prefillEmail' => $prefillEmail,
+            'prefillPhone' => $prefillPhone,
+            'prefillCitizenId' => $prefillCitizenId,
+            'prefillCompany' => $prefillCompany,
+            'prefillVat' => $prefillVat,
+            'prefillAddress' => $prefillAddress,
+            'prefillAddress2' => $prefillAddress2,
+            'prefillCity' => $prefillCity,
+            'prefillState' => $prefillState,
+            'prefillCountry' => $prefillCountry,
+            'prefillPostal' => $prefillPostal,
         ]);
     }
 
@@ -97,15 +147,105 @@ class PublicCheckoutController extends Controller
             abort(404, __('Order not found'));
         }
 
-        $validated = $request->validate([
+        $user = auth()->user();
+        $client = $user?->client;
+
+        $rules = [
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
-            'customer_phone' => 'nullable|string|max:50',
+            'customer_phone' => 'required|string|max:50',
             'payment_method' => 'required|in:card,bit',
             'payments_count' => 'nullable|integer|min:1|max:36',
             'payment_token' => 'nullable|string',
             'save_card' => 'nullable|boolean',
-        ]);
+            'customer_company' => 'nullable|string|max:255',
+            'customer_vat' => 'nullable|string|max:50',
+            'customer_address' => 'nullable|string|max:255',
+            'customer_address2' => 'nullable|string|max:255',
+            'customer_city' => 'nullable|string|max:120',
+            'customer_state' => 'nullable|string|max:120',
+            'customer_country' => 'nullable|string|max:2',
+            'customer_postal' => 'nullable|string|max:20',
+            'citizen_id' => 'nullable|string|max:50',
+            // Guest registration fields
+            'password' => 'nullable|string|confirmed|min:8',
+            'terms' => 'nullable|accepted',
+        ];
+
+        // Require address fields if missing in profile
+        if (empty($client?->client_address)) {
+            $rules['customer_address'] = 'required|string|max:255';
+        }
+        if (empty($client?->client_city)) {
+            $rules['customer_city'] = 'required|string|max:120';
+        }
+        if (empty($client?->client_country)) {
+            $rules['customer_country'] = 'required|string|max:2';
+        }
+        if (empty($client?->client_postal_code)) {
+            $rules['customer_postal'] = 'required|string|max:20';
+        }
+
+        $validated = $request->validate($rules);
+
+        // Handle guest registration
+        if (!$user && !empty($validated['password'])) {
+            // Check if terms were accepted
+            if (empty($validated['terms'])) {
+                return back()->withErrors(['terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
+            }
+
+            // Check if email already exists
+            if (\App\Models\User::where('email', $validated['customer_email'])->exists()) {
+                return back()->withErrors(['customer_email' => __('This email is already registered. Please login instead.')])->withInput();
+            }
+
+            // Parse name into first_name and last_name
+            $nameParts = explode(' ', trim($validated['customer_name']), 2);
+            $firstName = $nameParts[0] ?? '';
+            $lastName = $nameParts[1] ?? '';
+
+            // Create new user
+            $user = \App\Models\User::create([
+                'name' => $validated['customer_name'],
+                'first_name' => $firstName,
+                'last_name' => $lastName,
+                'email' => $validated['customer_email'],
+                'phone' => $validated['customer_phone'],
+                'company' => $validated['customer_company'] ?? null,
+                'address' => $validated['customer_address'] ?? null,
+                'address2' => $validated['customer_address2'] ?? null,
+                'city' => $validated['customer_city'] ?? null,
+                'state' => $validated['customer_state'] ?? null,
+                'country' => $validated['customer_country'] ?? 'IL',
+                'postal_code' => $validated['customer_postal'] ?? null,
+                'vat_number' => $validated['customer_vat'] ?? null,
+                'id_number' => $validated['citizen_id'] ?? null,
+                'password' => \Illuminate\Support\Facades\Hash::make($validated['password']),
+                'email_verified_at' => now(), // Auto-verify email
+                'newsletter_subscribed' => false,
+            ]);
+
+            // Fire Registered event
+            event(new \Illuminate\Auth\Events\Registered($user));
+
+            // Send welcome notification
+            try {
+                $user->notify(new \App\Notifications\WelcomeNotification);
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::warning('Failed to send welcome notification', [
+                    'user_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+
+            // Log the user in
+            \Illuminate\Support\Facades\Auth::login($user);
+
+            // Refresh user and client references
+            $user = auth()->user();
+            $client = $user?->client;
+        }
 
         $paymentsCount = max(1, (int) ($validated['payments_count'] ?? 1));
         $paymentMethod = $validated['payment_method'];
@@ -113,6 +253,62 @@ class PublicCheckoutController extends Controller
         // Handle Bit payment
         if ($paymentMethod === 'bit') {
             return $this->processBitPayment($payable, $validated);
+        }
+
+        // Persist profile data if missing
+        $dirty = false;
+        if ($client) {
+            if (empty($client->client_name) && !empty($validated['customer_name'])) {
+                $client->client_name = $validated['customer_name'];
+                $dirty = true;
+            }
+            if (empty($client->client_email) && !empty($validated['customer_email'])) {
+                $client->client_email = $validated['customer_email'];
+                $dirty = true;
+            }
+            if (empty($client->client_phone) && !empty($validated['customer_phone'])) {
+                $client->client_phone = $validated['customer_phone'];
+                $dirty = true;
+            }
+            if (empty($client->id_number) && !empty($validated['citizen_id'] ?? null)) {
+                $client->id_number = $validated['citizen_id'];
+                $dirty = true;
+            }
+            if (empty($client->company) && !empty($validated['customer_company'] ?? null)) {
+                $client->company = $validated['customer_company'];
+                $dirty = true;
+            }
+            if (empty($client->vat_number) && !empty($validated['customer_vat'] ?? null)) {
+                $client->vat_number = $validated['customer_vat'];
+                $dirty = true;
+            }
+            if (empty($client->client_address) && !empty($validated['customer_address'] ?? null)) {
+                $client->client_address = $validated['customer_address'];
+                $dirty = true;
+            }
+            if (empty($client->client_address2) && !empty($validated['customer_address2'] ?? null)) {
+                $client->client_address2 = $validated['customer_address2'];
+                $dirty = true;
+            }
+            if (empty($client->client_city) && !empty($validated['customer_city'] ?? null)) {
+                $client->client_city = $validated['customer_city'];
+                $dirty = true;
+            }
+            if (empty($client->client_state) && !empty($validated['customer_state'] ?? null)) {
+                $client->client_state = $validated['customer_state'];
+                $dirty = true;
+            }
+            if (empty($client->client_country) && !empty($validated['customer_country'] ?? null)) {
+                $client->client_country = $validated['customer_country'];
+                $dirty = true;
+            }
+            if (empty($client->client_postal_code) && !empty($validated['customer_postal'] ?? null)) {
+                $client->client_postal_code = $validated['customer_postal'];
+                $dirty = true;
+            }
+            if ($dirty) {
+                $client->save();
+            }
         }
 
         // Handle card payment

@@ -262,4 +262,17 @@ return [
         'ISK', 'HRK', 'RUB', 'TRY', 'BRL', 'CNY', 'HKD', 'IDR', 'INR', 'KRW',
         'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB'
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Collection (Debt) Settings
+    |--------------------------------------------------------------------------
+    */
+    'collection' => [
+        'email' => env('OFFICEGUY_COLLECTION_EMAIL', true),
+        'sms' => env('OFFICEGUY_COLLECTION_SMS', false),
+        'schedule_time' => env('OFFICEGUY_COLLECTION_SCHEDULE_TIME', '02:00'),
+        'reminder_days' => env('OFFICEGUY_COLLECTION_REMINDER_DAYS', '0,3,7'),
+        'max_attempts' => env('OFFICEGUY_COLLECTION_MAX_ATTEMPTS', 3),
+    ],
 ];

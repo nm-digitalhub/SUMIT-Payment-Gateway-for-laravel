@@ -7,9 +7,18 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas
 use Filament\Forms;
 use Filament\Schemas;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Cache;
+use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
 
 class CrmActivityForm
 {
+    /**
+     * SUMIT folder ID for CRM entities used to populate the related-entity select.
+     * Default: Customers folder.
+     */
+    private const SUMIT_FOLDER_ID = 1076734599;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema
@@ -17,64 +26,79 @@ class CrmActivityForm
                 Schemas\Components\Section::make('Activity Details')
                     ->schema([
                         Forms\Components\Select::make('crm_entity_id')
-                            ->label('Related Entity')
-                            ->relationship('entity', 'name')
-                            ->searchable()
+                            ->label(__('crm_activities.fields.related_entity'))
+                            ->options(function () {
+                                $folder = CrmFolder::where('sumit_folder_id', self::SUMIT_FOLDER_ID)->first();
+                                if (! $folder) {
+                                    return [];
+                                }
+
+                                // Ensure local cache is fresh; if empty, pull from SUMIT once.
+                                $cacheKey = "crm_entities_folder_local_{$folder->id}";
+
+                                return Cache::remember($cacheKey, now()->addMinutes(15), function () use ($folder) {
+                                    // If no local entities, try a fresh sync from SUMIT
+                                    if (! $folder->entities()->exists()) {
+                                        CrmDataService::syncAllEntities($folder->id, [
+                                            'LoadProperties' => true,
+                                            'Paging' => ['StartIndex' => 0, 'PageSize' => 500],
+                                        ]);
+                                    }
+
+                                    return $folder->entities()
+                                        ->orderBy('name')
+                                        ->get()
+                                        ->mapWithKeys(function ($entity) {
+                                            $label = $entity->name;
+                                            if ($entity->client?->name) {
+                                                $label = $entity->client->name . ' — ' . $entity->name;
+                                            }
+
+                                            return [$entity->id => $label];
+                                        })
+                                        ->toArray();
+                                });
+                            })
+                            ->placeholder(__('crm_activities.fields.related_entity'))
                             ->preload()
+                            ->searchable()
                             ->required()
-                            ->helperText('The entity this activity is related to'),
+                            ->helperText(__('crm_activities.help.related_entity'))
+                            ->disablePlaceholderSelection(),
 
                         Forms\Components\Select::make('activity_type')
-                            ->label('Type')
-                            ->options([
-                                'call' => 'Call',
-                                'email' => 'Email',
-                                'meeting' => 'Meeting',
-                                'note' => 'Note',
-                                'task' => 'Task',
-                                'sms' => 'SMS',
-                                'whatsapp' => 'WhatsApp',
-                            ])
+                            ->label(__('crm_activities.fields.activity_type'))
+                            ->options(__('crm_activities.options.activity_type'))
                             ->required()
                             ->default('note')
                             ->native(false),
 
                         Forms\Components\TextInput::make('subject')
-                            ->label('Subject')
+                            ->label(__('crm_activities.fields.subject'))
                             ->required()
                             ->maxLength(255)
                             ->columnSpanFull(),
 
                         Forms\Components\Select::make('status')
-                            ->label('Status')
-                            ->options([
-                                'planned' => 'Planned',
-                                'in_progress' => 'In Progress',
-                                'completed' => 'Completed',
-                                'cancelled' => 'Cancelled',
-                            ])
+                            ->label(__('crm_activities.fields.status'))
+                            ->options(__('crm_activities.options.status'))
                             ->required()
                             ->default('planned')
                             ->native(false),
 
                         Forms\Components\Select::make('priority')
-                            ->label('Priority')
-                            ->options([
-                                'low' => 'Low',
-                                'normal' => 'Normal',
-                                'high' => 'High',
-                                'urgent' => 'Urgent',
-                            ])
+                            ->label(__('crm_activities.fields.priority'))
+                            ->options(__('crm_activities.options.priority'))
                             ->required()
                             ->default('normal')
                             ->native(false),
 
                         Forms\Components\Select::make('user_id')
-                            ->label('Assigned To')
+                            ->label(__('crm_activities.fields.assigned_to'))
                             ->relationship('user', 'name')
                             ->searchable()
                             ->preload()
-                            ->helperText('Leave empty to assign to current user'),
+                            ->helperText(__('crm_activities.help.assigned_to')),
                     ])
                     ->columns(2)
                     ->columnSpanFull(),
@@ -82,7 +106,7 @@ class CrmActivityForm
                 Schemas\Components\Section::make('Description')
                     ->schema([
                         Forms\Components\MarkdownEditor::make('description')
-                            ->label('Description')
+                            ->label(__('crm_activities.fields.description'))
                             ->toolbarButtons([
                                 'bold',
                                 'italic',
@@ -97,24 +121,24 @@ class CrmActivityForm
                 Schemas\Components\Section::make('Timing')
                     ->schema([
                         Forms\Components\DateTimePicker::make('start_at')
-                            ->label('Start Time')
+                            ->label(__('crm_activities.fields.start_at'))
                             ->native(false)
                             ->seconds(false)
-                            ->helperText('When this activity starts'),
+                            ->helperText(__('crm_activities.help.start_at')),
 
                         Forms\Components\DateTimePicker::make('end_at')
-                            ->label('End Time')
+                            ->label(__('crm_activities.fields.end_at'))
                             ->native(false)
                             ->seconds(false)
                             ->after('start_at')
-                            ->helperText('When this activity ends'),
+                            ->helperText(__('crm_activities.help.end_at')),
 
                         Forms\Components\DateTimePicker::make('reminder_at')
-                            ->label('Reminder')
+                            ->label(__('crm_activities.fields.reminder_at'))
                             ->native(false)
                             ->seconds(false)
                             ->before('start_at')
-                            ->helperText('When to send reminder'),
+                            ->helperText(__('crm_activities.help.reminder_at')),
                     ])
                     ->columns(3)
                     ->columnSpanFull()
@@ -123,16 +147,16 @@ class CrmActivityForm
                 Schemas\Components\Section::make('Related Items')
                     ->schema([
                         Forms\Components\Select::make('related_document_id')
-                            ->label('Related Document')
+                            ->label(__('crm_activities.fields.related_document_id'))
                             ->relationship('document', 'document_number')
                             ->searchable()
                             ->preload()
-                            ->helperText('Link to invoice/receipt/document'),
+                            ->helperText(__('crm_activities.help.related_document')),
 
                         Forms\Components\TextInput::make('related_ticket_id')
-                            ->label('Related Ticket ID')
+                            ->label(__('crm_activities.fields.related_ticket_id'))
                             ->numeric()
-                            ->helperText('Link to support ticket'),
+                            ->helperText(__('crm_activities.help.related_ticket')),
                     ])
                     ->columns(2)
                     ->columnSpanFull()

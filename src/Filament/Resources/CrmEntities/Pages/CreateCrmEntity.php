@@ -53,6 +53,13 @@ class CreateCrmEntity extends CreateRecord
                 }
             }
         }
+
+        // Auto-push to SUMIT on create (best-effort, non-blocking)
+        try {
+            $this->record->syncToSumit();
+        } catch (\Throwable $e) {
+            // Swallow errors; manual sync action is available if needed.
+        }
     }
 
     protected array $customFields = [];

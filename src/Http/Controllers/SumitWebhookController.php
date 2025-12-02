@@ -8,7 +8,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
-use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Jobs\ProcessSumitWebhookJob;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
@@ -54,6 +54,7 @@ class SumitWebhookController extends Controller
             
             // Get source IP
             $sourceIp = $request->ip();
+            $endpoint = $request->path();
             
             // Log the incoming webhook
             OfficeGuyApi::writeToLog(
@@ -66,16 +67,18 @@ class SumitWebhookController extends Controller
                 $eventType,
                 $payload,
                 $this->flattenHeaders($headers),
-                $sourceIp
+                $sourceIp,
+                $endpoint
             );
             
-            // Dispatch event for application to handle
-            event(new SumitWebhookReceived($webhook));
+            // Dispatch job for async processing (no heavy work in request)
+            ProcessSumitWebhookJob::dispatch($webhook->id);
             
             // Return success immediately
             // Note: SUMIT expects HTTP 200 within 10 seconds
             return response()->json([
                 'success' => true,
+                'queued' => true,
                 'message' => 'Webhook received',
                 'webhook_id' => $webhook->id,
             ], 200);
@@ -92,12 +95,12 @@ class SumitWebhookController extends Controller
             ]);
             
             // Still return 200 to prevent SUMIT from retrying if we captured the data
-            // Only return error if we completely failed to process
             return response()->json([
                 'success' => false,
+                'queued' => false,
                 'message' => 'Error processing webhook',
                 'error' => $e->getMessage(),
-            ], 500);
+            ], 200);
         }
     }
 

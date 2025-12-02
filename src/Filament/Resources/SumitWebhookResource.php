@@ -17,8 +17,9 @@ use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section as InfolistSection;
-use Filament\TextEntry;
-use Filament\KeyValueEntry;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
@@ -114,15 +115,52 @@ class SumitWebhookResource extends Resource
                             ->label('Customer Email')
                             ->copyable()
                             ->icon('heroicon-o-envelope'),
+                        TextEntry::make('client.name')
+                            ->label('Client')
+                            ->placeholder('—')
+                            ->url(fn ($record) => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
+                            ->color('primary'),
                         TextEntry::make('amount')
                             ->label('Amount')
                             ->money(fn ($record) => $record->currency ?? 'ILS')
                             ->placeholder('N/A'),
                     ])->columns(4),
 
+                InfolistSection::make('CRM Data')
+                    ->schema([
+                        TextEntry::make('crm_folder_id')
+                            ->label('Folder ID')
+                            ->state(fn ($record) => $record->getCrmFolderId())
+                            ->placeholder('—')
+                            ->copyable(),
+                        TextEntry::make('crm_entity_id')
+                            ->label('Entity ID')
+                            ->state(fn ($record) => $record->getCrmEntityId())
+                            ->placeholder('—')
+                            ->copyable(),
+                        TextEntry::make('crm_action')
+                            ->label('Action')
+                            ->state(fn ($record) => $record->getCrmAction())
+                            ->placeholder('—'),
+                        TextEntry::make('crm_properties')
+                            ->label('Properties')
+                            ->state(fn ($record) => $record->getCrmProperties())
+                            ->formatStateUsing(fn ($state) => $state ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE) : null)
+                            ->placeholder('—')
+                            ->columnSpanFull()
+                            ->copyable(),
+                    ])
+                    ->visible(fn ($record) => $record->event_type === 'crm')
+                    ->columns(3),
+
                 InfolistSection::make('Connected Resources')
                     ->description('Local resources linked to this webhook')
                     ->schema([
+                        TextEntry::make('client.name')
+                            ->label('Client')
+                            ->placeholder('Not linked')
+                            ->url(fn ($record) => $record->client_id ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
+                            ->color('primary'),
                         TextEntry::make('transaction.payment_id')
                             ->label('Transaction')
                             ->placeholder('Not linked')
@@ -172,15 +210,23 @@ class SumitWebhookResource extends Resource
 
                 InfolistSection::make('Full Payload')
                     ->schema([
-                        KeyValueEntry::make('payload')
-                            ->label('Payload Data'),
+                        TextEntry::make('payload')
+                            ->label('Payload Data')
+                            ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
+                            ->placeholder('—')
+                            ->columnSpanFull()
+                            ->copyable(),
                     ])
                     ->collapsed(),
 
                 InfolistSection::make('Request Headers')
                     ->schema([
-                        KeyValueEntry::make('headers')
-                            ->label('HTTP Headers'),
+                        TextEntry::make('headers')
+                            ->label('HTTP Headers')
+                            ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
+                            ->placeholder('—')
+                            ->columnSpanFull()
+                            ->copyable(),
                     ])
                     ->collapsed(),
             ]);
@@ -189,6 +235,8 @@ class SumitWebhookResource extends Resource
     public static function table(Table $table): Table
     {
         return $table
+            ->filtersLayout(FiltersLayout::AboveContent) // מציג מסננים במלוא הרוחב גם במובייל
+            ->filtersFormColumns(1)
             ->columns([
                 Tables\Columns\TextColumn::make('id')
                     ->label('ID')
@@ -206,6 +254,17 @@ class SumitWebhookResource extends Resource
                     })
                     ->formatStateUsing(fn ($record) => $record->getEventTypeLabel())
                     ->sortable(),
+                Tables\Columns\BadgeColumn::make('endpoint')
+                    ->label('Endpoint')
+                    ->sortable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('client.name')
+                    ->label('Client')
+                    ->placeholder('-')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
                 Tables\Columns\TextColumn::make('card_type')
                     ->label('Card Type')
                     ->badge()
@@ -266,7 +325,7 @@ class SumitWebhookResource extends Resource
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('event_type')
-                    ->label('Event Type')
+                    ->label('Endpoint / Event Type')
                     ->options(SumitWebhook::getEventTypes())
                     ->multiple(),
                 Tables\Filters\SelectFilter::make('card_type')
@@ -276,6 +335,11 @@ class SumitWebhookResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(SumitWebhook::getStatuses())
                     ->multiple(),
+                Tables\Filters\SelectFilter::make('client_id')
+                    ->label('Client')
+                    ->relationship('client', 'name')
+                    ->searchable()
+                    ->preload(),
                 Tables\Filters\Filter::make('unprocessed')
                     ->label('Unprocessed')
                     ->query(fn ($query) => $query->where('status', 'received'))
@@ -310,6 +374,12 @@ class SumitWebhookResource extends Resource
                                 fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
                             );
                     }),
+                Tables\Filters\SelectFilter::make('endpoint')
+                    ->label('Endpoint')
+                    ->options(fn () => SumitWebhook::getKnownEndpoints())
+                    ->preload()
+                    ->searchable(false)
+                    ->placeholder('כל נקודות הקצה'),
             ])
             ->actions([
                 ViewAction::make(),

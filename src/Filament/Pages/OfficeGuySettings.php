@@ -243,6 +243,28 @@ class OfficeGuySettings extends Page
                         ->default('320'),
                 ]),
 
+            Section::make('גבייה (Debt Collection)')
+                ->columnSpanFull()
+                ->columns(3)
+                ->schema([
+                    Toggle::make('collection.email')
+                        ->label('שליחת מייל אוטומטית')
+                        ->default(fn () => config('officeguy.collection.email', true)),
+                    Toggle::make('collection.sms')
+                        ->label('שליחת SMS אוטומטית')
+                        ->default(fn () => config('officeguy.collection.sms', false)),
+                    TextInput::make('collection.schedule_time')
+                        ->label('שעת ריצה יומית (HH:MM)')
+                        ->default(fn () => config('officeguy.collection.schedule_time', '02:00')),
+                    TextInput::make('collection.reminder_days')
+                        ->label('מרווחי תזכורות (ימים, מופרד בפסיק)')
+                        ->default(fn () => config('officeguy.collection.reminder_days', '0,3,7')),
+                    TextInput::make('collection.max_attempts')
+                        ->label('מספר ניסיונות מקסימלי')
+                        ->numeric()
+                        ->default(fn () => config('officeguy.collection.max_attempts', 3)),
+                ]),
+
             Section::make(__('officeguy::officeguy.settings.multivendor'))
                 ->columnSpanFull()
                 ->description(__('officeguy::officeguy.settings.multivendor'))

@@ -25,6 +25,8 @@ class SumitWebhook extends Model
         'webhook_id',
         'event_type',
         'card_type',
+        'endpoint',
+        'client_id',
         'source_ip',
         'content_type',
         'headers',
@@ -43,6 +45,7 @@ class SumitWebhook extends Model
         'document_id',
         'token_id',
         'subscription_id',
+        'endpoint',
     ];
 
     protected $casts = [
@@ -53,6 +56,11 @@ class SumitWebhook extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Client::class, 'client_id');
+    }
 
     /**
      * Event type constants - based on SUMIT trigger actions
@@ -196,7 +204,8 @@ class SumitWebhook extends Model
         string $eventType,
         array $payload,
         array $headers = [],
-        ?string $sourceIp = null
+        ?string $sourceIp = null,
+        ?string $endpoint = null
     ): static {
         // Extract common fields from payload
         $cardId = $payload['ID'] ?? $payload['id'] ?? $payload['CardID'] ?? null;
@@ -207,13 +216,17 @@ class SumitWebhook extends Model
         $currency = $payload['Currency'] ?? $payload['currency'] ?? null;
         $cardType = $payload['CardType'] ?? $payload['card_type'] ?? $payload['Type'] ?? null;
         
+        $clientId = static::matchClientIdFromPayload($payload);
+
         return static::create([
             'event_type' => $eventType,
             'card_type' => $cardType,
+            'endpoint' => $endpoint ?? request()->path(),
             'source_ip' => $sourceIp,
             'content_type' => $headers['content-type'] ?? $headers['Content-Type'] ?? null,
             'headers' => $headers,
             'payload' => $payload,
+            'client_id' => $clientId,
             'card_id' => $cardId,
             'customer_id' => $customerId,
             'customer_email' => $customerEmail,
@@ -222,6 +235,57 @@ class SumitWebhook extends Model
             'currency' => $currency,
             'status' => self::STATUS_RECEIVED,
         ]);
+    }
+
+    /**
+     * Try to match a local Client based on webhook payload.
+     */
+    protected static function matchClientIdFromPayload(array $payload): ?int
+    {
+        try {
+            $customerId = $payload['CustomerID'] ?? $payload['customer_id'] ?? $payload['ID'] ?? null;
+            if ($customerId) {
+                $client = \App\Models\Client::where('sumit_customer_id', $customerId)->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            $email = $payload['Email'] ?? $payload['email'] ?? $payload['CustomerEmail'] ?? $payload['CustomerEmailAddress'] ?? null;
+            if ($email) {
+                $emailNorm = strtolower(trim($email));
+                $client = \App\Models\Client::whereRaw('LOWER(email) = ?', [$emailNorm])
+                    ->orWhereRaw('LOWER(client_email) = ?', [$emailNorm])
+                    ->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            $vat = $payload['Customers_CompanyNumber'][0] ?? $payload['CompanyNumber'] ?? null;
+            if ($vat) {
+                $client = \App\Models\Client::where('vat_number', $vat)->orWhere('id_number', $vat)->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            $phone = $payload['Customers_Phone'][0] ?? $payload['Phone'] ?? null;
+            if ($phone) {
+                $norm = preg_replace('/\\D+/', '', $phone);
+                $client = \App\Models\Client::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+        } catch (\Throwable $e) {
+            // swallow matching errors
+        }
+
+        return null;
     }
 
     /**
@@ -366,5 +430,125 @@ class SumitWebhook extends Model
     public function getPayloadField(string $field, $default = null)
     {
         return data_get($this->payload, $field, $default);
+    }
+
+    /**
+     * Helpers for CRM webhooks (payload may be keyed or positional array).
+     */
+    public function getCrmFolderId(): ?int
+    {
+        $payload = $this->payload;
+
+        if (is_array($payload)) {
+            // keyed variants
+            $folder = $payload['FolderID'] ?? $payload['Folder'] ?? $payload['folder_id'] ?? $payload['folder'] ?? null;
+            if (is_numeric($folder)) {
+                return (int) $folder;
+            }
+
+            // positional: [FolderID, EntityID, Action, Properties]
+            $values = array_values($payload);
+            if (isset($values[0]) && is_numeric($values[0])) {
+                return (int) $values[0];
+            }
+        }
+
+        return null;
+    }
+
+    public function getCrmEntityId(): ?int
+    {
+        $payload = $this->payload;
+
+        if (is_array($payload)) {
+            $entity = $payload['EntityID'] ?? $payload['ID'] ?? $payload['entity_id'] ?? $payload['entity'] ?? null;
+            if (is_numeric($entity)) {
+                return (int) $entity;
+            }
+
+            $values = array_values($payload);
+            if (isset($values[1]) && is_numeric($values[1])) {
+                return (int) $values[1];
+            }
+        }
+
+        return null;
+    }
+
+    public function getCrmAction(): ?string
+    {
+        $payload = $this->payload;
+
+        if (is_array($payload)) {
+            $action = $payload['Action'] ?? $payload['action'] ?? null;
+            if (is_string($action)) {
+                return $action;
+            }
+
+            $values = array_values($payload);
+            if (isset($values[2]) && is_string($values[2])) {
+                return $values[2];
+            }
+        }
+
+        return null;
+    }
+
+    public function getCrmProperties(): ?array
+    {
+        $payload = $this->payload;
+
+        if (is_array($payload)) {
+            $props = $payload['Properties'] ?? $payload['properties'] ?? null;
+            if (is_array($props)) {
+                return $props;
+            }
+
+            $values = array_values($payload);
+            if (isset($values[3]) && is_array($values[3])) {
+                return $values[3];
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * Get known endpoints (from DB if exists, else from route config & event types).
+     *
+     * @return array<string,string>
+     */
+    public static function getKnownEndpoints(): array
+    {
+        try {
+            $eps = static::query()
+                ->selectRaw('COALESCE(endpoint, event_type) as ep')
+                ->distinct()
+                ->pluck('ep')
+                ->all();
+        } catch (\Throwable $e) {
+            $eps = [];
+        }
+
+        // Always include the configured endpoints even if the DB is empty,
+        // and make sure we never return null/empty labels that could break the Select component.
+        $prefix = \OfficeGuy\LaravelSumitGateway\Support\RouteConfig::getPrefix();
+        $base = trim(\OfficeGuy\LaravelSumitGateway\Support\RouteConfig::getSumitWebhookPath(), '/');
+
+        $defaults = [
+            "{$prefix}/{$base}",
+            "{$prefix}/{$base}/card-created",
+            "{$prefix}/{$base}/card-updated",
+            "{$prefix}/{$base}/card-deleted",
+            "{$prefix}/{$base}/card-archived",
+            "{$prefix}/{$base}/crm",
+        ];
+
+        return collect($eps)
+            ->merge($defaults)
+            ->filter(fn ($ep) => is_string($ep) && trim($ep) !== '')
+            ->unique()
+            ->mapWithKeys(fn (string $ep) => [$ep => $ep])
+            ->toArray();
     }
 }

@@ -17,6 +17,12 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource\Pages;
+use App\Models\Client;
+use App\Models\Order;
+use OfficeGuy\LaravelSumitGateway\Models\Subscription;
+use OfficeGuy\LaravelSumitGateway\Services\DebtService;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Mail;
 
 class DocumentResource extends Resource
 {
@@ -24,9 +30,9 @@ class DocumentResource extends Resource
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
 
-    protected static ?string $navigationLabel = 'Documents';
+    protected static ?string $navigationLabel = 'מסמכים';
 
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
+    protected static \UnitEnum|string|null $navigationGroup = 'שער תשלומי SUMIT';
 
     protected static ?int $navigationSort = 3;
 
@@ -34,60 +40,100 @@ class DocumentResource extends Resource
     {
         return $schema
             ->components([
-                Schemas\Components\Section::make('Document Information')
+                Schemas\Components\Section::make('פרטי מסמך')
                     ->schema([
                         Forms\Components\TextInput::make('document_id')
-                            ->label('Document ID')
+                            ->label('מזהה מסמך')
                             ->disabled(),
                         Forms\Components\TextInput::make('document_type')
-                            ->label('Document Type')
+                            ->label('סוג מסמך')
                             ->formatStateUsing(fn ($record) => $record?->getDocumentTypeName())
                             ->disabled(),
                         Forms\Components\TextInput::make('customer_id')
-                            ->label('Customer ID')
+                            ->label('מזהה לקוח')
                             ->disabled(),
                         Forms\Components\Checkbox::make('is_draft')
-                            ->label('Is Draft')
+                            ->label('טיוטה')
                             ->disabled(),
                         Forms\Components\Checkbox::make('emailed')
-                            ->label('Emailed to Customer')
+                            ->label('נשלח במייל ללקוח')
                             ->disabled(),
                     ])->columns(3),
 
-                Schemas\Components\Section::make('Financial Details')
+                Schemas\Components\Section::make('פרטים כספיים')
                     ->schema([
                         Forms\Components\TextInput::make('amount')
-                            ->label('Amount')
+                            ->label('סכום')
                             ->prefix(fn ($record) => $record?->currency ?? '')
                             ->disabled(),
                         Forms\Components\TextInput::make('currency')
+                            ->label('מטבע')
+                            ->formatStateUsing(fn ($state) => match (strtoupper((string) $state)) {
+                                '', '0', 'ILS' => '₪ ILS',
+                                'USD' => '$ USD',
+                                'EUR' => '€ EUR',
+                                'GBP' => '£ GBP',
+                                default => strtoupper((string) $state),
+                            })
                             ->disabled(),
                         Forms\Components\TextInput::make('language')
+                            ->label('שפה')
+                            ->formatStateUsing(fn ($state) => match (strtolower((string) $state)) {
+                                '', '0', 'he', 'he-il', 'he_il', 'heb', 'hebrew' => 'עברית',
+                                'en', 'en-us', 'en_il' => 'English',
+                                default => strtoupper((string) $state),
+                            })
                             ->disabled(),
                     ])->columns(3),
 
-                Schemas\Components\Section::make('Order Information')
+                Schemas\Components\Section::make('פרטי הזמנה')
                     ->schema([
                         Forms\Components\TextInput::make('order_id')
-                            ->label('Order ID')
+                            ->label('מזהה הזמנה')
+                            ->formatStateUsing(function ($record) {
+                                $orderId = $record?->order_id;
+                                if (empty($orderId) || $orderId === '0') {
+                                    return '—';
+                                }
+
+                                // Try to resolve local Order model
+                                $order = Order::find($orderId);
+                                return $order?->order_number ?? $orderId;
+                            })
                             ->disabled(),
                         Forms\Components\TextInput::make('order_type')
-                            ->label('Order Type')
-                            ->formatStateUsing(fn ($state) => $state ? class_basename($state) : '-')
+                            ->label('סוג הזמנה')
+                            ->formatStateUsing(function ($state) {
+                                if (empty($state) || $state === '0') {
+                                    return 'לא זמין';
+                                }
+                                return class_basename($state);
+                            })
+                            ->disabled(),
+                        Forms\Components\TextInput::make('subscription_id')
+                            ->label('מנוי קשור')
+                            ->formatStateUsing(function ($record) {
+                                if (! $record?->subscription_id) {
+                                    return null;
+                                }
+
+                                $sub = Subscription::find($record->subscription_id);
+                                return $sub?->name ?? $record->subscription_id;
+                            })
                             ->disabled(),
                     ])->columns(2),
 
-                Schemas\Components\Section::make('Description')
+                Schemas\Components\Section::make('תיאור')
                     ->schema([
                         Forms\Components\Textarea::make('description')
                             ->disabled()
                             ->rows(3),
                     ]),
 
-                Schemas\Components\Section::make('Raw Response')
+                Schemas\Components\Section::make('תגובת API גולמית')
                     ->schema([
                         Forms\Components\KeyValue::make('raw_response')
-                            ->label('API Response Data')
+                            ->label('נתוני תגובה מה‑API')
                             ->disabled(),
                     ])->collapsed(),
             ]);
@@ -98,16 +144,16 @@ class DocumentResource extends Resource
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('id')
-                    ->label('ID')
+                    ->label('מזהה')
                     ->sortable()
                     ->searchable(),
                 Tables\Columns\TextColumn::make('document_id')
-                    ->label('Document ID')
+                    ->label('מזהה מסמך')
                     ->searchable()
                     ->sortable()
                     ->copyable(),
                 Tables\Columns\TextColumn::make('document_type')
-                    ->label('Type')
+                    ->label('סוג מסמך')
                     ->formatStateUsing(fn ($record) => $record->getDocumentTypeName())
                     ->badge()
                     ->color(fn ($record) => match (true) {
@@ -118,67 +164,157 @@ class DocumentResource extends Resource
                     })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
-                    ->money(fn ($record) => $record->currency)
+                    ->label('סכום')
+                    ->formatStateUsing(function ($record) {
+                        $currency = $record->currency ?: 'ILS';
+                        $symbol = match (strtoupper($currency)) {
+                            'ILS' => '₪',
+                            'USD' => '$',
+                            'EUR' => '€',
+                            'GBP' => '£',
+                            default => $currency,
+                        };
+
+                        return $symbol . ' ' . number_format((float) $record->amount, 2);
+                    })
                     ->sortable(),
                 Tables\Columns\IconColumn::make('is_draft')
-                    ->label('Draft')
+                    ->label('טיוטה')
                     ->boolean()
                     ->toggleable(),
                 Tables\Columns\IconColumn::make('emailed')
-                    ->label('Emailed')
+                    ->label('נשלח במייל')
                     ->boolean()
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('language')
+                    ->label('שפה')
+                    ->formatStateUsing(fn ($state) => match (strtolower((string) $state)) {
+                        '', '0', 'he', 'he-il', 'he_il', 'heb', 'hebrew' => 'עברית',
+                        'en', 'en-us', 'en_il' => 'English',
+                        default => strtoupper((string) $state),
+                    })
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('customer_id')
-                    ->label('Customer')
+                    ->label('לקוח')
+                    ->formatStateUsing(function ($record) {
+                        // Try to resolve to local Client first (by sumit id stored on client)
+                        $client = Client::query()
+                            ->where('sumit_customer_id', $record->customer_id)
+                            ->first();
+
+                        if ($client) {
+                            return $client->name;
+                        }
+
+                        return $record->customer_id;
+                    })
+                    ->description(function ($record) {
+                        if (! $record->customer_id) {
+                            return null;
+                        }
+                        $balance = Cache::remember(
+                            'sumit_balance_' . $record->customer_id,
+                            300,
+                            fn () => app(DebtService::class)->getCustomerBalanceById((int) $record->customer_id)
+                        );
+                        return $balance['formatted'] ?? null;
+                    })
+                    ->url(function ($record) {
+                        $client = Client::query()
+                            ->where('sumit_customer_id', $record->customer_id)
+                            ->first();
+
+                        if ($client) {
+                            return route('filament.admin.resources.clients.view', ['record' => $client->id]);
+                        }
+
+                        return null;
+                    })
+                    ->openUrlInNewTab()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('order_id')
+                    ->label('הזמנה')
+                    ->formatStateUsing(function ($record) {
+                        if (! $record->order_id) {
+                            return null;
+                        }
+                        $order = Order::find($record->order_id);
+                        return $order?->order_number ?? $record->order_id;
+                    })
+                    ->url(function ($record) {
+                        if (! $record->order_id) {
+                            return null;
+                        }
+                        $order = Order::find($record->order_id);
+                        return $order ? route('filament.admin.resources.orders.view', ['record' => $order->id]) : null;
+                    })
+                    ->openUrlInNewTab()
+                    ->toggleable(isToggledHiddenByDefault: true),
+                Tables\Columns\TextColumn::make('subscription_id')
+                    ->label('מנוי')
+                    ->formatStateUsing(function ($record) {
+                        if (! $record->subscription_id) {
+                            return null;
+                        }
+                        $sub = Subscription::find($record->subscription_id);
+                        return $sub?->name ?? $record->subscription_id;
+                    })
+                    ->url(function ($record) {
+                        if (! $record->subscription_id) {
+                            return null;
+                        }
+                        $sub = Subscription::find($record->subscription_id);
+                        return $sub ? route('filament.admin.resources.subscriptions.view', ['record' => $sub->id]) : null;
+                    })
+                    ->openUrlInNewTab()
+                    ->toggleable(isToggledHiddenByDefault: true),
                 Tables\Columns\TextColumn::make('created_at')
-                    ->label('Created')
-                    ->dateTime()
+                    ->label('נוצר')
+                    ->dateTime('d/m/Y H:i')
                     ->sortable()
                     ->toggleable(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('document_type')
-                    ->label('Document Type')
+                    ->label('סוג מסמך')
                     ->options([
-                        '1' => 'Invoice',
-                        '8' => 'Order',
-                        'DonationReceipt' => 'Donation Receipt',
+                        '1' => 'חשבונית',
+                        '8' => 'הזמנה',
+                        'DonationReceipt' => 'קבלת תרומה',
                     ]),
                 Tables\Filters\TernaryFilter::make('is_draft')
-                    ->label('Draft Documents'),
+                    ->label('מסמכי טיוטה'),
                 Tables\Filters\TernaryFilter::make('emailed')
-                    ->label('Emailed Documents'),
+                    ->label('נשלחו במייל'),
                 Tables\Filters\SelectFilter::make('currency')
+                    ->label('מטבע')
                     ->options([
-                        'ILS' => 'ILS',
-                        'USD' => 'USD',
-                        'EUR' => 'EUR',
-                        'GBP' => 'GBP',
+                        'ILS' => '₪ ILS',
+                        'USD' => '$ USD',
+                        'EUR' => '€ EUR',
+                        'GBP' => '£ GBP',
                     ])
                     ->multiple(),
             ])
             ->actions([
                 ViewAction::make(),
                 Action::make('download_pdf')
-                    ->label('Download PDF')
+                    ->label('הורדת PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
                     ->visible(fn ($record) => !empty($record->document_download_url))
                     ->url(fn ($record) => $record->document_download_url)
                     ->openUrlInNewTab(),
                 Action::make('resend_email')
-                    ->label('Resend Email')
+                    ->label('שליחה חוזרת במייל')
                     ->icon('heroicon-o-envelope')
                     ->color('primary')
                     ->visible(fn ($record) => !$record->is_draft && !empty($record->customer_id))
                     ->form([
                         Forms\Components\TextInput::make('email')
-                            ->label('Email Address (Optional)')
+                            ->label('אימייל (אופציונלי)')
                             ->email()
-                            ->helperText('Leave empty to send to customer\'s registered email in SUMIT'),
+                            ->helperText('השאר ריק כדי לשלוח לאימייל הרשום ב‑SUMIT'),
                     ])
                     ->action(function ($record, array $data) {
                         try {
@@ -193,11 +329,11 @@ class DocumentResource extends Resource
 
                             if ($result['success'] ?? false) {
                                 $message = $email
-                                    ? 'The document has been sent to ' . $email
-                                    : 'The document has been sent to customer\'s registered email';
+                                    ? 'המסמך נשלח אל ' . $email
+                                    : 'המסמך נשלח לאימייל הלקוח הרשום ב‑SUMIT';
 
                                 Notification::make()
-                                    ->title('Document sent successfully')
+                                    ->title('המסמך נשלח בהצלחה')
                                     ->body($message)
                                     ->success()
                                     ->send();
@@ -206,7 +342,7 @@ class DocumentResource extends Resource
                             }
                         } catch (\Throwable $e) {
                             Notification::make()
-                                ->title('Failed to send document')
+                                ->title('שליחת המסמך נכשלה')
                                 ->body($e->getMessage())
                                 ->danger()
                                 ->send();

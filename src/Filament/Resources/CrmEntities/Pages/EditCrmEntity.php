@@ -54,6 +54,20 @@ class EditCrmEntity extends EditRecord
         // Store custom fields for later use in afterSave
         $this->customFields = $customFields;
 
+        // If client_id not provided, try to match based on SUMIT ID and known fields
+        if (empty($standardData['client_id']) && !empty($standardData['sumit_entity_id'])) {
+            $entityData = [
+                'Customers_CompanyNumber' => [ $standardData['vat_number'] ?? null ],
+                'Customers_EmailAddress' => [ $standardData['email'] ?? $standardData['client_email'] ?? null ],
+                'Customers_Phone' => [ $standardData['phone'] ?? $standardData['client_phone'] ?? $standardData['mobile_phone'] ?? null ],
+            ];
+
+            $standardData['client_id'] = \OfficeGuy\LaravelSumitGateway\Services\CrmDataService::matchClientId(
+                $entityData,
+                (int) $standardData['sumit_entity_id']
+            );
+        }
+
         return $standardData;
     }
 
@@ -75,6 +89,13 @@ class EditCrmEntity extends EditRecord
                     $this->record->setCustomField($field->field_name, $value);
                 }
             }
+        }
+
+        // Auto-push to SUMIT on save (create/update)
+        try {
+            $this->record->syncToSumit();
+        } catch (\Throwable $e) {
+            // Swallow errors to avoid blocking UI; sync action is available manually.
         }
     }
 

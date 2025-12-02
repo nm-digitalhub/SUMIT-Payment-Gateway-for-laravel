@@ -242,6 +242,20 @@ class Subscription extends Model implements Payable
         return $this->completed_cycles >= $this->total_cycles;
     }
 
+    /**
+     * Determine if the subscription can be cancelled by the user.
+     *
+     * Mirrors the visibility logic used in the Filament resource actions.
+     */
+    public function canBeCancelled(): bool
+    {
+        return in_array($this->status, [
+            self::STATUS_ACTIVE,
+            self::STATUS_PAUSED,
+            self::STATUS_PENDING,
+        ], true);
+    }
+
     public function canBeCharged(): bool
     {
         return $this->isActive() && 

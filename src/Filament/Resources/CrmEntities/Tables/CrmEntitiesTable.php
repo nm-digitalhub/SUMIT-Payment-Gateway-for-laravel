@@ -14,7 +14,11 @@ use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Cache;
+use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
 use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
+use OfficeGuy\LaravelSumitGateway\Services\CustomerService;
+use OfficeGuy\LaravelSumitGateway\Services\DebtService;
 
 class CrmEntitiesTable
 {
@@ -29,8 +33,9 @@ class CrmEntitiesTable
                     ->copyable()
                     ->toggleable(),
 
-                Tables\Columns\TextColumn::make('name')
-                    ->label('Name')
+                Tables\Columns\TextColumn::make('crm_folder_id')
+                    ->label('Folder ID')
+                    ->state(fn ($record) => $record->folder?->sumit_folder_id ?? $record->crm_folder_id)
                     ->searchable()
                     ->sortable()
                     ->weight('semibold')
@@ -48,6 +53,39 @@ class CrmEntitiesTable
                     })
                     ->searchable()
                     ->sortable(),
+
+                Tables\Columns\TextColumn::make('client.name')
+                    ->label('Client')
+                    ->placeholder('-')
+                    ->sortable()
+                    ->searchable()
+                    ->toggleable(),
+
+                Tables\Columns\TextColumn::make('sumit_balance')
+                    ->label('יתרה')
+                    ->state(function ($record) {
+                        if (! $record->sumit_customer_id) {
+                            return null;
+                        }
+
+                        return Cache::remember(
+                            'sumit_balance_'.$record->sumit_customer_id,
+                            300,
+                            function () use ($record) {
+                                $service = app(DebtService::class);
+                                return $service->getCustomerBalanceById((int) $record->sumit_customer_id);
+                            }
+                        );
+                    })
+                    ->formatStateUsing(fn ($state) => $state['formatted'] ?? null)
+                    ->badge()
+                    ->color(function ($state) {
+                        $debt = $state['debt'] ?? 0;
+                        return $debt > 0 ? 'danger' : ($debt < 0 ? 'success' : 'gray');
+                    })
+                    ->icon('heroicon-o-scale')
+                    ->tooltip('Automated SUMIT debt/credit balance (cached 5 minutes)')
+                    ->toggleable(),
 
                 Tables\Columns\TextColumn::make('owner.name')
                     ->label('Owner')
@@ -113,6 +151,13 @@ class CrmEntitiesTable
                     ->preload()
                     ->multiple(),
 
+                Tables\Filters\SelectFilter::make('client_id')
+                    ->label('Client')
+                    ->relationship('client', 'name')
+                    ->searchable()
+                    ->preload()
+                    ->multiple(),
+
                 Tables\Filters\TrashedFilter::make(),
             ])
             ->recordActions([
@@ -145,6 +190,31 @@ class CrmEntitiesTable
                         }
                     })
                     ->visible(fn ($record) => $record->sumit_entity_id !== null),
+
+                Action::make('sync_to_sumit')
+                    ->label('Sync to SUMIT (push)')
+                    ->icon('heroicon-o-cloud-arrow-up')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->modalHeading('Push entity to SUMIT')
+                    ->modalDescription('Creates/updates the customer in SUMIT and stores the returned SUMIT ID locally.')
+                    ->action(function (CrmEntity $record) {
+                        $result = $record->syncToSumit();
+
+                        if ($result['success'] ?? false) {
+                            Notification::make()
+                                ->title('Pushed to SUMIT')
+                                ->body('SUMIT ID: ' . ($result['sumit_customer_id'] ?? 'unknown'))
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Push failed')
+                                ->body($result['error'] ?? 'Unknown error')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
 
                 // Archive Entity (soft delete alternative)
                 Action::make('archive')
@@ -243,6 +313,38 @@ class CrmEntitiesTable
                     })
                     ->visible(fn ($record) => $record->sumit_entity_id !== null),
 
+                Action::make('check_debt')
+                    ->label('Check Debt')
+                    ->icon('heroicon-o-scale')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->action(function ($record) {
+                        try {
+                            if (! $record->sumit_customer_id) {
+                                throw new \Exception('Missing SUMIT customer ID on this entity.');
+                            }
+
+                            $balance = app(DebtService::class)->getCustomerBalanceById((int) $record->sumit_customer_id);
+
+                            if (! $balance) {
+                                throw new \Exception('Failed to retrieve balance from SUMIT.');
+                            }
+
+                            Notification::make()
+                                ->title('Balance')
+                                ->body($balance['formatted'])
+                                ->color($balance['debt'] > 0 ? 'danger' : ($balance['debt'] < 0 ? 'success' : 'gray'))
+                                ->send();
+                        } catch (\Throwable $e) {
+                            Notification::make()
+                                ->title('Debt check failed')
+                                ->body($e->getMessage())
+                                ->danger()
+                                ->send();
+                        }
+                    })
+                    ->visible(fn ($record) => $record->sumit_customer_id !== null),
+
                 // Add Activity
                 Action::make('add_activity')
                     ->label('Add Activity')
@@ -329,9 +431,15 @@ class CrmEntitiesTable
 
                             $result = CrmDataService::syncAllEntities($folder->id);
 
+                            if (!$result['success']) {
+                                throw new \Exception($result['error'] ?? 'Sync failed');
+                            }
+
+                            $syncedCount = $result['entities_synced'] ?? 0;
+
                             Notification::make()
                                 ->title('Sync completed')
-                                ->body("Synced {$result['entities_synced']} entities from {$folder->name}")
+                                ->body("Synced {$syncedCount} entities from {$folder->name}")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {

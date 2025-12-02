@@ -26,7 +26,12 @@ class CrmActivityResource extends Resource
 
     protected static \UnitEnum|string|null $navigationGroup = 'SUMIT CRM';
 
-    protected static ?string $navigationLabel = 'Activities';
+    protected static ?string $navigationLabel = null;
+
+    public static function getNavigationLabel(): string
+    {
+        return __('crm_activities.nav_label');
+    }
 
     protected static ?int $navigationSort = 3;
 

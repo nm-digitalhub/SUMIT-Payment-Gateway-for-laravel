@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
+use OfficeGuy\LaravelSumitGateway\Support\Traits\HasSumitCustomerTrait;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Throwable;
+use App\Models\SmsMessage;
+use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 /**
  * Service for managing customer debt and credit balance in SUMIT
@@ -100,6 +105,117 @@ class DebtService
 
             return null;
         }
+    }
+
+    /**
+     * Convenience helper: fetch balance by SUMIT customer ID without requiring a full model.
+     */
+    public function getCustomerBalanceById(int $sumitCustomerId): ?array
+    {
+        $stub = new class($sumitCustomerId) implements HasSumitCustomer {
+            use HasSumitCustomerTrait;
+
+            public function __construct(private int $id) {}
+
+            public function getSumitCustomerId(): ?int
+            {
+                return $this->id;
+            }
+        };
+
+        return $this->getCustomerBalance($stub);
+    }
+
+    /**
+     * Create a payment document for the current debt and return payment URL.
+     */
+    public function createDebtPaymentDocument(int $sumitCustomerId, float $amount, string $description = 'Debt Payment'): ?string
+    {
+        $request = [
+            'Credentials' => PaymentService::getCredentials(),
+            'Items' => [
+                [
+                    'Description' => $description,
+                    'Quantity' => 1,
+                    'Price' => $amount,
+                    'VATRate' => PaymentService::getOrderVatRate(null),
+                    'Currency' => PaymentService::getOrderCurrency(null),
+                ],
+            ],
+            'VATIncluded' => 'true',
+            'Details' => [
+                'CustomerID' => $sumitCustomerId,
+                'Language' => PaymentService::getOrderLanguage(),
+                'Currency' => PaymentService::getOrderCurrency(null),
+                'Type' => DocumentService::TYPE_ORDER,
+                'Description' => $description,
+                'SendByEmail' => [
+                    'Original' => 'false',
+                ],
+            ],
+        ];
+
+        $environment = config('officeguy.environment', 'www');
+        $response = OfficeGuyApi::post($request, '/accounting/documents/create/', $environment, false);
+
+        if ($response && ($response['Status'] ?? 1) === 0) {
+            return $response['Data']['DocumentPaymentURL'] ?? null;
+        }
+
+        Log::warning('Failed to create debt payment document', [
+            'customer_id' => $sumitCustomerId,
+            'error' => $response['UserErrorMessage'] ?? 'Unknown error',
+        ]);
+
+        return null;
+    }
+
+    /**
+     * Send payment link by email/SMS using current debt amount.
+     */
+    public function sendPaymentLink(
+        int $sumitCustomerId,
+        ?string $email = null,
+        ?string $phone = null,
+        ?float $overrideAmount = null
+    ): array {
+        $balance = $this->getCustomerBalanceById($sumitCustomerId);
+
+        if (! $balance || ($balance['debt'] ?? 0) <= 0) {
+            return ['success' => false, 'error' => 'No positive debt to collect'];
+        }
+
+        $amount = $overrideAmount ?? (float) $balance['debt'];
+
+        $paymentUrl = $this->createDebtPaymentDocument($sumitCustomerId, $amount);
+
+        if (! $paymentUrl) {
+            return ['success' => false, 'error' => 'Failed to generate payment link'];
+        }
+
+        $emailEnabled = config('officeguy.collection.email', true);
+        $smsEnabled = config('officeguy.collection.sms', false);
+
+        if ($email && $emailEnabled) {
+            Mail::raw("שלום,\nמצורף לינק לתשלום החוב בסך ₪{$amount}:\n{$paymentUrl}", function ($message) use ($email) {
+                $message->to($email)->subject('לינק לתשלום חוב');
+            });
+        }
+
+        if ($phone && $smsEnabled) {
+            $sms = SmsMessage::createOutbound([
+                'destination' => $phone,
+                'sender' => config('sms.default_sender', 'ExtraMobile'),
+                'message' => "לינק לתשלום חוב ₪{$amount}: {$paymentUrl}",
+            ]);
+            $sms->sendViaExm();
+        }
+
+        return [
+            'success' => true,
+            'payment_url' => $paymentUrl,
+            'amount' => $amount,
+        ];
     }
 
     /**

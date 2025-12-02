@@ -34,6 +34,14 @@ class CrmEntityForm
                             ->label('SUMIT Entity ID')
                             ->disabled(),
 
+                        Forms\Components\Select::make('client_id')
+                            ->label('Client')
+                            ->relationship('client', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->helperText('Optional link to local client')
+                            ->native(false),
+
                         Forms\Components\TextInput::make('name')
                             ->label('Entity Name')
                             ->required()
@@ -44,6 +52,41 @@ class CrmEntityForm
                             ->label('Notes')
                             ->rows(3)
                             ->maxLength(65535),
+
+                        Forms\Components\TextInput::make('email')
+                            ->label('Email')
+                            ->email()
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('phone')
+                            ->label('Phone')
+                            ->maxLength(50),
+
+                        Forms\Components\TextInput::make('mobile')
+                            ->label('Mobile')
+                            ->maxLength(50),
+
+                        Forms\Components\TextInput::make('tax_id')
+                            ->label('VAT / Company Number')
+                            ->maxLength(50),
+
+                        Forms\Components\TextInput::make('company_name')
+                            ->label('Company Name')
+                            ->maxLength(255),
+
+                        Forms\Components\TextInput::make('address')
+                            ->label('Address')
+                            ->columnSpanFull(),
+
+                        Forms\Components\TextInput::make('city')
+                            ->label('City'),
+
+                        Forms\Components\TextInput::make('postal_code')
+                            ->label('Postal Code'),
+
+                        Forms\Components\TextInput::make('country')
+                            ->label('Country')
+                            ->default('Israel'),
 
                         Forms\Components\Select::make('owner_user_id')
                             ->label('Owner')
@@ -73,7 +116,9 @@ class CrmEntityForm
                         }
 
                         $fields = CrmFolderField::where('crm_folder_id', $folderId)
-                            ->orderBy('field_order')
+                            // Migration defines 'display_order'; fall back to id if column missing
+                            ->orderBy('display_order')
+                            ->orderBy('id')
                             ->get();
 
                         if ($fields->isEmpty()) {
@@ -227,4 +272,3 @@ class CrmEntityForm
         return is_array($options) ? $options : [];
     }
 }
-

@@ -96,7 +96,7 @@ class CrmFoldersTable
 
                             Notification::make()
                                 ->title('Schema synced successfully')
-                                ->body("Synced {$result['fields_count']} fields for folder: {$record->name}")
+                                ->body("Synced {$result['fields_synced']} fields for folder: {$record->name}")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {
@@ -121,7 +121,7 @@ class CrmFoldersTable
 
                             Notification::make()
                                 ->title('Entities synced successfully')
-                                ->body("Synced {$result['synced_count']} entities from folder: {$record->name}")
+                                ->body("Synced {$result['entities_synced']} entities from folder: {$record->name}")
                                 ->success()
                                 ->send();
                         } catch (\Exception $e) {

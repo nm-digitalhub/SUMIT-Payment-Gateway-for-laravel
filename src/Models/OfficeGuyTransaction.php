@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -64,6 +65,14 @@ class OfficeGuyTransaction extends Model
     public function order(): MorphTo
     {
         return $this->morphTo('order', 'order_type', 'order_id');
+    }
+
+    /**
+     * Link to local Client if matched by SUMIT customer ID.
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Client::class, 'customer_id', 'sumit_customer_id');
     }
 
     /**

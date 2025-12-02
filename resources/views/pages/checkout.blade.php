@@ -21,9 +21,10 @@
     $items = $payable->getLineItems();
     $shipping = $payable->getShippingAmount();
     $fees = $payable->getFees();
-    $customerName = $payable->getCustomerName();
-    $customerEmail = $payable->getCustomerEmail();
-    $customerPhone = $payable->getCustomerPhone();
+    $customerName = $prefillName ?? $payable->getCustomerName();
+    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail();
+    $customerPhone = $prefillPhone ?? $payable->getCustomerPhone();
+    $customerCitizenId = $prefillCitizenId ?? null;
 @endphp
 
 <!DOCTYPE html>
@@ -491,7 +492,7 @@
                 expMonth: '',
                 expYear: '',
                 cvv: '',
-                citizenId: '',
+                citizenId: @json(old('citizen_id', $customerCitizenId ?? '')),
                 singleUseToken: '',
                 paymentsCount: '1',
                 saveCard: false,

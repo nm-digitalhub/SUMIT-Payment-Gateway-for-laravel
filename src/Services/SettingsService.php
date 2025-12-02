@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Arr;
 
 /**
  * Settings Service - Hybrid config + database approach.
@@ -95,6 +96,9 @@ class SettingsService
      */
     public function setMany(array $settings): void
     {
+        // Flatten nested arrays (e.g., collection.email) before saving
+        $settings = Arr::dot($settings);
+
         foreach ($settings as $key => $value) {
             $this->set($key, $value);
         }
@@ -209,6 +213,12 @@ class SettingsService
             'field_map_customer_email',
             'field_map_customer_phone',
             'field_map_description',
+            // Collection (Debt) settings
+            'collection.email',
+            'collection.sms',
+            'collection.schedule_time',
+            'collection.reminder_days',
+            'collection.max_attempts',
             // Custom Event Webhooks
             'webhook_payment_completed',
             'webhook_payment_failed',
@@ -277,7 +287,7 @@ class SettingsService
         $editableKeys = $this->getEditableKeys();
 
         foreach ($editableKeys as $key) {
-            $settings[$key] = config("officeguy.{$key}");
+            Arr::set($settings, $key, config("officeguy.{$key}"));
         }
 
         // Override with database values in one query (if table exists)
@@ -289,7 +299,7 @@ class SettingsService
                 // Only override editable keys
                 foreach ($editableKeys as $key) {
                     if (isset($dbSettings[$key])) {
-                        $settings[$key] = $dbSettings[$key];
+                        Arr::set($settings, $key, $dbSettings[$key]);
                     }
                 }
             } catch (\Exception $e) {

@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * OfficeGuy Document Model
@@ -71,6 +72,14 @@ class OfficeGuyDocument extends Model
     public function subscription()
     {
         return $this->belongsTo(Subscription::class);
+    }
+
+    /**
+     * Link to local Client if matched by SUMIT customer ID.
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Client::class, 'customer_id', 'sumit_customer_id');
     }
 
     /**

@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OfficeGuy\LaravelSumitGateway\Services\CustomerService;
 
 /**
  * CRM Entity Model
@@ -51,6 +52,19 @@ class CrmEntity extends Model
     use SoftDeletes;
 
     /**
+     * Limit to the SUMIT Customers folder by default (folder 1076734599).
+     */
+    protected static function booted(): void
+    {
+        static::addGlobalScope('sumit_customers_folder', function ($query) {
+            $folderId = \OfficeGuy\LaravelSumitGateway\Models\CrmFolder::where('sumit_folder_id', 1076734599)->value('id');
+            if ($folderId) {
+                $query->where('crm_folder_id', $folderId);
+            }
+        });
+    }
+
+    /**
      * The table associated with the model.
      *
      * @var string
@@ -65,6 +79,7 @@ class CrmEntity extends Model
     protected $fillable = [
         'crm_folder_id',
         'sumit_entity_id',
+        'client_id',
         'entity_type',
         'name',
         'email',
@@ -93,6 +108,7 @@ class CrmEntity extends Model
     protected $casts = [
         'crm_folder_id' => 'integer',
         'sumit_entity_id' => 'integer',
+        'client_id' => 'integer',
         'owner_user_id' => 'integer',
         'assigned_to_user_id' => 'integer',
         'sumit_customer_id' => 'integer',
@@ -107,6 +123,14 @@ class CrmEntity extends Model
     public function folder(): BelongsTo
     {
         return $this->belongsTo(CrmFolder::class, 'crm_folder_id');
+    }
+
+    /**
+     * Link to local Client (if matched).
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Client::class, 'client_id');
     }
 
     /**
@@ -307,5 +331,13 @@ class CrmEntity extends Model
         };
 
         $entityField->save();
+    }
+
+    /**
+     * Push this entity as a SUMIT customer (create/update) and update local SUMIT ID.
+     */
+    public function syncToSumit(): array
+    {
+        return CustomerService::syncFromEntity($this);
     }
 }

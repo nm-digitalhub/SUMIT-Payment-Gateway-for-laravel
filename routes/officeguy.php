@@ -5,9 +5,10 @@ declare(strict_types=1);
 use Illuminate\Support\Facades\Route;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\BitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CardCallbackController;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\CrmWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\DocumentDownloadController;
-use OfficeGuy\LaravelSumitGateway\Http\Controllers\PublicCheckoutController;
+use App\Http\Controllers\OfficeGuy\PublicCheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\SumitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Support\RouteConfig;
 
@@ -114,4 +115,10 @@ Route::prefix($prefix)
             $sumitWebhookPath . '/card-archived',
             [SumitWebhookController::class, 'cardArchived']
         )->name('officeguy.webhook.sumit.card_archived');
+
+        // CRM webhook (entity/folder updates)
+        Route::post(
+            $sumitWebhookPath . '/crm',
+            CrmWebhookController::class
+        )->name('officeguy.webhook.crm');
     });

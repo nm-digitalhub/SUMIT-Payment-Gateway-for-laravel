@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
+use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
@@ -105,6 +106,205 @@ class PaymentService
             'he', 'he_IL' => 'Hebrew',
             default => '',
         };
+    }
+
+    /**
+     * Set / upsert a payment method for a SUMIT customer (also sets it כברירת מחדל ב-SUMIT).
+     *
+     * Endpoint: POST /billing/paymentmethods/setforcustomer/
+     *
+     * @param string|int $sumitCustomerId
+     * @param string $token CreditCard_Token from SUMIT
+     * @param array $method Additional fields (optional) from PaymentMethod schema
+     * @return array{success: bool, error?: string}
+     */
+    public static function setPaymentMethodForCustomer(string|int $sumitCustomerId, string $token, array $method = []): array
+    {
+        try {
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Customer' => [
+                    'ID' => (int) $sumitCustomerId,
+                ],
+                'PaymentMethod' => array_merge([
+                    'CreditCard_Token' => $token,
+                    'Type' => 'CreditCard (1)',
+                ], $method),
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/paymentmethods/setforcustomer/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to set payment method',
+                ];
+            }
+
+            return ['success' => true];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * קבלת פירוט עסקה לפי PaymentID.
+     * Endpoint: POST /billing/payments/get/
+     *
+     * @param int|string $paymentId
+     * @return array{success: bool, payment?: array|null, error?: string}
+     */
+    public static function getPaymentDetails(int|string $paymentId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'PaymentID' => (int) $paymentId,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/payments/get/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to fetch payment details',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'payment' => $response['Data']['Payment'] ?? null,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * List payments history (paged) with optional date/valid filters.
+     * Endpoint: POST /billing/payments/list/
+     *
+     * @param array $filters [Date_From?, Date_To?, Valid?, StartIndex?]
+     * @return array{success: bool, payments?: array<int, array>, has_next?: bool, error?: string}
+     */
+    public static function listPayments(array $filters = []): array
+    {
+        try {
+            // ברירת מחדל: שנה אחורה ועד היום
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Date_From' => $filters['Date_From'] ?? Carbon::now()->subYear()->startOfDay()->toIso8601String(),
+                'Date_To' => $filters['Date_To'] ?? Carbon::now()->endOfDay()->toIso8601String(),
+                'Valid' => $filters['Valid'] ?? null,
+                'StartIndex' => $filters['StartIndex'] ?? 0,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/payments/list/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to list payments',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'payments' => $response['Data']['Payments'] ?? [],
+                'has_next' => $response['Data']['HasNextPage'] ?? false,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Fetch payment methods for a SUMIT customer.
+     *
+     * Endpoint: POST /billing/paymentmethods/getforcustomer/
+     *
+     * @param string|int $sumitCustomerId
+     * @param bool $includeInactive
+     * @return array{success: bool, payment_methods?: array<int, array>, active_method?: array|null, inactive_methods?: array<int, array>, error?: string}
+     */
+    public static function getPaymentMethodsForCustomer(string|int $sumitCustomerId, bool $includeInactive = false): array
+    {
+        try {
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Customer' => [
+                    'ID' => (int) $sumitCustomerId,
+                ],
+                'IncludeInactive' => $includeInactive,
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/paymentmethods/getforcustomer/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to fetch payment methods',
+                ];
+            }
+
+            $data = $response['Data'] ?? [];
+
+            $active = $data['PaymentMethod'] ?? null;
+            $inactive = !empty($data['InactivePaymentMethods']) && is_array($data['InactivePaymentMethods'])
+                ? $data['InactivePaymentMethods']
+                : [];
+
+            $methods = [];
+            if ($active) {
+                $methods[] = $active;
+            }
+            $methods = array_merge($methods, $inactive);
+
+            return [
+                'success' => true,
+                'active_method' => $active,
+                'inactive_methods' => $inactive,
+                'payment_methods' => $methods,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
     }
 
     /**

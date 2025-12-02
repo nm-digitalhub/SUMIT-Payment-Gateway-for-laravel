@@ -23,8 +23,11 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Arr;
+use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 class ClientPaymentMethodResource extends Resource
 {
@@ -53,6 +56,155 @@ class ClientPaymentMethodResource extends Resource
     }
 
     /**
+     * משיכת אמצעי תשלום מספק SUMIT ושמירה מקומית למשתמש הנוכחי.
+     *
+     * @return array{0: bool, 1: string|null, 2?: int}
+     */
+    protected static function syncTokensFromSumit(): array
+    {
+        $user = auth()->user();
+        $client = $user?->client;
+
+        if (!$client?->sumit_customer_id) {
+            return [false, 'לא נמצא מזהה SUMIT ללקוח הנוכחי'];
+        }
+
+        $result = PaymentService::getPaymentMethodsForCustomer($client->sumit_customer_id, true);
+
+        if (!$result['success']) {
+            return [false, $result['error'] ?? ''];
+        }
+
+        $methods = $result['payment_methods'] ?? [];
+        $active = $result['active_method'] ?? null;
+        $ownerType = get_class($user);
+        $ownerId = $user->getKey();
+        $kept = [];
+        $candidateDefault = null;
+        $candidateExpiry = null;
+        $usage = [];
+
+        foreach ($methods as $method) {
+            $token = $method['CreditCard_Token'] ?? null;
+            if (!$token) {
+                continue;
+            }
+
+            $lastFour = $method['CreditCard_LastDigits']
+                ?? substr((string) ($method['CreditCard_CardMask'] ?? ''), -4);
+
+            $record = OfficeGuyToken::updateOrCreate(
+                [
+                    'owner_type' => $ownerType,
+                    'owner_id' => $ownerId,
+                    'token' => $token,
+                ],
+                [
+                    'gateway_id' => 'officeguy',
+                    'card_type' => (string) Arr::get($method, 'Type', '1'),
+                    'last_four' => $lastFour,
+                    'citizen_id' => $method['CreditCard_CitizenID'] ?? null,
+                    'expiry_month' => str_pad((string)($method['CreditCard_ExpirationMonth'] ?? '1'), 2, '0', STR_PAD_LEFT),
+                    'expiry_year' => (string) ($method['CreditCard_ExpirationYear'] ?? date('Y')),
+                    'is_default' => false,
+                    'metadata' => $method,
+                ]
+            );
+
+            $kept[] = $record->token;
+
+            // נאתר כרטיס לא פג תוקף ונבחר את בעל התוקף הרחוק ביותר כברירת מחדל מוצעת
+            $exp = Carbon::createFromDate(
+                (int) ($method['CreditCard_ExpirationYear'] ?? date('Y')),
+                (int) ($method['CreditCard_ExpirationMonth'] ?? 1),
+                1
+            )->endOfMonth();
+
+            if ($exp->isPast()) {
+                continue;
+            }
+
+            if ($candidateExpiry === null || $exp->greaterThan($candidateExpiry)) {
+                $candidateExpiry = $exp;
+                $candidateDefault = $record;
+            }
+        }
+
+        // משיכת היסטוריית תשלומים וחישוב שימוש לכל Token
+        $payments = PaymentService::listPayments(['Valid' => true]);
+        if ($payments['success'] ?? false) {
+            foreach ($payments['payments'] ?? [] as $payment) {
+                $token = $payment['PaymentMethod']['CreditCard_Token'] ?? null;
+                if (!$token) {
+                    continue;
+                }
+
+                $usage[$token]['total'] = ($usage[$token]['total'] ?? 0) + 1;
+                $usage[$token]['amount'] = ($usage[$token]['amount'] ?? 0) + (float)($payment['Amount'] ?? 0);
+
+                $date = $payment['Date'] ?? null;
+                if ($date && (!isset($usage[$token]['last_at']) || $date > $usage[$token]['last_at'])) {
+                    $usage[$token]['last_at'] = $date;
+                    $usage[$token]['last_amount'] = (float)($payment['Amount'] ?? 0);
+                    $usage[$token]['payment_id'] = $payment['ID'] ?? null;
+                    $usage[$token]['status_desc'] = $payment['StatusDescription'] ?? null;
+                    $usage[$token]['valid_payment'] = $payment['ValidPayment'] ?? null;
+                }
+            }
+        }
+
+        if (!empty($kept)) {
+            OfficeGuyToken::where('owner_type', $ownerType)
+                ->where('owner_id', $ownerId)
+                ->whereNotIn('token', $kept)
+                ->delete();
+        }
+
+        // העשרת מטאדטה בסטטיסטיקות שימוש
+        foreach ($kept as $token) {
+            $record = OfficeGuyToken::where('owner_type', $ownerType)
+                ->where('owner_id', $ownerId)
+                ->where('token', $token)
+                ->first();
+
+            if (!$record) {
+                continue;
+            }
+
+            $meta = $record->metadata ?? [];
+            if (isset($usage[$token])) {
+                $meta['Usage_Total'] = $usage[$token]['total'] ?? null;
+                $meta['Usage_TotalAmount'] = $usage[$token]['amount'] ?? null;
+                $meta['Usage_LastAt'] = $usage[$token]['last_at'] ?? null;
+                $meta['Usage_LastAmount'] = $usage[$token]['last_amount'] ?? null;
+                $meta['PaymentID'] = $usage[$token]['payment_id'] ?? ($meta['PaymentID'] ?? null);
+                $meta['StatusDescription'] = $usage[$token]['status_desc'] ?? ($meta['StatusDescription'] ?? null);
+                $meta['ValidPayment'] = $usage[$token]['valid_payment'] ?? ($meta['ValidPayment'] ?? null);
+            }
+
+            $record->metadata = $meta;
+            $record->save();
+        }
+
+        // אם חזר כרטיס פעיל מפורש, נסמן אותו כברירת מחדל
+        if ($active && ($token = $active['CreditCard_Token'] ?? null)) {
+            $activeRecord = OfficeGuyToken::where('owner_type', $ownerType)
+                ->where('owner_id', $ownerId)
+                ->where('token', $token)
+                ->first();
+
+            if ($activeRecord) {
+                $activeRecord->setAsDefault();
+            }
+        } elseif ($candidateDefault) {
+            // אחרת, בחר את הכרטיס הלא פג תוקף עם התוקף הרחוק ביותר
+            $candidateDefault->setAsDefault();
+        }
+
+        return [true, null, count($kept)];
+    }
+
+    /**
      * Infolist משודרג לתצוגת כרטיס - חוויית לקוח מעולה
      */
     public static function infolist(Schema $schema): Schema
@@ -73,27 +225,34 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->size('lg')
                                     ->weight('bold')
-                                    ->color(fn ($state) => match($state) {
+                                    ->color(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'info',      // Visa - כחול
                                         '2' => 'warning',   // MasterCard - כתום
                                         '6' => 'success',   // Amex - ירוק
                                         '22' => 'primary',  // Cal - סגול
                                         default => 'gray',
                                     })
-                                    ->icon(fn ($state) => match($state) {
+                                    ->icon(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'heroicon-o-credit-card',
                                         '2' => 'heroicon-o-credit-card',
                                         '6' => 'heroicon-o-credit-card',
                                         '22' => 'heroicon-o-building-library',
                                         default => 'heroicon-o-credit-card',
                                     })
-                                    ->formatStateUsing(fn ($state) => match($state) {
+                                    ->formatStateUsing(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'Visa',
                                         '2' => 'MasterCard',
                                         '6' => 'American Express',
                                         '22' => 'CAL / כאל',
                                         default => 'כרטיס אשראי',
                                     }),
+
+                                TextEntry::make('metadata.ID')
+                                    ->label('מזהה כרטיס בספק')
+                                    ->icon('heroicon-o-hashtag')
+                                    ->badge()
+                                    ->color('gray')
+                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין'),
 
                                 // מספר כרטיס מוסתר
                                 TextEntry::make('last_four')
@@ -102,6 +261,9 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('success')
                                     ->size('lg')
                                     ->weight('bold')
+                                    ->state(fn ($record) =>
+                                        substr((string)($record->metadata['CreditCard_CardMask'] ?? '************' . $record->last_four), -4)
+                                    )
                                     ->formatStateUsing(fn ($state) => '•••• •••• •••• ' . $state)
                                     ->copyable()
                                     ->copyMessage('הועתק בהצלחה!')
@@ -116,12 +278,13 @@ class ClientPaymentMethodResource extends Resource
                                     ->size('lg')
                                     ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
                                     ->formatStateUsing(fn ($record) =>
-                                        $record->expiry_month . '/' . substr($record->expiry_year, -2)
+                                        ($record->metadata['CreditCard_ExpirationMonth'] ?? $record->expiry_month)
+                                        . '/' . substr((string)($record->metadata['CreditCard_ExpirationYear'] ?? $record->expiry_year), -2)
                                     )
                                     ->helperText(fn ($record) =>
                                         $record->isExpired()
                                         ? 'הכרטיס פג תוקף'
-                                        : 'בתוקף עד סוף החודש'
+                                        : 'בתוקף עד ' . $record->expiry_month . '/' . $record->expiry_year
                                     ),
 
                                 // סטטוס וברירת מחדל
@@ -138,6 +301,18 @@ class ClientPaymentMethodResource extends Resource
                                     ->helperText(fn ($record) =>
                                         $record->is_default ? 'כרטיס ברירת מחדל לתשלומים' : ''
                                     ),
+
+                                TextEntry::make('metadata.CreditCard_CitizenID')
+                                    ->label('ת.ז. דיווחה לספק')
+                                    ->icon('heroicon-o-identification')
+                                    ->placeholder('לא זמין'),
+
+                                TextEntry::make('metadata.CustomerID')
+                                    ->label('CustomerID ב‑SUMIT')
+                                    ->icon('heroicon-o-user')
+                                    ->badge()
+                                    ->color('gray')
+                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין'),
                             ]),
                     ]),
 
@@ -190,7 +365,13 @@ class ClientPaymentMethodResource extends Resource
                     ->collapsible()
                     ->collapsed(true)
                     ->columnSpanFull()
-                    ->visible(fn ($record) => !empty($record->metadata))
+                    ->visible(fn ($record) => collect([
+                        $record->metadata['TransactionID'] ?? null,
+                        $record->metadata['AuthNumber'] ?? null,
+                        $record->metadata['ResultCode'] ?? null,
+                        $record->metadata['ResultDescription'] ?? null,
+                        $record->metadata['PaymentID'] ?? null,
+                    ])->filter()->isNotEmpty())
                     ->schema([
                         Grid::make(4)
                             ->schema([
@@ -282,6 +463,34 @@ class ClientPaymentMethodResource extends Resource
                                     ->placeholder('לא זמין')
                                     ->helperText('מזהה בקובץ התשלומים'),
                             ]),
+
+                        Grid::make(3)
+                            ->schema([
+                                TextEntry::make('metadata.PaymentID')
+                                    ->label('PaymentID')
+                                    ->icon('heroicon-o-hashtag')
+                                    ->badge()
+                                    ->color('gray')
+                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין')
+                                    ->helperText('מזהה עסקה ב‑SUMIT'),
+
+                                TextEntry::make('metadata.StatusDescription')
+                                    ->label('סטטוס עסקה')
+                                    ->icon('heroicon-o-information-circle')
+                                    ->formatStateUsing(fn ($state) =>
+                                        match (trim((string) $state)) {
+                                            'Approved', '(קוד 000)', 'קוד 000', '000', '' => 'הצלחה',
+                                            default => $state ?: 'לא זמין',
+                                        }
+                                    ),
+
+                                TextEntry::make('metadata.ValidPayment')
+                                    ->label('עסקה תקינה')
+                                    ->icon('heroicon-o-check-circle')
+                                    ->badge()
+                                    ->color(fn ($state) => $state ? 'success' : 'danger')
+                                    ->formatStateUsing(fn ($state) => $state ? 'Yes' : 'No'),
+                            ]),
                     ]),
 
                 // סטטיסטיקות שימוש
@@ -302,14 +511,9 @@ class ClientPaymentMethodResource extends Resource
                                     ->color('primary')
                                     ->size('lg')
                                     ->weight('bold')
-                                    ->state(function ($record) {
-                                        return \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
-                                            ->where('card_type', $record->card_type)
-                                            ->whereIn('status', ['completed', 'success', 'approved'])
-                                            ->count();
-                                    })
-                                    ->formatStateUsing(fn ($state) => $state > 0 ? number_format($state) : 'טרם בוצע')
-                                    ->helperText('מספר התשלומים המוצלחים'),
+                                    ->state(fn ($record) => $record->metadata['Usage_Total'] ?? null)
+                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((int)$state) : 'טרם בוצע')
+                                    ->helperText('נתון מספק SUMIT (Usage_Total)'),
 
                                 TextEntry::make('total_amount')
                                     ->label('סכום כולל')
@@ -319,14 +523,9 @@ class ClientPaymentMethodResource extends Resource
                                     ->color('success')
                                     ->size('lg')
                                     ->weight('bold')
-                                    ->state(function ($record) {
-                                        return \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
-                                            ->where('card_type', $record->card_type)
-                                            ->whereIn('status', ['completed', 'success', 'approved'])
-                                            ->sum('amount') ?? 0;
-                                    })
-                                    ->formatStateUsing(fn ($state) => $state > 0 ? '₪' . number_format($state, 2) : 'אין נתונים')
-                                    ->helperText('סכום כל התשלומים'),
+                                    ->state(fn ($record) => $record->metadata['Usage_TotalAmount'] ?? null)
+                                    ->formatStateUsing(fn ($state) => $state !== null ? '₪' . number_format((float)$state, 2) : 'אין נתונים')
+                                    ->helperText('Usage_TotalAmount מספק SUMIT'),
 
                                 TextEntry::make('last_transaction')
                                     ->label('תשלום אחרון')
@@ -334,22 +533,30 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('warning')
                                     ->badge()
                                     ->color('warning')
-                                    ->state(function ($record) {
-                                        $lastTx = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
-                                            ->where('card_type', $record->card_type)
-                                            ->whereIn('status', ['completed', 'success', 'approved'])
-                                            ->latest('created_at')
-                                            ->first();
-                                        return $lastTx ? $lastTx->created_at->format('d/m/Y H:i') : null;
+                                    ->state(fn ($record) => $record->metadata['Usage_LastAt'] ?? null)
+                                    ->formatStateUsing(function ($state) {
+                                        if (!$state) {
+                                            return 'אין נתונים';
+                                        }
+
+                                        try {
+                                            return Carbon::parse($state)->timezone('Asia/Jerusalem')->format('d/m/Y H:i');
+                                        } catch (\Throwable $e) {
+                                            return $state;
+                                        }
                                     })
                                     ->placeholder('טרם בוצע')
                                     ->helperText(function ($record) {
-                                        $lastTx = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
-                                            ->where('card_type', $record->card_type)
-                                            ->whereIn('status', ['completed', 'success', 'approved'])
-                                            ->latest('created_at')
-                                            ->first();
-                                        return $lastTx ? 'לפני ' . $lastTx->created_at->diffForHumans() : 'לא נמצאו תשלומים';
+                                        $state = $record->metadata['Usage_LastAt'] ?? null;
+                                        if (!$state) {
+                                            return 'לא נמצאו תשלומים';
+                                        }
+
+                                        try {
+                                            return Carbon::parse($state)->timezone('Asia/Jerusalem')->diffForHumans();
+                                        } catch (\Throwable $e) {
+                                            return 'מתוך נתוני SUMIT';
+                                        }
                                     }),
 
                                 TextEntry::make('usage_frequency')
@@ -769,6 +976,32 @@ class ClientPaymentMethodResource extends Resource
                     ->default()
                     ->indicator('פעיל'),
             ])
+            ->headerActions([
+                Action::make('refresh_from_sumit')
+                    ->label('רענן מ‑SUMIT')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('primary')
+                    ->requiresConfirmation()
+                    ->action(function (): void {
+                        [$ok, $error, $count] = self::syncTokensFromSumit();
+
+                        if (!$ok) {
+                            Notification::make()
+                                ->title('הריענון נכשל')
+                                ->body($error ?: 'שגיאה לא ידועה')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        Notification::make()
+                            ->title('הריענון הצליח')
+                            ->body("עודכנו {$count} אמצעי תשלום מספק SUMIT")
+                            ->success()
+                            ->send();
+                    }),
+            ])
             ->actions([
                 Action::make('view')
                     ->label('צפייה')
@@ -787,11 +1020,39 @@ class ClientPaymentMethodResource extends Resource
                     ->modalSubmitActionLabel('כן, הגדר כברירת מחדל')
                     ->modalCancelActionLabel('ביטול')
                     ->action(function (OfficeGuyToken $record) {
+                        $user = auth()->user();
+                        $client = $user?->client;
+
+                        if (!$client?->sumit_customer_id) {
+                            Notification::make()
+                                ->title('לא נמצא מזהה SUMIT ללקוח')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
+                        $push = PaymentService::setPaymentMethodForCustomer(
+                            $client->sumit_customer_id,
+                            $record->token,
+                            $record->metadata ?? []
+                        );
+
+                        if (!$push['success']) {
+                            Notification::make()
+                                ->title('העדכון בספק נכשל')
+                                ->body($push['error'] ?? 'שגיאה לא ידועה')
+                                ->danger()
+                                ->send();
+
+                            return;
+                        }
+
                         $record->setAsDefault();
 
                         Notification::make()
                             ->title('הכרטיס הוגדר כברירת מחדל')
-                            ->body('אמצעי התשלום עודכן בהצלחה')
+                            ->body('עודכן גם ב‑SUMIT ובמערכת המקומית')
                             ->success()
                             ->icon('heroicon-o-check-circle')
                             ->send();

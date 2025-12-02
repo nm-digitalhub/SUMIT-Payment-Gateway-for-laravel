@@ -12,6 +12,7 @@ use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsComma
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
 use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
@@ -37,6 +38,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
     {
         $this->mergeConfigFrom(__DIR__ . '/../config/officeguy.php', 'officeguy');
         $this->mergeConfigFrom(__DIR__ . '/../config/officeguy-webhooks.php', 'officeguy.webhooks');
+
+        // Override middleware BEFORE routes are loaded
+        // Replace 'auth' with 'optional.auth' to allow both guests and authenticated users
+        $this->overrideAuthMiddleware();
 
         // Bind core services
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SettingsService::class);
@@ -86,6 +91,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Load settings from database and override config
         $this->loadDatabaseSettings();
 
+        // Register optional auth middleware alias
+        $router = $this->app['router'];
+        $router->aliasMiddleware('optional.auth', \OfficeGuy\LaravelSumitGateway\Http\Middleware\OptionalAuth::class);
+
         // Register commands (available in both console and web contexts)
         $this->commands([
             StockSyncCommand::class,
@@ -105,6 +114,12 @@ class OfficeGuyServiceProvider extends ServiceProvider
             CustomerSyncListener::class
         );
 
+        // CRM activities sync listener: refresh related entities when SUMIT CRM webhook arrives
+        Event::listen(
+            SumitWebhookReceived::class,
+            CrmActivitySyncListener::class
+        );
+
         // Register document sync listener (v1.5.0+)
         // Automatically syncs documents and subscriptions when webhooks are received
         Event::subscribe(DocumentSyncListener::class);
@@ -117,6 +132,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register CRM folders sync scheduler
         $this->registerCrmFoldersSyncScheduler();
+
+        // Register debt collection scheduler
+        $this->registerDebtCollectionScheduler();
 
         // Register Livewire components for Filament widgets
         $this->registerLivewireComponents();
@@ -272,6 +290,51 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     \Log::info('CRM folders auto-sync completed successfully');
                 });
         });
+    }
+
+    /**
+     * Register daily debt collection check.
+     */
+    protected function registerDebtCollectionScheduler(): void
+    {
+        if (!$this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+            $schedule->job(\OfficeGuy\LaravelSumitGateway\Jobs\CheckSumitDebtJob::class)
+                ->dailyAt(config('officeguy.collection.schedule_time', '02:00'))
+                ->name('sumit-debt-check')
+                ->withoutOverlapping(60)
+                ->onFailure(function () {
+                    \Log::error('SUMIT debt auto-check failed');
+                })
+                ->onSuccess(function () {
+                    \Log::info('SUMIT debt auto-check completed successfully');
+                });
+        });
+    }
+
+    /**
+     * Override 'auth' middleware with 'optional.auth' in package routes configuration.
+     *
+     * This allows both authenticated and guest users to access checkout pages,
+     * while maintaining auto-fill functionality for logged-in users.
+     *
+     * Called in register() BEFORE routes are loaded to ensure the override takes effect.
+     */
+    protected function overrideAuthMiddleware(): void
+    {
+        // Get current middleware configuration
+        $currentMiddleware = config('officeguy.routes.middleware', ['web', 'auth']);
+
+        // Replace 'auth' with 'optional.auth' in the middleware array
+        $newMiddleware = array_map(function ($middleware) {
+            return $middleware === 'auth' ? 'optional.auth' : $middleware;
+        }, $currentMiddleware);
+
+        // Set the new middleware configuration
+        config(['officeguy.routes.middleware' => $newMiddleware]);
     }
 
     public function provides(): array

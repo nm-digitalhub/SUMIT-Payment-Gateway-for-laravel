@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
+use App\Models\Client;
+use App\Models\Order;
+use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 
@@ -266,6 +269,79 @@ class DocumentService
     public static function isDonationReceiptType(string $type): bool
     {
         return $type === self::TYPE_DONATION_RECEIPT || $type === '320';
+    }
+
+    /**
+     * Sync documents for a given Client (by SUMIT CustomerID) and link to orders when possible.
+     */
+    public static function syncForClient(Client $client, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): int
+    {
+        if (!$client->sumit_customer_id) {
+            return 0;
+        }
+
+        $documents = self::fetchFromSumit((int) $client->sumit_customer_id, $dateFrom, $dateTo);
+        $synced = 0;
+
+        foreach ($documents as $doc) {
+            $document = OfficeGuyDocument::updateOrCreate(
+                ['document_id' => $doc['DocumentID'] ?? null],
+                [
+                    'document_number' => $doc['DocumentNumber'] ?? null,
+                    'document_date' => $doc['Date'] ?? now(),
+                    'customer_id' => $doc['CustomerID'] ?? null,
+                    'document_type' => $doc['Type'] ?? self::TYPE_INVOICE,
+                    'is_draft' => $doc['IsDraft'] ?? false,
+                    'is_closed' => $doc['IsClosed'] ?? false,
+                    'language' => $doc['Language'] ?? 'he',
+                    'currency' => $doc['Currency'] ?? 'ILS',
+                    'amount' => $doc['DocumentValue'] ?? 0,
+                    'description' => $doc['Description'] ?? null,
+                    'external_reference' => $doc['ExternalReference'] ?? null,
+                    'document_download_url' => $doc['DocumentDownloadURL'] ?? null,
+                    'document_payment_url' => $doc['DocumentPaymentURL'] ?? null,
+                    'raw_response' => $doc,
+                ]
+            );
+
+            // Link to order by external reference or document number
+            $order = null;
+            $ext = $doc['ExternalReference'] ?? null;
+            if ($ext) {
+                $order = Order::where('client_id', $client->id)
+                    ->where(function ($q) use ($ext) {
+                        $q->where('order_number', $ext)
+                            ->orWhere('id', is_numeric($ext) ? (int) $ext : 0);
+                    })
+                    ->latest('id')
+                    ->first();
+            }
+
+            if (!$order && !empty($doc['DocumentNumber'])) {
+                $order = Order::where('client_id', $client->id)
+                    ->where('order_number', $doc['DocumentNumber'])
+                    ->latest('id')
+                    ->first();
+            }
+
+            if ($order) {
+                $document->order_id = $order->id;
+                $document->order_type = Order::class;
+            }
+
+            // Fetch items/details for richer data (best effort)
+            if (empty($document->items) && !empty($doc['DocumentID'])) {
+                $details = self::getDocumentDetails($doc['DocumentID']);
+                if ($details && isset($details['Items'])) {
+                    $document->items = $details['Items'];
+                }
+            }
+
+            $document->save();
+            $synced++;
+        }
+
+        return $synced;
     }
 
     /**

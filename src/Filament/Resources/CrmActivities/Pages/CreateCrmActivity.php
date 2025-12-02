@@ -6,6 +6,8 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\CrmActivityResource;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
 class CreateCrmActivity extends CreateRecord
 {
@@ -34,5 +36,49 @@ class CreateCrmActivity extends CreateRecord
         }
 
         return $data;
+    }
+
+    /**
+     * After create hook – push remark to SUMIT (Accounting Customers) when possible.
+     */
+
+    /**
+     * After create hook – push remark to SUMIT (Accounting Customers) when possible.
+     */
+    protected function afterCreate(): void
+    {
+        // Ensure client_id is set from entity (if not already)
+        if (empty($this->record->client_id) && $this->record->entity?->client_id) {
+            $this->record->updateQuietly(['client_id' => $this->record->entity->client_id]);
+        }
+
+        $activity = $this->record;
+        $entity = $activity->entity; // relation on CrmActivity
+
+        $sumitCustomerId = $entity?->sumit_entity_id;
+
+        if (!$sumitCustomerId) {
+            return;
+        }
+
+        $content = trim(($activity->subject ? $activity->subject . ': ' : '') . ($activity->description ?? ''));
+
+        $payload = [
+            'Credentials' => PaymentService::getCredentials(),
+            'CustomerID' => $sumitCustomerId,
+            'Content' => $content !== '' ? $content : 'Activity created in NM DigitalHub',
+            'Username' => optional(auth()->user())->name,
+        ];
+
+        try {
+            OfficeGuyApi::post(
+                $payload,
+                '/accounting/customers/createremark/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+        } catch (\Throwable $e) {
+            // Swallow error to avoid blocking UI; could log if needed.
+        }
     }
 }

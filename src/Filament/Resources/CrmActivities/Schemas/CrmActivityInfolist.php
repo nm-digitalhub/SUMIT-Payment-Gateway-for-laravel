@@ -42,6 +42,11 @@ class CrmActivityInfolist
                                 ? route('filament.admin.resources.crm-entities.edit', $record->entity)
                                 : null),
 
+                        Infolists\Components\TextEntry::make('client.name')
+                            ->label('Client')
+                            ->visible(fn ($record) => $record->client)
+                            ->url(fn ($record) => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null),
+
                         Infolists\Components\TextEntry::make('createdBy.name')
                             ->label('Created By'),
 

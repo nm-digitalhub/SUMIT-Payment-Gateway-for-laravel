@@ -388,8 +388,11 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/listentities/
      *
-     * @param int $folderId Local folder ID
-     * @param array $filters Filter parameters
+     * @param int   $folderId Local folder ID
+     * @param array $filters  Filter parameters. Special keys:
+     *                        - LoadProperties (bool)
+     *                        - Paging => ['StartIndex' => int, 'PageSize' => int]
+     *                        Other keys are sent under Filters.
      * @return array{success: bool, entities?: array, total?: int, error?: string}
      */
     public static function listEntities(int $folderId, array $filters = []): array
@@ -412,11 +415,29 @@ class CrmDataService
                 ];
             }
 
+            // Extract special flags from filters
+            $loadProperties = $filters['LoadProperties'] ?? null;
+            $paging = $filters['Paging'] ?? null;
+
+            // Remove them from Filters payload to avoid duplication
+            unset($filters['LoadProperties'], $filters['Paging']);
+
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'FolderID' => $folder->sumit_folder_id,
+                'Folder' => (string) $folder->sumit_folder_id,
                 'Filters' => $filters,
             ];
+
+            if ($loadProperties !== null) {
+                $payload['LoadProperties'] = (bool) $loadProperties;
+            }
+
+            if (is_array($paging)) {
+                $payload['Paging'] = array_merge([
+                    'StartIndex' => 0,
+                    'PageSize' => 50,
+                ], $paging);
+            }
 
             $response = OfficeGuyApi::post(
                 $payload,
@@ -474,8 +495,8 @@ class CrmDataService
                 return $result;
             }
 
-            $entityData = $result['entity'];
-            $folderId = $entityData['FolderID'] ?? null;
+            $entityData = $result['entity']['Entity'] ?? $result['entity'];
+            $folderId = $entityData['Folder'] ?? $entityData['FolderID'] ?? null;
 
             if (!$folderId) {
                 return [
@@ -494,39 +515,37 @@ class CrmDataService
                 ];
             }
 
-            $fields = $entityData['Fields'] ?? [];
+            // Extract name from various possible fields
+            $name = self::resolveEntityName($entityData, $sumitEntityId);
 
             // Create or update local entity
+            $clientId = self::matchClientId($entityData, $sumitEntityId);
+
+            $email = $entityData['Customers_EmailAddress'][0] ?? $entityData['Email'] ?? null;
+            $phone = $entityData['Customers_Phone'][0] ?? null;
+            $mobile = $entityData['Customers_Mobile'][0] ?? $phone;
+            $taxId = $entityData['Customers_CompanyNumber'][0] ?? $entityData['CompanyNumber'] ?? null;
+            $address = $entityData['Customers_Address'][0] ?? $entityData['Address'][0] ?? null;
+            $city = $entityData['Customers_City'][0] ?? $entityData['City'][0] ?? null;
+            $zip = $entityData['Customers_ZipCode'][0] ?? $entityData['ZipCode'][0] ?? null;
+
             $entity = CrmEntity::updateOrCreate(
                 ['sumit_entity_id' => $sumitEntityId],
                 [
                     'crm_folder_id' => $folder->id,
                     'entity_type' => $folder->entity_type,
-                    'name' => $fields['name'] ?? 'Unknown',
-                    'email' => $fields['email'] ?? null,
-                    'phone' => $fields['phone'] ?? null,
-                    'mobile' => $fields['mobile'] ?? null,
-                    'address' => $fields['address'] ?? null,
-                    'city' => $fields['city'] ?? null,
-                    'state' => $fields['state'] ?? null,
-                    'postal_code' => $fields['postal_code'] ?? null,
-                    'country' => $fields['country'] ?? 'Israel',
-                    'company_name' => $fields['company_name'] ?? null,
-                    'tax_id' => $fields['tax_id'] ?? null,
-                    'status' => $fields['status'] ?? 'active',
-                    'source' => $fields['source'] ?? null,
+                    'name' => $name,
+                    'client_id' => $clientId,
+                    'email' => $email,
+                    'phone' => $phone,
+                    'mobile' => $mobile,
+                    'tax_id' => $taxId,
+                    'address' => $address,
+                    'city' => $city,
+                    'postal_code' => $zip,
+                    'raw_data' => json_encode($entityData),
                 ]
             );
-
-            // Sync custom fields
-            foreach ($fields as $fieldName => $fieldValue) {
-                if (!in_array($fieldName, [
-                    'name', 'email', 'phone', 'mobile', 'address', 'city', 'state',
-                    'postal_code', 'country', 'company_name', 'tax_id', 'status', 'source'
-                ])) {
-                    $entity->setCustomField($fieldName, $fieldValue);
-                }
-            }
 
             OfficeGuyApi::writeToLog(
                 'Synced CRM entity from SUMIT: ' . $entity->name . ' (ID: ' . $entity->id . ')',
@@ -572,7 +591,7 @@ class CrmDataService
             $synced = 0;
 
             foreach ($entities as $entityData) {
-                $sumitEntityId = $entityData['EntityID'] ?? null;
+                $sumitEntityId = $entityData['ID'] ?? $entityData['EntityID'] ?? null;
 
                 if (!$sumitEntityId) {
                     continue;
@@ -853,5 +872,90 @@ class CrmDataService
                 'error' => $e->getMessage(),
             ];
         }
+    }
+
+    /**
+     * Resolve a human-readable name from SUMIT entity payload.
+     */
+    protected static function resolveEntityName(array $entityData, ?int $sumitEntityId): string
+    {
+        $candidates = [
+            $entityData['Customers_FullName'][0] ?? null,
+            $entityData['Billing_Name'][0] ?? null,
+            $entityData['Books_Name'][0] ?? null,
+            $entityData['Name'] ?? null,
+            $entityData['EntityName'] ?? null,
+            $entityData['Title'] ?? null,
+            $entityData['Fields']['name'] ?? null,
+            $entityData['Fields']['Name'] ?? null,
+            $entityData['OutgoingEmails_Subject'][0] ?? null,
+            $entityData['OutgoingEmails_To'][0] ?? null,
+            $entityData['OutgoingEmails_From'][0] ?? null,
+            $entityData['Document_Name'][0] ?? null,
+            $entityData['DocumentNumber'][0] ?? null,
+            $entityData['TransactionName'][0] ?? null,
+        ];
+
+        foreach ($candidates as $candidate) {
+            if (is_string($candidate) && trim($candidate) !== '') {
+                return $candidate;
+            }
+        }
+
+        return $sumitEntityId ? 'Entity ' . $sumitEntityId : 'Unknown';
+    }
+
+    /**
+     * Try to match a local Client ID based on SUMIT entity payload.
+     */
+    protected static function matchClientId(array $entityData, ?int $sumitEntityId): ?int
+    {
+        try {
+            // 1) Exact SUMIT mapping
+            if ($sumitEntityId) {
+                $client = \App\Models\Client::where('sumit_customer_id', $sumitEntityId)->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            // 2) Fuzzy match by VAT/ID number
+            $vat = $entityData['Customers_CompanyNumber'][0] ?? $entityData['CompanyNumber'] ?? null;
+            if ($vat) {
+                $client = \App\Models\Client::where('vat_number', $vat)->orWhere('id_number', $vat)->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            // 3) Fuzzy match by email
+            $email = $entityData['Customers_EmailAddress'][0] ?? $entityData['Email'] ?? null;
+            if ($email) {
+                $emailNorm = strtolower(trim($email));
+                $client = \App\Models\Client::whereRaw('LOWER(email) = ?', [$emailNorm])
+                    ->orWhereRaw('LOWER(client_email) = ?', [$emailNorm])
+                    ->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+
+            // 4) Fuzzy match by phone
+            $phone = $entityData['Customers_Phone'][0] ?? null;
+            if ($phone) {
+                $norm = preg_replace('/\\D+/', '', $phone);
+                $client = \App\Models\Client::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                    ->first();
+                if ($client) {
+                    return $client->id;
+                }
+            }
+        } catch (\Throwable $e) {
+            // Swallow matching errors; better to return null than break sync
+        }
+
+        return null;
     }
 }

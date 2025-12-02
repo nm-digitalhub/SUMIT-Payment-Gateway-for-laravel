@@ -46,6 +46,7 @@ class CrmActivity extends Model
      */
     protected $fillable = [
         'crm_entity_id',
+        'client_id',
         'user_id',
         'activity_type',
         'subject',
@@ -66,6 +67,7 @@ class CrmActivity extends Model
      */
     protected $casts = [
         'crm_entity_id' => 'integer',
+        'client_id' => 'integer',
         'user_id' => 'integer',
         'related_document_id' => 'integer',
         'related_ticket_id' => 'integer',
@@ -82,6 +84,14 @@ class CrmActivity extends Model
     public function entity(): BelongsTo
     {
         return $this->belongsTo(CrmEntity::class, 'crm_entity_id');
+    }
+
+    /**
+     * Get the local client linked to this activity (via entity match).
+     */
+    public function client(): BelongsTo
+    {
+        return $this->belongsTo(\App\Models\Client::class, 'client_id');
     }
 
     /**
