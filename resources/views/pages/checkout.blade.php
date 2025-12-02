@@ -49,12 +49,46 @@
     
     <style>
         [x-cloak] { display: none !important; }
-        
+
         .og-checkout {
             --og-primary: #0284c7;
             --og-primary-hover: #0369a1;
             --og-success: #22c55e;
             --og-error: #ef4444;
+        }
+
+        /* Fix 1: Checkbox size for tablet/desktop (24x24px) */
+        @media (min-width: 768px) {
+            input[type="checkbox"] {
+                width: 24px !important;
+                height: 24px !important;
+                min-width: 24px !important;
+                min-height: 24px !important;
+            }
+        }
+
+        /* Fix 2: Submit button width for tablet (78% instead of 96%) */
+        @media (min-width: 768px) and (max-width: 1023px) {
+            button[type="submit"] {
+                max-width: 650px !important;
+                margin-left: auto !important;
+                margin-right: auto !important;
+            }
+        }
+
+        /* Fix 3: Form row spacing consistency */
+        .og-checkout form > div,
+        .og-checkout form > section {
+            margin-bottom: 1.5rem;
+        }
+
+        /* Ensure consistent gaps between form sections */
+        .og-checkout .space-y-4 > * + * {
+            margin-top: 1rem !important;
+        }
+
+        .og-checkout .space-y-6 > * + * {
+            margin-top: 1.5rem !important;
         }
     </style>
     
