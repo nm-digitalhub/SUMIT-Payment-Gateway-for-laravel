@@ -8,7 +8,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Controllers\CardCallbackController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CrmWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\DocumentDownloadController;
-use App\Http\Controllers\OfficeGuy\PublicCheckoutController;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\PublicCheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\SumitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Support\RouteConfig;
 
