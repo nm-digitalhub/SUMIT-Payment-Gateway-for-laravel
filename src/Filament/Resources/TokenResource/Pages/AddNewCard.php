@@ -25,10 +25,10 @@ class AddNewCard extends Page
     public ?int $ownerId = null;
     public ?string $ownerType = null;
 
-    public function mount(): void
+    public function mount(string $ownerType, int $ownerId): void
     {
-        $this->ownerId = request()->integer('owner_id');
-        $this->ownerType = request()->string('owner_type')->toString();
+        $this->ownerType = urldecode($ownerType);
+        $this->ownerId = $ownerId;
 
         abort_unless($this->ownerId && $this->ownerType, 404, 'Owner information is missing');
     }

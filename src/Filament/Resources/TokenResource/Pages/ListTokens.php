@@ -51,11 +51,14 @@ class ListTokens extends ListRecords
                     // Parse owner_type and owner_id
                     [$ownerType, $ownerId] = explode(':', $data['owner_id']);
 
-                    // Redirect to add-card page with owner info
+                    // URL encode the owner type to handle backslashes
+                    $encodedOwnerType = urlencode($ownerType);
+
+                    // Redirect to add-card page with route parameters
                     return redirect()->to(
                         TokenResource::getUrl('add-card', [
-                            'owner_type' => $ownerType,
-                            'owner_id' => $ownerId,
+                            'ownerType' => $encodedOwnerType,
+                            'ownerId' => $ownerId,
                         ])
                     );
                 }),
