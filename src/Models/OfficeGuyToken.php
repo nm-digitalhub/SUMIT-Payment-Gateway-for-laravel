@@ -47,6 +47,7 @@ class OfficeGuyToken extends Model
     /**
      * יצירת טוקן מתוך תשובת SUMIT API
      * כולל שמירה לבסיס נתונים
+     * משתמש ב-updateOrCreate עם בדיקת owner למניעת העברת כרטיסים בין לקוחות
      */
     public static function createFromApiResponse(
         mixed $owner,
@@ -59,21 +60,41 @@ class OfficeGuyToken extends Model
             throw new RuntimeException('CardToken missing from SUMIT response');
         }
 
-        return static::create([
-            'owner_type'   => get_class($owner),
-            'owner_id'     => $owner->getKey(),
-            'token'        => $data['CardToken'],
-            'gateway_id'   => $gatewayId,
-            'card_type'    => $data['Brand'] ?? 'card',
-            'last_four'    => isset($data['CardPattern'])
-                ? substr($data['CardPattern'], -4)
-                : '',
-            'citizen_id'   => $data['CitizenID'] ?? null,
-            'expiry_month' => str_pad((string)($data['ExpirationMonth'] ?? '01'), 2, '0', STR_PAD_LEFT),
-            'expiry_year'  => (string)($data['ExpirationYear'] ?? date('Y')),
-            'is_default'   => false,
-            'metadata'     => $data,
-        ]);
+        $cardToken = $data['CardToken'];
+        $ownerType = get_class($owner);
+        $ownerId = $owner->getKey();
+
+        // Check if token exists for a different owner
+        $existingToken = static::where('token', $cardToken)->first();
+
+        if ($existingToken &&
+            ($existingToken->owner_type !== $ownerType || $existingToken->owner_id !== $ownerId)) {
+            throw new RuntimeException(
+                'כרטיס זה כבר רשום עבור לקוח אחר במערכת. ' .
+                'לא ניתן להוסיף את אותו כרטיס לשני לקוחות שונים.'
+            );
+        }
+
+        // Use updateOrCreate for same owner (updates existing or creates new)
+        return static::updateOrCreate(
+            [
+                'token'      => $cardToken,
+                'owner_type' => $ownerType,
+                'owner_id'   => $ownerId,
+            ],
+            [
+                'gateway_id'   => $gatewayId,
+                'card_type'    => $data['Brand'] ?? 'card',
+                'last_four'    => isset($data['CardPattern'])
+                    ? substr($data['CardPattern'], -4)
+                    : '',
+                'citizen_id'   => $data['CitizenID'] ?? null,
+                'expiry_month' => str_pad((string)($data['ExpirationMonth'] ?? '01'), 2, '0', STR_PAD_LEFT),
+                'expiry_year'  => (string)($data['ExpirationYear'] ?? date('Y')),
+                'is_default'   => false,
+                'metadata'     => $data,
+            ]
+        );
     }
 
     /**

@@ -24,6 +24,12 @@ class AddNewCard extends Page
 
     public ?int $ownerId = null;
     public ?string $ownerType = null;
+    public ?string $singleUseToken = null;
+    public bool $setAsDefault = true;
+
+    // Result state management
+    public ?string $resultStatus = null; // 'success' | 'error' | null
+    public ?array $resultData = null;
 
     public function mount(string $ownerType, int $ownerId): void
     {
@@ -44,48 +50,59 @@ class AddNewCard extends Page
 
     public function processNewCard(): void
     {
-        $singleUseToken = Request::input('single_use_token');
-        $setAsDefault = Request::boolean('set_as_default', true);
+        // Debug logging
+        \Log::info('processNewCard called', [
+            'singleUseToken' => $this->singleUseToken,
+            'setAsDefault' => $this->setAsDefault,
+            'ownerId' => $this->ownerId,
+            'ownerType' => $this->ownerType,
+        ]);
 
-        if (!$singleUseToken) {
-            Notification::make()
-                ->title('Validation Error')
-                ->body('Single-use token is required')
-                ->danger()
-                ->send();
+        // Use Livewire properties instead of Request
+        if (!$this->singleUseToken) {
+            \Log::warning('Single-use token is missing');
+            $this->resultStatus = 'error';
+            $this->resultData = [
+                'message' => 'Single-use token is required',
+                'error_type' => 'validation',
+            ];
             return;
         }
 
         $owner = $this->getOwner();
         if (!$owner) {
-            Notification::make()
-                ->title('Error')
-                ->body('Owner not found')
-                ->danger()
-                ->send();
+            \Log::warning('Owner not found', ['ownerId' => $this->ownerId, 'ownerType' => $this->ownerType]);
+            $this->resultStatus = 'error';
+            $this->resultData = [
+                'message' => 'Owner not found',
+                'error_type' => 'validation',
+            ];
             return;
         }
 
-        // Set POST data for TokenService
-        $_POST['og-token'] = $singleUseToken;
+        // Merge token into the request for TokenService to read via RequestHelpers::post()
+        request()->merge([
+            'og-token' => $this->singleUseToken,
+        ]);
+        \Log::info('Merged og-token into request', ['token' => substr($this->singleUseToken, 0, 20) . '...']);
 
         try {
             // Process the SingleUseToken to get permanent token
             $result = TokenService::processToken($owner, 'no');
 
             if (!$result['success']) {
-                Notification::make()
-                    ->title('Token Processing Failed')
-                    ->body($result['message'] ?? 'Unknown error')
-                    ->danger()
-                    ->send();
+                $this->resultStatus = 'error';
+                $this->resultData = [
+                    'message' => $result['message'] ?? 'Unknown error',
+                    'error_type' => 'gateway',
+                ];
                 return;
             }
 
             $newToken = $result['token'];
 
             // Optionally set as default in SUMIT
-            if ($setAsDefault) {
+            if ($this->setAsDefault) {
                 $client = $owner->client ?? $owner;
                 $sumitCustomerId = $client->sumit_customer_id ?? null;
 
@@ -98,24 +115,33 @@ class AddNewCard extends Page
                 }
             }
 
-            Notification::make()
-                ->title('Card Added Successfully')
-                ->body('New payment method has been added')
-                ->success()
-                ->send();
-
-            // Redirect to token list
-            redirect()->to(TokenResource::getUrl('index'));
+            // Success! Store result data
+            $this->resultStatus = 'success';
+            $this->resultData = [
+                'token' => $newToken,
+                'owner' => $owner,
+                'set_as_default' => $this->setAsDefault,
+            ];
 
         } catch (\Throwable $e) {
-            Notification::make()
-                ->title('Processing Failed')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            \Log::error('Exception in processNewCard', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+            $this->resultStatus = 'error';
+            $this->resultData = [
+                'message' => $e->getMessage(),
+                'error_type' => 'exception',
+            ];
         } finally {
-            unset($_POST['og-token']);
+            // Clean up request data
+            request()->offsetUnset('og-token');
         }
+    }
+
+    public function resetForm(): void
+    {
+        $this->resultStatus = null;
+        $this->resultData = null;
+        $this->singleUseToken = null;
+        $this->setAsDefault = true;
     }
 
     public function getPublicKey(): string

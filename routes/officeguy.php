@@ -28,8 +28,53 @@ use OfficeGuy\LaravelSumitGateway\Support\RouteConfig;
 $prefix = RouteConfig::getPrefix();
 $middleware = RouteConfig::getMiddleware();
 
+/*
+|--------------------------------------------------------------------------
+| Language/Locale Switching (No Prefix - Global)
+|--------------------------------------------------------------------------
+|
+| Handle language switching for the checkout page.
+| This route must be OUTSIDE the prefix so it works from any page.
+| Stores selected locale in session and redirects back.
+|
+*/
+Route::middleware('web')->post('locale', function () {
+    $locale = request('locale');
+    $availableLocales = array_keys(config('app.available_locales', []));
+
+    \Log::info('🌍 OfficeGuy Package - Locale Change Request', [
+        'requested_locale' => $locale,
+        'available_locales' => $availableLocales,
+        'session_before' => session('locale'),
+        'app_locale_before' => app()->getLocale(),
+        'referer' => request()->header('Referer'),
+    ]);
+
+    if (in_array($locale, $availableLocales)) {
+        session(['locale' => $locale]);
+        app()->setLocale($locale);
+
+        \Log::info('✅ OfficeGuy Package - Locale Changed Successfully', [
+            'new_locale' => $locale,
+            'session_after' => session('locale'),
+            'app_locale_after' => app()->getLocale(),
+        ]);
+    } else {
+        \Log::warning('❌ OfficeGuy Package - Invalid Locale Requested', [
+            'requested' => $locale,
+            'available' => $availableLocales,
+        ]);
+    }
+
+    if (request()->expectsJson()) {
+        return response()->json(['success' => true, 'locale' => $locale]);
+    }
+
+    return back();
+})->name('officeguy.locale.change');
+
 Route::prefix($prefix)
-    ->middleware($middleware)
+    ->middleware(array_merge($middleware, ['officeguy.locale']))
     ->group(function () {
         // Card payment callback (redirect return)
         Route::get(

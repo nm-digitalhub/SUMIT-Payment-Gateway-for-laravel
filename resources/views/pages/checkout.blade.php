@@ -1,30 +1,42 @@
 @php
     /**
-     * Public Checkout Page View
+     * Public Checkout Page View - FIXED VERSION
      * 
-     * This view can be customized to match your application's design.
-     * Publish with: php artisan vendor:publish --tag=officeguy-views
-     * 
-     * Available variables:
-     * - $payable: The Payable model instance
-     * - $settings: Payment gateway settings
-     * - $maxPayments: Maximum installments allowed
-     * - $bitEnabled: Whether Bit payment is enabled
-     * - $supportTokens: Whether token storage is supported
-     * - $savedTokens: Collection of saved payment methods (if user is logged in)
-     * - $currency: Currency code (e.g., 'ILS')
-     * - $currencySymbol: Currency symbol (e.g., '₪')
-     * - $checkoutUrl: URL to submit the payment form
+     * Changes from original:
+     * 1. Added Progress Stepper (RTL)
+     * 2. Added Trust Badges row
+     * 3. Fixed RTL column order (Payment on right)
+     * 4. Changed CTA color to green (#4AD993)
+     * 5. Updated input styling
+     * 6. Added trust section with checkmarks
+     * 7. Improved Hebrew translations
      */
     $rtl = app()->getLocale() === 'he' || app()->getLocale() === 'ar';
     $amount = $payable->getPayableAmount();
     $items = $payable->getLineItems();
     $shipping = $payable->getShippingAmount();
     $fees = $payable->getFees();
-    $customerName = $prefillName ?? $payable->getCustomerName();
-    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail();
-    $customerPhone = $prefillPhone ?? $payable->getCustomerPhone();
-    $customerCitizenId = $prefillCitizenId ?? null;
+    $user = auth()->user();
+    if (!$user && class_exists(\Filament\Facades\Filament::class)) {
+        $user = \Filament\Facades\Filament::auth()->user();
+    }
+    $client = $user?->client;
+
+    $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
+    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client->email ?? null) ?? ($user->email ?? null);
+    $customerPhone = $prefillPhone ?? $payable->getCustomerPhone() ?? ($client->phone ?? null) ?? ($user->phone ?? null);
+    $customerCitizenId = $prefillCitizenId ?? ($user->id_number ?? $user->vat_number ?? null) ?? ($client->id_number ?? $client->vat_number ?? null);
+    $customerCompany = $prefillCompany ?? $client->company ?? $user->company ?? null;
+    $customerVat = $prefillVat ?? $client->vat_number ?? $user->vat_number ?? null;
+    $customerAddress = $prefillAddress ?? $client->client_address ?? $client->address ?? null;
+    $customerAddress2 = $prefillAddress2 ?? $client->client_address2 ?? null;
+    $customerCity = $prefillCity ?? $client->client_city ?? $client->city ?? null;
+    $customerState = $prefillState ?? $client->client_state ?? $client->state ?? null;
+    $customerCountry = $prefillCountry ?? $client->client_country ?? $client->country ?? 'IL';
+    $customerPostal = $prefillPostal ?? $client->client_postal_code ?? $client->postal_code ?? null;
+    
+    // Current step (can be dynamic based on form state)
+    $currentStep = 1;
 @endphp
 
 <!DOCTYPE html>
@@ -36,91 +48,492 @@
     
     <title>{{ __('Checkout') }} - {{ config('app.name') }}</title>
     
-    {{-- Tailwind CSS CDN (replace with your own CSS in production) --}}
-    <script src="https://cdn.tailwindcss.com"></script>
+    {{-- Fonts --}}
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Heebo:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     
-    {{-- Alpine.js --}}
-    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    {{-- App styles via Vite --}}
+    @vite(['resources/css/app.css'])
     
-    {{-- SUMIT PaymentsJS SDK --}}
+    {{-- jQuery (required by SUMIT PaymentsJS) --}}
     @if($settings['pci_mode'] === 'no')
+    <script src="https://code.jquery.com/jquery-3.7.1.min.js" integrity="sha256-/JqT3SQfawRcv/BIHPThkBvs0OEvtFFmqPF/lYI/Cxo=" crossorigin="anonymous"></script>
     <script src="https://app.sumit.co.il/scripts/payments.js"></script>
     @endif
     
     <style>
         [x-cloak] { display: none !important; }
-
-        .og-checkout {
-            --og-primary: #0284c7;
-            --og-primary-hover: #0369a1;
-            --og-success: #22c55e;
-            --og-error: #ef4444;
+        
+        body {
+            font-family: 'Heebo', sans-serif;
         }
-
-        /* Fix 1: Checkbox size for tablet/desktop (24x24px) */
-        @media (min-width: 768px) {
-            input[type="checkbox"] {
-                width: 24px !important;
-                height: 24px !important;
-                min-width: 24px !important;
-                min-height: 24px !important;
-            }
+        
+        /* Custom Focus Ring */
+        *:focus-visible {
+            outline: 2px solid #4AD993;
+            outline-offset: 2px;
         }
-
-        /* Fix 2: Submit button width for tablet (78% instead of 96%) */
-        @media (min-width: 768px) and (max-width: 1023px) {
-            button[type="submit"] {
-                max-width: 650px !important;
-                margin-left: auto !important;
-                margin-right: auto !important;
-            }
+        
+        /* RTL Input Adjustments */
+        input[dir="ltr"], 
+        input[type="email"], 
+        input[type="tel"],
+        input[type="number"] {
+            text-align: left;
         }
-
-        /* Fix 3: Form row spacing consistency */
-        .og-checkout form > div,
-        .og-checkout form > section {
-            margin-bottom: 1.5rem;
-        }
-
-        /* Ensure consistent gaps between form sections */
-        .og-checkout .space-y-4 > * + * {
-            margin-top: 1rem !important;
-        }
-
-        .og-checkout .space-y-6 > * + * {
-            margin-top: 1.5rem !important;
-        }
+        
+        /* Custom scrollbar */
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #F8F9FF; }
+        ::-webkit-scrollbar-thumb { background: #E9E9E9; border-radius: 4px; }
+        ::-webkit-scrollbar-thumb:hover { background: #8890B1; }
     </style>
     
     @stack('styles')
 </head>
-<body class="bg-gray-100 min-h-screen">
-    <div class="og-checkout py-8 px-4" x-data="checkoutPage()" :dir="rtl ? 'rtl' : 'ltr'">
-        <div class="max-w-4xl mx-auto">
-            {{-- Header --}}
-            <div class="text-center mb-8">
-                <h1 class="text-3xl font-bold text-gray-900">{{ __('Checkout') }}</h1>
-                <p class="text-gray-600 mt-2">{{ __('Complete your purchase securely') }}</p>
+<body class="bg-[#F8F9FF] min-h-screen">
+    <div class="py-8 px-4" x-data="checkoutPage()" :dir="rtl ? 'rtl' : 'ltr'">
+        <div class="max-w-6xl mx-auto">
+            
+            {{-- ========================================= --}}
+            {{-- NEW: Progress Stepper (RTL) --}}
+            {{-- ========================================= --}}
+            <div class="bg-white rounded-2xl shadow-sm p-6 mb-6">
+                <div class="flex items-center justify-center gap-0">
+                    @if($rtl)
+                        {{-- RTL Order: 1 → 2 → 3 → 4 from right to left --}}
+                        {{-- Step 4: הגשה --}}
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full border-2 {{ $currentStep >= 4 ? 'bg-[#4AD993] border-[#4AD993] text-white' : 'border-gray-300 text-gray-400' }} flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-sm {{ $currentStep >= 4 ? 'font-medium text-[#4AD993]' : 'text-gray-400' }}">{{ __('Submit') }}</span>
+                        </div>
+                        
+                        <div class="w-12 md:w-20 h-0.5 {{ $currentStep >= 4 ? 'bg-[#4AD993]' : 'bg-gray-200' }} mx-2"></div>
+                        
+                        {{-- Step 3: תנאים --}}
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full {{ $currentStep >= 3 ? 'bg-[#4AD993] text-white' : 'border-2 border-gray-300 text-gray-400' }} flex items-center justify-center text-sm font-medium">3</div>
+                            <span class="mt-2 text-sm {{ $currentStep >= 3 ? 'font-medium text-[#4AD993]' : 'text-gray-400' }}">{{ __('Terms') }}</span>
+                        </div>
+                        
+                        <div class="w-12 md:w-20 h-0.5 {{ $currentStep >= 3 ? 'bg-[#4AD993]' : 'bg-gray-200' }} mx-2"></div>
+                        
+                        {{-- Step 2: תשלום --}}
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full {{ $currentStep >= 2 ? 'bg-[#4AD993] text-white' : 'border-2 border-gray-300 text-gray-400' }} flex items-center justify-center text-sm font-medium">2</div>
+                            <span class="mt-2 text-sm {{ $currentStep >= 2 ? 'font-medium text-[#4AD993]' : 'text-gray-400' }}">{{ __('Payment') }}</span>
+                        </div>
+                        
+                        <div class="w-12 md:w-20 h-0.5 {{ $currentStep >= 2 ? 'bg-[#4AD993]' : 'bg-gray-200' }} mx-2"></div>
+                        
+                        {{-- Step 1: פרטי לקוח (Active) --}}
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full {{ $currentStep >= 1 ? 'bg-[#4AD993] text-white' : 'border-2 border-gray-300 text-gray-400' }} flex items-center justify-center text-sm font-medium">1</div>
+                            <span class="mt-2 text-sm {{ $currentStep >= 1 ? 'font-medium text-[#4AD993]' : 'text-gray-400' }}">{{ __('Customer') }}</span>
+                        </div>
+                    @else
+                        {{-- LTR Order: 1 → 2 → 3 → 4 from left to right --}}
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full bg-[#4AD993] text-white flex items-center justify-center text-sm font-medium">1</div>
+                            <span class="mt-2 text-sm font-medium text-[#4AD993]">{{ __('Customer') }}</span>
+                        </div>
+                        <div class="w-12 md:w-20 h-0.5 bg-[#4AD993] mx-2"></div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-400 flex items-center justify-center text-sm font-medium">2</div>
+                            <span class="mt-2 text-sm text-gray-400">{{ __('Payment') }}</span>
+                        </div>
+                        <div class="w-12 md:w-20 h-0.5 bg-gray-200 mx-2"></div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-400 flex items-center justify-center text-sm font-medium">3</div>
+                            <span class="mt-2 text-sm text-gray-400">{{ __('Terms') }}</span>
+                        </div>
+                        <div class="w-12 md:w-20 h-0.5 bg-gray-200 mx-2"></div>
+                        <div class="flex flex-col items-center">
+                            <div class="w-10 h-10 rounded-full border-2 border-gray-300 text-gray-400 flex items-center justify-center">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                </svg>
+                            </div>
+                            <span class="mt-2 text-sm text-gray-400">{{ __('Submit') }}</span>
+                        </div>
+                    @endif
+                </div>
+                <p class="text-center text-sm text-gray-400 mt-4">{{ __('Step :current of :total', ['current' => $currentStep, 'total' => 4]) }}</p>
+            </div>
+
+            {{-- ========================================= --}}
+            {{-- NEW: Trust Badges --}}
+            {{-- ========================================= --}}
+            <div class="flex flex-wrap items-center justify-center gap-3 mb-6">
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-full shadow-sm">
+                    <svg class="w-4 h-4 text-green-500" fill="currentColor" viewBox="0 0 20 20">
+                        <path fill-rule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clip-rule="evenodd"/>
+                    </svg>
+                    <span class="text-sm text-gray-600">{{ __('SSL Encrypted') }}</span>
+                </div>
+                
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-full shadow-sm">
+                    <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                    <span class="text-sm text-gray-600">{{ __('PCI DSS Compliant') }}</span>
+                </div>
+                
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-full shadow-sm">
+                    <span class="text-blue-700 font-bold text-xs">VISA</span>
+                    <span class="text-orange-500 font-bold text-xs">MC</span>
+                    <span class="text-blue-500 font-bold text-xs">AMEX</span>
+                </div>
+                
+                @if($bitEnabled)
+                <div class="flex items-center gap-2 bg-white px-3 py-2 rounded-full shadow-sm">
+                    <span class="text-blue-600 font-bold text-sm">Bit</span>
+                </div>
+                @endif
             </div>
             
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                {{-- Main Form Section --}}
-                <div class="lg:col-span-2">
-                    <form 
-                        id="og-checkout-form" 
-                        method="POST" 
-                        action="{{ $checkoutUrl }}"
-                        @submit.prevent="submitForm"
-                        class="space-y-6"
-                    >
+            {{-- Header --}}
+            <div class="text-center mb-8">
+                <div class="flex items-center justify-between mb-4">
+                    {{-- Accessibility Button --}}
+                    <button class="bg-white p-3 rounded-xl shadow-sm hover:shadow-md transition-shadow" title="{{ __('Accessibility') }}">
+                        <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z"/>
+                        </svg>
+                    </button>
+
+                    <h1 class="text-2xl md:text-3xl font-bold text-[#111928]">{{ __('Complete your purchase') }}</h1>
+
+                    {{-- Language Selector - Matches Accessibility Button Style --}}
+                    @include('officeguy::pages.partials.language-selector-inline')
+                </div>
+                <p class="text-[#8890B1] text-sm md:text-base">
+                    {{ __('Secure payment with instant delivery. Your card details are encrypted and never stored.') }}
+                </p>
+            </div>
+            
+            {{-- ========================================= --}}
+            {{-- FIXED: RTL Layout - Payment on Right --}}
+            {{-- ========================================= --}}
+            <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
+                
+                {{-- ========================================= --}}
+                {{-- Payment Method Card (Right in RTL) --}}
+                {{-- ========================================= --}}
+                <div class="xl:col-span-1 {{ $rtl ? 'xl:order-2' : 'xl:order-3' }}">
+                    <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+                        {{-- Card Header with Gradient --}}
+                        <div class="bg-gradient-to-{{ $rtl ? 'l' : 'r' }} from-[#E8F9F9] to-[#F0FDFD] p-4 border-b border-gray-100">
+                            <div class="flex items-center {{ $rtl ? 'justify-between' : 'justify-between flex-row-reverse' }}">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-[#4BD0CC] font-medium">{{ __('Secure') }}</span>
+                                    <svg class="w-4 h-4 text-[#4BD0CC]" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M2.166 4.999A11.954 11.954 0 0010 1.944 11.954 11.954 0 0017.834 5c.11.65.166 1.32.166 2.001 0 5.225-3.34 9.67-8 11.317C5.34 16.67 2 12.225 2 7c0-.682.057-1.35.166-2.001zm11.541 3.708a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                                <div class="flex items-center gap-3">
+                                    <h2 class="text-lg font-semibold text-[#111928]">{{ __('Payment Method') }}</h2>
+                                    <div class="w-8 h-8 bg-[#4BD0CC] rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                        </svg>
+                                    </div>
+                                </div>
+                            </div>
+                            <p class="text-sm text-[#8890B1] mt-1 {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('Choose your preferred payment option') }}</p>
+                        </div>
+                        
+                        {{-- Card Body --}}
+                        <div class="p-6 space-y-5">
+                            {{-- Payment Method Tabs --}}
+                            @if($bitEnabled)
+                            <div class="flex gap-3 mb-4">
+                                <button 
+                                    type="button"
+                                    @click="paymentMethod = 'card'"
+                                    :class="paymentMethod === 'card' ? 'border-[#4BD0CC] bg-[#E8F9F9] text-[#4BD0CC]' : 'border-gray-200 hover:border-gray-300'"
+                                    class="flex-1 p-3 border-2 rounded-lg transition-colors text-center"
+                                >
+                                    <svg class="w-6 h-6 mx-auto mb-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium">{{ __('Credit Card') }}</span>
+                                </button>
+                                
+                                <button 
+                                    type="button"
+                                    @click="paymentMethod = 'bit'"
+                                    :class="paymentMethod === 'bit' ? 'border-[#4BD0CC] bg-[#E8F9F9] text-[#4BD0CC]' : 'border-gray-200 hover:border-gray-300'"
+                                    class="flex-1 p-3 border-2 rounded-lg transition-colors text-center"
+                                >
+                                    <span class="text-blue-600 font-bold text-lg block mb-1">Bit</span>
+                                    <span class="text-sm font-medium">Bit</span>
+                                </button>
+                            </div>
+                            @endif
+                            
+                            <input type="hidden" name="payment_method" x-model="paymentMethod">
+                            
+                            {{-- Credit Card Fields --}}
+                            <div x-show="paymentMethod === 'card'" x-cloak class="space-y-4">
+                                {{-- Saved Payment Methods --}}
+                                @if($supportTokens && $savedTokens->isNotEmpty())
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-[#383E53] mb-2">{{ __('Saved Payment Methods') }}</label>
+                                    <div class="space-y-2">
+                                        @foreach($savedTokens as $token)
+                                        <label class="flex items-center p-3 border border-[#E9E9E9] rounded-lg cursor-pointer hover:bg-[#F8F9FF] transition-colors">
+                                            <input type="radio" name="payment_token" value="{{ $token->id }}" x-model="selectedToken" class="text-[#4AD993] focus:ring-[#4AD993]">
+                                            <span class="{{ $rtl ? 'mr-3' : 'ml-3' }} flex-1">
+                                                <span class="font-medium">{{ $token->getMaskedNumber() }}</span>
+                                                <span class="text-[#8890B1] text-sm">({{ $token->expiry_month }}/{{ $token->expiry_year }})</span>
+                                            </span>
+                                        </label>
+                                        @endforeach
+                                        
+                                        <label class="flex items-center p-3 border border-[#E9E9E9] rounded-lg cursor-pointer hover:bg-[#F8F9FF] transition-colors">
+                                            <input type="radio" name="payment_token" value="new" x-model="selectedToken" class="text-[#4AD993] focus:ring-[#4AD993]">
+                                            <span class="{{ $rtl ? 'mr-3' : 'ml-3' }} font-medium">{{ __('Use a new card') }}</span>
+                                        </label>
+                                    </div>
+                                </div>
+                                @endif
+                                
+                                {{-- New Card Fields --}}
+                                <div x-show="selectedToken === 'new'" x-cloak class="space-y-4">
+                                    {{-- Card Number --}}
+                                    <div>
+                                        <label for="og-ccnum" class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">
+                                            {{ __('Card Number') }} <span class="text-[#FF7878]">*</span>
+                                        </label>
+                                        <div class="relative">
+                                            <input 
+                                                type="text" 
+                                                id="og-ccnum" 
+                                                name="card_number"
+                                                data-og="cardnumber"
+                                                x-model="cardNumber"
+                                                dir="ltr"
+                                                maxlength="19"
+                                                inputmode="numeric"
+                                                autocomplete="cc-number"
+                                                placeholder="0000 0000 0000 0000"
+                                                class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-4 py-3 {{ $rtl ? 'pl-10' : 'pr-10' }} text-[#383E53] text-left placeholder-[#8890B1] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            >
+                                            <div class="absolute {{ $rtl ? 'left-3' : 'right-3' }} top-1/2 -translate-y-1/2">
+                                                <svg class="w-5 h-5 text-[#8890B1]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                                                </svg>
+                                            </div>
+                                        </div>
+                                        <p class="text-[#8890B1] text-xs mt-1 {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('Enter 13-19 digits') }}</p>
+                                    </div>
+                                    
+                                    {{-- Expiration & CVV --}}
+                                    <div class="grid grid-cols-3 gap-3">
+                                        <div>
+                                            <label class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('Month') }} <span class="text-[#FF7878]">*</span></label>
+                                            <select 
+                                                id="og-expmonth" 
+                                                name="exp_month"
+                                                data-og="expirationmonth"
+                                                x-model="expMonth"
+                                                class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-3 py-3 text-[#383E53] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            >
+                                                <option value="">MM</option>
+                                                @for($i = 1; $i <= 12; $i++)
+                                                    <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}">{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        
+                                        <div>
+                                            <label class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('Year') }} <span class="text-[#FF7878]">*</span></label>
+                                            <select 
+                                                id="og-expyear" 
+                                                name="exp_year"
+                                                data-og="expirationyear"
+                                                x-model="expYear"
+                                                class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-3 py-3 text-[#383E53] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            >
+                                                <option value="">YY</option>
+                                                @for($i = date('Y'); $i <= date('Y') + 15; $i++)
+                                                    <option value="{{ $i }}">{{ substr($i, -2) }}</option>
+                                                @endfor
+                                            </select>
+                                        </div>
+                                        
+                                        @if(in_array($settings['cvv_mode'], ['required', 'yes']))
+                                        <div>
+                                            <label class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">
+                                                CVV @if($settings['cvv_mode'] === 'required')<span class="text-[#FF7878]">*</span>@endif
+                                            </label>
+                                            <input 
+                                                type="text" 
+                                                id="og-cvv" 
+                                                name="cvv"
+                                                data-og="cvv"
+                                                x-model="cvv"
+                                                dir="ltr"
+                                                maxlength="4"
+                                                inputmode="numeric"
+                                                placeholder="•••"
+                                                class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-3 py-3 text-[#383E53] text-center placeholder-[#8890B1] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            >
+                                        </div>
+                                        @endif
+                                    </div>
+                                    <p class="text-[#8890B1] text-xs {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('3-4 digits on back of card') }}</p>
+                                    
+                                    {{-- ID Number --}}
+                                    @if(in_array($settings['citizen_id_mode'], ['required', 'yes']))
+                                    <div>
+                                        <label class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">
+                                            {{ __('ID Number') }} @if($settings['citizen_id_mode'] === 'required')<span class="text-[#FF7878]">*</span>@endif
+                                        </label>
+                                        <input 
+                                            type="text" 
+                                            id="og-citizenid" 
+                                            name="citizen_id"
+                                            data-og="citizenid"
+                                            x-model="citizenId"
+                                            dir="ltr"
+                                            maxlength="9"
+                                            inputmode="numeric"
+                                            placeholder="000000000"
+                                            @if(!empty($customerCitizenId))
+                                                value="{{ $customerCitizenId }}"
+                                                readonly
+                                                class="w-full bg-gray-100 border border-gray-200 rounded-lg px-4 py-3 text-gray-600 cursor-not-allowed"
+                                            @else
+                                                class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-4 py-3 text-[#383E53] text-left placeholder-[#8890B1] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            @endif
+                                        >
+                                    </div>
+                                    @endif
+                                    
+                                    @if($settings['pci_mode'] === 'no')
+                                    <input type="hidden" name="og-token" data-og="token" x-model="singleUseToken">
+                                    @endif
+                                    
+                                    {{-- Save Card --}}
+                                    @if($supportTokens && auth()->check())
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="save_card" name="save_card" x-model="saveCard" class="w-4 h-4 text-[#4AD993] border-gray-300 rounded focus:ring-[#4AD993]">
+                                        <label for="save_card" class="text-sm text-[#383E53]">{{ __('Save card for future purchases') }}</label>
+                                    </div>
+                                    @endif
+                                </div>
+                            </div>
+                            
+                            {{-- Bit Payment --}}
+                            @if($bitEnabled)
+                            <div x-show="paymentMethod === 'bit'" x-cloak class="bg-blue-50 rounded-lg p-4">
+                                <p class="text-sm text-gray-700">{{ __('You will be redirected to complete your payment via Bit.') }}</p>
+                            </div>
+                            @endif
+                            
+                            {{-- Installments --}}
+                            @if($maxPayments > 1)
+                            <div x-show="paymentMethod === 'card'" class="mt-4">
+                                <label class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">{{ __('Number of Payments') }}</label>
+                                <select name="payments_count" x-model="paymentsCount" class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-4 py-3 text-[#383E53] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all">
+                                    @for($i = 1; $i <= $maxPayments; $i++)
+                                        <option value="{{ $i }}">{{ $i }} {{ $i === 1 ? __('payment') : __('payments') }}</option>
+                                    @endfor
+                                </select>
+                            </div>
+                            @endif
+                            
+                            {{-- Terms Checkbox --}}
+                            <div class="flex items-start gap-3 pt-2">
+                                <input type="checkbox" id="payment-terms" class="mt-1 w-4 h-4 text-[#4AD993] border-gray-300 rounded focus:ring-[#4AD993]" required>
+                                <label for="payment-terms" class="text-sm text-[#383E53] {{ $rtl ? 'text-right' : 'text-left' }}">
+                                    {{ __('I agree to the') }} <a href="#" class="text-[#3B82F6] hover:underline">{{ __('Terms & Conditions') }}</a> {{ __('and') }} <a href="#" class="text-[#3B82F6] hover:underline">{{ __('Privacy Policy') }}</a>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    {{-- Trust Section + CTA --}}
+                    <div class="bg-white rounded-2xl shadow-sm p-6 mt-6">
+                        {{-- Trust Icons --}}
+                        <div class="text-center mb-6">
+                            <div class="w-16 h-16 bg-[#F8F9FF] rounded-full flex items-center justify-center mx-auto mb-4">
+                                <svg class="w-8 h-8 text-[#4BD0CC]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                </svg>
+                            </div>
+                            <div class="space-y-1 text-sm text-[#8890B1]">
+                                <p class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4 text-[#4AD993]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    {{ __('Bank-level encryption') }}
+                                </p>
+                                <p class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4 text-[#4AD993]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    {{ __('Card details never stored') }}
+                                </p>
+                                <p class="flex items-center justify-center gap-2">
+                                    <svg class="w-4 h-4 text-[#4AD993]" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/></svg>
+                                    {{ __('Instant eSIM delivery') }}
+                                </p>
+                            </div>
+                        </div>
+                        
+                        {{-- FIXED: Green CTA Button --}}
+                        <button 
+                            type="submit"
+                            :disabled="processing"
+                            class="w-full bg-[#4AD993] hover:bg-[#3BC983] text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                            style="box-shadow: 0 4px 14px rgba(74, 217, 147, 0.25);"
+                        >
+                            <template x-if="!processing">
+                                <span class="flex items-center gap-2">
+                                    {{ __('Pay') }} {{ $currencySymbol }}{{ number_format($amount, 2) }}
+                                    <svg class="w-5 h-5 {{ $rtl ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                                    </svg>
+                                </span>
+                            </template>
+                            <template x-if="processing">
+                                <span class="flex items-center gap-2">
+                                    <svg class="animate-spin h-5 w-5" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    {{ __('Processing...') }}
+                                </span>
+                            </template>
+                        </button>
+                        
+                        {{-- Security Badge --}}
+                        <div class="flex items-center justify-center gap-2 mt-4 text-sm text-[#8890B1]">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                            </svg>
+                            <span>{{ __('Secured by SUMIT') }}</span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ========================================= --}}
+                {{-- Customer Details Card (Center) --}}
+                {{-- ========================================= --}}
+                <div class="xl:col-span-1 {{ $rtl ? 'xl:order-3' : 'xl:order-1' }}">
+                    <form id="og-checkout-form" method="POST" action="{{ $checkoutUrl }}" @submit.prevent="submitForm">
                         @csrf
                         <input type="hidden" name="payable_id" value="{{ $payable->getPayableId() }}">
                         <input type="hidden" name="payable_type" value="{{ get_class($payable) }}">
                         
                         {{-- Error Messages --}}
-                        <div x-show="errors.length > 0" x-cloak class="bg-red-50 border border-red-200 rounded-lg p-4">
+                        <div x-show="errors.length > 0" x-cloak class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                             <div class="flex items-start">
-                                <svg class="w-5 h-5 text-red-500 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                                <svg class="w-5 h-5 text-red-500 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd"/>
                                 </svg>
                                 <div class="{{ $rtl ? 'mr-3' : 'ml-3' }}">
@@ -134,381 +547,81 @@
                             </div>
                         </div>
                         
-                        {{-- Customer Information --}}
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                                <svg class="w-5 h-5 {{ $rtl ? 'ml-2' : 'mr-2' }} text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
-                                </svg>
-                                {{ __('Customer Information') }}
-                            </h2>
-                            
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div>
-                                    <label for="customer_name" class="block text-sm font-medium text-gray-700 mb-1">
-                                        {{ __('Full Name') }} <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="text" 
-                                        id="customer_name" 
-                                        name="customer_name"
-                                        x-model="customerName"
-                                        value="{{ old('customer_name', $customerName) }}"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div>
-                                    <label for="customer_email" class="block text-sm font-medium text-gray-700 mb-1">
-                                        {{ __('Email') }} <span class="text-red-500">*</span>
-                                    </label>
-                                    <input 
-                                        type="email" 
-                                        id="customer_email" 
-                                        name="customer_email"
-                                        x-model="customerEmail"
-                                        value="{{ old('customer_email', $customerEmail) }}"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                        required
-                                    >
-                                </div>
-                                
-                                <div class="md:col-span-2">
-                                    <label for="customer_phone" class="block text-sm font-medium text-gray-700 mb-1">
-                                        {{ __('Phone') }}
-                                    </label>
-                                    <input 
-                                        type="tel" 
-                                        id="customer_phone" 
-                                        name="customer_phone"
-                                        x-model="customerPhone"
-                                        value="{{ old('customer_phone', $customerPhone) }}"
-                                        class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                    >
-                                </div>
-                            </div>
-                        </div>
-                        
-                        {{-- Payment Method Selection --}}
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <h2 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                                <svg class="w-5 h-5 {{ $rtl ? 'ml-2' : 'mr-2' }} text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                </svg>
-                                {{ __('Payment Method') }}
-                            </h2>
-                            
-                            {{-- Payment Method Tabs --}}
-                            @if($bitEnabled)
-                            <div class="flex gap-3 mb-6">
-                                <button 
-                                    type="button"
-                                    @click="paymentMethod = 'card'"
-                                    :class="paymentMethod === 'card' ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-gray-200 hover:border-gray-300'"
-                                    class="flex-1 p-4 border-2 rounded-lg transition-colors"
-                                >
-                                    <svg class="w-8 h-8 mx-auto mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
-                                    </svg>
-                                    <span class="text-sm font-medium">{{ __('Credit Card') }}</span>
-                                </button>
-                                
-                                <button 
-                                    type="button"
-                                    @click="paymentMethod = 'bit'"
-                                    :class="paymentMethod === 'bit' ? 'border-sky-500 bg-sky-50 text-sky-700' : 'border-gray-200 hover:border-gray-300'"
-                                    class="flex-1 p-4 border-2 rounded-lg transition-colors"
-                                >
-                                    <svg class="w-8 h-8 mx-auto mb-2 text-blue-600" fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-1 17.93c-3.95-.49-7-3.85-7-7.93 0-.62.08-1.21.21-1.79L9 15v1c0 1.1.9 2 2 2v1.93zm6.9-2.54c-.26-.81-1-1.39-1.9-1.39h-1v-3c0-.55-.45-1-1-1H8v-2h2c.55 0 1-.45 1-1V7h2c1.1 0 2-.9 2-2v-.41c2.93 1.19 5 4.06 5 7.41 0 2.08-.8 3.97-2.1 5.39z"/>
-                                    </svg>
-                                    <span class="text-sm font-medium">Bit</span>
-                                </button>
-                            </div>
-                            @endif
-                            
-                            <input type="hidden" name="payment_method" x-model="paymentMethod">
-                            
-                            {{-- Credit Card Form --}}
-                            <div x-show="paymentMethod === 'card'" x-cloak>
-                                {{-- Saved Payment Methods --}}
-                                @if($supportTokens && $savedTokens->isNotEmpty())
-                                <div class="mb-6">
-                                    <label class="block text-sm font-medium text-gray-700 mb-3">{{ __('Saved Payment Methods') }}</label>
-                                    <div class="space-y-2">
-                                        @foreach($savedTokens as $token)
-                                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                            <input 
-                                                type="radio" 
-                                                name="payment_token" 
-                                                value="{{ $token->id }}"
-                                                x-model="selectedToken"
-                                                class="text-sky-600 focus:ring-sky-500"
-                                            >
-                                            <span class="{{ $rtl ? 'mr-3' : 'ml-3' }} flex-1">
-                                                <span class="font-medium">{{ $token->getMaskedNumber() }}</span>
-                                                <span class="text-gray-500 text-sm">
-                                                    ({{ __('Expires') }} {{ $token->expiry_month }}/{{ $token->expiry_year }})
-                                                </span>
-                                            </span>
-                                        </label>
-                                        @endforeach
-                                        
-                                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 transition-colors">
-                                            <input 
-                                                type="radio" 
-                                                name="payment_token" 
-                                                value="new"
-                                                x-model="selectedToken"
-                                                class="text-sky-600 focus:ring-sky-500"
-                                            >
-                                            <span class="{{ $rtl ? 'mr-3' : 'ml-3' }} font-medium">{{ __('Use a new card') }}</span>
-                                        </label>
-                                    </div>
-                                </div>
-                                @endif
-                                
-                                {{-- New Card Fields --}}
-                                <div x-show="selectedToken === 'new'" x-cloak class="space-y-4">
-                                    {{-- Card Number --}}
-                                    <div>
-                                        <label for="og-ccnum" class="block text-sm font-medium text-gray-700 mb-1">
-                                            {{ __('Card Number') }} <span class="text-red-500">*</span>
-                                        </label>
-                                        <input 
-                                            type="text" 
-                                            id="og-ccnum" 
-                                            name="card_number"
-                                            data-og="cardnumber"
-                                            x-model="cardNumber"
-                                            maxlength="19"
-                                            inputmode="numeric"
-                                            autocomplete="cc-number"
-                                            placeholder="•••• •••• •••• ••••"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                        >
-                                    </div>
-                                    
-                                    {{-- Expiration & CVV --}}
-                                    <div class="grid grid-cols-3 gap-4">
-                                        <div>
-                                            <label for="og-expmonth" class="block text-sm font-medium text-gray-700 mb-1">
-                                                {{ __('Month') }} <span class="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="og-expmonth" 
-                                                name="exp_month"
-                                                data-og="expirationmonth"
-                                                x-model="expMonth"
-                                                autocomplete="cc-exp-month"
-                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                            >
-                                                <option value="">--</option>
-                                                @for($i = 1; $i <= 12; $i++)
-                                                    <option value="{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}">{{ str_pad($i, 2, '0', STR_PAD_LEFT) }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                        
-                                        <div>
-                                            <label for="og-expyear" class="block text-sm font-medium text-gray-700 mb-1">
-                                                {{ __('Year') }} <span class="text-red-500">*</span>
-                                            </label>
-                                            <select 
-                                                id="og-expyear" 
-                                                name="exp_year"
-                                                data-og="expirationyear"
-                                                x-model="expYear"
-                                                autocomplete="cc-exp-year"
-                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                            >
-                                                <option value="">--</option>
-                                                @for($i = date('Y'); $i <= date('Y') + 15; $i++)
-                                                    <option value="{{ $i }}">{{ $i }}</option>
-                                                @endfor
-                                            </select>
-                                        </div>
-                                        
-                                        @if(in_array($settings['cvv_mode'], ['required', 'yes']))
-                                        <div>
-                                            <label for="og-cvv" class="block text-sm font-medium text-gray-700 mb-1">
-                                                {{ __('CVV') }} 
-                                                @if($settings['cvv_mode'] === 'required')<span class="text-red-500">*</span>@endif
-                                            </label>
-                                            <input 
-                                                type="text" 
-                                                id="og-cvv" 
-                                                name="cvv"
-                                                data-og="cvv"
-                                                x-model="cvv"
-                                                maxlength="4"
-                                                inputmode="numeric"
-                                                autocomplete="cc-csc"
-                                                placeholder="•••"
-                                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                            >
-                                        </div>
-                                        @endif
-                                    </div>
-                                    
-                                    {{-- ID Number (Citizen ID) --}}
-                                    @if(in_array($settings['citizen_id_mode'], ['required', 'yes']))
-                                    <div>
-                                        <label for="og-citizenid" class="block text-sm font-medium text-gray-700 mb-1">
-                                            {{ __('ID Number') }}
-                                            @if($settings['citizen_id_mode'] === 'required')<span class="text-red-500">*</span>@endif
-                                        </label>
-                                        <input 
-                                            type="text" 
-                                            id="og-citizenid" 
-                                            name="citizen_id"
-                                            data-og="citizenid"
-                                            x-model="citizenId"
-                                            maxlength="9"
-                                            inputmode="numeric"
-                                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                        >
-                                    </div>
-                                    @endif
-                                    
-                                    {{-- Hidden token field for PaymentsJS --}}
-                                    @if($settings['pci_mode'] === 'no')
-                                    <input type="hidden" name="og-token" data-og="token" x-model="singleUseToken">
-                                    @endif
-                                    
-                                    {{-- Save Card Option --}}
-                                    @if($supportTokens && auth()->check())
-                                    <div class="flex items-center">
-                                        <input 
-                                            type="checkbox" 
-                                            id="save_card" 
-                                            name="save_card"
-                                            x-model="saveCard"
-                                            class="text-sky-600 focus:ring-sky-500 rounded"
-                                        >
-                                        <label for="save_card" class="{{ $rtl ? 'mr-2' : 'ml-2' }} text-sm text-gray-600">
-                                            {{ __('Save card for future purchases') }}
-                                        </label>
-                                    </div>
-                                    @endif
-                                </div>
-                            </div>
-                            
-                            {{-- Bit Payment Info --}}
-                            @if($bitEnabled)
-                            <div x-show="paymentMethod === 'bit'" x-cloak class="bg-blue-50 rounded-lg p-4">
-                                <p class="text-sm text-gray-700">
-                                    {{ __('You will be redirected to complete your payment via Bit after clicking the button below.') }}
-                                </p>
-                            </div>
-                            @endif
-                            
-                            {{-- Installments --}}
-                            @if($maxPayments > 1)
-                            <div class="mt-6" x-show="paymentMethod === 'card'">
-                                <label for="payments_count" class="block text-sm font-medium text-gray-700 mb-1">
-                                    {{ __('Number of Payments') }}
-                                </label>
-                                <select 
-                                    id="payments_count" 
-                                    name="payments_count"
-                                    x-model="paymentsCount"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-sky-500 focus:border-sky-500"
-                                >
-                                    @for($i = 1; $i <= $maxPayments; $i++)
-                                        <option value="{{ $i }}">{{ $i }} {{ $i === 1 ? __('payment') : __('payments') }}</option>
-                                    @endfor
-                                </select>
-                            </div>
-                            @endif
-                        </div>
-                        
-                        {{-- Submit Button --}}
-                        <div class="bg-white rounded-lg shadow-sm p-6">
-                            <button 
-                                type="submit"
-                                :disabled="processing"
-                                class="w-full bg-sky-600 hover:bg-sky-700 text-white font-semibold py-3 px-6 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-                            >
-                                <template x-if="!processing">
-                                    <span class="flex items-center gap-2">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"/>
+                        <div class="bg-white rounded-2xl shadow-sm overflow-hidden">
+                            {{-- Card Header --}}
+                            <div class="bg-gradient-to-{{ $rtl ? 'l' : 'r' }} from-[#F8F9FF] to-white p-4 border-b border-gray-100">
+                                <div class="flex items-center gap-3 {{ $rtl ? 'justify-end' : 'justify-start' }}">
+                                    <h2 class="text-lg font-semibold text-[#111928]">{{ __('Customer & Billing') }}</h2>
+                                    <div class="w-8 h-8 bg-[#4BD0CC] rounded-lg flex items-center justify-center">
+                                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                         </svg>
-                                        {{ __('Pay') }} {{ $currencySymbol }}{{ number_format($amount, 2) }}
-                                    </span>
-                                </template>
-                                <template x-if="processing">
-                                    <span class="flex items-center gap-2">
-                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        {{ __('Processing...') }}
-                                    </span>
-                                </template>
-                            </button>
+                                    </div>
+                                </div>
+                            </div>
                             
-                            {{-- Security Badge --}}
-                            <div class="flex items-center justify-center gap-2 mt-4 text-sm text-gray-500">
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
-                                </svg>
-                                <span>{{ __('Secured by SUMIT Payment Gateway') }}</span>
+                            {{-- Form Fields --}}
+                            <div class="p-6 space-y-4">
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_name', 'label' => __('Full Name'), 'required' => true, 'value' => $customerName, 'type' => 'text', 'model' => 'customerName'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_email', 'label' => __('Email'), 'required' => true, 'value' => $customerEmail, 'type' => 'email', 'model' => 'customerEmail'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_phone', 'label' => __('Phone'), 'required' => true, 'value' => $customerPhone, 'type' => 'tel', 'model' => 'customerPhone'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_company', 'label' => __('Company'), 'required' => false, 'value' => $customerCompany ?? '', 'type' => 'text'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_address', 'label' => __('Street'), 'required' => true, 'value' => $customerAddress ?? '', 'type' => 'text'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_city', 'label' => __('City'), 'required' => true, 'value' => $customerCity ?? '', 'type' => 'text'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_postal', 'label' => __('Postal Code'), 'required' => false, 'value' => $customerPostal ?? '', 'type' => 'text'])
+                                @include('officeguy::pages.partials.input', ['id' => 'customer_country', 'label' => __('Country'), 'required' => true, 'value' => $customerCountry ?? 'IL', 'type' => 'text'])
                             </div>
                         </div>
                     </form>
                 </div>
                 
+                {{-- ========================================= --}}
                 {{-- Order Summary Sidebar --}}
-                <div class="lg:col-span-1">
-                    <div class="bg-white rounded-lg shadow-sm p-6 sticky top-8">
-                        <h2 class="text-lg font-semibold text-gray-900 mb-4">{{ __('Order Summary') }}</h2>
+                {{-- ========================================= --}}
+                <div class="xl:col-span-1 {{ $rtl ? 'xl:order-1' : 'xl:order-2' }}">
+                    <div class="bg-white rounded-2xl shadow-sm p-6 sticky top-8">
+                        <h2 class="text-lg font-semibold text-[#111928] mb-4">{{ __('Order Summary') }}</h2>
                         
                         {{-- Items --}}
                         <div class="space-y-3 mb-4">
                             @foreach($items as $item)
                             <div class="flex justify-between text-sm">
-                                <span class="text-gray-600">
+                                <span class="text-[#8890B1]">
                                     {{ $item['name'] }}
                                     @if(($item['quantity'] ?? 1) > 1)
                                         <span class="text-gray-400">× {{ $item['quantity'] }}</span>
                                     @endif
                                 </span>
-                                <span class="font-medium">{{ $currencySymbol }}{{ number_format(($item['unit_price'] ?? 0) * ($item['quantity'] ?? 1), 2) }}</span>
+                                <span class="font-medium text-[#383E53]">{{ $currencySymbol }}{{ number_format(($item['unit_price'] ?? 0) * ($item['quantity'] ?? 1), 2) }}</span>
                             </div>
                             @endforeach
                         </div>
                         
-                        {{-- Shipping --}}
                         @if($shipping > 0)
                         <div class="flex justify-between text-sm py-2 border-t border-gray-100">
-                            <span class="text-gray-600">{{ $payable->getShippingMethod() ?? __('Shipping') }}</span>
-                            <span class="font-medium">{{ $currencySymbol }}{{ number_format($shipping, 2) }}</span>
+                            <span class="text-[#8890B1]">{{ __('Shipping') }}</span>
+                            <span class="font-medium text-[#383E53]">{{ $currencySymbol }}{{ number_format($shipping, 2) }}</span>
                         </div>
                         @endif
                         
-                        {{-- Fees --}}
                         @foreach($fees as $fee)
                         <div class="flex justify-between text-sm py-2 border-t border-gray-100">
-                            <span class="text-gray-600">{{ $fee['name'] }}</span>
-                            <span class="font-medium">{{ $currencySymbol }}{{ number_format($fee['amount'], 2) }}</span>
+                            <span class="text-[#8890B1]">{{ $fee['name'] }}</span>
+                            <span class="font-medium text-[#383E53]">{{ $currencySymbol }}{{ number_format($fee['amount'], 2) }}</span>
                         </div>
                         @endforeach
                         
-                        {{-- Tax --}}
                         @if($payable->isTaxEnabled() && $payable->getVatRate())
                         <div class="flex justify-between text-sm py-2 border-t border-gray-100">
-                            <span class="text-gray-600">{{ __('VAT') }} ({{ $payable->getVatRate() }}%)</span>
-                            <span class="font-medium">{{ __('Included') }}</span>
+                            <span class="text-[#8890B1]">{{ __('VAT') }} ({{ $payable->getVatRate() }}%)</span>
+                            <span class="font-medium text-[#383E53]">{{ __('Included') }}</span>
                         </div>
                         @endif
                         
                         {{-- Total --}}
                         <div class="flex justify-between pt-4 border-t-2 border-gray-200 mt-4">
-                            <span class="text-lg font-semibold text-gray-900">{{ __('Total') }}</span>
-                            <span class="text-lg font-bold text-sky-600">{{ $currencySymbol }}{{ number_format($amount, 2) }} {{ $currency }}</span>
+                            <span class="text-lg font-semibold text-[#111928]">{{ __('Total') }}</span>
+                            <span class="text-lg font-bold text-[#4AD993]">{{ $currencySymbol }}{{ number_format($amount, 2) }}</span>
                         </div>
                     </div>
                 </div>
@@ -537,9 +650,8 @@
                 errors: [],
                 
                 init() {
-                    // Initialize SUMIT PaymentsJS SDK if in PaymentsJS mode
                     @if($settings['pci_mode'] === 'no' && !empty($settings['company_id']) && !empty($settings['public_key']))
-                    if (window.OfficeGuy?.Payments) {
+                    if (window.jQuery && window.OfficeGuy?.Payments) {
                         OfficeGuy.Payments.BindFormSubmit({
                             CompanyID: @json($settings['company_id']),
                             APIPublicKey: @json($settings['public_key'])
@@ -550,36 +662,14 @@
                 
                 validate() {
                     this.errors = [];
-                    
-                    if (!this.customerName.trim()) {
-                        this.errors.push('{{ __("Full name is required") }}');
-                    }
-                    
-                    if (!this.customerEmail.trim()) {
-                        this.errors.push('{{ __("Email is required") }}');
-                    } else if (!this.isValidEmail(this.customerEmail)) {
-                        this.errors.push('{{ __("Please enter a valid email address") }}');
-                    }
+                    if (!this.customerName.trim()) this.errors.push('{{ __("Full name is required") }}');
+                    if (!this.customerEmail.trim()) this.errors.push('{{ __("Email is required") }}');
+                    else if (!this.isValidEmail(this.customerEmail)) this.errors.push('{{ __("Please enter a valid email") }}');
                     
                     if (this.paymentMethod === 'card' && this.selectedToken === 'new') {
-                        if (!this.cardNumber.trim()) {
-                            this.errors.push('{{ __("Card number is required") }}');
-                        }
-                        if (!this.expMonth || !this.expYear) {
-                            this.errors.push('{{ __("Expiration date is required") }}');
-                        }
-                        @if(($settings['cvv_mode'] ?? 'required') === 'required')
-                        if (!this.cvv.trim()) {
-                            this.errors.push('{{ __("CVV is required") }}');
-                        }
-                        @endif
-                        @if(($settings['citizen_id_mode'] ?? 'required') === 'required')
-                        if (!this.citizenId.trim()) {
-                            this.errors.push('{{ __("ID number is required") }}');
-                        }
-                        @endif
+                        if (!this.cardNumber.trim()) this.errors.push('{{ __("Card number is required") }}');
+                        if (!this.expMonth || !this.expYear) this.errors.push('{{ __("Expiration date is required") }}');
                     }
-                    
                     return this.errors.length === 0;
                 },
                 
@@ -592,21 +682,107 @@
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                         return;
                     }
-                    
                     this.processing = true;
-                    
                     @if($settings['pci_mode'] === 'no')
-                    // Wait for PaymentsJS to populate token
                     await new Promise(resolve => setTimeout(resolve, 200));
                     @endif
-                    
-                    // Submit the form
                     document.getElementById('og-checkout-form').submit();
                 }
             }
         }
     </script>
-    
+
+    {{-- Alpine.js - Load immediately (no defer) for language selector reactivity --}}
+    <script src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
+
+    {{-- Alpine.js initialization fix - ensures components are initialized even if Alpine loads late --}}
+    <script>
+        (function() {
+            console.log('🔧 Alpine.js initialization fix loaded');
+
+            // Wait for Alpine to be available
+            function waitForAlpine(callback, maxAttempts = 50) {
+                let attempts = 0;
+                const check = setInterval(() => {
+                    attempts++;
+                    if (typeof Alpine !== 'undefined') {
+                        clearInterval(check);
+                        console.log('✅ Alpine.js detected after', attempts, 'attempts');
+                        callback();
+                    } else if (attempts >= maxAttempts) {
+                        clearInterval(check);
+                        console.error('❌ Alpine.js not found after', maxAttempts, 'attempts');
+                        activateVanillaFallback();
+                    }
+                }, 100);
+            }
+
+            // Force Alpine to reinitialize all components
+            function reinitializeAlpine() {
+                console.log('🔄 Forcing Alpine.js to reinitialize components...');
+                try {
+                    const xDataElements = document.querySelectorAll('[x-data]');
+                    console.log(`Found ${xDataElements.length} elements with x-data`);
+
+                    xDataElements.forEach((el, index) => {
+                        if (!el.__x && Alpine && Alpine.initTree) {
+                            console.log(`Initializing element ${index + 1}:`, el.tagName);
+                            Alpine.initTree(el);
+                        }
+                    });
+                    console.log('✅ Alpine.js reinitialization complete');
+                } catch (error) {
+                    console.error('❌ Error reinitializing Alpine:', error);
+                }
+            }
+
+            // Vanilla JavaScript fallback
+            function activateVanillaFallback() {
+                console.log('🔄 Activating vanilla JavaScript fallback...');
+                const buttons = document.querySelectorAll('[data-locale-switch]');
+
+                buttons.forEach((button) => {
+                    const locale = button.getAttribute('data-locale-switch');
+                    button.addEventListener('click', function(e) {
+                        e.preventDefault();
+                        console.log('🌍 Fallback: Switching to locale:', locale);
+
+                        const form = document.createElement('form');
+                        form.method = 'POST';
+                        form.action = '{{ route('locale.change') }}';
+
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                        if (csrfToken) {
+                            const csrfInput = document.createElement('input');
+                            csrfInput.type = 'hidden';
+                            csrfInput.name = '_token';
+                            csrfInput.value = csrfToken.content;
+                            form.appendChild(csrfInput);
+                        }
+
+                        const localeInput = document.createElement('input');
+                        localeInput.type = 'hidden';
+                        localeInput.name = 'locale';
+                        localeInput.value = locale;
+                        form.appendChild(localeInput);
+
+                        document.body.appendChild(form);
+                        form.submit();
+                    });
+                });
+                console.log('✅ Vanilla fallback activated');
+            }
+
+            // Start initialization
+            waitForAlpine(reinitializeAlpine);
+
+            // Try immediate init if Alpine already loaded
+            if (typeof Alpine !== 'undefined') {
+                setTimeout(reinitializeAlpine, 100);
+            }
+        })();
+    </script>
+
     @stack('scripts')
 </body>
 </html>

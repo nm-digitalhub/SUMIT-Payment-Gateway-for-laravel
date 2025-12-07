@@ -91,9 +91,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Load settings from database and override config
         $this->loadDatabaseSettings();
 
-        // Register optional auth middleware alias
+        // Register middleware aliases
         $router = $this->app['router'];
         $router->aliasMiddleware('optional.auth', \OfficeGuy\LaravelSumitGateway\Http\Middleware\OptionalAuth::class);
+        $router->aliasMiddleware('officeguy.locale', \OfficeGuy\LaravelSumitGateway\Http\Middleware\SetPackageLocale::class);
 
         // Register commands (available in both console and web contexts)
         $this->commands([
