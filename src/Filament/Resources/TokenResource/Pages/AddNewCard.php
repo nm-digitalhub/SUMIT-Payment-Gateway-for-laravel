@@ -16,7 +16,7 @@ class AddNewCard extends Page
 {
     protected static string $resource = TokenResource::class;
 
-    protected static string $view = 'officeguy::filament.resources.token-resource.pages.add-new-card';
+    protected string $view = 'officeguy::filament.resources.token-resource.pages.add-new-card';
 
     protected static ?string $title = 'Add New Payment Card';
 
