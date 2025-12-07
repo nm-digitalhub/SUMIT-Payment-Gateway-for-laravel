@@ -338,6 +338,7 @@ class TokenResource extends Resource
             'index' => Pages\ListTokens::route('/'),
             'view' => Pages\ViewToken::route('/{record}'),
             'edit' => Pages\EditToken::route('/{record}/edit'),
+            'add-card' => Pages\AddNewCard::route('/add-card'),
         ];
     }
 
