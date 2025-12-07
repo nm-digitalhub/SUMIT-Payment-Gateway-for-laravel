@@ -485,10 +485,10 @@
                             </div>
                         </div>
                         
-                        {{-- FIXED: Green CTA Button --}}
-                        <button 
+                        {{-- FIXED: Green CTA Button (v1.15.0: disabled when user exists) --}}
+                        <button
                             type="submit"
-                            :disabled="processing"
+                            :disabled="processing || userExists"
                             class="w-full bg-[#4AD993] hover:bg-[#3BC983] text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed"
                             style="box-shadow: 0 4px 14px rgba(74, 217, 147, 0.25);"
                         >
@@ -563,7 +563,68 @@
                             {{-- Form Fields --}}
                             <div class="p-6 space-y-4">
                                 @include('officeguy::pages.partials.input', ['id' => 'customer_name', 'label' => __('Full Name'), 'required' => true, 'value' => $customerName, 'type' => 'text', 'model' => 'customerName'])
-                                @include('officeguy::pages.partials.input', ['id' => 'customer_email', 'label' => __('Email'), 'required' => true, 'value' => $customerEmail, 'type' => 'email', 'model' => 'customerEmail'])
+
+                                {{-- Email field with existence check (v1.15.0+) --}}
+                                <div>
+                                    {{-- Custom email input with @blur event --}}
+                                    <div class="w-full">
+                                        <label for="customer_email" class="block text-sm font-medium text-[#383E53] mb-2 {{ $rtl ? 'text-right' : 'text-left' }}">
+                                            {{ __('Email') }} <span class="text-[#FF7878]">*</span>
+                                        </label>
+                                        <input
+                                            type="email"
+                                            id="customer_email"
+                                            name="customer_email"
+                                            x-model="customerEmail"
+                                            @blur="checkEmailExists()"
+                                            value="{{ old('customer_email', $customerEmail ?? '') }}"
+                                            dir="ltr"
+                                            class="w-full bg-[#F2F4F7] border border-[#E9E9E9] rounded-lg px-4 py-3 text-[#383E53] text-left placeholder-[#8890B1] focus:ring-2 focus:ring-[#4AD993] focus:border-transparent transition-all"
+                                            required
+                                        >
+                                    </div>
+
+                                    {{-- Loading indicator --}}
+                                    <div x-show="emailCheckLoading" x-cloak class="mt-2 text-sm text-[#8890B1] {{ $rtl ? 'text-right' : 'text-left' }} flex items-center gap-2">
+                                        <svg class="w-4 h-4 animate-spin" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>{{ __('Checking email...') }}</span>
+                                    </div>
+
+                                    {{-- Error message (fail-safe) --}}
+                                    <div x-show="emailCheckError" x-cloak class="mt-2 bg-yellow-50 border-{{ $rtl ? 'r' : 'l' }}-4 border-yellow-400 p-3 rounded-lg">
+                                        <p class="text-sm text-yellow-700 {{ $rtl ? 'text-right' : 'text-left' }}" x-text="emailCheckError"></p>
+                                    </div>
+
+                                    {{-- User exists warning --}}
+                                    <div x-show="userExists" x-cloak class="mt-3 bg-gradient-to-{{ $rtl ? 'r' : 'l' }} from-blue-50 to-blue-100 border-{{ $rtl ? 'r' : 'l' }}-4 border-blue-500 p-4 rounded-lg shadow-sm">
+                                        <div class="flex items-start {{ $rtl ? 'flex-row-reverse' : '' }}">
+                                            <svg class="w-6 h-6 text-blue-600 mt-0.5 {{ $rtl ? 'mr-3' : 'ml-3' }} flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clip-rule="evenodd"/>
+                                            </svg>
+                                            <div class="flex-1">
+                                                <p class="text-sm font-semibold text-blue-900 {{ $rtl ? 'text-right' : 'text-left' }} mb-1">
+                                                    {{ __('User with this email already exists in the system') }}
+                                                </p>
+                                                <p class="text-sm text-blue-700 {{ $rtl ? 'text-right' : 'text-left' }} mb-3">
+                                                    {{ __('To continue with the payment process, you must first log into the system') }}
+                                                </p>
+                                                <a
+                                                    :href="loginUrl"
+                                                    class="inline-flex items-center gap-2 px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-lg transition-all shadow-md hover:shadow-lg {{ $rtl ? 'flex-row-reverse' : '' }}"
+                                                >
+                                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                                                    </svg>
+                                                    <span>{{ __('Login Now') }}</span>
+                                                </a>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
                                 @include('officeguy::pages.partials.input', ['id' => 'customer_phone', 'label' => __('Phone'), 'required' => true, 'value' => $customerPhone, 'type' => 'tel', 'model' => 'customerPhone'])
                                 @include('officeguy::pages.partials.input', ['id' => 'customer_company', 'label' => __('Company'), 'required' => false, 'value' => $customerCompany ?? '', 'type' => 'text'])
                                 @include('officeguy::pages.partials.input', ['id' => 'customer_address', 'label' => __('Street'), 'required' => true, 'value' => $customerAddress ?? '', 'type' => 'text'])
@@ -648,6 +709,12 @@
                 customerPhone: @json(old('customer_phone', $customerPhone ?? '')),
                 processing: false,
                 errors: [],
+                // Email existence check (v1.15.0+)
+                userExists: false,
+                emailCheckLoading: false,
+                emailCheckError: null,
+                loginUrl: null,
+                isAuthenticated: @json(auth()->check()),
                 
                 init() {
                     @if($settings['pci_mode'] === 'no' && !empty($settings['company_id']) && !empty($settings['public_key']))
@@ -665,19 +732,99 @@
                     if (!this.customerName.trim()) this.errors.push('{{ __("Full name is required") }}');
                     if (!this.customerEmail.trim()) this.errors.push('{{ __("Email is required") }}');
                     else if (!this.isValidEmail(this.customerEmail)) this.errors.push('{{ __("Please enter a valid email") }}');
-                    
+
+                    // Block checkout if user exists and must login (v1.15.0+)
+                    if (this.userExists) {
+                        this.errors.push('{{ __("You must login to continue. Please use the login button below.") }}');
+                    }
+
                     if (this.paymentMethod === 'card' && this.selectedToken === 'new') {
                         if (!this.cardNumber.trim()) this.errors.push('{{ __("Card number is required") }}');
                         if (!this.expMonth || !this.expYear) this.errors.push('{{ __("Expiration date is required") }}');
                     }
                     return this.errors.length === 0;
                 },
-                
+
                 isValidEmail(email) {
                     return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
                 },
+
+                /**
+                 * Check if user exists by email (v1.15.0+)
+                 * Called on email field blur event
+                 */
+                async checkEmailExists() {
+                    // Reset states
+                    this.userExists = false;
+                    this.emailCheckLoading = false;
+                    this.emailCheckError = null;
+                    this.loginUrl = null;
+
+                    // Don't check if email is empty or invalid
+                    if (!this.customerEmail || !this.isValidEmail(this.customerEmail)) {
+                        return;
+                    }
+
+                    // Don't check if user is already authenticated
+                    if (this.isAuthenticated) {
+                        return;
+                    }
+
+                    this.emailCheckLoading = true;
+
+                    try {
+                        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content || '';
+
+                        if (!csrfToken) {
+                            console.error('CSRF token not found');
+                            throw new Error('CSRF token missing');
+                        }
+
+                        const response = await Promise.race([
+                            fetch('{{ route("officeguy.api.check-email") }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': csrfToken,
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json',
+                                },
+                                credentials: 'same-origin',
+                                body: JSON.stringify({ email: this.customerEmail })
+                            }),
+                            new Promise((_, reject) =>
+                                setTimeout(() => reject(new Error('Timeout')), 15000)
+                            )
+                        ]);
+
+                        if (!response.ok) {
+                            const errorData = await response.json().catch(() => ({}));
+                            console.error('API Error:', response.status, errorData);
+                            throw new Error(`HTTP ${response.status}: ${errorData.message || 'Network error'}`);
+                        }
+
+                        const data = await response.json();
+
+                        if (data.exists) {
+                            this.userExists = true;
+                            this.loginUrl = data.login_url || '{{ route("filament.client.auth.login") }}';
+                        }
+                    } catch (error) {
+                        console.error('Email check error:', error);
+                        // Fail-safe: continue checkout on error
+                        this.emailCheckError = '{{ __("Could not verify email. You may continue checkout.") }}';
+                    } finally {
+                        this.emailCheckLoading = false;
+                    }
+                },
                 
                 async submitForm() {
+                    // Block submission if user exists and must login (v1.15.0+)
+                    if (this.userExists) {
+                        window.scrollTo({ top: 0, behavior: 'smooth' });
+                        return;
+                    }
+
                     if (!this.validate()) {
                         window.scrollTo({ top: 0, behavior: 'smooth' });
                         return;

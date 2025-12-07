@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use Illuminate\Support\Facades\Route;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\Api\CheckEmailController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\BitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CardCallbackController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CrmWebhookController;
@@ -72,6 +73,22 @@ Route::middleware('web')->post('locale', function () {
 
     return back();
 })->name('officeguy.locale.change');
+
+/*
+|--------------------------------------------------------------------------
+| Email Check API (v1.15.0+)
+|--------------------------------------------------------------------------
+|
+| Check if a user exists by email during checkout.
+| Used to enforce login requirement for existing customers.
+| Rate limited to prevent abuse (10 requests/minute).
+| CSRF exempt because it's called from public checkout page.
+|
+*/
+Route::middleware(['throttle:10,1'])
+    ->withoutMiddleware(\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class)
+    ->post($prefix . '/api/check-email', [CheckEmailController::class, 'check'])
+    ->name('officeguy.api.check-email');
 
 Route::prefix($prefix)
     ->middleware(array_merge($middleware, ['officeguy.locale']))
