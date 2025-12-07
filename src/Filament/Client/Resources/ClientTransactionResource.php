@@ -15,16 +15,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientTransactionResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 
 class ClientTransactionResource extends Resource
 {
     protected static ?string $model = OfficeGuyTransaction::class;
 
+    protected static ?string $cluster = SumitClient::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'My Transactions';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 1;
 

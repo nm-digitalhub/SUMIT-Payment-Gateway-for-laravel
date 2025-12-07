@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
 
@@ -31,11 +32,11 @@ class WebhookEventResource extends Resource
 {
     protected static ?string $model = WebhookEvent::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-signal';
 
     protected static ?string $navigationLabel = 'Webhook Events';
-
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 6;
 

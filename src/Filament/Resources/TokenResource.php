@@ -18,16 +18,17 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 class TokenResource extends Resource
 {
     protected static ?string $model = OfficeGuyToken::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'Payment Tokens';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 2;
 

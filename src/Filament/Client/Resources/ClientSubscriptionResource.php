@@ -13,17 +13,18 @@ use Filament\Actions;
 use Filament\Tables\Table;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use Illuminate\Database\Eloquent\Builder;
 
 class ClientSubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
+    protected static ?string $cluster = SumitClient::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-path';
 
     protected static ?string $navigationLabel = 'מנויים';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'תשלומים';
 
     protected static ?int $navigationSort = 3;
 

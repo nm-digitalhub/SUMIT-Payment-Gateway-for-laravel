@@ -13,17 +13,18 @@ use Filament\Tables\Table;
 use Filament\Actions;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientWebhookEventResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use Illuminate\Database\Eloquent\Builder;
 
 class ClientWebhookEventResource extends Resource
 {
     protected static ?string $model = WebhookEvent::class;
 
+    protected static ?string $cluster = SumitClient::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-up-tray';
 
     protected static ?string $navigationLabel = 'Webhook Logs (יוצאים)';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'תשלומים';
 
     protected static ?int $navigationSort = 5;
 

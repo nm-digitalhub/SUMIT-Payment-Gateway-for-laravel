@@ -15,16 +15,17 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientDocumentResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 
 class ClientDocumentResource extends Resource
 {
     protected static ?string $model = OfficeGuyDocument::class;
 
+    protected static ?string $cluster = SumitClient::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationLabel = 'My Documents';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'Payments';
 
     protected static ?int $navigationSort = 3;
 

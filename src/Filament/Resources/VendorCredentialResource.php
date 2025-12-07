@@ -20,16 +20,17 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\VendorCredentialResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 class VendorCredentialResource extends Resource
 {
     protected static ?string $model = VendorCredential::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-building-storefront';
 
     protected static ?string $navigationLabel = 'Vendor Credentials';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
 
     protected static ?int $navigationSort = 5;
 

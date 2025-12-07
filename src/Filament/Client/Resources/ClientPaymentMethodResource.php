@@ -26,6 +26,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
 use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
@@ -33,11 +34,11 @@ class ClientPaymentMethodResource extends Resource
 {
     protected static ?string $model = OfficeGuyToken::class;
 
+    protected static ?string $cluster = SumitClient::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'אמצעי תשלום';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'תשלומים';
 
     protected static ?int $navigationSort = 2;
 

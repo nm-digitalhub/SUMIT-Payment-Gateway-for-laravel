@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 use Filament\Actions\DeleteAction;
 use Carbon\Carbon;
@@ -27,11 +28,11 @@ class SubscriptionResource extends Resource
 {
     protected static ?string $model = Subscription::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-path';
 
     protected static ?string $navigationLabel = 'מנויים';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'שער תשלומי SUMIT';
 
     protected static ?int $navigationSort = 4;
 

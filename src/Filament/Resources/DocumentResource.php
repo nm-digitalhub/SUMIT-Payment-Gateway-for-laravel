@@ -17,6 +17,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 use App\Models\Client;
 use App\Models\Order;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
@@ -28,11 +29,11 @@ class DocumentResource extends Resource
 {
     protected static ?string $model = OfficeGuyDocument::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
 
     protected static ?string $navigationLabel = 'מסמכים';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'שער תשלומי SUMIT';
 
     protected static ?int $navigationSort = 3;
 

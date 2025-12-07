@@ -19,6 +19,7 @@ use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Builder;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TransactionResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 use Filament\Support\Colors\Color;
 use App\Models\Client;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
@@ -30,11 +31,11 @@ class TransactionResource extends Resource
 {
     protected static ?string $model = OfficeGuyTransaction::class;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
 
     protected static ?string $navigationLabel = 'טרנזאקציות';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'שער תשלומי SUMIT';
 
     protected static ?int $navigationSort = 1;
 

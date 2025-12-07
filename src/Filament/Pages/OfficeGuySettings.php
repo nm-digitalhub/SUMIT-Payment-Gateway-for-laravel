@@ -12,16 +12,18 @@ use Filament\Schemas\Components\Section;
   use Filament\Notifications\Notification;
   use Filament\Pages\Page;
   use Filament\Forms\Concerns\InteractsWithForms;
-  use Filament\Schemas\Schema;                 
+  use Filament\Schemas\Schema;
 
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 class OfficeGuySettings extends Page
 {
     use InteractsWithForms;
 
+    protected static ?string $cluster = SumitGateway::class;
+
     protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
-    protected static string|\UnitEnum|null $navigationGroup = 'SUMIT Gateway';
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'officeguy::filament.pages.officeguy-settings';

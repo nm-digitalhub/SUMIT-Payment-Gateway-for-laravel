@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SumitWebhookResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 /**
  * Filament Resource for managing incoming webhooks from SUMIT.
@@ -35,6 +36,8 @@ use OfficeGuy\LaravelSumitGateway\Filament\Resources\SumitWebhookResource\Pages;
 class SumitWebhookResource extends Resource
 {
     protected static ?string $model = SumitWebhook::class;
+
+    protected static ?string $cluster = SumitGateway::class;
 
     protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
