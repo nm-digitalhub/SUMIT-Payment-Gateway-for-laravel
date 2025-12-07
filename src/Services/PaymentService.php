@@ -308,6 +308,99 @@ class PaymentService
     }
 
     /**
+     * Remove active payment method from customer in SUMIT.
+     * Endpoint: POST /billing/paymentmethods/remove/
+     *
+     * @param string|int $sumitCustomerId SUMIT customer ID
+     * @return array{success: bool, error?: string}
+     */
+    public static function removePaymentMethodForCustomer(string|int $sumitCustomerId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Customer' => [
+                    'ID' => (int) $sumitCustomerId,
+                ],
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/paymentmethods/remove/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Failed to remove payment method',
+                ];
+            }
+
+            return ['success' => true];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Test a payment method with a minimal charge (₪1).
+     * Useful for validating that a token is still active and working.
+     *
+     * @param string $token Payment token to test
+     * @param string|int $sumitCustomerId SUMIT customer ID
+     * @return array{success: bool, transaction_id?: string, error?: string}
+     */
+    public static function testPayment(string $token, string|int $sumitCustomerId): array
+    {
+        try {
+            $payload = [
+                'Credentials' => self::getCredentials(),
+                'Customer' => [
+                    'ID' => (int) $sumitCustomerId,
+                ],
+                'PaymentMethod' => [
+                    'CreditCard_Token' => $token,
+                    'Type' => 'CreditCard (1)',
+                ],
+                'Amount' => 1, // ₪1 test charge
+                'Description' => 'Test payment - Token validation',
+                'Cancelable' => true, // Allow cancellation
+            ];
+
+            $response = OfficeGuyApi::post(
+                $payload,
+                '/billing/payments/charge/',
+                config('officeguy.environment', 'www'),
+                false
+            );
+
+            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                return [
+                    'success' => false,
+                    'error' => $response['UserErrorMessage'] ?? 'Test payment failed',
+                ];
+            }
+
+            return [
+                'success' => true,
+                'transaction_id' => $response['Data']['ID'] ?? null,
+            ];
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
      * Get customer data array from order
      *
      * Port of: GetOrderCustomer($Gateway, $Order)

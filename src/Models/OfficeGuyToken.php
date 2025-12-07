@@ -28,6 +28,7 @@ class OfficeGuyToken extends Model
         'expiry_year',
         'is_default',
         'metadata',
+        'admin_notes',
     ];
 
     protected $casts = [

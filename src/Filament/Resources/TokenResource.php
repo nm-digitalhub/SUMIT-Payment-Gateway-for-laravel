@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Actions\Action;
+use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Actions\DeleteAction;
+use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Forms;
@@ -44,12 +46,19 @@ class TokenResource extends Resource
                         Forms\Components\TextInput::make('gateway_id')
                             ->label('Gateway')
                             ->disabled(),
-                        Forms\Components\Checkbox::make('is_default')
-                            ->label('Default Token')
-                            ->disabled(),
+                        Forms\Components\Toggle::make('is_default')
+                            ->label('Set as Default Token')
+                            ->helperText('Mark this token as the default payment method for this customer')
+                            ->live()
+                            ->afterStateUpdated(function ($state, $record) {
+                                if ($state && $record) {
+                                    $record->setAsDefault();
+                                }
+                            }),
                     ])->columns(3),
 
                 Schemas\Components\Section::make('Card Details')
+                    ->description('Card information is read-only and synced from SUMIT')
                     ->schema([
                         Forms\Components\TextInput::make('card_type')
                             ->label('Card Type')
@@ -69,6 +78,7 @@ class TokenResource extends Resource
                     ])->columns(5),
 
                 Schemas\Components\Section::make('Owner Information')
+                    ->description('Token owner information (read-only)')
                     ->schema([
                         Forms\Components\TextInput::make('owner_type')
                             ->label('Owner Type')
@@ -78,11 +88,19 @@ class TokenResource extends Resource
                             ->disabled(),
                     ])->columns(2),
 
-                Schemas\Components\Section::make('Metadata')
+                Schemas\Components\Section::make('Admin Notes & Metadata')
+                    ->description('Internal notes and additional data (editable by admin)')
                     ->schema([
+                        Forms\Components\Textarea::make('admin_notes')
+                            ->label('Admin Notes')
+                            ->helperText('Internal notes visible only to administrators')
+                            ->rows(3)
+                            ->columnSpanFull(),
                         Forms\Components\KeyValue::make('metadata')
-                            ->label('Additional Data')
-                            ->disabled(),
+                            ->label('Raw Metadata from SUMIT')
+                            ->helperText('Technical data from SUMIT API (view only)')
+                            ->disabled()
+                            ->columnSpanFull(),
                     ])->collapsed(),
             ]);
     }
@@ -138,6 +156,71 @@ class TokenResource extends Resource
             ])
             ->actions([
                 ViewAction::make(),
+                EditAction::make(),
+                Action::make('sync_from_sumit')
+                    ->label('Sync from SUMIT')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('Sync Token from SUMIT')
+                    ->modalDescription('This will fetch the latest token data from SUMIT API and update the local record.')
+                    ->action(function ($record) {
+                        $result = \OfficeGuy\LaravelSumitGateway\Services\TokenService::syncTokenFromSumit($record);
+
+                        if ($result['success']) {
+                            Notification::make()
+                                ->title('Token synced successfully')
+                                ->body('Token data updated from SUMIT')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Sync failed')
+                                ->body($result['error'] ?? 'Unknown error')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Action::make('test_payment')
+                    ->label('Test Payment')
+                    ->icon('heroicon-o-beaker')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->modalHeading('Test Payment (₪1)')
+                    ->modalDescription('This will charge ₪1 to verify the token is working. The charge can be cancelled later.')
+                    ->action(function ($record) {
+                        $owner = $record->owner;
+                        $client = $owner->client ?? $owner;
+                        $sumitCustomerId = $client->sumit_customer_id ?? null;
+
+                        if (!$sumitCustomerId) {
+                            Notification::make()
+                                ->title('Test failed')
+                                ->body('SUMIT customer ID not found')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $result = \OfficeGuy\LaravelSumitGateway\Services\PaymentService::testPayment(
+                            $record->token,
+                            $sumitCustomerId
+                        );
+
+                        if ($result['success']) {
+                            Notification::make()
+                                ->title('Test payment successful')
+                                ->body('Token is valid. Transaction ID: ' . ($result['transaction_id'] ?? 'N/A'))
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Test payment failed')
+                                ->body($result['error'] ?? 'Unknown error')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
                 Action::make('set_default')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
@@ -150,26 +233,92 @@ class TokenResource extends Resource
                             ->success()
                             ->send();
                     }),
-                Action::make('deactivate')
-                    ->label('Deactivate')
-                    ->icon('heroicon-o-no-symbol')
+                Action::make('remove_from_sumit')
+                    ->label('Remove from SUMIT')
+                    ->icon('heroicon-o-trash')
                     ->color('danger')
                     ->visible(fn ($record) => !$record->deleted_at)
                     ->requiresConfirmation()
+                    ->modalHeading('Remove Token from SUMIT')
+                    ->modalDescription('This will remove the active payment method from SUMIT. This action cannot be undone!')
+                    ->action(function ($record) {
+                        $owner = $record->owner;
+                        $client = $owner->client ?? $owner;
+                        $sumitCustomerId = $client->sumit_customer_id ?? null;
+
+                        if (!$sumitCustomerId) {
+                            Notification::make()
+                                ->title('Removal failed')
+                                ->body('SUMIT customer ID not found')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+
+                        $result = \OfficeGuy\LaravelSumitGateway\Services\PaymentService::removePaymentMethodForCustomer($sumitCustomerId);
+
+                        if ($result['success']) {
+                            $record->delete(); // Soft delete locally
+                            Notification::make()
+                                ->title('Token removed from SUMIT')
+                                ->body('Payment method has been removed')
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title('Removal failed')
+                                ->body($result['error'] ?? 'Unknown error')
+                                ->danger()
+                                ->send();
+                        }
+                    }),
+                Action::make('deactivate')
+                    ->label('Deactivate Locally')
+                    ->icon('heroicon-o-no-symbol')
+                    ->color('warning')
+                    ->visible(fn ($record) => !$record->deleted_at)
+                    ->requiresConfirmation()
                     ->modalHeading('Deactivate Token')
-                    ->modalDescription('This will soft-delete the token. The customer will not be able to use it for payments.')
+                    ->modalDescription('This will soft-delete the token locally only. It will still exist in SUMIT.')
                     ->action(function ($record) {
                         $record->delete();
                         Notification::make()
-                            ->title('Token deactivated')
+                            ->title('Token deactivated locally')
                             ->success()
                             ->send();
                     }),
                 DeleteAction::make()
+                    ->label('Delete Permanently')
                     ->requiresConfirmation(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([
+                    BulkAction::make('sync_all_from_sumit')
+                        ->label('Sync All from SUMIT')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('info')
+                        ->requiresConfirmation()
+                        ->modalHeading('Sync Selected Tokens from SUMIT')
+                        ->modalDescription('This will fetch the latest data from SUMIT for all selected tokens.')
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $successCount = 0;
+                            $failCount = 0;
+
+                            foreach ($records as $record) {
+                                $result = \OfficeGuy\LaravelSumitGateway\Services\TokenService::syncTokenFromSumit($record);
+                                if ($result['success']) {
+                                    $successCount++;
+                                } else {
+                                    $failCount++;
+                                }
+                            }
+
+                            Notification::make()
+                                ->title('Bulk sync completed')
+                                ->body("Successfully synced: {$successCount}, Failed: {$failCount}")
+                                ->success()
+                                ->send();
+                        }),
                     DeleteBulkAction::make(),
                 ]),
             ])
@@ -188,17 +337,18 @@ class TokenResource extends Resource
         return [
             'index' => Pages\ListTokens::route('/'),
             'view' => Pages\ViewToken::route('/{record}'),
+            'edit' => Pages\EditToken::route('/{record}/edit'),
         ];
     }
 
     public static function canCreate(): bool
     {
-        return false;
+        return false; // Tokens are created via payment flow, not manually
     }
 
     public static function canEdit($record): bool
     {
-        return false;
+        return true; // Allow editing for admin notes and is_default
     }
 
     public static function getNavigationBadge(): ?string

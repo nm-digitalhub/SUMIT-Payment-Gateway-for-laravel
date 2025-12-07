@@ -211,6 +211,46 @@ class OfficeGuyServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register Filament Clusters for navigation organization.
+     *
+     * Registers package Clusters with Filament panels so resources are grouped properly.
+     * Uses Filament's serving hook to register after panels are initialized.
+     */
+    protected function registerFilamentClusters(): void
+    {
+        if (!class_exists(\Filament\Facades\Filament::class)) {
+            return;
+        }
+
+        // Use Filament's serving hook to register clusters after panels are ready
+        \Filament\Facades\Filament::serving(function () {
+            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters');
+
+            // Register clusters for admin panel
+            try {
+                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
+                $adminPanel->clusters([
+                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
+                ]);
+                \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
+            } catch (\Exception $e) {
+                \Log::error('[SUMIT] Failed to register SumitGateway cluster: ' . $e->getMessage());
+            }
+
+            // Register clusters for client panel
+            try {
+                $clientPanel = \Filament\Facades\Filament::getPanel('client');
+                $clientPanel->clusters([
+                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
+                ]);
+                \Log::info('[SUMIT] SumitClient cluster registered to client panel');
+            } catch (\Exception $e) {
+                \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Register stock sync scheduler based on settings.
      *
      * Schedules automatic stock synchronization based on the stock_sync_freq setting.
