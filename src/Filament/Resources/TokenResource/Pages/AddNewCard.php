@@ -30,15 +30,7 @@ class AddNewCard extends Page
         $this->ownerId = request()->integer('owner_id');
         $this->ownerType = request()->string('owner_type')->toString();
 
-        if (!$this->ownerId || !$this->ownerType) {
-            Notification::make()
-                ->title('Invalid Request')
-                ->body('Owner information is missing')
-                ->danger()
-                ->send();
-
-            redirect()->to(TokenResource::getUrl('index'));
-        }
+        abort_unless($this->ownerId && $this->ownerType, 404, 'Owner information is missing');
     }
 
     public function getOwner(): mixed
