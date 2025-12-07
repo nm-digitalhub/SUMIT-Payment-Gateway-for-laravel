@@ -125,6 +125,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Automatically syncs documents and subscriptions when webhooks are received
         Event::subscribe(DocumentSyncListener::class);
 
+        // Register auto-create user listener (v1.14.0+)
+        // Automatically creates user account for guest purchases after successful payment
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted::class,
+            \OfficeGuy\LaravelSumitGateway\Listeners\AutoCreateUserListener::class
+        );
+
         // Register stock sync scheduler based on settings
         $this->registerStockSyncScheduler();
 

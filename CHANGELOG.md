@@ -7,6 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+- **Automatic Guest User Creation (v1.14.0)**
+  - New `AutoCreateUserListener` automatically creates user accounts for guest purchasers after successful payment
+  - Listens to `PaymentCompleted` event and creates User + Client records
+  - Generates 12-character temporary password with configurable expiry (default: 7 days)
+  - Sends welcome email with login credentials and order details
+  - Gracefully handles existing users (links order without creating duplicate)
+  - Configurable via Admin Panel or .env:
+    - `OFFICEGUY_AUTO_CREATE_GUEST_USER` (default: true)
+    - `OFFICEGUY_GUEST_PASSWORD_EXPIRY_DAYS` (default: 7)
+  - Files:
+    - `src/Listeners/AutoCreateUserListener.php` (260 lines)
+    - `app/Mail/GuestWelcomeWithPasswordMail.php` (95 lines)
+    - `resources/views/emails/guest-welcome-with-password.blade.php` (364 lines)
+  - Registered in: `src/OfficeGuyServiceProvider.php:128-133`
+  - Config: `config/officeguy.php:108-123`
+
 ## [V1.8.3] - 2025-12-01
 
 ### Fixed

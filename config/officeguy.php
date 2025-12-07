@@ -107,6 +107,23 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Guest User Auto-Creation (v1.14.0+)
+    |--------------------------------------------------------------------------
+    |
+    | Automatically create user accounts for guest purchasers after successful payment.
+    | When enabled, guest users will receive a welcome email with temporary password.
+    |
+    | - auto_create_guest_user: Enable/disable automatic user creation for guests
+    | - guest_password_expiry_days: Number of days until temporary password expires
+    |
+    | These settings can be managed via Admin Panel → Office Guy Settings → User Management
+    |
+    */
+    'auto_create_guest_user' => env('OFFICEGUY_AUTO_CREATE_GUEST_USER', true),
+    'guest_password_expiry_days' => env('OFFICEGUY_GUEST_PASSWORD_EXPIRY_DAYS', 7),
+
+    /*
+    |--------------------------------------------------------------------------
     | Tokenization Settings
     |--------------------------------------------------------------------------
     */

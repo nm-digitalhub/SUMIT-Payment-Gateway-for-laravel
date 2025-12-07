@@ -30,6 +30,7 @@
 - [Multi-Vendor](#multi-vendor)
 - [תרומות](#תרומות-donations)
 - [Upsell / CartFlows](#upsell--cartflows)
+- [יצירת משתמש אוטומטית לאחר תשלום](#יצירת-משתמש-אוטומטית-לאחר-תשלום-v1140)
 - [אירועים](#אירועים-events)
 - [Custom Event Webhooks](#custom-event-webhooks)
 - [Webhook Events Resource](#webhook-events-resource-admin-panel)
@@ -926,6 +927,118 @@ $result = UpsellService::processUpsellCharge($upsellOrder, $token, $parentOrderI
 // חיוב עם זיהוי אוטומטי של הטוקן
 $result = UpsellService::processUpsellWithAutoToken($upsellOrder, $parentOrderId, $customer);
 ```
+
+---
+
+## יצירת משתמש אוטומטית לאחר תשלום (v1.14.0+)
+
+החבילה תוכל ליצור באופן אוטומטי חשבון משתמש עבור קונים אורחים (לא מחוברים) לאחר השלמת תשלום מוצלח.
+
+### תכונות
+
+- ✅ **יצירה אוטומטית**: נוצר חשבון User + Client אוטומטית לאחר תשלום מוצלח
+- ✅ **סיסמה זמנית**: נוצרת סיסמה אקראית בת 12 תווים עם תוקף של 7 ימים (ניתן להגדרה)
+- ✅ **מייל ברוכים הבאים**: נשלח מייל עם פרטי התחברות, הסיסמה הזמנית ופרטי ההזמנה
+- ✅ **טיפול במשתמשים קיימים**: אם קיים משתמש עם אותו אימייל, ההזמנה תקושר אליו ללא יצירת משתמש כפול
+- ✅ **ניתן להשבתה**: ניתן להפעיל/להשבית את התכונה דרך Admin Panel או .env
+
+### הפעלה והגדרות
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** > **User Management**
+
+**הגדרות זמינות:**
+- **Auto Create Guest User** - הפעלת/השבתת יצירת משתמש אוטומטית (ברירת מחדל: מופעל)
+- **Guest Password Expiry Days** - מספר ימים עד לתוקף הסיסמה הזמנית (ברירת מחדל: 7)
+
+**ב-.env:**
+```env
+OFFICEGUY_AUTO_CREATE_GUEST_USER=true
+OFFICEGUY_GUEST_PASSWORD_EXPIRY_DAYS=7
+```
+
+### איך זה עובד?
+
+1. **לקוח אורח מבצע תשלום** - לקוח שאינו מחובר מבצע תשלום מוצלח דרך עמוד התשלום
+2. **אירוע PaymentCompleted** - החבילה משדרת את האירוע `PaymentCompleted`
+3. **AutoCreateUserListener מופעל** - Listener בודק אם ההזמנה היא של אורח (user_id = null)
+4. **בדיקת משתמש קיים** - אם קיים משתמש עם אותו אימייל, ההזמנה מקושרת אליו
+5. **יצירת משתמש חדש** - אם לא קיים משתמש:
+   - נוצר User עם פרטים מההזמנה
+   - נוצרת סיסמה זמנית (12 תווים, תוקף 7 ימים)
+   - נוצר Client מקושר למשתמש
+   - ההזמנה מקושרת למשתמש וללקוח
+6. **שליחת מייל** - נשלח מייל ברוכים הבאים עם:
+   - פרטי ההתחברות (אימייל וסיסמה זמנית)
+   - קישור לפורטל הלקוחות
+   - פרטי ההזמנה
+   - הוראות שימוש
+
+### דוגמת מייל
+
+המייל שנשלח ללקוח כולל:
+- כותרת: "תשלום בוצע בהצלחה - פרטי התחברות לפורטל הלקוחות"
+- הסיסמה הזמנית בולטת ומסומנת
+- פרטי התחברות: אימייל, סיסמה, תוקף
+- פרטי ההזמנה: מספר הזמנה, סכום, תאריך
+- קישור ישיר לפורטל הלקוחות
+- הוראות חשובות ושלבים הבאים
+
+### מה נוצר?
+
+**User:**
+```php
+[
+    'name' => 'שם מלא מההזמנה',
+    'first_name' => 'שם פרטי',
+    'last_name' => 'שם משפחה',
+    'email' => 'client@example.com',
+    'phone' => 'טלפון מההזמנה',
+    'company' => 'שם החברה (אם קיים)',
+    'address' => 'כתובת',
+    'city' => 'עיר',
+    'country' => 'IL',
+    'password' => 'סיסמה מוצפנת (Hash)',
+    'role' => 'client',
+    'email_verified_at' => now(),
+    'has_temporary_password' => true,
+    'temporary_password_expires_at' => now()->addDays(7),
+    'temporary_password_created_by' => null, // נוצרה אוטומטית
+]
+```
+
+**Client:**
+```php
+Client::createFromUser($user);
+// יוצר Client עם כל הפרטים מהמשתמש
+```
+
+**Order:**
+```php
+$order->update([
+    'user_id' => $user->id,
+    'client_id' => $client->id,
+]);
+```
+
+### השבתת התכונה
+
+אם ברצונך להשבית את יצירת המשתמש האוטומטית:
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **User Management** ושנו את **Auto Create Guest User** ל-OFF
+
+**או ב-.env:**
+```env
+OFFICEGUY_AUTO_CREATE_GUEST_USER=false
+```
+
+### קבצים קשורים
+
+- `src/Listeners/AutoCreateUserListener.php` - Listener המטפל ביצירת המשתמש
+- `app/Mail/GuestWelcomeWithPasswordMail.php` - Mailable לשליחת המייל
+- `resources/views/emails/guest-welcome-with-password.blade.php` - תבנית המייל
+- `config/officeguy.php:108-123` - הגדרות
 
 ---
 
