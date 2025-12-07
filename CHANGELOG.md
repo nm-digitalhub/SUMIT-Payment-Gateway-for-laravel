@@ -7,7 +7,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.15.0] - 2025-12-07
+
 ### Added
+- **Email Existence Check During Checkout**
+  - Real-time email validation to prevent duplicate user accounts
+  - Blocks checkout for existing users and redirects to login
+  - New API endpoint: `POST /officeguy/api/check-email`
+  - Case-insensitive email lookup with 15-second timeout
+  - Rate limiting: 10 requests/minute to prevent abuse
+  - CSRF exempt (read-only, safe endpoint)
+  - Multi-language support (Hebrew, English, French)
+  - Fail-safe design: continues checkout on error
+  - Files:
+    - `src/Http/Controllers/Api/CheckEmailController.php` (NEW)
+    - `routes/officeguy.php` (added check-email route)
+    - `resources/views/pages/checkout.blade.php` (Alpine.js + UI)
+    - `docs/EMAIL_USER_CHECK_SPEC.md` (specification)
+  - UI Features:
+    - Warning message with login button for existing users
+    - Loading spinner during email verification
+    - Disabled pay button when user must login
+    - @blur event triggers automatic check
+  - Testing:
+    - Backend validated with PHP test script ✅
+    - Frontend validated with Puppeteer browser automation ✅
+
+### Added (Previous)
 - **Automatic Guest User Creation (v1.14.0)**
   - New `AutoCreateUserListener` automatically creates user accounts for guest purchasers after successful payment
   - Listens to `PaymentCompleted` event and creates User + Client records
