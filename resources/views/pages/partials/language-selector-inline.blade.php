@@ -5,7 +5,7 @@
      * Designed to match checkout page aesthetic EXACTLY:
      * - Same button style as Accessibility button
      * - Consistent with Trust Badges design
-     * - Uses checkout color palette (#4AD993, #4BD0CC, #F8F9FF)
+     * - Uses checkout color palette (#3B82F6, #60A5FA, #F8F9FF) - Blue NM-DigitalHub Branding
      * - Alpine.js integrated with checkout state
      * - RTL-aware positioning
      *
@@ -85,7 +85,7 @@
         class="bg-white p-3 rounded-xl shadow-sm hover:shadow-md transition-all duration-200
                flex items-center gap-2 min-w-[48px] justify-center relative"
         :class="{
-            'ring-2 ring-[#4AD993] ring-offset-2': languageOpen,
+            'ring-2 ring-[#3B82F6] ring-offset-2': languageOpen,
             'opacity-50 pointer-events-none': switching
         }"
         title="{{ __('Select language') }}"
@@ -96,7 +96,7 @@
     >
         {{-- Loading Spinner --}}
         <div x-show="switching" x-cloak class="absolute inset-0 flex items-center justify-center bg-white bg-opacity-90 rounded-xl">
-            <svg class="animate-spin h-5 w-5 text-[#4AD993]" fill="none" viewBox="0 0 24 24">
+            <svg class="animate-spin h-5 w-5 text-[#3B82F6]" fill="none" viewBox="0 0 24 24">
                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                 <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
@@ -160,7 +160,7 @@
                     data-locale-switch="{{ $localeCode }}"
                     class="w-full flex items-center gap-3 px-4 py-3
                            {{ $localeCode === $currentLocale
-                              ? 'bg-gradient-to-r from-[#E8F9F9] to-[#F0FDFD] text-[#4AD993] font-semibold'
+                              ? 'bg-gradient-to-r from-[#DBEAFE] to-[#EFF6FF] text-[#3B82F6] font-semibold'
                               : 'text-[#111928] hover:bg-[#F8F9FF]' }}
                            transition-all duration-150 group
                            {{ $isRtl && in_array($localeCode, ['he', 'ar']) ? 'text-right flex-row-reverse' : 'text-left' }}"
@@ -177,14 +177,14 @@
                         <p class="text-sm font-medium {{ in_array($localeCode, ['he', 'ar']) ? 'font-[\'Heebo\',sans-serif]' : '' }}">
                             {{ $localeData['name'] }}
                         </p>
-                        <p class="text-xs text-[#8890B1] {{ $localeCode === $currentLocale ? 'text-[#4AD993]' : '' }}">
+                        <p class="text-xs text-[#8890B1] {{ $localeCode === $currentLocale ? 'text-[#3B82F6]' : '' }}">
                             {{ strtoupper($localeCode) }}
                         </p>
                     </div>
 
                     {{-- Check Icon for Current Language --}}
                     @if($localeCode === $currentLocale)
-                        <svg class="w-5 h-5 text-[#4AD993] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <svg class="w-5 h-5 text-[#3B82F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                         </svg>
                     @endif
@@ -195,7 +195,7 @@
         {{-- Footer Info --}}
         <div class="px-4 py-2 bg-[#F8F9FF] border-t border-[#E9E9E9]">
             <p class="text-xs text-[#8890B1] {{ $isRtl ? 'text-right' : 'text-left' }} flex items-center {{ $isRtl ? 'flex-row-reverse' : '' }} gap-1.5">
-                <svg class="w-3.5 h-3.5 text-[#4AD993]" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                <svg class="w-3.5 h-3.5 text-[#3B82F6]" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                 </svg>
                 <span>{{ __('Language persists across sessions') }}</span>

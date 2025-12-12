@@ -552,12 +552,96 @@ class PublicCheckoutController extends Controller
             'token' => $token,
             'last_four' => substr($data['CardNumber'] ?? $data['CardPattern'] ?? '', -4),
             'card_type' => $data['CardType'] ?? $data['Brand'] ?? null,
-            'expiry_month' => isset($data['ExpirationMonth']) 
-                ? str_pad((string) $data['ExpirationMonth'], 2, '0', STR_PAD_LEFT) 
+            'expiry_month' => isset($data['ExpirationMonth'])
+                ? str_pad((string) $data['ExpirationMonth'], 2, '0', STR_PAD_LEFT)
                 : null,
-            'expiry_year' => isset($data['ExpirationYear']) 
-                ? (string) $data['ExpirationYear'] 
+            'expiry_year' => isset($data['ExpirationYear'])
+                ? (string) $data['ExpirationYear']
                 : null,
         ]);
+    }
+
+    /**
+     * Display checkout page for Package model (hosting/domain/SSL).
+     *
+     * @param Request $request
+     * @param string|int $id Package ID
+     * @return View
+     */
+    public function showPackage(Request $request, string|int $id): View
+    {
+        // Set resolver for Package model
+        $request->route()->setParameter('resolver', function($id) {
+            $modelClass = 'App\\Models\\Package';
+            if (class_exists($modelClass)) {
+                return $modelClass::find($id);
+            }
+            return null;
+        });
+
+        return $this->show($request, $id);
+    }
+
+    /**
+     * Process payment for Package model.
+     *
+     * @param Request $request
+     * @param string|int $id Package ID
+     * @return mixed
+     */
+    public function processPackage(Request $request, string|int $id)
+    {
+        // Set resolver for Package model
+        $request->route()->setParameter('resolver', function($id) {
+            $modelClass = 'App\\Models\\Package';
+            if (class_exists($modelClass)) {
+                return $modelClass::find($id);
+            }
+            return null;
+        });
+
+        return $this->process($request, $id);
+    }
+
+    /**
+     * Display checkout page for MayaNetEsimProduct model.
+     *
+     * @param Request $request
+     * @param string|int $id eSIM Product ID
+     * @return View
+     */
+    public function showEsim(Request $request, string|int $id): View
+    {
+        // Set resolver for eSIM model
+        $request->route()->setParameter('resolver', function($id) {
+            $modelClass = 'App\\Models\\MayaNetEsimProduct';
+            if (class_exists($modelClass)) {
+                return $modelClass::find($id);
+            }
+            return null;
+        });
+
+        return $this->show($request, $id);
+    }
+
+    /**
+     * Process payment for MayaNetEsimProduct model.
+     *
+     * @param Request $request
+     * @param string|int $id eSIM Product ID
+     * @return mixed
+     */
+    public function processEsim(Request $request, string|int $id)
+    {
+        // Set resolver for eSIM model
+        $request->route()->setParameter('resolver', function($id) {
+            $modelClass = 'App\\Models\\MayaNetEsimProduct';
+            if (class_exists($modelClass)) {
+                return $modelClass::find($id);
+            }
+            return null;
+        });
+
+        return $this->process($request, $id);
     }
 }

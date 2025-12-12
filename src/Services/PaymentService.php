@@ -121,16 +121,35 @@ class PaymentService
     public static function setPaymentMethodForCustomer(string|int $sumitCustomerId, string $token, array $method = []): array
     {
         try {
+            // Build payload - use PaymentMethod with CreditCard_Token (for permanent tokens)
+            // OR use SingleUseToken (for temporary tokens from Payments.JS)
             $payload = [
                 'Credentials' => self::getCredentials(),
                 'Customer' => [
                     'ID' => (int) $sumitCustomerId,
                 ],
-                'PaymentMethod' => array_merge([
-                    'CreditCard_Token' => $token,
-                    'Type' => 'CreditCard (1)',
-                ], $method),
             ];
+
+            // If token looks like a permanent token (UUID format), send as PaymentMethod
+            // Otherwise, send as SingleUseToken
+            if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $token)) {
+                // Permanent token - use PaymentMethod
+
+                // Try to find token in database to get expiry dates
+                $tokenModel = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken::where('token', $token)->first();
+
+                $payload['PaymentMethod'] = array_merge([
+                    'Type' => 1,  // CreditCard type as integer (per API examples)
+                    'CreditCard_Token' => $token,
+                    'CreditCard_ExpirationMonth' => $tokenModel ? (int) $tokenModel->expiry_month : null,
+                    'CreditCard_ExpirationYear' => $tokenModel ? (int) $tokenModel->expiry_year : null,
+                ], $method);
+            } else {
+                // Single-use token - use SingleUseToken field
+                $payload['SingleUseToken'] = $token;
+            }
+
+            \Log::info('setPaymentMethodForCustomer payload', ['payload' => $payload]);
 
             $response = OfficeGuyApi::post(
                 $payload,
@@ -138,6 +157,8 @@ class PaymentService
                 config('officeguy.environment', 'www'),
                 false
             );
+
+            \Log::info('setPaymentMethodForCustomer response', ['response' => $response]);
 
             if ($response === null || ($response['Status'] ?? 1) !== 0) {
                 return [

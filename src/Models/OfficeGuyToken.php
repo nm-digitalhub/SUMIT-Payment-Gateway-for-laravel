@@ -132,4 +132,67 @@ class OfficeGuyToken extends Model
     {
         return '**** **** **** ' . $this->last_four;
     }
+
+    /**
+     * קבלת שם חברת האשראי (Brand) בפורמט קריא
+     */
+    public function getCardTypeName(): string
+    {
+        $type = (string) ($this->metadata['Brand'] ?? $this->card_type ?? '');
+
+        return match ($type) {
+            '1' => 'Visa',
+            '2' => 'MasterCard',
+            '6' => 'American Express',
+            '22' => 'CAL / כאל',
+            default => $type !== '' ? "כרטיס אשראי ({$type})" : 'כרטיס אשראי',
+        };
+    }
+
+    /**
+     * קבלת שם המנפיק (Issuer) בפורמט קריא
+     */
+    public function getIssuerName(): ?string
+    {
+        $issuer = $this->metadata['Issuer'] ?? null;
+
+        if (!$issuer) {
+            return null;
+        }
+
+        return match ((string) $issuer) {
+            '1' => 'בנק לאומי',
+            '2' => 'בנק הפועלים',
+            '3' => 'בנק דיסקונט',
+            '4' => 'בנק יהב',
+            '6' => 'בנק מזרחי טפחות',
+            '9' => 'בנק פועלי אגודת ישראל',
+            '10' => 'בנק ירושלים',
+            '11' => 'בנק אוצר החייל',
+            '12' => 'בנק הבינלאומי',
+            '13' => 'בנק מסד',
+            '14' => 'בנק יובנק',
+            '17' => 'בנק מרכנתיל דיסקונט',
+            '20' => 'ישראכרט',
+            '31' => 'לאומי קארד',
+            '35' => 'כאל',
+            default => "מנפיק {$issuer}",
+        };
+    }
+
+    /**
+     * קבלת תאריך תפוגה בפורמט קריא
+     */
+    public function getFormattedExpiry(): string
+    {
+        if (!$this->expiry_month || !$this->expiry_year) {
+            return 'לא זמין';
+        }
+
+        return sprintf(
+            '%s/%s',
+            str_pad($this->expiry_month, 2, '0', STR_PAD_LEFT),
+            $this->expiry_year
+        );
+    }
 }

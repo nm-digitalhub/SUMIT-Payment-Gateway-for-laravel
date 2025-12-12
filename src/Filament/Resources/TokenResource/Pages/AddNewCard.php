@@ -50,6 +50,9 @@ class AddNewCard extends Page
 
     public function processNewCard(): void
     {
+        // DEBUG: Log at the very start
+        file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . " - processNewCard CALLED! singleUseToken: " . substr($this->singleUseToken ?? 'NULL', 0, 20) . ", setAsDefault: " . var_export($this->setAsDefault, true) . "\n", FILE_APPEND);
+
         // Debug logging
         \Log::info('processNewCard called', [
             'singleUseToken' => $this->singleUseToken,
@@ -101,18 +104,45 @@ class AddNewCard extends Page
 
             $newToken = $result['token'];
 
+            // DEBUG: Write to file to confirm code execution
+            file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . " - Token created: {$newToken->id}, setAsDefault: " . var_export($this->setAsDefault, true) . "\n", FILE_APPEND);
+
             // Optionally set as default in SUMIT
             if ($this->setAsDefault) {
+                file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . " - Inside setAsDefault condition\n", FILE_APPEND);
+                \Log::info('setAsDefault checkbox is checked', ['setAsDefault' => $this->setAsDefault]);
                 $client = $owner->client ?? $owner;
                 $sumitCustomerId = $client->sumit_customer_id ?? null;
 
                 if ($sumitCustomerId) {
-                    PaymentService::setPaymentMethodForCustomer(
+                    \Log::info('Calling setPaymentMethodForCustomer', [
+                        'sumitCustomerId' => $sumitCustomerId,
+                        'token' => substr($newToken->token, 0, 20) . '...'
+                    ]);
+
+                    $result = PaymentService::setPaymentMethodForCustomer(
                         $sumitCustomerId,
                         $newToken->token
                     );
+
+                    \Log::info('setPaymentMethodForCustomer result', ['result' => $result]);
+
+                    if (!$result['success']) {
+                        \Log::warning('Failed to set payment method in SUMIT', [
+                            'error' => $result['error'] ?? 'Unknown error'
+                        ]);
+                        // Continue to set as default locally even if SUMIT fails
+                    }
+
                     $newToken->setAsDefault();
+                } else {
+                    \Log::warning('No SUMIT customer ID found', [
+                        'owner_type' => get_class($owner),
+                        'owner_id' => $owner->id
+                    ]);
                 }
+            } else {
+                \Log::info('setAsDefault checkbox is NOT checked', ['setAsDefault' => $this->setAsDefault]);
             }
 
             // Success! Store result data
@@ -142,6 +172,13 @@ class AddNewCard extends Page
         $this->resultData = null;
         $this->singleUseToken = null;
         $this->setAsDefault = true;
+    }
+
+    // TEST METHOD - to verify Livewire works
+    public function testLivewire(): void
+    {
+        file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . " - testLivewire() WAS CALLED!\n", FILE_APPEND);
+        \Log::info('testLivewire() method called successfully');
     }
 
     public function getPublicKey(): string

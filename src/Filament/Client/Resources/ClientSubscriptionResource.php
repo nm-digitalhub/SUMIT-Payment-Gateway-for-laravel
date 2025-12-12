@@ -55,10 +55,9 @@ class ClientSubscriptionResource extends Resource
                 }
             }
 
-            $query->where(function ($q) {
-                $q->where('subscriber_type', get_class(auth()->user()))
-                  ->where('subscriber_id', auth()->id());
-            });
+            // Filter by SUMIT customer ID (not Laravel user_id) because some subscriptions
+            // may have user_id=NULL but sumit_customer_id populated from SUMIT sync
+            $query->where('sumit_customer_id', auth()->user()->getSumitCustomerId());
         }
 
         return $query;

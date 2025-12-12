@@ -136,8 +136,8 @@
         @click="open = !open"
         class="flex items-center gap-2 bg-white dark:bg-gray-800 border-2 border-gray-200 dark:border-gray-700
                rounded-lg {{ $buttonSize }} font-medium text-gray-700 dark:text-gray-300
-               hover:border-[#4AD993] hover:bg-gray-50 dark:hover:bg-gray-700
-               focus:outline-none focus:ring-2 focus:ring-[#4AD993] focus:ring-offset-2
+               hover:border-[#3B82F6] hover:bg-gray-50 dark:hover:bg-gray-700
+               focus:outline-none focus:ring-2 focus:ring-[#3B82F6] focus:ring-offset-2
                transition-all duration-200 shadow-sm hover:shadow-md"
         :aria-expanded="open"
         aria-haspopup="true"
@@ -197,7 +197,7 @@
                     @click="switchLanguage('{{ $localeCode }}')"
                     class="w-full flex items-center gap-3 px-4 py-2.5 text-sm
                            {{ $localeCode === $currentLocale
-                              ? 'bg-[#E8F9F9] text-[#4AD993] font-semibold'
+                              ? 'bg-gradient-to-r from-[#DBEAFE] to-[#EFF6FF] text-[#3B82F6] font-semibold'
                               : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700' }}
                            transition-colors duration-150
                            {{ $isRtl && in_array($localeCode, ['he', 'ar']) ? 'text-right' : 'text-left' }}"
@@ -218,7 +218,7 @@
 
                     {{-- Check Icon for Current Language --}}
                     @if($localeCode === $currentLocale)
-                        <svg class="w-4 h-4 text-[#4AD993] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
+                        <svg class="w-4 h-4 text-[#3B82F6] flex-shrink-0" fill="currentColor" viewBox="0 0 20 20" aria-hidden="true">
                             <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                         </svg>
                     @endif

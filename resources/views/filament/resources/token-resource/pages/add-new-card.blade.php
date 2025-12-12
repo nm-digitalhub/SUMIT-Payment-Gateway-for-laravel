@@ -308,7 +308,9 @@
                                 $('#single_use_token').val(tokenValue);
 
                                 // Get set_as_default value
-                                const setAsDefault = setAsDefaultCheckbox.checked;
+                                const setAsDefault = setAsDefaultCheckbox ? setAsDefaultCheckbox.checked : true;
+                                console.log('Checkbox element:', setAsDefaultCheckbox);
+                                console.log('Checkbox checked state:', setAsDefault);
 
                                 // Submit via Livewire
                                 const component = window.Livewire.find('{{ $this->getId() }}');

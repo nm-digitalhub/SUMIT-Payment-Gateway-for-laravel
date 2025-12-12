@@ -121,6 +121,8 @@ Route::prefix($prefix)
 
         // Public checkout page - routes are always registered but controller checks if enabled
         // Can be enabled via Admin Panel (Settings) or config/env
+
+        // Generic checkout (uses payable_model_class from Admin Panel)
         Route::get(
             RouteConfig::getPublicCheckoutPath(),
             [PublicCheckoutController::class, 'show']
@@ -130,6 +132,29 @@ Route::prefix($prefix)
             RouteConfig::getPublicCheckoutPath(),
             [PublicCheckoutController::class, 'process']
         )->name('officeguy.public.checkout.process');
+
+        // Specific model checkouts (bypasses Admin Panel setting)
+        // Package checkout (hosting/domain/SSL)
+        Route::get(
+            'checkout/package/{id}',
+            [PublicCheckoutController::class, 'showPackage']
+        )->name('officeguy.public.checkout.package');
+
+        Route::post(
+            'checkout/package/{id}',
+            [PublicCheckoutController::class, 'processPackage']
+        )->name('officeguy.public.checkout.package.process');
+
+        // eSIM checkout
+        Route::get(
+            'checkout/esim/{id}',
+            [PublicCheckoutController::class, 'showEsim']
+        )->name('officeguy.public.checkout.esim');
+
+        Route::post(
+            'checkout/esim/{id}',
+            [PublicCheckoutController::class, 'processEsim']
+        )->name('officeguy.public.checkout.esim.process');
 
         /*
         |--------------------------------------------------------------------------

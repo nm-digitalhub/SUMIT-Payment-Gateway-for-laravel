@@ -207,15 +207,22 @@ class SumitWebhook extends Model
         ?string $sourceIp = null,
         ?string $endpoint = null
     ): static {
-        // Extract common fields from payload
-        $cardId = $payload['ID'] ?? $payload['id'] ?? $payload['CardID'] ?? null;
+        // Extract common fields from payload (supports both flat and Properties structure)
+        $cardId = $payload['ID'] ?? $payload['id'] ?? $payload['CardID'] ?? $payload['EntityID'] ?? null;
         $customerId = $payload['CustomerID'] ?? $payload['customer_id'] ?? null;
-        $customerEmail = $payload['Email'] ?? $payload['email'] ?? null;
-        $customerName = $payload['Name'] ?? $payload['name'] ?? $payload['CustomerName'] ?? null;
+        $customerEmail = $payload['Email']
+            ?? $payload['email']
+            ?? $payload['Properties']['Customers_EmailAddress'][0]
+            ?? null;
+        $customerName = $payload['Name']
+            ?? $payload['name']
+            ?? $payload['CustomerName']
+            ?? $payload['Properties']['Customers_FullName'][0]
+            ?? null;
         $amount = $payload['Amount'] ?? $payload['amount'] ?? $payload['Total'] ?? null;
         $currency = $payload['Currency'] ?? $payload['currency'] ?? null;
         $cardType = $payload['CardType'] ?? $payload['card_type'] ?? $payload['Type'] ?? null;
-        
+
         $clientId = static::matchClientIdFromPayload($payload);
 
         return static::create([
@@ -243,6 +250,7 @@ class SumitWebhook extends Model
     protected static function matchClientIdFromPayload(array $payload): ?int
     {
         try {
+            // Try to match by SUMIT customer ID
             $customerId = $payload['CustomerID'] ?? $payload['customer_id'] ?? $payload['ID'] ?? null;
             if ($customerId) {
                 $client = \App\Models\Client::where('sumit_customer_id', $customerId)->first();
@@ -251,7 +259,13 @@ class SumitWebhook extends Model
                 }
             }
 
-            $email = $payload['Email'] ?? $payload['email'] ?? $payload['CustomerEmail'] ?? $payload['CustomerEmailAddress'] ?? null;
+            // Try to match by email (supports both flat and Properties structure)
+            $email = $payload['Email']
+                ?? $payload['email']
+                ?? $payload['CustomerEmail']
+                ?? $payload['CustomerEmailAddress']
+                ?? $payload['Properties']['Customers_EmailAddress'][0]
+                ?? null;
             if ($email) {
                 $emailNorm = strtolower(trim($email));
                 $client = \App\Models\Client::whereRaw('LOWER(email) = ?', [$emailNorm])
@@ -262,7 +276,11 @@ class SumitWebhook extends Model
                 }
             }
 
-            $vat = $payload['Customers_CompanyNumber'][0] ?? $payload['CompanyNumber'] ?? null;
+            // Try to match by VAT/Company number (supports both structures)
+            $vat = $payload['Customers_CompanyNumber'][0]
+                ?? $payload['CompanyNumber']
+                ?? $payload['Properties']['Customers_CompanyNumber'][0]
+                ?? null;
             if ($vat) {
                 $client = \App\Models\Client::where('vat_number', $vat)->orWhere('id_number', $vat)->first();
                 if ($client) {
@@ -270,7 +288,11 @@ class SumitWebhook extends Model
                 }
             }
 
-            $phone = $payload['Customers_Phone'][0] ?? $payload['Phone'] ?? null;
+            // Try to match by phone (supports both structures)
+            $phone = $payload['Customers_Phone'][0]
+                ?? $payload['Phone']
+                ?? $payload['Properties']['Customers_Phone'][0]
+                ?? null;
             if ($phone) {
                 $norm = preg_replace('/\\D+/', '', $phone);
                 $client = \App\Models\Client::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])

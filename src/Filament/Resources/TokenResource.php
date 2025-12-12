@@ -20,6 +20,7 @@ use Filament\Tables\Table;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 class TokenResource extends Resource
@@ -52,6 +53,30 @@ class TokenResource extends Resource
                             ->live()
                             ->afterStateUpdated(function ($state, $record) {
                                 if ($state && $record) {
+                                    // Get owner's SUMIT customer ID
+                                    $owner = $record->owner;
+                                    $client = $owner?->client ?? $owner;
+                                    $sumitCustomerId = $client?->sumit_customer_id ?? null;
+
+                                    if ($sumitCustomerId) {
+                                        // Sync with SUMIT first
+                                        $result = PaymentService::setPaymentMethodForCustomer(
+                                            $sumitCustomerId,
+                                            $record->token,
+                                            $record->metadata ?? []
+                                        );
+
+                                        if (!$result['success']) {
+                                            Notification::make()
+                                                ->title('Failed to update SUMIT')
+                                                ->body($result['error'] ?? 'Unknown error')
+                                                ->danger()
+                                                ->send();
+                                            return;
+                                        }
+                                    }
+
+                                    // Update local database
                                     $record->setAsDefault();
                                 }
                             }),
@@ -227,9 +252,34 @@ class TokenResource extends Resource
                     ->visible(fn ($record) => !$record->is_default && !$record->deleted_at)
                     ->requiresConfirmation()
                     ->action(function ($record) {
+                        // Get owner's SUMIT customer ID
+                        $owner = $record->owner;
+                        $client = $owner?->client ?? $owner;
+                        $sumitCustomerId = $client?->sumit_customer_id ?? null;
+
+                        if ($sumitCustomerId) {
+                            // Sync with SUMIT first
+                            $result = PaymentService::setPaymentMethodForCustomer(
+                                $sumitCustomerId,
+                                $record->token,
+                                $record->metadata ?? []
+                            );
+
+                            if (!$result['success']) {
+                                Notification::make()
+                                    ->title('Failed to update SUMIT')
+                                    ->body($result['error'] ?? 'Unknown error')
+                                    ->danger()
+                                    ->send();
+                                return;
+                            }
+                        }
+
+                        // Update local database
                         $record->setAsDefault();
                         Notification::make()
                             ->title('Token set as default')
+                            ->body($sumitCustomerId ? 'Updated in SUMIT and local database' : 'Updated in local database only')
                             ->success()
                             ->send();
                     }),

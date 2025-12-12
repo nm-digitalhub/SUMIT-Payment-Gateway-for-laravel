@@ -32,10 +32,10 @@ class ClientWebhookEventResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Show only webhooks related to the current user's transactions
+        // Show only webhooks related to the current user's SUMIT customer ID transactions
         if (auth()->check()) {
             $query->whereHas('transaction', function ($q) {
-                $q->where('customer_id', auth()->id());
+                $q->where('customer_id', auth()->user()->getSumitCustomerId());
             });
         }
 

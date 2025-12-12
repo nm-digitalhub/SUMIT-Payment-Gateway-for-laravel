@@ -35,9 +35,9 @@ class ClientDocumentResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Filter to only show documents for the authenticated user's orders
+        // Filter to only show documents for the authenticated user's SUMIT customer ID
         return parent::getEloquentQuery()
-            ->where('customer_id', auth()->id());
+            ->where('customer_id', auth()->user()->getSumitCustomerId());
     }
 
     public static function form(Schema $schema): Schema

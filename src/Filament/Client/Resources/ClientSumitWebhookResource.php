@@ -32,14 +32,13 @@ class ClientSumitWebhookResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Show only webhooks related to the current user
+        // Show only webhooks related to the current user's client
         if (auth()->check()) {
-            $query->where(function ($q) {
-                // Match by customer email or ID in payload
-                $q->whereJsonContains('payload->customer->email', auth()->user()->email)
-                  ->orWhereJsonContains('payload->customer_id', (string) auth()->id())
-                  ->orWhereJsonContains('payload->customer_id', auth()->id());
-            });
+            // Use the client_id field that's populated by matchClientIdFromPayload()
+            // This is more efficient than JSON queries and works with all webhook types
+            if (auth()->user()->client_id) {
+                $query->where('client_id', auth()->user()->client_id);
+            }
         }
 
         return $query;

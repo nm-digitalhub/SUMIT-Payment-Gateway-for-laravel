@@ -71,8 +71,8 @@
         @endif
         
         @if($isLocked)
-            <span class="inline-flex items-center px-2 py-0.5 text-xs font-medium text-[#4BD0CC] bg-[#E8F9F9] rounded-full">
-                <svg class="w-3 h-3 {{ $rtl ? 'ml-1' : 'mr-1' }}" fill="currentColor" viewBox="0 0 20 20">
+            <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold text-[#3B82F6] bg-gradient-to-r from-[#DBEAFE] to-[#EFF6FF] rounded-full shadow-sm">
+                <svg class="w-3.5 h-3.5 {{ $rtl ? 'ml-1' : 'mr-1' }}" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                 </svg>
                 {{ __('Saved') }}
@@ -145,7 +145,7 @@
         {{-- Success Checkmark (for locked/filled fields) --}}
         @if($isLocked && empty($icon))
             <div class="absolute {{ $rtl ? 'left-3' : 'right-3' }} top-1/2 -translate-y-1/2">
-                <svg class="w-5 h-5 text-[#4AD993]" fill="currentColor" viewBox="0 0 20 20">
+                <svg class="w-5 h-5 text-[#3B82F6]" fill="currentColor" viewBox="0 0 20 20">
                     <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                 </svg>
             </div>
