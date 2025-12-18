@@ -1,0 +1,192 @@
+{
+    "layout": {
+        "direction": "rtl"
+    },
+    "pages": {
+        "auth": {
+            "login": {
+                "heading": "התחברות לפאנל הניהול",
+                "form": {
+                    "email": {
+                        "label": "כתובת אימייל"
+                    },
+                    "password": {
+                        "label": "סיסמה"
+                    },
+                    "remember": {
+                        "label": "זכור אותי"
+                    }
+                },
+                "actions": {
+                    "authenticate": {
+                        "label": "התחבר"
+                    }
+                },
+                "messages": {
+                    "failed": "פרטי ההתחברות אינם נכונים."
+                }
+            },
+            "password_reset": {
+                "request": {
+                    "heading": "איפוס סיסמה",
+                    "form": {
+                        "email": {
+                            "label": "כתובת אימייל"
+                        }
+                    },
+                    "actions": {
+                        "request": {
+                            "label": "שלח קישור איפוס"
+                        }
+                    }
+                },
+                "reset": {
+                    "heading": "איפוס סיסמה",
+                    "form": {
+                        "email": {
+                            "label": "כתובת אימייל"
+                        },
+                        "password": {
+                            "label": "סיסמה חדשה"
+                        },
+                        "password_confirmation": {
+                            "label": "אישור סיסמה"
+                        }
+                    },
+                    "actions": {
+                        "reset": {
+                            "label": "איפוס סיסמה"
+                        }
+                    }
+                }
+            }
+        },
+        "dashboard": {
+            "title": "לוח הבקרה",
+            "welcome": "ברוכים הבאים ל-NM-DigitalHUB"
+        }
+    },
+    "resources": {
+        "shared": {
+            "actions": {
+                "create": "יצירה",
+                "edit": "עריכה",
+                "delete": "מחיקה",
+                "view": "צפייה",
+                "save": "שמירה",
+                "cancel": "ביטול",
+                "confirm": "אישור",
+                "filter": "סינון",
+                "search": "חיפוש",
+                "export": "יייצוא",
+                "import": "ייבוא",
+                "bulk_delete": "מחיקה קבוצתית"
+            },
+            "labels": {
+                "created_at": "תאריך יצירה",
+                "updated_at": "תאריך עדכון",
+                "status": "סטטוס",
+                "actions": "פעולות",
+                "name": "שם",
+                "email": "אימייל",
+                "phone": "טלפון",
+                "address": "כתובת",
+                "description": "תיאור",
+                "price": "מחיר",
+                "total": "סה\"כ",
+                "amount": "כמות",
+                "date": "תאריך",
+                "time": "שעה"
+            }
+        },
+        "users": {
+            "label": "משתמש",
+            "plural_label": "משתמשים",
+            "navigation_label": "משתמשים",
+            "navigation_group": "ניהול לקוחות"
+        },
+        "orders": {
+            "label": "הזמנה",
+            "plural_label": "הזמנות",
+            "navigation_label": "הזמנות",
+            "navigation_group": "מערכת הזמנות"
+        },
+        "payments": {
+            "label": "תשלום",
+            "plural_label": "תשלומים",
+            "navigation_label": "תשלומים",
+            "navigation_group": "ניהול תשלומים"
+        },
+        "invoices": {
+            "label": "חשבונית",
+            "plural_label": "חשבוניות",
+            "navigation_label": "חשבוניות",
+            "navigation_group": "ניהול תשלומים"
+        },
+        "packages": {
+            "label": "חבילה",
+            "plural_label": "חבילות",
+            "navigation_label": "חבילות",
+            "navigation_group": "מוצרים ושירותים"
+        },
+        "domains": {
+            "label": "דומיין",
+            "plural_label": "דומיינים",
+            "navigation_label": "דומיינים",
+            "navigation_group": "מוצרים ושירותים"
+        },
+        "tickets": {
+            "label": "פנייה",
+            "plural_label": "פניות תמיכה",
+            "navigation_label": "פניות תמיכה",
+            "navigation_group": "ניהול לקוחות"
+        },
+        "pages": {
+            "label": "דף",
+            "plural_label": "דפים",
+            "navigation_label": "דפים",
+            "navigation_group": "ניהול תוכן"
+        },
+        "settings": {
+            "label": "הגדרה",
+            "plural_label": "הגדרות",
+            "navigation_label": "הגדרות מערכת",
+            "navigation_group": "הגדרות מערכת"
+        }
+    },
+    "widgets": {
+        "stats": {
+            "total_users": "סה\"כ משתמשים",
+            "total_orders": "סה\"כ הזמנות",
+            "total_revenue": "סה\"כ הכנסות",
+            "pending_orders": "הזמנות ממתינות"
+        },
+        "charts": {
+            "revenue": "הכנסות חודשיות",
+            "orders": "הזמנות לפי חודש",
+            "users": "רישומי משתמשים"
+        }
+    },
+    "notifications": {
+        "saved": "השינויים נשמרו בהצלחה",
+        "deleted": "הפריט נמחק בהצלחה",
+        "created": "הפריט נוצר בהצלחה",
+        "updated": "הפריט עודכן בהצלחה",
+        "error": "אירעה שגיאה, אנא נסה שוב"
+    },
+    "validation": {
+        "required": "שדה זה הוא חובה",
+        "email": "כתובת אימייל לא חוקית",
+        "min": "השדה חייב להכיל לפחות :min תווים",
+        "max": "השדה לא יכול להכיל יותר מ-:max תווים",
+        "unique": "הערך כבר קיים במערכת"
+    },
+    "navigation": {
+        "dashboard": "לוח הבקרה",
+        "logout": "התנתקות",
+        "profile": "פרופיל",
+        "settings": "הגדרות",
+        "toggle_theme": "החלף נושא",
+        "toggle_sidebar": "החלף סרגל צד"
+    }
+}

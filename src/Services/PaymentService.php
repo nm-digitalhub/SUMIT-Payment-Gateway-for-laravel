@@ -450,13 +450,41 @@ class PaymentService
         $settingsService = app(SettingsService::class);
         $mergeCustomers = (bool) $settingsService->get('merge_customers', false);
 
+        // Check if customer already exists in SUMIT (via Client model)
+        // If client has sumit_customer_id, return ONLY the CustomerID (not full Customer object)
+        // This prevents SUMIT from creating duplicate customers
+        $sumitCustomerId = null;
+        if ($order instanceof \Illuminate\Database\Eloquent\Model && method_exists($order, 'client')) {
+            $client = $order->client;
+            if ($client && !empty($client->sumit_customer_id)) {
+                $sumitCustomerId = $client->sumit_customer_id;
+            }
+        }
+
+        // If customer exists in SUMIT, return ONLY CustomerID
+        if ($sumitCustomerId) {
+            return ['ID' => (int) $sumitCustomerId];
+        }
+
+        // Otherwise, send full Customer object for new customer creation
+        // SUMIT supports searching by multiple parameters:
+        // - EmailAddress (primary search key)
+        // - Phone (secondary search key)
+        // - ExternalIdentifier (tertiary search key)
+        // - Name (for matching)
+        // SearchMode 'Automatic' tells SUMIT to search by these parameters
         $customer = [
             'Name' => $customerName,
             'EmailAddress' => $order->getCustomerEmail(),
             'Phone' => $order->getCustomerPhone(),
-            'ExternalIdentifier' => $order->getCustomerId() ?: '',
             'SearchMode' => $mergeCustomers ? 'Automatic' : 'None',
         ];
+
+        // Add ExternalIdentifier for additional matching (if available)
+        // This helps SUMIT match existing customers even without sumit_customer_id
+        if ($order->getCustomerId()) {
+            $customer['ExternalIdentifier'] = (string) $order->getCustomerId();
+        }
 
         if ($address) {
             $customer['Address'] = $address['address'] ?? '';
@@ -816,6 +844,11 @@ class PaymentService
         $payment = $response['Data']['Payment'] ?? null;
 
         if ($status === 0 && $payment && ($payment['ValidPayment'] ?? false) === true) {
+            // Convert SUMIT currency enum to string (0=ILS, 1=USD, 2=EUR, etc.)
+            $currencyEnum = $payment['Currency'] ?? null;
+            $currencyMap = [0 => 'ILS', 1 => 'USD', 2 => 'EUR', 3 => 'GBP'];
+            $currency = $currencyMap[$currencyEnum] ?? config('app.currency', 'ILS');
+
             // Persist transaction
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
@@ -824,6 +857,7 @@ class PaymentService
                 'customer_id' => $response['Data']['CustomerID'] ?? null,
                 'auth_number' => $payment['AuthNumber'] ?? null,
                 'amount' => $payment['Amount'] ?? $order->getPayableAmount(),
+                'currency' => $currency,
                 'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,
                 'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
                 'status' => 'completed',

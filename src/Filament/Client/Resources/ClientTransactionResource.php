@@ -31,9 +31,16 @@ class ClientTransactionResource extends Resource
 
     public static function getEloquentQuery(): Builder
     {
-        // Filter to only show transactions for the authenticated user's SUMIT customer ID
+        // Filter to only show transactions for the authenticated client's SUMIT customer ID
+        $client = auth()->user()?->client;
+
+        if (!$client) {
+            // No client found - return empty query
+            return parent::getEloquentQuery()->whereRaw('1 = 0');
+        }
+
         return parent::getEloquentQuery()
-            ->where('customer_id', auth()->user()->getSumitCustomerId());
+            ->where('customer_id', $client->getSumitCustomerId());
     }
 
     public static function form(Schema $schema): Schema

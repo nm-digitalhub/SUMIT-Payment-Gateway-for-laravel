@@ -20,6 +20,7 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 class Subscription extends Model implements Payable
 {
     use SoftDeletes;
+    use \OfficeGuy\LaravelSumitGateway\Support\Traits\HasPayableFields; // v2.0.0: Required for getOrderKey()
 
     protected $table = 'officeguy_subscriptions';
 

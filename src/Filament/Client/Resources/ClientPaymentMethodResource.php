@@ -47,17 +47,24 @@ class ClientPaymentMethodResource extends Resource
     protected static ?string $pluralModelLabel = 'אמצעי תשלום';
 
     /**
-     * מציג רק כרטיסים של המשתמש המחובר
+     * מציג רק כרטיסים של הלקוח (Client) המחובר
      */
     public static function getEloquentQuery(): Builder
     {
+        $client = auth()->user()?->client;
+
+        if (!$client) {
+            // אם אין Client, החזר query ריק
+            return parent::getEloquentQuery()->whereRaw('1 = 0');
+        }
+
         return parent::getEloquentQuery()
-            ->where('owner_type', get_class(auth()->user()))
-            ->where('owner_id', auth()->id());
+            ->where('owner_type', get_class($client))
+            ->where('owner_id', $client->id);
     }
 
     /**
-     * משיכת אמצעי תשלום מספק SUMIT ושמירה מקומית למשתמש הנוכחי.
+     * משיכת אמצעי תשלום מספק SUMIT ושמירה מקומית ללקוח (Client) הנוכחי.
      *
      * @return array{0: bool, 1: string|null, 2?: int}
      */
@@ -78,8 +85,8 @@ class ClientPaymentMethodResource extends Resource
 
         $methods = $result['payment_methods'] ?? [];
         $active = $result['active_method'] ?? null;
-        $ownerType = get_class($user);
-        $ownerId = $user->getKey();
+        $ownerType = get_class($client);  // Fixed: Client instead of User
+        $ownerId = $client->getKey();      // Fixed: Client ID instead of User ID
         $kept = [];
         $candidateDefault = null;
         $candidateExpiry = null;

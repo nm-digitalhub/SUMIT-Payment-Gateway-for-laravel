@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Support;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting;
 
 /**
  * RouteConfig Helper
@@ -83,7 +85,11 @@ class RouteConfig
      */
     public static function isCheckoutEndpointEnabled(): bool
     {
-        return (bool) static::getSetting('routes_enable_checkout_endpoint', 'officeguy.routes.enable_checkout_endpoint', false);
+        return (bool) static::getSetting(
+            'routes_enable_checkout_endpoint',
+            'officeguy.routes.enable_checkout_endpoint',
+            false
+        );
     }
 
     /**
@@ -91,7 +97,11 @@ class RouteConfig
      */
     public static function isPublicCheckoutEnabled(): bool
     {
-        return (bool) static::getSetting('enable_public_checkout', 'officeguy.routes.enable_public_checkout', false);
+        return (bool) static::getSetting(
+            'enable_public_checkout',
+            'officeguy.routes.enable_public_checkout',
+            false
+        );
     }
 
     /**
@@ -116,7 +126,7 @@ class RouteConfig
     public static function getAllPaths(): array
     {
         $prefix = static::getPrefix();
-        
+
         return [
             'prefix' => $prefix,
             'card_callback' => $prefix . '/' . static::getCardCallbackPath(),
@@ -142,14 +152,14 @@ class RouteConfig
     {
         // Try to get from database first using the Model (with JSON cast)
         try {
-            if (\Schema::hasTable('officeguy_settings')) {
-                $value = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting::get($settingKey);
+            if (Schema::hasTable('officeguy_settings')) {
+                $value = OfficeGuySetting::get($settingKey);
 
                 if ($value !== null) {
                     return $value;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             // Database not available, use config
         }
 

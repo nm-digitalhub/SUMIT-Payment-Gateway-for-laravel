@@ -102,6 +102,8 @@ class CardCallbackController extends Controller
             'first_payment_amount'   => $payment['FirstPaymentAmount'] ?? null,
             'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
             'status'                 => 'completed',
+            'is_webhook_confirmed'   => true,
+            'webhook_confirmed_at'   => now(),
             'last_digits'            => $paymentMethod['CreditCard_LastDigits'] ?? null,
             'expiration_month'       => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
             'expiration_year'        => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
@@ -109,6 +111,31 @@ class CardCallbackController extends Controller
             'raw_response'           => $response,
         ]);
         $transaction->save();
+
+        // Save CustomerHistoryURL to Client model (if available)
+        if ($order && method_exists($order, 'client')) {
+            $client = $order->client;
+            $customerHistoryUrl = $response['Data']['CustomerHistoryURL'] ?? null;
+
+            if ($client && $customerHistoryUrl && empty($client->sumit_history_url)) {
+                $client->sumit_history_url = $customerHistoryUrl;
+                $client->save();
+
+                OfficeGuyApi::writeToLog(
+                    'Saved SUMIT history URL for client #' . $client->id,
+                    'debug'
+                );
+            }
+        }
+
+        // Dispatch PaymentCompleted event (v2.0 with transaction and payable)
+        event(new \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted(
+            $orderId,
+            $payment,
+            $response,
+            $transaction,
+            $order
+        ));
 
         OfficeGuyApi::writeToLog(
             'Payment completed for order #' . $orderId .

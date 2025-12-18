@@ -1,0 +1,28 @@
+<?php
+
+return [
+    'title' => 'Forfaits',
+    'name' => 'Nom du forfait',
+    'description' => 'Description',
+    'price' => 'Prix',
+    'currency' => 'Devise',
+    'order_now' => 'Commander maintenant',
+    'starting_at' => 'À partir de',
+    'per_month' => 'par mois',
+    'per_year' => 'par an',
+    'features' => 'Fonctionnalités',
+    'disk_space' => 'Espace disque',
+    'bandwidth' => 'Bande passante',
+    'email_accounts' => 'Comptes e-mail',
+    'databases' => 'Bases de données',
+    'cpu_cores' => 'Cœurs CPU',
+    'ram' => 'RAM',
+    'hosting' => 'Hébergement web',
+    'vps' => 'Serveur VPS',
+    'domain' => 'Domaine',
+    'popular' => 'Populaire',
+    'featured' => 'Recommandé',
+    'unlimited' => 'Illimité',
+    'gb' => 'Go',
+    'free' => 'Gratuit',
+];

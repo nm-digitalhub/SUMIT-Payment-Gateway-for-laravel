@@ -17,21 +17,15 @@
             <div class="bg-white dark:bg-gray-800 rounded-lg p-4 space-y-3">
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Card Type:</span>
-                    <span class="text-sm text-gray-900 dark:text-gray-100 font-semibold">{{ $token->getCardTypeName() }}</span>
+                    <span class="text-sm text-gray-900 dark:text-gray-100">{{ $token->card_type ?? 'N/A' }}</span>
                 </div>
-                @if($token->getIssuerName())
-                <div class="flex justify-between items-center">
-                    <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Issuer:</span>
-                    <span class="text-sm text-gray-900 dark:text-gray-100">{{ $token->getIssuerName() }}</span>
-                </div>
-                @endif
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Last 4 Digits:</span>
-                    <span class="text-sm font-mono text-gray-900 dark:text-gray-100 font-bold">•••• {{ $token->last_four ?? 'N/A' }}</span>
+                    <span class="text-sm font-mono text-gray-900 dark:text-gray-100">•••• {{ $token->last_four ?? 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Expiry:</span>
-                    <span class="text-sm text-gray-900 dark:text-gray-100">{{ $token->getFormattedExpiry() }}</span>
+                    <span class="text-sm text-gray-900 dark:text-gray-100">{{ $token->exp_month ?? 'N/A' }}/{{ $token->exp_year ?? 'N/A' }}</span>
                 </div>
                 <div class="flex justify-between items-center">
                     <span class="text-sm font-medium text-gray-700 dark:text-gray-300">Customer:</span>

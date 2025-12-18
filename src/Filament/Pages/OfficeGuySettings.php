@@ -111,6 +111,26 @@ class OfficeGuySettings extends Page
                         ->minValue(1)
                         ->maxValue(36),
 
+                    Select::make('cvv')
+                        ->label(__('officeguy::officeguy.settings.cvv'))
+                        ->helperText(__('officeguy::officeguy.settings.cvv_help'))
+                        ->options([
+                            'required' => __('officeguy::officeguy.settings.cvv_required'),
+                            'yes' => __('officeguy::officeguy.settings.cvv_optional'),
+                            'no' => __('officeguy::officeguy.settings.cvv_hidden'),
+                        ])
+                        ->default('required'),
+
+                    Select::make('citizen_id')
+                        ->label(__('officeguy::officeguy.settings.citizen_id'))
+                        ->helperText(__('officeguy::officeguy.settings.citizen_id_help'))
+                        ->options([
+                            'required' => __('officeguy::officeguy.settings.citizen_id_required'),
+                            'yes' => __('officeguy::officeguy.settings.citizen_id_optional'),
+                            'no' => __('officeguy::officeguy.settings.citizen_id_hidden'),
+                        ])
+                        ->default('required'),
+
                     Toggle::make('authorize_only')
                         ->label(__('officeguy::officeguy.settings.authorize_only'))
                         ->helperText(__('officeguy::officeguy.settings.authorize_only_help')),

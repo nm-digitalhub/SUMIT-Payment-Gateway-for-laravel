@@ -10,6 +10,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Controllers\CrmWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\DocumentDownloadController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\PublicCheckoutController;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\SecureSuccessController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\SumitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Support\RouteConfig;
 
@@ -155,6 +156,34 @@ Route::prefix($prefix)
             'checkout/esim/{id}',
             [PublicCheckoutController::class, 'processEsim']
         )->name('officeguy.public.checkout.esim.process');
+
+        /*
+        |--------------------------------------------------------------------------
+        | Secure Success Page (v2.0.0+)
+        |--------------------------------------------------------------------------
+        |
+        | Cryptographically secure success page with 7-layer validation.
+        | Uses token-first routing (token in query string, not URL path).
+        | Rate limited to prevent brute force attacks (10 requests/minute).
+        |
+        | Security Layers:
+        | 1. Rate Limiting (middleware)
+        | 2. Signed URL (Laravel HMAC)
+        | 3. Token Existence (database lookup)
+        | 4. Token Validity (not expired)
+        | 5. Single Use (not consumed)
+        | 6. Nonce Matching (replay protection)
+        | 7. Identity Proof (guest-safe cryptographic ownership)
+        |
+        | URL Format: /officeguy/success?token=...&nonce=...&signature=...
+        |
+        */
+        Route::get(
+            'success',
+            [SecureSuccessController::class, 'show']
+        )
+            ->middleware(['throttle:10,1'])
+            ->name('officeguy.success');
 
         /*
         |--------------------------------------------------------------------------

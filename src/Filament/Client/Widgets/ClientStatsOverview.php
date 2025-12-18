@@ -34,11 +34,14 @@ class ClientStatsOverview extends BaseWidget
         // Get user's documents
         $documentsCount = OfficeGuyDocument::where('customer_id', $userId)->count();
         
-        // Get user's saved payment methods
-        $user = auth()->user();
-        $savedCardsCount = OfficeGuyToken::where('owner_type', get_class($user))
-            ->where('owner_id', $userId)
-            ->count();
+        // Get client's saved payment methods
+        $client = auth()->user()?->client;
+        $savedCardsCount = 0;
+        if ($client) {
+            $savedCardsCount = OfficeGuyToken::where('owner_type', get_class($client))
+                ->where('owner_id', $client->id)
+                ->count();
+        }
 
         return [
             Stat::make('Total Transactions', $totalTransactions)

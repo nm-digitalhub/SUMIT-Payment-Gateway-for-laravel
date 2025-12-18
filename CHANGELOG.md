@@ -7,6 +7,67 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Customer Duplication Prevention** (v1.1.7)
+  - Fixed SUMIT creating duplicate customers despite `merge_customers = true` setting
+  - Root cause: `ExternalIdentifier` was sending `client_id` instead of `sumit_customer_id`
+  - Solution: Send `Customer['ID']` directly for existing customers (WooCommerce plugin pattern)
+  - For new customers: Send full Customer object with `SearchMode: 'Automatic'`
+  - File: `src/Services/PaymentService.php:453-487`
+  - Before: `ExternalIdentifier = 7 (client_id)` → SUMIT couldn't match → Created duplicate
+  - After: `Customer['ID'] = 1095061474 (sumit_customer_id)` → SUMIT uses existing customer
+  - Tested with tinker: Both SearchMode and ID-only approaches work correctly
+  - See: `docs/CUSTOMER_DUPLICATION_FIX_2025-12-18.md` for detailed flow diagrams
+
+- **Bit Webhook Confirmation** (v1.1.7)
+  - BitWebhookController now marks transactions as webhook-confirmed
+  - Supports Secure Success Flow Architecture (prevents race conditions)
+  - Adds three fields to transaction after successful webhook:
+    - `is_webhook_confirmed = true` (gatekeeper - only webhook can confirm)
+    - `confirmed_at = now()` (timestamp)
+    - `confirmed_by = 'webhook'` (source tracking)
+  - File: `src/Http/Controllers/BitWebhookController.php:79-99`
+  - Required DB fields: migration `2025_12_18_012221_add_secure_success_flow_fields.php`
+  - Success page can now check `is_webhook_confirmed` to show confirmed vs pending state
+
+### Added
+- **SUMIT Customer History URL** (v1.1.7)
+  - Added `sumit_history_url` field to clients table
+  - Stores direct link to SUMIT customer portal with payment history
+  - Portal contains: active subscriptions, invoice history (30+ docs), payment history (157 txns)
+  - Migration: `2025_12_18_034425_add_sumit_history_url_to_clients_table.php`
+  - Model: `app/Models/Client.php` (added to fillable)
+  - Future potential: automated reconciliation, subscription tracking, payment monitoring
+
+### Changed
+- **BREAKING: Token ownership migration from User to Client** (v1.2.0)
+  - `OfficeGuyToken` now uses Client as owner instead of User (business entity)
+  - Client is the correct owner because it has `sumit_customer_id` and implements `HasSumitCustomer`
+  - Migration required: `php artisan migrate` (migrates existing tokens from User to Client)
+  - Supports B2B scenarios (multiple Users per Client)
+  - Files changed:
+    - `src/Filament/Client/Resources/ClientDocumentResource.php` - Uses Client ownership
+    - `src/Filament/Client/Resources/ClientTransactionResource.php` - Uses Client ownership
+    - `src/Filament/Client/Resources/ClientSubscriptionResource.php` - Uses Client for sync
+    - `src/Filament/Client/Resources/ClientWebhookEventResource.php` - Uses Client for filtering
+    - `src/Filament/Client/Resources/ClientPaymentMethodResource/Pages/CreateClientPaymentMethod.php` - Passes Client to TokenService
+    - `src/Services/TokenService.php` - `syncTokenFromSumit()` now expects Client owner
+    - `src/Http/Controllers/PublicCheckoutController.php` - `getSavedTokens()`, `saveCardToken()` use Client
+    - `resources/views/pages/checkout.blade.php` - Updated Alpine.js function name to `checkoutForm()`
+
+### Added
+- Synced all OfficeGuy views/partials/filament files from main app (`httpdocs/vendor/officeguy/laravel-sumit-gateway`).
+- Added branded `resources/css/checkout-mobile.css` (checkout CSS was not present in the package before).
+
+### Fixed
+- **Checkout form submission with saved tokens** - Fixed infinite loop preventing form submission
+  - Changed `form.submit()` to `HTMLFormElement.prototype.submit.call(form)` to bypass event listeners
+  - Affects both saved token usage and new card with SUMIT SDK token generation
+  - `resources/views/pages/checkout.blade.php` (lines 1277, 1318)
+- Client Panel Resources now correctly filter by Client instead of User
+- Token sync operations now work correctly with Client ownership
+- Public checkout now correctly loads saved tokens for Client (not User)
+
 ## [v1.15.0] - 2025-12-07
 
 ### Added

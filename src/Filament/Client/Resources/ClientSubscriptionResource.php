@@ -32,24 +32,31 @@ class ClientSubscriptionResource extends Resource
     {
         $query = parent::getEloquentQuery();
 
-        // Show only subscriptions for the current authenticated user
+        // Show only subscriptions for the current authenticated client
         if (auth()->check()) {
+            $client = auth()->user()->client;
+
+            if (!$client) {
+                // No client found - return empty query
+                return parent::getEloquentQuery()->whereRaw('1 = 0');
+            }
+
             // Auto-sync subscriptions and documents from SUMIT before querying
-            if (auth()->user()->sumit_customer_id) {
+            if ($client->sumit_customer_id) {
                 try {
                     // Sync subscriptions
-                    \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::syncFromSumit(auth()->user(), includeInactive: true);
+                    \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::syncFromSumit($client, includeInactive: true);
 
                     // Sync documents (invoices) for all subscriptions
                     \OfficeGuy\LaravelSumitGateway\Services\DocumentService::syncAllForCustomer(
-                        (int) auth()->user()->sumit_customer_id,
+                        (int) $client->sumit_customer_id,
                         \Carbon\Carbon::now()->subYears(5),
                         \Carbon\Carbon::now()->addYear()
                     );
                 } catch (\Exception $e) {
                     // Log error but don't fail the query
                     \Illuminate\Support\Facades\Log::error('Failed to sync from SUMIT', [
-                        'user_id' => auth()->id(),
+                        'client_id' => $client->id,
                         'error' => $e->getMessage(),
                     ]);
                 }
@@ -57,7 +64,7 @@ class ClientSubscriptionResource extends Resource
 
             // Filter by SUMIT customer ID (not Laravel user_id) because some subscriptions
             // may have user_id=NULL but sumit_customer_id populated from SUMIT sync
-            $query->where('sumit_customer_id', auth()->user()->getSumitCustomerId());
+            $query->where('sumit_customer_id', $client->getSumitCustomerId());
         }
 
         return $query;

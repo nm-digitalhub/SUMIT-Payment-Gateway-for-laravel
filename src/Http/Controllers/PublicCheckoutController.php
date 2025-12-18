@@ -6,9 +6,11 @@ namespace OfficeGuy\LaravelSumitGateway\Http\Controllers;
 
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\CheckoutViewResolver;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 use OfficeGuy\LaravelSumitGateway\Support\ModelPayableWrapper;
@@ -102,7 +104,11 @@ class PublicCheckoutController extends Controller
         $prefillCountry = $client?->client_country ?? $client?->country ?? $user?->country ?? 'IL';
         $prefillPostal = $client?->client_postal_code ?? $client?->postal_code ?? $user?->postal_code;
 
-        return view('officeguy::pages.checkout', [
+        // Resolve dynamic checkout template based on PayableType
+        $resolver = app(CheckoutViewResolver::class);
+        $view = $resolver->resolve($payable);
+
+        return view($view, [
             'payable' => $payable,
             'settings' => $this->getSettings(),
             'maxPayments' => PaymentService::getMaximumPayments($amount),
@@ -136,6 +142,17 @@ class PublicCheckoutController extends Controller
      */
     public function process(Request $request, string|int $id)
     {
+        // DEBUG: Log checkout attempt
+        Log::info('🛒 Checkout process started', [
+            'payable_id' => $id,
+            'has_og_token' => $request->has('og-token'),
+            'og_token_value' => $request->input('og-token') ? '***' . substr($request->input('og-token'), -4) : null,
+            'payment_token' => $request->input('payment_token'),
+            'payment_method' => $request->input('payment_method'),
+            'accept_terms' => $request->input('accept_terms'),
+            'all_keys' => array_keys($request->all()),
+        ]);
+
         // Check if feature is enabled
         if (!$this->isEnabled()) {
             abort(404, __('Public checkout is not enabled'));
@@ -169,7 +186,7 @@ class PublicCheckoutController extends Controller
             'citizen_id' => 'nullable|string|max:50',
             // Guest registration fields
             'password' => 'nullable|string|confirmed|min:8',
-            'terms' => 'nullable|accepted',
+       'accept_terms' => 'accepted',
         ];
 
         // Require address fields if missing in profile
@@ -191,8 +208,8 @@ class PublicCheckoutController extends Controller
         // Handle guest registration
         if (!$user && !empty($validated['password'])) {
             // Check if terms were accepted
-            if (empty($validated['terms'])) {
-                return back()->withErrors(['terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
+            if (empty($validated['accept_terms'])) {
+                return back()->withErrors(['accept_terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
             }
 
             // Check if email already exists
@@ -233,7 +250,7 @@ class PublicCheckoutController extends Controller
             try {
                 $user->notify(new \App\Notifications\WelcomeNotification);
             } catch (\Exception $e) {
-                \Illuminate\Support\Facades\Log::warning('Failed to send welcome notification', [
+                Log::warning('Failed to send welcome notification', [
                     'user_id' => $user->id,
                     'error' => $e->getMessage(),
                 ]);
@@ -249,6 +266,24 @@ class PublicCheckoutController extends Controller
 
         $paymentsCount = max(1, (int) ($validated['payments_count'] ?? 1));
         $paymentMethod = $validated['payment_method'];
+
+$pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
+
+// Extract payment_token for validation (handle empty string as "new")
+$paymentToken = $validated['payment_token'] ?? null;
+
+if (
+    $paymentMethod === 'card'
+    && (empty($paymentToken) || $paymentToken === 'new')
+    && $pciMode !== 'redirect'
+    && !$request->filled('og-token')
+) {
+    return back()
+        ->withInput()
+        ->withErrors([
+            'payment' => __('Card token was not generated. Please try again.')
+        ]);
+}
 
         // Handle Bit payment
         if ($paymentMethod === 'bit') {
@@ -356,7 +391,7 @@ class PublicCheckoutController extends Controller
     }
 
     /**
-     * Get saved payment tokens for the current user.
+     * Get saved payment tokens for the current client.
      *
      * @return \Illuminate\Support\Collection
      */
@@ -366,8 +401,14 @@ class PublicCheckoutController extends Controller
             return collect();
         }
 
-        return OfficeGuyToken::where('owner_type', get_class(auth()->user()))
-            ->where('owner_id', auth()->id())
+        $client = auth()->user()->client;
+
+        if (!$client) {
+            return collect();
+        }
+
+        return OfficeGuyToken::where('owner_type', 'client')
+            ->where('owner_id', $client->id)
             ->where('gateway_id', 'officeguy')
             ->whereNull('deleted_at')
             ->get();
@@ -424,6 +465,27 @@ class PublicCheckoutController extends Controller
      */
     protected function processCardPayment(Payable $payable, array $validated, int $paymentsCount, Request $request)
     {
+        // 🛡️ IDEMPOTENCY PROTECTION: Prevent double-charging on page refresh
+        $existingTransaction = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('order_id', $payable->getPayableId())
+            ->where('status', 'completed')
+            ->first();
+
+        if ($existingTransaction) {
+            \Illuminate\Support\Facades\Log::info('🛡️ Prevented duplicate charge - transaction already completed', [
+                'order_id' => $payable->getPayableId(),
+                'existing_transaction_id' => $existingTransaction->id,
+                'existing_payment_id' => $existingTransaction->payment_id,
+                'amount' => $existingTransaction->amount,
+                'ip_address' => $request->ip(),
+                'user_agent' => $request->userAgent(),
+            ]);
+
+            return redirect()->route(
+                config('officeguy.routes.success', 'checkout.success'),
+                ['order' => $payable->getPayableId()]
+            )->with('info', __('This order has already been paid'));
+        }
+
         $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
         $redirectMode = $pciMode === 'redirect';
 
@@ -438,10 +500,10 @@ class PublicCheckoutController extends Controller
             ]);
         }
 
-        // Check for existing token
+        // Check for existing token (handle empty string as "new")
         $token = null;
         $tokenId = $validated['payment_token'] ?? null;
-        if ($tokenId && $tokenId !== 'new') {
+        if (!empty($tokenId) && $tokenId !== 'new') {
             $token = OfficeGuyToken::find($tokenId);
         }
 
@@ -462,8 +524,9 @@ class PublicCheckoutController extends Controller
             }
 
             // Save token if requested
-            if (($validated['save_card'] ?? false) && auth()->check() && isset($result['response']['Data']['Token'])) {
-                $this->saveCardToken($result['response']['Data'], auth()->user());
+            $client = auth()->user()?->client;
+            if (($validated['save_card'] ?? false) && $client && isset($result['response']['Data']['Token'])) {
+                $this->saveCardToken($result['response']['Data'], $client);
             }
 
             return redirect()->route(
@@ -524,15 +587,15 @@ class PublicCheckoutController extends Controller
      * Save a card token for future use.
      *
      * @param array $data
-     * @param mixed $user
+     * @param mixed $client
      * @return void
      */
-    protected function saveCardToken(array $data, $user): void
+    protected function saveCardToken(array $data, $client): void
     {
         // Try to use createFromApiResponse if CardToken is present
         if (isset($data['CardToken'])) {
             try {
-                OfficeGuyToken::createFromApiResponse($user, ['Data' => $data]);
+                OfficeGuyToken::createFromApiResponse($client, ['Data' => $data]);
                 return;
             } catch (\RuntimeException $e) {
                 // Fall through to manual creation
@@ -546,8 +609,8 @@ class PublicCheckoutController extends Controller
         }
 
         OfficeGuyToken::create([
-            'owner_type' => get_class($user),
-            'owner_id' => $user->getKey(),
+            'owner_type' => 'client',
+            'owner_id' => $client->getKey(),
             'gateway_id' => 'officeguy',
             'token' => $token,
             'last_four' => substr($data['CardNumber'] ?? $data['CardPattern'] ?? '', -4),

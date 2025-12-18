@@ -364,4 +364,33 @@ trait HasPayableFields
             ?? $this->getPayableField('notes')
             ?? $this->getPayableField('customer_note');
     }
+
+    /**
+     * Get order security key for webhook validation.
+     *
+     * Default implementation: Returns order_key field if exists,
+     * otherwise generates hash from id + created_at + app key.
+     *
+     * WooCommerce equivalent: $order->get_order_key()
+     *
+     * Override this method in your model for custom logic.
+     *
+     * @return string|null
+     */
+    public function getOrderKey(): ?string
+    {
+        // Option 1: Use order_key column if exists (recommended)
+        if (isset($this->order_key) && ! empty($this->order_key)) {
+            return $this->order_key;
+        }
+
+        // Option 2: Generate on-the-fly (fallback, less secure)
+        // This ensures backward compatibility for models without order_key column
+        if (isset($this->id) && isset($this->created_at)) {
+            return hash('sha256', $this->id.$this->created_at->timestamp.config('app.key'));
+        }
+
+        // No order_key and no id/created_at - return null
+        return null;
+    }
 }

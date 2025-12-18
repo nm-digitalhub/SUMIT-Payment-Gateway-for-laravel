@@ -158,7 +158,18 @@ class CreateClientPaymentMethod extends CreateRecord
         // TokenService משתמש ב-RequestHelpers::post, אז נזריק את הדאטה ל-request
         request()->merge($data);
 
-        $result = TokenService::processToken(auth()->user(), $pciMode);
+        // Get client (token owner)
+        $client = auth()->user()->client;
+        if (!$client) {
+            Notification::make()
+                ->danger()
+                ->title('Client not found')
+                ->body('Cannot add payment method - no client associated with user')
+                ->send();
+            $this->halt();
+        }
+
+        $result = TokenService::processToken($client, $pciMode);
 
         if (!($result['success'] ?? false)) {
             Notification::make()

@@ -59,6 +59,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(UpsellService::class);
         $this->app->singleton(WebhookService::class);
         $this->app->singleton(CustomerMergeService::class);
+
+        // Bind PayableType services (v1.10.0)
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\CheckoutViewResolver::class);
+
+        // Bind Secure Success Flow services (v2.0.0)
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SecureSuccessUrlGenerator::class);
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SuccessAccessValidator::class);
     }
 
     /**

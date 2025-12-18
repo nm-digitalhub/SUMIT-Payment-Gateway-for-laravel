@@ -44,6 +44,8 @@ class OfficeGuyTransaction extends Model
         'raw_response',
         'environment',
         'is_test',
+        'completed_at',
+        'notes',
     ];
 
     protected $casts = [
@@ -57,6 +59,7 @@ class OfficeGuyTransaction extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
+        'completed_at' => 'datetime',
     ];
 
     /**
@@ -94,6 +97,11 @@ class OfficeGuyTransaction extends Model
         $payment = $data['Payment'] ?? [];
         $paymentMethod = $payment['PaymentMethod'] ?? [];
 
+        // Convert SUMIT currency enum to string (0=ILS, 1=USD, 2=EUR, etc.)
+        $currencyEnum = $payment['Currency'] ?? null;
+        $currencyMap = [0 => 'ILS', 1 => 'USD', 2 => 'EUR', 3 => 'GBP'];
+        $currency = $currencyMap[$currencyEnum] ?? $request['Items'][0]['Currency'] ?? config('app.currency', 'ILS');
+
         return static::create([
             'order_id' => $orderId,
             'order_type' => $orderType,
@@ -104,7 +112,7 @@ class OfficeGuyTransaction extends Model
             'amount' => $payment['Amount'] ?? 0,
             'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,
             'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
-            'currency' => $request['Items'][0]['Currency'] ?? config('app.currency', 'ILS'),
+            'currency' => $currency,
             'payments_count' => $request['Payments_Count'] ?? 1,
             'status' => ($response['Status'] === 0 && ($payment['ValidPayment'] ?? false)) ? 'completed' : 'failed',
             'payment_method' => 'card',
@@ -170,5 +178,34 @@ class OfficeGuyTransaction extends Model
     public function isFailed(): bool
     {
         return $this->status === 'failed';
+    }
+
+    /**
+     * Add a timestamped note to the transaction (similar to WooCommerce order notes).
+     *
+     * @param string $note Note content
+     * @return void
+     */
+    public function addNote(string $note): void
+    {
+        $timestamp = now()->format('Y-m-d H:i:s');
+        $existing = $this->notes ?? '';
+
+        $this->notes = trim($existing . "\n[$timestamp] $note");
+        $this->save();
+    }
+
+    /**
+     * Get all notes as array.
+     *
+     * @return array<int, string>
+     */
+    public function getNotes(): array
+    {
+        if (empty($this->notes)) {
+            return [];
+        }
+
+        return array_filter(explode("\n", $this->notes));
     }
 }

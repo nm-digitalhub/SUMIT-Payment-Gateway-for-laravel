@@ -1,0 +1,523 @@
+/**
+ * Checkout Mobile Styles
+ * 
+ * Mobile-first responsive design for NM Digital Hub Checkout
+ * Based on Figma design analysis and UI/UX best practices
+ */
+
+/* ===========================================
+   CSS Variables (Design Tokens)
+   =========================================== */
+:root {
+    /* Colors */
+    --color-primary: var(--color-brand-primary);
+    --color-primary-hover: var(--blue-600);
+    --color-success: var(--green-500);
+    --color-success-hover: var(--green-600);
+    --color-error: var(--red-500);
+    --color-warning: var(--orange-500);
+    
+    /* Text */
+    --color-text-primary: #111928;
+    --color-text-secondary: #383E53;
+    --color-text-muted: #8890B1;
+    
+    /* Backgrounds */
+    --color-bg-page: #F8F9FF;
+    --color-bg-card: #FFFFFF;
+    --color-bg-input: #F2F4F7;
+    
+    /* Borders */
+    --color-border: #E9E9E9;
+    --color-border-light: #E4E9FD;
+    
+    /* Shadows */
+    --shadow-sm: 0 3px 8px -1px rgba(50, 50, 71, 0.05);
+    --shadow-md: 0 4px 12px -2px rgba(50, 50, 71, 0.08);
+    --shadow-cta: 0 4px 14px rgba(74, 217, 147, 0.25);
+    
+    /* Spacing */
+    --space-xs: 0.25rem;
+    --space-sm: 0.5rem;
+    --space-md: 1rem;
+    --space-lg: 1.5rem;
+    --space-xl: 2rem;
+    
+    /* Border Radius */
+    --radius-sm: 0.5rem;
+    --radius-md: 0.75rem;
+    --radius-lg: 1rem;
+    --radius-xl: 1.5rem;
+    
+    /* Font */
+    --font-family: 'Heebo', sans-serif;
+}
+
+/* ===========================================
+   Base Mobile Styles (< 640px)
+   =========================================== */
+
+/* Page Container */
+.checkout-page {
+    min-height: 100vh;
+    background-color: var(--color-bg-page);
+    padding: var(--space-md);
+    font-family: var(--font-family);
+}
+
+/* Progress Stepper - Mobile */
+.progress-stepper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow-x: auto;
+    padding: var(--space-sm) 0;
+    -webkit-overflow-scrolling: touch;
+}
+
+.progress-stepper::-webkit-scrollbar {
+    display: none;
+}
+
+.step-circle {
+    width: 2rem;
+    height: 2rem;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+.step-circle.active {
+    background-color: var(--color-success);
+    color: white;
+}
+
+.step-circle.inactive {
+    border: 2px solid var(--color-border);
+    color: var(--color-text-muted);
+}
+
+.step-line {
+    width: 1.5rem;
+    height: 2px;
+    margin: 0 0.25rem;
+    flex-shrink: 0;
+}
+
+.step-line.active {
+    background-color: var(--color-success);
+}
+
+.step-line.inactive {
+    background-color: var(--color-border);
+}
+
+.step-label {
+    font-size: 0.625rem;
+    margin-top: 0.25rem;
+    text-align: center;
+    white-space: nowrap;
+}
+
+/* Trust Badges - Mobile (Horizontal Scroll) */
+.trust-badges {
+    display: flex;
+    gap: var(--space-sm);
+    overflow-x: auto;
+    padding: var(--space-sm) 0;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.trust-badges::-webkit-scrollbar {
+    display: none;
+}
+
+.trust-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.375rem;
+    background: var(--color-bg-card);
+    padding: 0.375rem 0.75rem;
+    border-radius: 9999px;
+    box-shadow: var(--shadow-sm);
+    font-size: 0.75rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+/* Cards - Mobile */
+.checkout-card {
+    background: var(--color-bg-card);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-sm);
+    margin-bottom: var(--space-md);
+    overflow: hidden;
+}
+
+.checkout-card-header {
+    padding: var(--space-md);
+    border-bottom: 1px solid var(--color-border-light);
+}
+
+.checkout-card-header.gradient {
+    background: linear-gradient(to left, #E8F9F9, #F0FDFD);
+}
+
+.checkout-card-body {
+    padding: var(--space-md);
+}
+
+/* Form Fields - Mobile */
+.form-field {
+    margin-bottom: var(--space-md);
+}
+
+.form-label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--color-text-secondary);
+    margin-bottom: 0.5rem;
+}
+
+.form-input {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--color-bg-input);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    font-size: 1rem; /* Prevents zoom on iOS */
+    color: var(--color-text-secondary);
+    transition: all 0.2s ease;
+}
+
+.form-input:focus {
+    outline: none;
+    border-color: transparent;
+    box-shadow: 0 0 0 2px var(--color-success);
+}
+
+.form-input::placeholder {
+    color: var(--color-text-muted);
+}
+
+/* Helper Text */
+.form-helper {
+    font-size: 0.75rem;
+    color: var(--color-text-muted);
+    margin-top: 0.25rem;
+}
+
+.form-error {
+    font-size: 0.75rem;
+    color: var(--color-error);
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+}
+
+/* Mobile Grid - Single Column */
+.form-grid {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+}
+
+/* CTA Section - Mobile Fixed Bottom */
+.cta-section-mobile {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: var(--color-bg-card);
+    padding: var(--space-md);
+    box-shadow: 0 -4px 20px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+}
+
+.cta-button {
+    width: 100%;
+    padding: 1rem 1.5rem;
+    background: var(--color-success);
+    color: white;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-cta);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.cta-button:hover {
+    background: var(--color-success-hover);
+}
+
+.cta-button:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Add bottom padding to content when CTA is fixed */
+.checkout-content-mobile {
+    padding-bottom: 6rem;
+}
+
+/* Order Summary - Mobile Collapsible */
+.order-summary-mobile {
+    position: relative;
+}
+
+.order-summary-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    padding: var(--space-md);
+    background: var(--color-bg-card);
+    border: none;
+    cursor: pointer;
+}
+
+.order-summary-content {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.3s ease;
+}
+
+.order-summary-content.open {
+    max-height: 500px;
+}
+
+/* ===========================================
+   Tablet Styles (640px - 1024px)
+   =========================================== */
+@media (min-width: 640px) {
+    .checkout-page {
+        padding: var(--space-lg);
+    }
+    
+    .form-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+    
+    .step-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+        font-size: 0.875rem;
+    }
+    
+    .step-line {
+        width: 3rem;
+    }
+    
+    .step-label {
+        font-size: 0.75rem;
+    }
+    
+    /* CTA no longer fixed on tablet */
+    .cta-section-mobile {
+        position: static;
+        box-shadow: none;
+        padding: var(--space-lg);
+    }
+    
+    .checkout-content-mobile {
+        padding-bottom: 0;
+    }
+}
+
+/* ===========================================
+   Desktop Styles (> 1024px)
+   =========================================== */
+@media (min-width: 1024px) {
+    .checkout-page {
+        padding: var(--space-xl);
+    }
+    
+    .checkout-layout {
+        display: grid;
+        grid-template-columns: 1fr 2fr 1fr;
+        gap: var(--space-lg);
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+    
+    /* RTL Layout adjustment */
+    [dir="rtl"] .checkout-layout {
+        direction: rtl;
+    }
+    
+    .step-circle {
+        width: 2.5rem;
+        height: 2.5rem;
+    }
+    
+    .step-line {
+        width: 5rem;
+    }
+    
+    .step-label {
+        font-size: 0.875rem;
+    }
+    
+    /* Order Summary Sidebar - Sticky */
+    .order-summary-desktop {
+        position: sticky;
+        top: var(--space-lg);
+    }
+}
+
+/* ===========================================
+   RTL Specific Styles
+   =========================================== */
+[dir="rtl"] .form-label {
+    text-align: right;
+}
+
+[dir="rtl"] .form-helper,
+[dir="rtl"] .form-error {
+    text-align: right;
+}
+
+[dir="rtl"] .trust-badges {
+    flex-direction: row-reverse;
+}
+
+[dir="rtl"] .checkout-card-header.gradient {
+    background: linear-gradient(to right, #E8F9F9, #F0FDFD);
+}
+
+/* LTR inputs in RTL context */
+[dir="rtl"] input[type="email"],
+[dir="rtl"] input[type="tel"],
+[dir="rtl"] input[type="number"],
+[dir="rtl"] input[data-ltr="true"] {
+    direction: ltr;
+    text-align: left;
+}
+
+/* ===========================================
+   Animations
+   =========================================== */
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes slideUp {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.animate-fade-in {
+    animation: fadeIn 0.3s ease-out;
+}
+
+.animate-slide-up {
+    animation: slideUp 0.3s ease-out;
+}
+
+.animate-pulse {
+    animation: pulse 2s infinite;
+}
+
+/* Loading Spinner */
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+/* ===========================================
+   Touch Optimizations
+   =========================================== */
+@media (hover: none) and (pointer: coarse) {
+    /* Larger touch targets */
+    .form-input,
+    .cta-button,
+    .trust-badge {
+        min-height: 48px;
+    }
+    
+    /* Remove hover effects on touch devices */
+    .cta-button:hover {
+        background: var(--color-success);
+    }
+    
+    /* Active states for touch */
+    .cta-button:active {
+        background: var(--color-success-hover);
+        transform: scale(0.98);
+    }
+}
+
+/* ===========================================
+   Accessibility
+   =========================================== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* Focus Visible */
+*:focus-visible {
+    outline: 2px solid var(--color-success);
+    outline-offset: 2px;
+}
+
+/* High Contrast Mode */
+@media (prefers-contrast: high) {
+    .form-input {
+        border-width: 2px;
+    }
+    
+    .cta-button {
+        border: 2px solid white;
+    }
+}
+
+/* ===========================================
+   Print Styles
+   =========================================== */
+@media print {
+    .cta-section-mobile,
+    .trust-badges,
+    .progress-stepper {
+        display: none;
+    }
+    
+    .checkout-card {
+        box-shadow: none;
+        border: 1px solid #000;
+    }
+}

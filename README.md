@@ -11,6 +11,11 @@
 - ממשק ניהול Filament v4
 - דפי לקוח Filament להצגת טרנזקציות/מסמכים/אמצעי תשלום
 
+## עדכון סנכרון (2025-12-15)
+- כל קבצי OfficeGuy (views/partials/filament) סונכרנו מהמערכת הראשית (`httpdocs/vendor/officeguy/laravel-sumit-gateway`).
+- נוספה `resources/css/checkout-mobile.css` (מותאם ברנד) לחבילה; במקור לא היה CSS צ'קאאוט.
+- `success-card.blade.php` הוחלף לגרסה שמבוססת על שדות token גולמיים (`card_type`, `last_four`, `exp_month/exp_year`).
+
 ## תוכן עניינים
 
 - [התקנה](#התקנה)

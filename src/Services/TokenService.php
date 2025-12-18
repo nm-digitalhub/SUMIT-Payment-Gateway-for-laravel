@@ -138,7 +138,7 @@ class TokenService
     public static function syncTokenFromSumit(OfficeGuyToken $token): array
     {
         try {
-            // Get owner's client to retrieve sumit_customer_id
+            // Get owner (should be Client after migration)
             $owner = $token->owner;
             if (!$owner) {
                 return [
@@ -147,8 +147,8 @@ class TokenService
                 ];
             }
 
-            $client = $owner->client ?? $owner;
-            $sumitCustomerId = $client->sumit_customer_id ?? null;
+            // Owner should be Client with sumit_customer_id
+            $sumitCustomerId = $owner->sumit_customer_id ?? null;
 
             if (!$sumitCustomerId) {
                 return [

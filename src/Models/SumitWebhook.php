@@ -536,40 +536,60 @@ class SumitWebhook extends Model
     }
 
     /**
-     * Get known endpoints (from DB if exists, else from route config & event types).
+     * Get known endpoints dynamically from registered routes and database records.
+     *
+     * This method automatically discovers all OfficeGuy webhook/callback routes
+     * by scanning Laravel's route collection, so it stays up-to-date even when
+     * new endpoints are added without requiring code changes.
+     *
+     * Sources (in priority order):
+     * 1. Actual endpoints from database records
+     * 2. Registered routes with 'officeguy.' prefix
      *
      * @return array<string,string>
      */
     public static function getKnownEndpoints(): array
     {
         try {
-            $eps = static::query()
+            // Get unique endpoints from existing webhook records
+            $dbEndpoints = static::query()
                 ->selectRaw('COALESCE(endpoint, event_type) as ep')
                 ->distinct()
                 ->pluck('ep')
+                ->filter(fn ($ep) => is_string($ep) && trim($ep) !== '')
                 ->all();
         } catch (\Throwable $e) {
-            $eps = [];
+            $dbEndpoints = [];
         }
 
-        // Always include the configured endpoints even if the DB is empty,
-        // and make sure we never return null/empty labels that could break the Select component.
-        $prefix = \OfficeGuy\LaravelSumitGateway\Support\RouteConfig::getPrefix();
-        $base = trim(\OfficeGuy\LaravelSumitGateway\Support\RouteConfig::getSumitWebhookPath(), '/');
+        // Discover all registered OfficeGuy routes dynamically
+        $routeEndpoints = [];
+        try {
+            $routes = \Illuminate\Support\Facades\Route::getRoutes();
+            foreach ($routes as $route) {
+                $routeName = $route->getName();
 
-        $defaults = [
-            "{$prefix}/{$base}",
-            "{$prefix}/{$base}/card-created",
-            "{$prefix}/{$base}/card-updated",
-            "{$prefix}/{$base}/card-deleted",
-            "{$prefix}/{$base}/card-archived",
-            "{$prefix}/{$base}/crm",
-        ];
+                // Filter only OfficeGuy webhook/callback routes
+                if ($routeName && str_starts_with($routeName, 'officeguy.')) {
+                    // Include webhook and callback routes only
+                    if (str_contains($routeName, 'webhook') || str_contains($routeName, 'callback')) {
+                        $uri = $route->uri();
+                        if (!empty($uri)) {
+                            $routeEndpoints[] = $uri;
+                        }
+                    }
+                }
+            }
+        } catch (\Throwable $e) {
+            // Route discovery failed - continue with DB endpoints only
+        }
 
-        return collect($eps)
-            ->merge($defaults)
+        // Merge and deduplicate
+        return collect($dbEndpoints)
+            ->merge($routeEndpoints)
             ->filter(fn ($ep) => is_string($ep) && trim($ep) !== '')
             ->unique()
+            ->sort()
             ->mapWithKeys(fn (string $ep) => [$ep => $ep])
             ->toArray();
     }

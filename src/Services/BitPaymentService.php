@@ -20,6 +20,10 @@ class BitPaymentService
      *
      * Port of: ProcessBitOrder($Gateway, $Order)
      *
+     * Implements fixes:
+     * - Fix #6: IPN URL includes orderkey for security
+     * - Fix #9: Enforce bit_enabled setting
+     *
      * @param Payable $order Order instance
      * @param string $successUrl Success redirect URL
      * @param string $cancelUrl Cancel redirect URL
@@ -32,12 +36,54 @@ class BitPaymentService
         string $cancelUrl,
         string $webhookUrl
     ): array {
+        // ✅ FIX #9: Check if Bit payments are enabled
+        if (! config('officeguy.bit_enabled', false)) {
+            OfficeGuyApi::writeToLog(
+                'Bit payment attempt rejected: Bit payments are disabled via settings',
+                'warning'
+            );
+
+            return [
+                'success' => false,
+                'message' => __('Bit payments are currently unavailable. Please choose another payment method.'),
+            ];
+        }
+
         // If order total is 0, create document only
         if ($order->getPayableAmount() == 0) {
             return self::processZeroAmountOrder($order, $successUrl);
         }
 
-        $request = self::buildBitPaymentRequest($order, $successUrl, $cancelUrl, $webhookUrl);
+        // ✅ FIX #6: Build IPN URL with orderkey (security!)
+        $orderId = $order->getPayableId();
+        $orderKey = method_exists($order, 'getOrderKey') ? $order->getOrderKey() : null;
+
+        // Log warning if orderkey missing (should not happen after migrations)
+        if (! $orderKey) {
+            OfficeGuyApi::writeToLog(
+                "Warning: Order {$orderId} has no order_key - webhook validation will fail!",
+                'warning'
+            );
+        }
+
+        // Build complete IPN URL with security parameters
+        $ipnUrl = $webhookUrl;
+        if (strpos($ipnUrl, '?') === false) {
+            $ipnUrl .= '?';
+        } else {
+            $ipnUrl .= '&';
+        }
+        $ipnUrl .= 'orderid='.urlencode((string) $orderId);
+        if ($orderKey) {
+            $ipnUrl .= '&orderkey='.urlencode($orderKey);
+        }
+
+        OfficeGuyApi::writeToLog(
+            "Bit IPN URL built with security params for order #{$orderId}",
+            'debug'
+        );
+
+        $request = self::buildBitPaymentRequest($order, $successUrl, $cancelUrl, $ipnUrl);
         $environment = config('officeguy.environment', 'www');
 
         OfficeGuyApi::writeToLog('Bit payment request for order #' . $order->getPayableId(), 'debug');
@@ -163,15 +209,24 @@ class BitPaymentService
     }
 
     /**
-     * Process Bit webhook/IPN
+     * Process Bit webhook/IPN with idempotency protection.
      *
-     * Port of: ProcessIPN()
+     * Port of: ProcessIPN() from officeguybit_woocommerce_gateway.php
+     *
+     * CRITICAL: This method MUST be idempotent to handle SUMIT retries.
+     * SUMIT retries up to 5 times if it doesn't receive 200 OK within 10 seconds.
+     *
+     * Implements fixes:
+     * - Fix #1: Idempotency check (checks completed status too)
+     * - Fix #3: Order key validation (security)
+     * - Fix #7: Order status update (not just Transaction)
+     * - Fix #8: Order-level idempotency (primary check)
      *
      * @param string $orderId Order ID from webhook
      * @param string $orderKey Order key for verification
      * @param string $documentId SUMIT document ID
      * @param string $customerId SUMIT customer ID
-     * @param mixed $orderModel Order model instance (must have get method)
+     * @param mixed $orderModel Order model instance (must implement Payable)
      * @return bool Success status
      */
     public static function processWebhook(
@@ -183,45 +238,132 @@ class BitPaymentService
     ): bool {
         OfficeGuyApi::writeToLog("Processing Bit IPN for order $orderId", 'debug');
 
-        // If order verification fails, return false
-        // In a real implementation, you'd verify the order key matches
-        // This depends on your order implementation
+        // ✅ FIX #3 & #8: Validate order key and check Order-level idempotency
+        if ($orderModel) {
+            // Security check: Validate order key
+            $actualOrderKey = method_exists($orderModel, 'getOrderKey')
+                ? $orderModel->getOrderKey()
+                : null;
 
-        // Find existing transaction
+            if ($actualOrderKey && $actualOrderKey !== $orderKey) {
+                OfficeGuyApi::writeToLog(
+                    "Bit IPN rejected: Invalid order key for order $orderId",
+                    'error'
+                );
+
+                return false;
+            }
+
+            // ✅ FIX #8: Order-level idempotency check (like WooCommerce)
+            // Check if Order is already paid (primary idempotency check)
+            $orderPaymentStatus = null;
+            if (method_exists($orderModel, 'payment_status')) {
+                $orderPaymentStatus = $orderModel->payment_status;
+            } elseif (isset($orderModel->payment_status)) {
+                $orderPaymentStatus = $orderModel->payment_status;
+            }
+
+            // If Order already paid, don't process again
+            if (in_array($orderPaymentStatus, ['completed', 'paid', 'processing'])) {
+                OfficeGuyApi::writeToLog(
+                    "Bit IPN ignored: Order $orderId already paid (status: $orderPaymentStatus) - idempotency check",
+                    'debug'
+                );
+
+                return true; // Return true to prevent SUMIT retries
+            }
+        }
+
+        // ✅ FIX #1: Transaction-level idempotency (secondary protection)
+        // Find ANY transaction (not just pending)
         $transaction = OfficeGuyTransaction::where('order_id', $orderId)
             ->where('payment_method', 'bit')
-            ->where('status', 'pending')
             ->first();
 
         if ($transaction) {
-            $transaction->update([
-                'status' => 'completed',
-                'document_id' => $documentId,
-                'customer_id' => $customerId,
-            ]);
+            // If transaction already completed, this is a retry
+            if ($transaction->status === 'completed') {
+                OfficeGuyApi::writeToLog(
+                    "Bit IPN ignored: Transaction #{$transaction->id} already completed - idempotency check",
+                    'debug'
+                );
 
-            OfficeGuyApi::writeToLog("Bit payment completed for order $orderId, document ID: $documentId", 'info');
+                return true; // Already processed, idempotent
+            }
 
-            event(new \OfficeGuy\LaravelSumitGateway\Events\BitPaymentCompleted($orderId, $documentId, $customerId));
+            // Transaction exists but NOT completed → Update it
+            if (in_array($transaction->status, ['pending', 'processing'])) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($transaction, $documentId, $customerId, $orderModel, $orderId) {
+                    // Update Transaction
+                    $transaction->update([
+                        'status' => 'completed',
+                        'completed_at' => now(),
+                        'document_id' => $documentId,
+                        'customer_id' => $customerId,
+                    ]);
 
-            return true;
+                    // ✅ FIX #7: Update Order status (not just Transaction!)
+                    if ($orderModel) {
+                        // Check if Order has markAsPaid method (recommended pattern)
+                        if (method_exists($orderModel, 'markAsPaid')) {
+                            $orderModel->markAsPaid('bit');
+                        }
+                        // Or direct update using Eloquent
+                        elseif ($orderModel instanceof \Illuminate\Database\Eloquent\Model) {
+                            $updateData = ['paid_at' => now()];
+
+                            // Update payment_status if field exists
+                            if (isset($orderModel->payment_status)) {
+                                $updateData['payment_status'] = 'paid';
+                            }
+
+                            // Update status if using OrderStatus enum
+                            if (isset($orderModel->status)) {
+                                $updateData['status'] = 'processing';
+                            }
+
+                            $orderModel->update($updateData);
+                        }
+
+                        // Add note if supported
+                        if (method_exists($orderModel, 'addNote')) {
+                            $orderModel->addNote(
+                                "Bit payment completed successfully.\n".
+                                "Document ID: {$documentId}\n".
+                                "Customer ID: {$customerId}"
+                            );
+                        }
+                    }
+
+                    // Add note to transaction
+                    $transaction->addNote("Bit payment completed. Document ID: $documentId, Customer ID: $customerId");
+
+                    // Dispatch event
+                    event(new \OfficeGuy\LaravelSumitGateway\Events\BitPaymentCompleted(
+                        $orderId,
+                        $documentId,
+                        $customerId
+                    ));
+                });
+
+                OfficeGuyApi::writeToLog(
+                    "Bit webhook processed successfully: Transaction #{$transaction->id} and Order #{$orderId} marked as completed",
+                    'info'
+                );
+
+                return true;
+            }
         }
 
-        // Create new transaction if not found
-        OfficeGuyTransaction::create([
-            'order_id' => $orderId,
-            'document_id' => $documentId,
-            'customer_id' => $customerId,
-            'status' => 'completed',
-            'payment_method' => 'bit',
-            'amount' => 0, // Would need to get this from order
-            'currency' => 'ILS',
-            'environment' => config('officeguy.environment', 'www'),
-            'is_test' => config('officeguy.testing', false),
-        ]);
+        // ❌ No transaction found → This should NOT happen!
+        // Transaction should have been created by processOrder() before redirect
+        OfficeGuyApi::writeToLog(
+            "Bit IPN error: No transaction found for order $orderId (payment_method=bit). ".
+            'This should not happen - transaction should be created before redirecting to Bit.',
+            'error'
+        );
 
-        OfficeGuyApi::writeToLog("Bit IPN processed for order $orderId", 'info');
-
-        return true;
+        // Return false to indicate logical error (NOT a retry-able server error)
+        return false;
     }
 }

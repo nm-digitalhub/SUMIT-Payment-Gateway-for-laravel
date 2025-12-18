@@ -143,4 +143,34 @@ interface Payable
      * @return string|null
      */
     public function getCustomerNote(): ?string;
+
+    /**
+     * Get a unique security key for webhook validation.
+     *
+     * This key is used to validate webhook authenticity and prevent fraud.
+     * It should be:
+     * - Unique per order
+     * - Hard to guess (random or hashed)
+     * - Stored securely
+     *
+     * WooCommerce equivalent: $order->get_order_key()
+     *
+     * Example implementations:
+     * - Pre-generated: bin2hex(random_bytes(16))
+     * - Hashed: hash('sha256', $id . $created_at . APP_KEY)
+     *
+     * @return string|null Order security key for webhook validation
+     */
+    public function getOrderKey(): ?string;
+
+    /**
+     * Get the payable type for checkout customization
+     *
+     * Determines which checkout template to use and what fields are required.
+     * Use HasPayableType trait for default implementation.
+     *
+     * @return \OfficeGuy\LaravelSumitGateway\Enums\PayableType
+     * @since 1.10.0
+     */
+    public function getPayableType(): \OfficeGuy\LaravelSumitGateway\Enums\PayableType;
 }
