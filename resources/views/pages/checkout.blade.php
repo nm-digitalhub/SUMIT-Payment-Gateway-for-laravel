@@ -1079,12 +1079,25 @@
                 
                 init() {
                     @if($settings['pci_mode'] === 'no' && !empty($settings['company_id']) && !empty($settings['public_key']))
-                    if (window.jQuery && window.OfficeGuy?.Payments) {
-                        OfficeGuy.Payments.BindFormSubmit({
-                            CompanyID: @json($settings['company_id']),
-                            APIPublicKey: @json($settings['public_key'])
-                        });
-                    }
+                    // Wait for SUMIT SDK to load
+                    const initSumitPayments = () => {
+                        if (window.jQuery && window.OfficeGuy?.Payments) {
+                            console.log('✅ SUMIT SDK loaded - initializing payments');
+                            try {
+                                OfficeGuy.Payments.BindFormSubmit({
+                                    CompanyID: @json($settings['company_id']),
+                                    APIPublicKey: @json($settings['public_key'])
+                                });
+                                console.log('✅ OfficeGuy.Payments.BindFormSubmit initialized successfully');
+                            } catch (error) {
+                                console.error('❌ Failed to initialize OfficeGuy.Payments:', error);
+                            }
+                        } else {
+                            console.warn('⏳ Waiting for SUMIT SDK... jQuery:', !!window.jQuery, 'OfficeGuy.Payments:', !!window.OfficeGuy?.Payments);
+                            setTimeout(initSumitPayments, 100);
+                        }
+                    };
+                    initSumitPayments();
                     @endif
 
                     // Watch cardNumber for automatic card type detection
