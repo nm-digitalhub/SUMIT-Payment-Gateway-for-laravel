@@ -326,6 +326,16 @@
             {{-- ========================================= --}}
             {{-- FIXED: RTL Layout - Payment on Right --}}
             {{-- ========================================= --}}
+
+            {{-- 🔧 CRITICAL: Form MUST match SUMIT example EXACTLY --}}
+            {{-- NO action, NO @submit, NO JavaScript interference --}}
+            {{-- SUMIT payments.js takes full control --}}
+            <form id="og-checkout-form" data-og="form" method="POST">
+                @csrf
+                <input type="hidden" name="payable_id" value="{{ $payable->getPayableId() }}">
+                <input type="hidden" name="payable_type" value="{{ get_class($payable) }}">
+                <input type="hidden" name="_action_url" value="{{ $checkoutUrl }}">
+
             <div class="grid grid-cols-1 xl:grid-cols-3 gap-6">
                 
                 {{-- ========================================= --}}
@@ -733,6 +743,7 @@
                         {{-- FIXED: Green CTA Button (v1.15.0: disabled when user exists) --}}
                         <button
                             type="submit"
+                            @click="handlePayClick($event)"
                             :disabled="processing || userExists"
                             class="w-full bg-primary hover:bg-[#2563EB] text-white font-semibold py-4 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-500/25"
                         >
@@ -769,11 +780,6 @@
                 {{-- Customer Details Card (Center) --}}
                 {{-- ========================================= --}}
                 <div class="xl:col-span-1 {{ $rtl ? 'xl:order-3' : 'xl:order-1' }}">
-                    <form id="og-checkout-form" method="POST" action="{{ $checkoutUrl }}" @submit.prevent="submitForm">
-                        @csrf
-                        <input type="hidden" name="payable_id" value="{{ $payable->getPayableId() }}">
-                        <input type="hidden" name="payable_type" value="{{ get_class($payable) }}">
-                        
                         {{-- Error Messages --}}
                         <div x-show="errors.length > 0" x-cloak class="bg-red-50 border border-red-200 rounded-lg p-4 mb-6">
                             <div class="flex items-start">
@@ -877,7 +883,6 @@
                                 @include('officeguy::pages.partials.input', ['id' => 'customer_country', 'label' => __('Country'), 'required' => true, 'value' => $customerCountry ?? 'IL', 'type' => 'text'])
                             </div>
                         </div>
-                    </form>
                 </div>
                 
                 {{-- ========================================= --}}
@@ -1047,9 +1052,11 @@
                     </div>
                 </div>
             </div>
+            </form>
+            {{-- ✅ END: Single form wrapper - All data-og fields now inside same <form> --}}
         </div>
     </div>
-    
+
     <script>
         function checkoutPage() {
             return {
@@ -1086,7 +1093,8 @@
                             try {
                                 OfficeGuy.Payments.BindFormSubmit({
                                     CompanyID: @json($settings['company_id']),
-                                    APIPublicKey: @json($settings['public_key'])
+                                    APIPublicKey: @json($settings['public_key']),
+                                    FormActionURL: @json($checkoutUrl)
                                 });
                                 console.log('✅ OfficeGuy.Payments.BindFormSubmit initialized successfully');
                             } catch (error) {
@@ -1217,22 +1225,28 @@
                     }
                 },
                 
-                async submitForm() {
+                handlePayClick(event) {
+                    // Validate BEFORE submit event fires
                     // Block submission if user exists and must login (v1.15.0+)
                     if (this.userExists) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                        return;
+                        return false;
                     }
 
                     if (!this.validate()) {
+                        event.preventDefault();
+                        event.stopPropagation();
                         window.scrollTo({ top: 0, behavior: 'smooth' });
-                        return;
+                        return false;
                     }
+
+                    // ✅ Validation passed - set processing and allow submit to continue
+                    // SUMIT payments.js will intercept submit event, generate token, and post form
                     this.processing = true;
-                    @if($settings['pci_mode'] === 'no')
-                    await new Promise(resolve => setTimeout(resolve, 200));
-                    @endif
-                    document.getElementById('og-checkout-form').submit();
+                    // Return true to allow button's default submit behavior
+                    return true;
                 }
             }
         }

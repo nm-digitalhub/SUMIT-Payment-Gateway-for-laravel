@@ -102,7 +102,7 @@
 
                 {{-- Checkout Form (Left/Right depending on RTL) --}}
                 <div class="lg:col-span-2">
-                    <form action="{{ $actionUrl ?? route('officeguy.checkout.submit', $payable->getPayableId()) }}"
+                    <form action="{{ $actionUrl ?? route('officeguy.public.checkout.process', $payable->getPayableId()) }}"
                           method="POST"
                           class="bg-white rounded-2xl shadow-sm p-8"
                           x-ref="form">

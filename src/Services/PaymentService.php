@@ -781,8 +781,20 @@ class PaymentService
             } elseif ($pciMode === 'yes') {
                 $request['PaymentMethod'] = TokenService::getPaymentMethodPCI();
             } else {
+                $singleUseToken = RequestHelpers::post('og-token');
+
+                // 🐛 DEBUG: Log token for troubleshooting
+                \Log::info('💳 [PaymentService] Building PaymentMethod with SingleUseToken', [
+                    'has_token' => !empty($singleUseToken),
+                    'token_length' => $singleUseToken ? strlen($singleUseToken) : 0,
+                    'token_value' => $singleUseToken ?: 'EMPTY/NULL',
+                    'pci_mode' => $pciMode,
+                    'all_request_keys' => array_keys(request()->all()),
+                    'has_og_token_in_request' => request()->has('og-token'),
+                ]);
+
                 $request['PaymentMethod'] = [
-                    'SingleUseToken' => RequestHelpers::post('og-token'),
+                    'SingleUseToken' => $singleUseToken,
                     'Type'           => 1,
                 ];
             }

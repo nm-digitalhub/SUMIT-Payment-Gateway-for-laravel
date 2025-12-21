@@ -7,6 +7,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.10.0] - 2025-12-21
+
+### Added
+- **HasSumitPaymentOperations Trait**
+  - New trait providing SUMIT payment-related helper methods for Payable models
+  - Includes relationships: `officeGuyTransaction()`, `officeGuyDocument()`, `officeGuyToken()`
+  - Document methods: `getDocumentUrl()`, `hasInvoiceDocument()`
+  - Payment card methods: `getPaymentLast4()`, `getPaymentBrand()`, `getTransactionReference()`
+  - Operation detection: `getPaymentOperation()` returns 'ChargeAndCreateToken' or 'Charge'
+  - Token creation logic: `createsPaymentToken()` (override in model for custom logic)
+  - Helper: `isOneTimePayment()` (inverse of createsPaymentToken)
+  - File: `src/Support/Traits/HasSumitPaymentOperations.php`
+  - Usage: `use HasSumitPaymentOperations;` in any Payable model
+  - Reduces code duplication across models needing SUMIT payment helpers
+  - Fully documented with PHPDoc blocks and usage examples
+
 ### Fixed
 - **Customer Duplication Prevention** (v1.1.7)
   - Fixed SUMIT creating duplicate customers despite `merge_customers = true` setting

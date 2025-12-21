@@ -131,7 +131,7 @@
 
                 {{-- Checkout Form --}}
                 <div class="lg:col-span-2">
-                    <form action="{{ $actionUrl ?? route('officeguy.checkout.submit', $payable->getPayableId()) }}"
+                    <form action="{{ $actionUrl ?? route('officeguy.public.checkout.process', $payable->getPayableId()) }}"
                           method="POST"
                           class="bg-white rounded-2xl shadow-sm p-8"
                           x-ref="form">
@@ -331,10 +331,9 @@
                                        class="mt-1 w-5 h-5 text-primary rounded border-gray-300 focus:ring-primary">
                                 <span class="text-sm text-gray-700 group-hover:text-gray-900">
                                     {{ __('I agree to the') }}
-                                    <a href="{{ route('terms') }}" target="_blank" class="text-primary underline">{{ __('terms and conditions') }}</a>,
-                                    <a href="{{ route('privacy') }}" target="_blank" class="text-primary underline">{{ __('privacy policy') }}</a>,
+                                    <a href="{{ route('legal.terms.he') }}" target="_blank" class="text-primary underline">{{ __('terms and conditions') }}</a>
                                     {{ __('and') }}
-                                    <a href="{{ route('domain-agreement') }}" target="_blank" class="text-primary underline">{{ __('domain registration agreement') }}</a>
+                                    <a href="{{ route('legal.privacy.he') }}" target="_blank" class="text-primary underline">{{ __('privacy policy') }}</a>
                                 </span>
                             </label>
                         </div>

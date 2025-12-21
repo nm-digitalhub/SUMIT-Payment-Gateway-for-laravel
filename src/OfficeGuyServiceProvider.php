@@ -16,6 +16,7 @@ use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
 use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
@@ -66,6 +67,18 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Bind Secure Success Flow services (v2.0.0)
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SecureSuccessUrlGenerator::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\SuccessAccessValidator::class);
+
+        // Bind Container-Driven Fulfillment services (v1.18.0)
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\FulfillmentDispatcher::class);
+
+        // Bind Phase 2.1 services (CheckoutIntent Architecture - v1.2.0)
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\ServiceDataFactory::class);
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\TemporaryStorageService::class);
+
+        // Resolve CheckoutRequest for route model binding
+        $this->app->resolving(CheckoutRequest::class, function ($request, $app) {
+            return CheckoutRequest::createFrom($app['request'], $request);
+        });
     }
 
     /**
@@ -139,6 +152,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
             \OfficeGuy\LaravelSumitGateway\Listeners\AutoCreateUserListener::class
         );
 
+        // Register Container-Driven Fulfillment listener (v1.18.0+)
+        // Automatically dispatches post-payment fulfillment based on PayableType
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted::class,
+            \OfficeGuy\LaravelSumitGateway\Listeners\FulfillmentListener::class
+        );
+
         // Register stock sync scheduler based on settings
         $this->registerStockSyncScheduler();
 
@@ -153,6 +173,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register Livewire components for Filament widgets
         $this->registerLivewireComponents();
+
+        // Register Container-Driven Fulfillment handlers (v1.18.0)
+        $this->registerFulfillmentHandlers();
     }
 
     /**
@@ -368,6 +391,33 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     \Log::info('SUMIT debt auto-check completed successfully');
                 });
         });
+    }
+
+    /**
+     * Register Container-Driven Fulfillment handlers.
+     *
+     * Maps PayableType enum values to their respective fulfillment handler classes.
+     * These handlers execute post-payment fulfillment logic (provisioning, emails, etc.).
+     *
+     * Architecture: Type-Based Dispatch Pattern (v1.18.0)
+     * - PayableType = Single Source of Truth
+     * - Dispatcher resolves Type → Handler (centralized in ServiceProvider)
+     * - Optional: Payable can override with getFulfillmentHandler() for special cases
+     *
+     * @see docs/ARCHITECTURE_DECISION_FULFILLMENT_PATTERN.md
+     */
+    protected function registerFulfillmentHandlers(): void
+    {
+        $dispatcher = $this->app->make(\OfficeGuy\LaravelSumitGateway\Services\FulfillmentDispatcher::class);
+
+        // Register handlers for each PayableType
+        $dispatcher->registerMany([
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::INFRASTRUCTURE->value => \OfficeGuy\LaravelSumitGateway\Handlers\InfrastructureFulfillmentHandler::class,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::DIGITAL_PRODUCT->value => \OfficeGuy\LaravelSumitGateway\Handlers\DigitalProductFulfillmentHandler::class,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SUBSCRIPTION->value => \OfficeGuy\LaravelSumitGateway\Handlers\SubscriptionFulfillmentHandler::class,
+            // GENERIC and SERVICE types intentionally omitted - they will log warnings
+            // Projects can register custom handlers via dispatcher->register() in their own ServiceProvider
+        ]);
     }
 
     /**

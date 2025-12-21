@@ -1,177 +1,209 @@
-# תיקונים שבוצעו בחבילה - 2025-11-24
+# 🔧 PaymentsJS Integration Fix - 18/12/2025
 
-## סיכום
-תוקנו **4 בעיות קריטיות** שמנעו התקנה תקינה של החבילה עם `spatie/laravel-settings`.
+## 🎯 הבעיה שזוהתה
 
----
+בעת ניסיון לחייב כרטיס אשראי דרך `checkout.blade.php`, SUMIT החזיר שגיאה:
 
-## תיקון #1: הסרת Array Shapes מ-DocBlocks
-
-### קובץ: `src/Settings/SumitSettings.php`
-
-**שורה 129** - property `$stock`:
-```php
-// לפני:
-/** @var array{update_callback:mixed} */
-public array $stock;
-
-// אחרי:
-public array $stock;
+```
+Missing CreditCard_Number/CreditCard_Token
 ```
 
-**שורות 140-142** - properties `$routes` ו-`$order`:
-```php
-// לפני:
-/** @var array{prefix:string,middleware:array,card_callback:string,bit_webhook:string,success:string,failed:string,enable_checkout_endpoint:bool,checkout_charge:string} */
-public array $routes;
-
-/** @var array{resolver:mixed,model:mixed} */
-public array $order;
-
-// אחרי:
-public array $routes;
-public array $order;
-```
-
-**סיבה**: `spatie/laravel-settings` לא תומך ב-array shapes בDocBlocks.
-
----
-
-## תיקון #2: שינוי $defaults ל-private
-
-### קובץ: `src/Settings/SumitSettings.php`
-
-**שורה 14**:
-```php
-// לפני:
-public static array $defaults = [
-
-// אחרי:
-private static array $defaults = [
-```
-
-**שורות 149-157** - הוספת method חדש:
-```php
-/**
- * Get default settings values.
- *
- * @return array<string,mixed>
- */
-public static function getDefaults(): array
+**לוג SUMIT (17:28):**
+```json
 {
-    return self::$defaults;
+  "PaymentMethod": {
+    "Type": 1
+    // ❌ חסר: "SingleUseToken" או "CreditCard_Token"
+  }
 }
 ```
 
-**סיבה**: מניעת גישה ישירה ל-static property שגורם ל-reflection errors.
-
 ---
 
-## תיקון #3: עדכון ServiceProvider - register()
+## 🔍 ניתוח השורש
 
-### קובץ: `src/OfficeGuyServiceProvider.php`
+לפי [תיעוד SUMIT הרשמי](https://docs.sumit.co.il):
 
-**שורות 28-38**:
-```php
-// לפני:
-// Register settings class with Spatie
-$registered = config('settings.settings', []);
-if (!in_array(SumitSettings::class, $registered, true)) {
-    $registered[] = SumitSettings::class;
-    config(['settings.settings' => $registered]);
-}
-$this->app->singleton(SumitSettings::class);
+### דרישות PaymentsJS SDK:
 
-// אחרי:
-// Register settings class with Spatie (only if settings table exists)
-try {
-    $registered = config('settings.settings', []);
-    if (!in_array(SumitSettings::class, $registered, true)) {
-        $registered[] = SumitSettings::class;
-        config(['settings.settings' => $registered]);
-    }
-    $this->app->singleton(SumitSettings::class);
-} catch (\Exception $e) {
-    // Settings table doesn't exist yet; skip registration
-}
+1. ✅ טעינת הסקריפט: `<script src="https://app.sumit.co.il/scripts/payments.js"></script>`
+2. ✅ אתחול: `OfficeGuy.Payments.BindFormSubmit({ CompanyID, APIPublicKey })`
+3. ❌ **טופס עם `data-og="form"`** - **חסר בקוד**
+4. ❌ **שימוש נכון ב-submit event** - **נעקף בקוד**
+
+### הבעיות שנמצאו ב-`checkout.blade.php`:
+
+#### בעיה #1: חסר `data-og="form"` על ה-form tag
+
+**שורה 332 (לפני):**
+```html
+<form id="og-checkout-form" method="POST" action="{{ $checkoutUrl }}" @submit.prevent="submitForm">
 ```
 
-**סיבה**: מניעת כשל כאשר טבלת settings עדיין לא קיימת.
+**לפי תיעוד SUMIT:**
+```html
+<form data-og="form" method="post">
+```
 
----
+**בלי `data-og="form"`**, PaymentsJS לא מזהה את הטופס ולא מוסיף את `og-token`!
 
-## תיקון #4: עדכון ServiceProvider - applySettingsToConfig()
+#### בעיה #2: `form.submit()` עוקף את PaymentsJS
 
-### קובץ: `src/OfficeGuyServiceProvider.php`
-
-**שורות 107-113**:
-```php
-// לפני:
-try {
-    /** @var SumitSettings $settings */
-    $settings = app(SumitSettings::class);
-} catch (MissingSettings $e) {
-    // Settings not migrated yet; use defaults
-    $settings = new SumitSettings(SumitSettings::$defaults);
-}
-
-// אחרי:
-try {
-    /** @var SumitSettings $settings */
-    $settings = app(SumitSettings::class);
-} catch (MissingSettings | \Exception $e) {
-    // Settings not migrated yet or table doesn't exist; skip config sync
-    return;
+**שורה 1239 (לפני):**
+```javascript
+async submitForm() {
+    // ...validation...
+    this.processing = true;
+    await new Promise(resolve => setTimeout(resolve, 200));  // ❌ Wait שלא עובד
+    document.getElementById('og-checkout-form').submit();    // ❌ עוקף event handlers!
 }
 ```
 
-**סיבות**:
-1. שינוי מ-`SumitSettings::$defaults` ל-accessor method
-2. טיפול טוב יותר בחריגות
-3. return מוקדם במקום יצירת instance עם defaults
+**הבעיה:**
+- `form.submit()` שולח את הטופס **ישירות** בלי לירות את ה-submit event
+- PaymentsJS מאזין ל-submit event → לא מקבל אותו → לא יוצר token!
+- ה-`setTimeout(200)` לא עוזר כי PaymentsJS יוצר את ה-token **רק** כשה-submit event מתרחש
 
 ---
 
-## אימות
+## ✅ הפתרון (פשוט ונכון)
 
-✅ בדיקת תחביר PHP:
-```bash
-php -l src/Settings/SumitSettings.php
-# No syntax errors detected
+### תיקון #1: הוספת `data-og="form"`
 
-php -l src/OfficeGuyServiceProvider.php
-# No syntax errors detected
+**קובץ:** `resources/views/pages/checkout.blade.php`
+**שורה:** 332
+
+```diff
+- <form id="og-checkout-form" method="POST" action="{{ $checkoutUrl }}" @submit.prevent="submitForm">
++ <form id="og-checkout-form" data-og="form" method="POST" action="{{ $checkoutUrl }}" @submit.prevent="submitForm">
+```
+
+### תיקון #2: שימוש ב-`requestSubmit()` במקום `submit()`
+
+**קובץ:** `resources/views/pages/checkout.blade.php`
+**שורות:** 1224-1241
+
+```diff
+  async submitForm() {
+      if (this.userExists) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+      }
+
+      if (!this.validate()) {
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+          return;
+      }
+      this.processing = true;
+
+-     @if($settings['pci_mode'] === 'no')
+-     await new Promise(resolve => setTimeout(resolve, 200));
+-     @endif
+-     document.getElementById('og-checkout-form').submit();
++     // ✅ FIX: Use requestSubmit() instead of submit()
++     // requestSubmit() triggers submit event → PaymentsJS can intercept and add token
++     // submit() bypasses event handlers → PaymentsJS never gets called
++     document.getElementById('og-checkout-form').requestSubmit();
+  }
 ```
 
 ---
 
-## שימוש
+## 🎓 הסבר טכני
 
-לאחר התיקונים, החבילה אמורה להתקין ללא שגיאות:
+### למה `requestSubmit()` עובד ו-`submit()` לא?
 
-```bash
-composer update officeguy/laravel-sumit-gateway
-php artisan package:discover --ansi
+| שיטה | מה קורה | PaymentsJS |
+|------|---------|------------|
+| **`submit()`** | שולח את הטופס **ישירות** לשרת, **בלי** לירות submit event | ❌ לא מקבל event → לא יוצר token |
+| **`requestSubmit()`** | ירה את submit event **קודם**, אז שולח | ✅ מקבל event → יוצר token → מוסיף לטופס |
+
+### זרימת עבודה תקינה עם `requestSubmit()`:
+
+```
+1. User clicks "Submit" button
+   ↓
+2. Alpine.js: @submit.prevent="submitForm"
+   ↓
+3. submitForm(): Validation
+   ↓
+4. submitForm(): requestSubmit()
+   ↓
+5. Submit Event fired
+   ↓
+6. PaymentsJS: Intercepts submit event
+   ↓
+7. PaymentsJS: Calls tokenizeSingleUse API
+   ↓
+8. SUMIT: Returns SingleUseToken
+   ↓
+9. PaymentsJS: Adds <input name="og-token" value="...">
+   ↓
+10. PaymentsJS: Allows form submission
+   ↓
+11. Form submitted to server with token
 ```
 
 ---
 
-## הערות נוספות
+## 📊 תוצאות לאחר התיקון
 
-1. **Migration נדרש**: לפני שימוש בחבילה, יש להריץ:
-   ```bash
-   php artisan vendor:publish --tag=officeguy-settings
-   php artisan migrate
-   ```
+### ✅ לפני (17:28 - נכשל):
+```json
+// Tokenization API
+{
+  "SingleUseToken": "ff3d10eb-90e4-4b3e-8917-6775a00c04ba"
+}
 
-2. **תאימות**: התיקונים תואמים ל:
-   - Laravel 12.x
-   - spatie/laravel-settings ^3.4
-   - Filament v4
+// Charge API
+{
+  "PaymentMethod": {
+    "Type": 1
+    // ❌ חסר token
+  }
+}
+→ שגיאה: "Missing CreditCard_Number/CreditCard_Token"
+```
 
-3. **ללא שינויים שוברים**: כל התיקונים הם תיקוני bugs ולא משנים את ה-API הציבורי.
+### ✅ אחרי (צפוי):
+```json
+// Tokenization API
+{
+  "SingleUseToken": "ff3d10eb-90e4-4b3e-8917-6775a00c04ba"
+}
+
+// Charge API
+{
+  "PaymentMethod": {
+    "SingleUseToken": "ff3d10eb-90e4-4b3e-8917-6775a00c04ba",  // ✅ Token נשלח!
+    "Type": 1
+  }
+}
+→ הצלחה: "Status": 0, "ValidPayment": true
+```
 
 ---
 
-**תוקן על ידי**: Claude Code
-**תאריך**: 2025-11-24
+## 🚀 סיכום התיקון
+
+|   | מה תוקן | למה זה קריטי |
+|---|---------|---------------|
+| **1** | הוספת `data-og="form"` | PaymentsJS **חייב** את זה כדי לזהות את הטופס |
+| **2** | `submit()` → `requestSubmit()` | כדי ש-PaymentsJS **יקבל** את ה-submit event ויוסיף token |
+| **3** | הסרת `setTimeout(200)` | לא נדרש - PaymentsJS מטפל בזמן בעצמו |
+
+### קבצים ששונו:
+- ✅ `vendor/officeguy/laravel-sumit-gateway/resources/views/pages/checkout.blade.php`
+- ✅ `SUMIT-Payment-Gateway-for-laravel/resources/views/pages/checkout.blade.php` (העתקה)
+
+### צעדים הבאים:
+1. ✅ העתקה לחבילה המקורית - **הושלם**
+2. ⏳ Git commit + tag - **ממתין**
+3. ⏳ `composer update` - **ממתין**
+4. ⏳ בדיקת תשלום בפועל - **ממתין**
+
+---
+
+**תאריך תיקון:** 18/12/2025 21:40
+**גרסה:** v1.1.7 (מתוכנן)
+**מתוחזק ע"י:** NM-DigitalHub

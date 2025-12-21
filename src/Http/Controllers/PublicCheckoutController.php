@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
+use OfficeGuy\LaravelSumitGateway\Actions\PrepareCheckoutIntentAction;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\CheckoutViewResolver;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
@@ -136,11 +138,11 @@ class PublicCheckoutController extends Controller
     /**
      * Process the checkout form submission.
      *
-     * @param Request $request
+     * @param CheckoutRequest $request
      * @param string|int $id
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-    public function process(Request $request, string|int $id)
+    public function process(CheckoutRequest $request, string|int $id)
     {
         // DEBUG: Log checkout attempt
         Log::info('🛒 Checkout process started', [
@@ -164,48 +166,17 @@ class PublicCheckoutController extends Controller
             abort(404, __('Order not found'));
         }
 
+        // ✅ Set payable for conditional validation in CheckoutRequest
+        $request->setPayable($payable);
+
+        // ✅ Validation already done by CheckoutRequest type-hint
+        // Access validated data via: $request->validated()
+
         $user = auth()->user();
         $client = $user?->client;
 
-        $rules = [
-            'customer_name' => 'required|string|max:255',
-            'customer_email' => 'required|email|max:255',
-            'customer_phone' => 'required|string|max:50',
-            'payment_method' => 'required|in:card,bit',
-            'payments_count' => 'nullable|integer|min:1|max:36',
-            'payment_token' => 'nullable|string',
-            'save_card' => 'nullable|boolean',
-            'customer_company' => 'nullable|string|max:255',
-            'customer_vat' => 'nullable|string|max:50',
-            'customer_address' => 'nullable|string|max:255',
-            'customer_address2' => 'nullable|string|max:255',
-            'customer_city' => 'nullable|string|max:120',
-            'customer_state' => 'nullable|string|max:120',
-            'customer_country' => 'nullable|string|max:2',
-            'customer_postal' => 'nullable|string|max:20',
-            'citizen_id' => 'nullable|string|max:50',
-            // Guest registration fields
-            'password' => 'nullable|string|confirmed|min:8',
-       'accept_terms' => 'accepted',
-        ];
-
-        // Require address fields if missing in profile
-        if (empty($client?->client_address)) {
-            $rules['customer_address'] = 'required|string|max:255';
-        }
-        if (empty($client?->client_city)) {
-            $rules['customer_city'] = 'required|string|max:120';
-        }
-        if (empty($client?->client_country)) {
-            $rules['customer_country'] = 'required|string|max:2';
-        }
-        if (empty($client?->client_postal_code)) {
-            $rules['customer_postal'] = 'required|string|max:20';
-        }
-
-        $validated = $request->validate($rules);
-
-        // Handle guest registration
+        // Handle guest registration (unchanged - Phase 3)
+        $validated = $request->validated();
         if (!$user && !empty($validated['password'])) {
             // Check if terms were accepted
             if (empty($validated['accept_terms'])) {
@@ -345,6 +316,10 @@ if (
                 $client->save();
             }
         }
+
+        // ✅ NEW: Prepare checkout intent + service data
+        // NOW customer data is complete (after guest user creation and profile updates)
+        $intent = app(PrepareCheckoutIntentAction::class)->execute($request, $payable);
 
         // Handle card payment
         return $this->processCardPayment($payable, $validated, $paymentsCount, $request);
@@ -488,6 +463,16 @@ if (
 
         $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
         $redirectMode = $pciMode === 'redirect';
+
+        // 🐛 DEBUG: Log incoming payment data
+        \Log::info('🎯 [PublicCheckoutController] processCardPayment called', [
+            'pci_mode' => $pciMode,
+            'has_og_token_in_request' => $request->has('og-token'),
+            'has_og_token_in_validated' => isset($validated['og-token']),
+            'og_token_value' => $request->input('og-token') ?: 'EMPTY/NULL',
+            'payment_method' => $validated['payment_method'] ?? null,
+            'all_request_keys' => array_keys($request->all()),
+        ]);
 
         // Prepare extra parameters for redirect mode
         $extra = [];
