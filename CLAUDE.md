@@ -34,48 +34,331 @@
 
 ## 🏗️ Package Structure
 
+### Complete Directory Tree
+
 ```
 SUMIT-Payment-Gateway-for-laravel/
-├── src/
-│   ├── Console/Commands/        # Artisan commands
-│   ├── Contracts/               # Interfaces (Payable)
-│   ├── Enums/                   # Enumerations
-│   ├── Events/                  # Event classes
-│   ├── Filament/
-│   │   ├── Client/              # Client panel resources
-│   │   │   ├── Pages/           # Client dashboard pages
-│   │   │   ├── Resources/       # Client resources (6 resources)
-│   │   │   └── Widgets/         # Client widgets
-│   │   ├── Pages/               # Admin standalone pages
+├── checkout-branded-extracted/      # Branded checkout assets
+├── config/
+│   └── officeguy.php               # Configuration file (74 settings)
+├── database/
+│   └── migrations/                 # Database migrations
+│       ├── 2024_01_01_create_officeguy_transactions_table.php
+│       ├── 2024_01_02_create_officeguy_tokens_table.php
+│       ├── 2024_01_03_create_officeguy_documents_table.php
+│       ├── 2024_01_04_create_officeguy_settings_table.php
+│       ├── 2024_01_05_create_vendor_credentials_table.php
+│       ├── 2024_01_06_create_subscriptions_table.php
+│       ├── 2024_01_07_create_webhook_events_table.php
+│       ├── 2024_01_08_create_sumit_webhooks_table.php
+│       └── 2024_01_09_add_donation_and_vendor_fields.php
+├── docs/                           # Additional documentation
+│   ├── CHECKOUT_COMPLETE_FLOW_ANALYSIS.md
+│   ├── CLIENT_LOCALE_FIX_2025-12-07.md
+│   ├── CLIENT_PACKAGE_ARCHITECTURE_ANALYSIS.md
+│   ├── CLIENT_PANEL_INTEGRATION.md
+│   ├── CLIENT_PANEL_REQUIREMENTS.md
+│   ├── CLIENT_SUMMARY.md
+│   ├── COMPLETE_CHECKOUT_ANALYSIS.md
+│   ├── CRM_INTEGRATION.md
+│   ├── DIGITAL_PRODUCT_FULFILLMENT.md
+│   ├── DOKAN_WOOCOMMERCE_INTEGRATION.md
+│   ├── INFRASTRUCTURE_FULFILLMENT.md
+│   ├── INVOICE_SETTINGS_INTEGRATION.md
+│   ├── LANGUAGE_SWITCHING_ANALYSIS.md
+│   ├── LOCALE_FIX_FINAL_2025-12-07.md
+│   ├── LOCALE_FLOW_ANALYSIS.md
+│   ├── PACKAGE_COMPLETENESS_AUDIT_2025-11-30.md
+│   ├── PAYABLE_FIELD_MAPPING_WIZARD.md
+│   ├── PHASE2_INTEGRATION_PLAN.md
+│   ├── SUBSCRIPTION_INVOICES_SPECIFICATION.md
+│   ├── WEBHOOK_SYSTEM.md
+│   ├── architecture.md
+│   ├── mapping.md
+│   └── sumit-package-architecture-guide.md
+├── resources/
+│   ├── css/
+│   │   └── checkout-mobile.css     # Mobile-responsive checkout styles
+│   ├── js/
+│   │   └── officeguy-alpine-rtl.js # Alpine.js RTL support
+│   ├── lang/                       # Translations (Hebrew/English/French)
+│   │   ├── en/
+│   │   │   └── officeguy.php
+│   │   ├── he/
+│   │   │   └── officeguy.php
+│   │   └── lang/
+│   │       ├── en.json
+│   │       ├── fr.json
+│   │       └── he.json
+│   └── views/                      # Blade templates
+│       ├── components/             # Reusable components
+│       │   ├── error-card.blade.php
+│       │   ├── mapping-details.blade.php
+│       │   ├── mapping-review.blade.php
+│       │   ├── model-info.blade.php
+│       │   ├── payment-form.blade.php
+│       │   └── success-card.blade.php
+│       ├── errors/
+│       │   └── access-denied.blade.php
+│       ├── filament/               # Filament admin views
+│       │   ├── client/
+│       │   ├── pages/
+│       │   └── resources/
+│       ├── pages/                  # Public pages
+│       │   ├── partials/
+│       │   ├── checkout.blade.php  # Public checkout page
+│       │   ├── digital.blade.php   # Digital product page
+│       │   ├── infrastructure.blade.php
+│       │   └── subscription.blade.php
+│       └── success.blade.php       # Payment success page
+├── routes/
+│   └── officeguy.php               # Package routes (7 routes)
+├── scripts/                        # Utility scripts
+│   ├── add-missing-translations.php
+│   ├── final-translations.php
+│   └── translate-settings-page.php
+├── src/                            # Main source code
+│   ├── Actions/
+│   │   └── PrepareCheckoutIntentAction.php
+│   ├── BackoffStrategy/
+│   │   ├── BackoffStrategyInterface.php
+│   │   └── ExponentialBackoffStrategy.php
+│   ├── Console/Commands/           # Artisan commands
+│   │   ├── CrmSyncFoldersCommand.php
+│   │   ├── CrmSyncViewsCommand.php
+│   │   ├── ProcessRecurringPaymentsCommand.php
+│   │   ├── StockSyncCommand.php
+│   │   └── SyncAllDocumentsCommand.php
+│   ├── Contracts/                  # Interfaces
+│   │   ├── HasSumitCustomer.php
+│   │   ├── Invoiceable.php
+│   │   └── Payable.php             # Core Payable interface
+│   ├── DTOs/
+│   │   └── ValidationResult.php
+│   ├── DataTransferObjects/
+│   │   ├── AddressData.php
+│   │   ├── CheckoutIntent.php
+│   │   ├── CustomerData.php
+│   │   └── PaymentPreferences.php
+│   ├── Enums/                      # Enumerations
+│   │   ├── Environment.php
+│   │   ├── PayableType.php
+│   │   ├── PaymentStatus.php
+│   │   └── PciMode.php
+│   ├── Events/                     # Event classes (19 events)
+│   │   ├── BitPaymentCompleted.php
+│   │   ├── DocumentCreated.php
+│   │   ├── FinalWebhookCallFailedEvent.php
+│   │   ├── MultiVendorPaymentCompleted.php
+│   │   ├── MultiVendorPaymentFailed.php
+│   │   ├── PaymentCompleted.php
+│   │   ├── PaymentFailed.php
+│   │   ├── StockSynced.php
+│   │   ├── SubscriptionCancelled.php
+│   │   ├── SubscriptionCharged.php
+│   │   ├── SubscriptionChargesFailed.php
+│   │   ├── SubscriptionCreated.php
+│   │   ├── SuccessPageAccessed.php
+│   │   ├── SumitWebhookReceived.php
+│   │   ├── UpsellPaymentCompleted.php
+│   │   ├── UpsellPaymentFailed.php
+│   │   ├── WebhookCallFailedEvent.php
+│   │   └── WebhookCallSucceededEvent.php
+│   ├── Filament/                   # Filament integration
+│   │   ├── Actions/
+│   │   │   └── CreatePayableMappingAction.php
+│   │   ├── Client/                 # Client panel (6 resources)
+│   │   │   ├── Pages/
+│   │   │   ├── Resources/
+│   │   │   │   ├── ClientDocumentResource/
+│   │   │   │   ├── ClientPaymentMethodResource/
+│   │   │   │   ├── ClientSubscriptionResource/
+│   │   │   │   ├── ClientSumitWebhookResource/
+│   │   │   │   ├── ClientTransactionResource/
+│   │   │   │   └── ClientWebhookEventResource/
+│   │   │   ├── Widgets/
+│   │   │   └── ClientPanelProvider.php
+│   │   ├── Clusters/
+│   │   │   ├── SumitClient.php
+│   │   │   └── SumitGateway.php
+│   │   ├── Pages/
 │   │   │   └── OfficeGuySettings.php  # Settings page (74 settings)
-│   │   └── Resources/           # Admin resources (7 resources)
-│   │       ├── DocumentResource/
-│   │       ├── SubscriptionResource/
-│   │       ├── SumitWebhookResource/
-│   │       ├── TokenResource/
-│   │       ├── TransactionResource/
-│   │       ├── VendorCredentialResource/
-│   │       └── WebhookEventResource/
-│   ├── Http/Controllers/        # Webhook & callback controllers
-│   ├── Jobs/                    # Queue jobs
-│   ├── Listeners/               # Event listeners
-│   ├── Models/                  # 8 Eloquent models
-│   ├── Services/                # 12 service classes
-│   ├── Support/                 # Helper traits & classes
-│   ├── View/Components/         # Blade components
-│   └── OfficeGuyServiceProvider.php
-├── database/migrations/         # 9 migrations
-├── config/officeguy.php         # Configuration file (74 keys)
-├── routes/officeguy.php         # Package routes (7 routes)
-├── resources/views/             # Blade templates
-├── tests/                       # PHPUnit tests
-├── docs/                        # Additional documentation
-├── woo-plugin/                  # Original WooCommerce plugin (reference)
-├── composer.json
-├── README.md                    # Full Hebrew documentation
-├── CHANGELOG.md
-├── UPGRADE.md
-└── FILAMENT_V4_UPGRADE_SUMMARY.md
+│   │   ├── RelationManagers/
+│   │   │   └── InvoicesRelationManager.php
+│   │   ├── Resources/              # Admin resources (7 resources)
+│   │   │   ├── CrmActivities/
+│   │   │   ├── CrmEntities/
+│   │   │   ├── CrmFolders/
+│   │   │   ├── DocumentResource/
+│   │   │   ├── SubscriptionResource/
+│   │   │   ├── SumitWebhookResource/
+│   │   │   ├── TokenResource/
+│   │   │   ├── TransactionResource/
+│   │   │   ├── VendorCredentialResource/
+│   │   │   ├── WebhookEventResource/
+│   │   │   ├── DocumentResource.php
+│   │   │   ├── SubscriptionResource.php
+│   │   │   ├── SumitWebhookResource.php
+│   │   │   ├── TokenResource.php
+│   │   │   ├── TransactionResource.php
+│   │   │   ├── VendorCredentialResource.php
+│   │   │   └── WebhookEventResource.php
+│   │   └── Widgets/
+│   │       └── PayableMappingsTableWidget.php
+│   ├── Handlers/                   # Fulfillment handlers
+│   │   ├── DigitalProductFulfillmentHandler.php
+│   │   ├── InfrastructureFulfillmentHandler.php
+│   │   └── SubscriptionFulfillmentHandler.php
+│   ├── Http/
+│   │   ├── Controllers/            # Webhook & callback controllers
+│   │   │   ├── Api/
+│   │   │   ├── BitWebhookController.php
+│   │   │   ├── CardCallbackController.php
+│   │   │   ├── CheckoutController.php
+│   │   │   ├── CrmWebhookController.php
+│   │   │   ├── DocumentDownloadController.php
+│   │   │   ├── PublicCheckoutController.php
+│   │   │   ├── SecureSuccessController.php
+│   │   │   └── SumitWebhookController.php
+│   │   ├── Middleware/
+│   │   │   ├── OptionalAuth.php
+│   │   │   └── SetPackageLocale.php
+│   │   └── Requests/
+│   │       ├── BitRedirectRequest.php
+│   │       ├── BitWebhookRequest.php
+│   │       └── CheckoutRequest.php
+│   ├── Jobs/                       # Queue jobs (7 jobs)
+│   │   ├── CheckSumitDebtJob.php
+│   │   ├── ProcessRecurringPaymentsJob.php
+│   │   ├── ProcessSumitWebhookJob.php
+│   │   ├── SendWebhookJob.php
+│   │   ├── StockSyncJob.php
+│   │   ├── SyncCrmFromWebhookJob.php
+│   │   └── SyncDocumentsJob.php
+│   ├── Listeners/                  # Event listeners (6 listeners)
+│   │   ├── AutoCreateUserListener.php
+│   │   ├── CrmActivitySyncListener.php
+│   │   ├── CustomerSyncListener.php
+│   │   ├── DocumentSyncListener.php
+│   │   ├── FulfillmentListener.php
+│   │   └── WebhookEventListener.php
+│   ├── Models/                     # Eloquent models (19 models)
+│   │   ├── CrmActivity.php
+│   │   ├── CrmEntity.php
+│   │   ├── CrmEntityField.php
+│   │   ├── CrmEntityRelation.php
+│   │   ├── CrmFolder.php
+│   │   ├── CrmFolderField.php
+│   │   ├── CrmView.php
+│   │   ├── OfficeGuyDocument.php
+│   │   ├── OfficeGuySetting.php
+│   │   ├── OfficeGuyToken.php
+│   │   ├── OfficeGuyTransaction.php
+│   │   ├── OrderSuccessAccessLog.php
+│   │   ├── OrderSuccessToken.php
+│   │   ├── PayableFieldMapping.php
+│   │   ├── PendingCheckout.php
+│   │   ├── Subscription.php
+│   │   ├── SumitWebhook.php
+│   │   ├── VendorCredential.php
+│   │   └── WebhookEvent.php
+│   ├── Policies/
+│   │   └── OfficeGuyTransactionPolicy.php
+│   ├── Services/                   # Service classes (27 services)
+│   │   ├── Stock/
+│   │   │   └── StockService.php
+│   │   ├── BitPaymentService.php
+│   │   ├── CheckoutViewResolver.php
+│   │   ├── CrmDataService.php
+│   │   ├── CrmSchemaService.php
+│   │   ├── CrmViewService.php
+│   │   ├── CustomerMergeService.php
+│   │   ├── CustomerService.php
+│   │   ├── DebtService.php
+│   │   ├── DocumentService.php
+│   │   ├── DonationService.php
+│   │   ├── ExchangeRateService.php
+│   │   ├── FulfillmentDispatcher.php
+│   │   ├── InvoiceSettingsService.php
+│   │   ├── MultiVendorPaymentService.php
+│   │   ├── OfficeGuyApi.php        # HTTP Client
+│   │   ├── PayableMappingService.php
+│   │   ├── PaymentService.php      # Core payment processing
+│   │   ├── SecureSuccessUrlGenerator.php
+│   │   ├── ServiceDataFactory.php
+│   │   ├── SettingsService.php     # Configuration management
+│   │   ├── SubscriptionService.php
+│   │   ├── SuccessAccessValidator.php
+│   │   ├── TemporaryStorageService.php
+│   │   ├── TokenService.php        # Token management
+│   │   ├── UpsellService.php
+│   │   └── WebhookService.php
+│   ├── Support/                    # Helper traits & classes
+│   │   ├── Traits/
+│   │   │   ├── HasCheckoutTheme.php
+│   │   │   ├── HasPayableFields.php
+│   │   │   ├── HasPayableType.php
+│   │   │   ├── HasSumitCustomerTrait.php
+│   │   │   ├── HasSumitInvoice.php
+│   │   │   ├── HasSumitPaymentOperations.php
+│   │   │   └── PayableAdapter.php
+│   │   ├── DynamicPayableWrapper.php
+│   │   ├── ModelPayableWrapper.php
+│   │   ├── OrderResolver.php
+│   │   ├── RequestHelpers.php
+│   │   └── RouteConfig.php
+│   ├── View/Components/            # Blade components
+│   │   └── PaymentForm.php
+│   ├── OfficeGuyServiceProvider.php # Main service provider
+│   └── WebhookCall.php
+├── temp_logo/                      # Logo assets
+├── woo-plugin/                     # Original WooCommerce plugin (reference)
+│   └── woo-payment-gateway-officeguy/
+│       ├── includes/
+│       │   ├── OfficeGuyAPI.php
+│       │   ├── OfficeGuyCartFlow.php
+│       │   ├── OfficeGuyDokanMarketplace.php
+│       │   ├── OfficeGuyDonation.php
+│       │   ├── OfficeGuyMultiVendor.php
+│       │   ├── OfficeGuyPayment.php
+│       │   ├── OfficeGuyPluginSetup.php
+│       │   ├── OfficeGuyRequestHelpers.php
+│       │   ├── OfficeGuySettings.php
+│       │   ├── OfficeGuyStock.php
+│       │   ├── OfficeGuySubscriptions.php
+│       │   └── OfficeGuyTokens.php
+│       ├── languages/
+│       ├── templates/
+│       └── officeguy-woo.php
+├── CHANGELOG.md                    # Version history
+├── CHECKOUT_MODULAR_SPEC.md
+├── CLAUDE.md                       # Development guide (this file)
+├── DOCUMENT_AUTO_SYNC.md
+├── FILAMENT_IMPLEMENTATION.md
+├── FILAMENT_V4_UPGRADE_SUMMARY.md  # Filament v3→v4 migration guide
+├── FIXES_APPLIED.md
+├── IMPLEMENTATION_LOG.md
+├── LICENSE.md                      # MIT License
+├── LOGO_REPLACEMENT_SPEC.md
+├── PAYABLE_MAPPING_SUMMARY.md
+├── README.md                       # Full Hebrew documentation
+├── UPGRADE.md                      # Upgrade instructions
+├── UPGRADE_SUMMARY.txt
+├── composer.json                   # Package dependencies
+├── fix-filament-v4-namespaces.sh
+├── phase1-foundation-files.tar.gz
+└── sumit-openapi.json              # SUMIT API specification
+
+Key Statistics:
+- 19 Eloquent Models
+- 27 Service Classes
+- 7 Admin Filament Resources
+- 6 Client Panel Resources
+- 19 Event Classes
+- 7 Queue Jobs
+- 6 Event Listeners
+- 9 Database Migrations
+- 74 Configuration Settings
 ```
 
 ## 📊 Core Models
