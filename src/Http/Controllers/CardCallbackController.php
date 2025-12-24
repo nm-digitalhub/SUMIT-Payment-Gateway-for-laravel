@@ -11,6 +11,7 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\SecureSuccessUrlGenerator;
 use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
 
 /**
@@ -152,11 +153,41 @@ class CardCallbackController extends Controller
             DocumentService::createOrderDocument($order, $customer, $documentId);
         }
 
-        return $this->redirectSuccess($orderId, __('Payment completed successfully'));
+        return $this->redirectSuccess($order, $orderId, __('Payment completed successfully'));
     }
 
-    private function redirectSuccess(string|int $orderId, string $message)
+    /**
+     * Redirect to success page using secure URL generation
+     *
+     * @param object|null $order The Payable entity (Order, Invoice, etc.)
+     * @param string|int $orderId Fallback order ID if order object is unavailable
+     * @param string $message Success message
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    private function redirectSuccess($order, string|int $orderId, string $message)
     {
+        // If order is a Payable entity and secure success is enabled, generate secure URL
+        if ($order && $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
+            $generator = app(SecureSuccessUrlGenerator::class);
+
+            if ($generator->isEnabled()) {
+                $secureUrl = $generator->generate($order);
+
+                OfficeGuyApi::writeToLog(
+                    'Redirecting to secure success page with token for order #' . $orderId,
+                    'debug'
+                );
+
+                return redirect()->away($secureUrl);
+            }
+        }
+
+        // Fallback: Legacy redirect (for non-Payable entities or if secure URL is disabled)
+        OfficeGuyApi::writeToLog(
+            'Using legacy success redirect for order #' . $orderId,
+            'debug'
+        );
+
         $route = config('officeguy.routes.success', 'checkout.success');
 
         if ($route && Route::has($route)) {

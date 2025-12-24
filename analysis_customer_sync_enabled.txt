@@ -1,0 +1,1 @@
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/CustomerMergeService.php:30:        return (bool) $this->settings->get('customer_sync_enabled', false);

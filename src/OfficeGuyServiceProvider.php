@@ -135,6 +135,13 @@ class OfficeGuyServiceProvider extends ServiceProvider
             CustomerSyncListener::class
         );
 
+        // Register refund webhook listener (v1.2.0+)
+        // Automatically updates transaction status to 'refunded' when SUMIT refund webhooks are received
+        Event::listen(
+            SumitWebhookReceived::class,
+            RefundWebhookListener::class
+        );
+
         // CRM activities sync listener: refresh related entities when SUMIT CRM webhook arrives
         Event::listen(
             SumitWebhookReceived::class,

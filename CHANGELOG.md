@@ -7,7 +7,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [v1.10.0] - 2025-12-21
+### Added
+- **HasEloquentLineItems Trait** (v1.19.0)
+  - New adaptive trait for integrating Eloquent line item relationships with SUMIT payment gateway
+  - Bridges between Eloquent relationships and SUMIT API format without coupling to specific models
+  - Does NOT assume table names, model names, or field structures
+  - Supports multiple naming conventions:
+    - `price_unit` or `unit_price` → SUMIT `unit_price`
+    - `package_id` or `product_id` → SUMIT `product_id`
+    - `metadata.sku` or direct `sku` field → SUMIT `sku`
+  - Falls back to HasPayableFields default if no Eloquent items exist (backward compatible)
+  - Usage: Override `getEloquentLineItems()` to return your specific relationship
+  - Example: Order model uses `lines()` relationship (OrderLine models) → SUMIT line items
+  - File: `src/Support/Traits/HasEloquentLineItems.php`
+  - Benefit: Detailed SUMIT invoices with itemized breakdown instead of generic "Payment × 1"
+  - Zero breaking changes: Empty relationships fall back gracefully
+
+## [v1.18.0] - 2025-12-21
 
 ### Added
 - **HasSumitPaymentOperations Trait**

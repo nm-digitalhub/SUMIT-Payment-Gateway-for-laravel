@@ -1,0 +1,4 @@
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/SettingsService.php:232:            'customer_merging_enabled',
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Filament/Pages/OfficeGuySettings.php:507:                    Toggle::make('customer_merging_enabled')
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Filament/Pages/OfficeGuySettings.php:508:                        ->label(__('officeguy::officeguy.settings.customer_merging_enabled'))
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Filament/Pages/OfficeGuySettings.php:509:                        ->helperText(__('officeguy::officeguy.settings.customer_merging_enabled_help'))

@@ -36,6 +36,7 @@
 - [תרומות](#תרומות-donations)
 - [Upsell / CartFlows](#upsell--cartflows)
 - [יצירת משתמש אוטומטית לאחר תשלום](#יצירת-משתמש-אוטומטית-לאחר-תשלום-v1140)
+- [Secure Success Page - עמוד הצלחה מאובטח](#secure-success-page---עמוד-הצלחה-מאובטח-v120)
 - [אירועים](#אירועים-events)
 - [Custom Event Webhooks](#custom-event-webhooks)
 - [Webhook Events Resource](#webhook-events-resource-admin-panel)
@@ -1044,6 +1045,184 @@ OFFICEGUY_AUTO_CREATE_GUEST_USER=false
 - `app/Mail/GuestWelcomeWithPasswordMail.php` - Mailable לשליחת המייל
 - `resources/views/emails/guest-welcome-with-password.blade.php` - תבנית המייל
 - `config/officeguy.php:108-123` - הגדרות
+
+---
+
+## Secure Success Page - עמוד הצלחה מאובטח (v1.2.0+)
+
+החבילה כוללת מערכת אבטחה 7-שכבות לעמודי הצלחה שלאחר תשלום, המונעת גישה לא מורשית ל-URLs של הצלחה וחושפת נתוני תשלום רק לבעלים הלגיטימיים.
+
+### למה זה חשוב?
+
+**הבעיה:**
+עמודי הצלחה מסורתיים משתמשים ב-URLs פשוטים כמו `/order/success/264` שכל אחד יכול לנחש ולגשת אליהם, מה שחושף:
+- פרטי תשלום אישיים
+- מספרי הזמנות
+- פרטי לקוח
+- סכומי תשלום
+
+**הפתרון:**
+מערכת אבטחה 7-שכבות המייצרת URLs חד-פעמיים עם טוקנים קריפטוגרפיים.
+
+### 7 שכבות האבטחה
+
+1. **Rate Limiting** - הגבלת ניסיונות גישה למניעת Brute Force
+2. **Signed URL** - חתימת Laravel HMAC למניעת זיוף URL
+3. **Token Existence** - בדיקה שהטוקן קיים במסד הנתונים
+4. **Token Validity** - בדיקה שהטוקן לא פג תוקף (TTL)
+5. **Single Use** - טוקן ניתן לשימוש חד-פעמי בלבד (נצרך אחרי גישה)
+6. **Nonce Matching** - הגנת Replay Attack באמצעות nonce קריפטוגרפי
+7. **Identity Proof** - אימות משתמש מחובר או הוכחת בעלות קריפטוגרפית לאורחים
+
+### איך זה עובד?
+
+#### זרימת העבודה:
+
+```
+1. תשלום מוצלח
+   ↓
+2. CardCallbackController מייצר טוקן (128 תווים אקראיים)
+   ↓
+3. Nonce קריפטוגרפי (64 תווים) נוצר
+   ↓
+4. SHA256 hash נשמר ב-DB (לא הטוקן הגולמי!)
+   ↓
+5. Laravel signed URL נוצר עם הטוקן והנונס
+   ↓
+6. הלקוח מופנה ל-URL המאובטח
+   ↓
+7. SecureSuccessController מאמת את 7 השכבות
+   ↓
+8. הטוקן נצרך (consumed = true)
+   ↓
+9. עמוד ההצלחה מוצג (פעם אחת בלבד!)
+```
+
+#### דוגמה ל-URL מאובטח:
+
+```
+https://nm-digitalhub.com/officeguy/success?
+  token=a1b2c3d4e5f6...                     ← 128 תווים אקראיים
+  &nonce=9f8e7d6c5b4a...                    ← 64 תווים nonce
+  &signature=7c1a2b3d4e5f...                ← חתימת Laravel
+  &expires=1703462400                       ← תוקף Signed URL
+```
+
+### הפעלה והגדרות
+
+**ב-Admin Panel:**
+נווטו ל-**SUMIT Gateway** > **Gateway Settings** > **Secure Success Page (v1.2.0+)**
+
+**הגדרות זמינות:**
+
+| הגדרה | ברירת מחדל | תיאור |
+|-------|------------|--------|
+| Enable Secure Success URLs | `true` | הפעלת/השבתת מערכת האבטחה |
+| Token Validity (Hours) | `24` | כמה זמן הטוקן תקף (1-168 שעות) |
+| Rate Limit - Max Attempts | `10` | מספר ניסיונות גישה מקסימלי לכל IP |
+| Rate Limit - Decay Time | `1` | חלון זמן להגבלת קצב (דקות) |
+
+**ב-.env:**
+```env
+OFFICEGUY_SUCCESS_SECURE_ENABLED=true
+OFFICEGUY_SUCCESS_TOKEN_TTL=24
+OFFICEGUY_SUCCESS_RATE_LIMIT_MAX=10
+OFFICEGUY_SUCCESS_RATE_LIMIT_DECAY=1
+```
+
+### דוגמאות שימוש
+
+#### בקוד - יצירת URL מאובטח:
+
+```php
+use OfficeGuy\LaravelSumitGateway\Services\SecureSuccessUrlGenerator;
+
+$generator = app(SecureSuccessUrlGenerator::class);
+
+// יצירת URL מאובטח עבור הזמנה
+$secureUrl = $generator->generate($order);
+
+// הפניה ללקוח
+return redirect()->away($secureUrl);
+```
+
+#### בקוד - אימות גישה:
+
+```php
+use OfficeGuy\LaravelSumitGateway\Services\SuccessAccessValidator;
+
+$validator = app(SuccessAccessValidator::class);
+
+// אימות כל 7 השכבות
+$result = $validator->validate($request);
+
+if ($result->isValid) {
+    // הצג עמוד הצלחה
+    return view('success', ['order' => $result->order]);
+}
+
+// גישה נדחתה
+return view('errors.access-denied', [
+    'error' => $result->error,
+]);
+```
+
+### דגשים חשובים
+
+✅ **שימוש חד-פעמי:**
+הטוקן נצרך אחרי הגישה הראשונה. אם הלקוח ינסה לרענן את העמוד, הוא יקבל שגיאה.
+
+✅ **אבטחה לאורחים:**
+גם לקוחות לא מחוברים מוגנים באמצעות הוכחת בעלות קריפטוגרפית (nonce matching).
+
+✅ **תאימות לאחור:**
+אם המערכת מושבתת או ההזמנה לא מיישמת את ממשק `Payable`, המערכת חוזרת ל-redirect המסורתי.
+
+✅ **מניעת Replay Attacks:**
+השימוש ב-nonce מונע שימוש חוזר בטוקן גם אם מישהו מצליח לגנוב אותו.
+
+### השבתת התכונה
+
+אם ברצונך לחזור ל-redirect המסורתי (לא מומלץ):
+
+**ב-Admin Panel:**
+נווטו ל-**Gateway Settings** > **Secure Success Page** ושנו את **Enable Secure Success URLs** ל-OFF
+
+**או ב-.env:**
+```env
+OFFICEGUY_SUCCESS_SECURE_ENABLED=false
+```
+
+### קבצים קשורים
+
+- `src/Services/SecureSuccessUrlGenerator.php` - יצירת URLs מאובטחים
+- `src/Services/SuccessAccessValidator.php` - אימות 7 השכבות
+- `src/Http/Controllers/SecureSuccessController.php` - Controller עמוד הצלחה
+- `src/Http/Controllers/CardCallbackController.php` - שימוש ב-SecureSuccessUrlGenerator
+- `src/Models/OrderSuccessToken.php` - מודל הטוקנים
+- `src/Models/OrderSuccessAccessLog.php` - לוג ניסיונות גישה
+- `database/migrations/2025_12_18_000001_create_order_success_tokens_table.php`
+- `database/migrations/2025_12_18_000002_create_order_success_access_log_table.php`
+- `config/officeguy.php:192-222` - הגדרות
+
+### אירועים
+
+| אירוע | תיאור | Payload |
+|-------|--------|---------|
+| `SuccessPageAccessed` | גישה מוצלחת לעמוד הצלחה | `$order`, `$token`, `$user` |
+
+**דוגמת Listener:**
+```php
+use OfficeGuy\LaravelSumitGateway\Events\SuccessPageAccessed;
+
+Event::listen(SuccessPageAccessed::class, function($event) {
+    Log::info('Success page accessed', [
+        'order_id' => $event->order->id,
+        'user_id' => $event->user?->id ?? 'guest',
+        'token_id' => $event->token->id,
+    ]);
+});
+```
 
 ---
 

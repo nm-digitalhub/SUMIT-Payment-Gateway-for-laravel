@@ -655,6 +655,46 @@ class OfficeGuySettings extends Page
                                 ->helperText('Named route to redirect after failed payment'),
                         ]),
                 ]),
+
+            Section::make('Secure Success Page (v1.2.0+)')
+                ->columnSpanFull()
+                ->description('7-layer security architecture: Rate Limiting • Signed URL • Token Existence • Token Validity • Single Use • Nonce Matching • Identity Proof')
+                ->collapsed()
+                ->columns(3)
+                ->schema([
+                    Toggle::make('success_enabled')
+                        ->label('Enable Secure Success URLs')
+                        ->helperText('Generate cryptographic one-time URLs for post-payment success pages')
+                        ->default(true)
+                        ->columnSpanFull(),
+
+                    TextInput::make('success_token_ttl')
+                        ->label('Token Validity (Hours)')
+                        ->helperText('How long the success URL token remains valid')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(168)
+                        ->default(24)
+                        ->suffix('hours'),
+
+                    TextInput::make('success_rate_limit_max')
+                        ->label('Rate Limit - Max Attempts')
+                        ->helperText('Maximum access attempts per IP address')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(100)
+                        ->default(10)
+                        ->suffix('attempts'),
+
+                    TextInput::make('success_rate_limit_decay')
+                        ->label('Rate Limit - Decay Time')
+                        ->helperText('Time window for rate limiting')
+                        ->numeric()
+                        ->minValue(1)
+                        ->maxValue(60)
+                        ->default(1)
+                        ->suffix('minutes'),
+                ]),
         ];
     }
 

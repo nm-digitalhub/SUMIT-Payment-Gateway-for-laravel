@@ -1,0 +1,2 @@
+449:        // Get merge_customers setting from SettingsService (respects Admin Panel)
+450:        $settingsService = app(SettingsService::class);

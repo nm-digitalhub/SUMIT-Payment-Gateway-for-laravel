@@ -1,0 +1,3 @@
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/SettingsService.php:189:            'merge_customers',
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/PaymentService.php:449:        // Get merge_customers setting from SettingsService (respects Admin Panel)
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/PaymentService.php:451:        $mergeCustomers = (bool) $settingsService->get('merge_customers', false);

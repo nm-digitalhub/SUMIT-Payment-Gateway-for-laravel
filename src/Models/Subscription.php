@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Enums\PayableType;
 
 /**
  * Subscription Model
@@ -194,6 +195,11 @@ class Subscription extends Model implements Payable
     public function getCustomerNote(): ?string
     {
         return __('Subscription payment') . ': ' . $this->name;
+    }
+
+    public function getPayableType(): PayableType
+    {
+        return PayableType::SUBSCRIPTION;
     }
 
     // ========================================

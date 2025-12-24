@@ -1,0 +1,1 @@
+/var/www/vhosts/nm-digitalhub.com/SUMIT-Payment-Gateway-for-laravel/src/Services/PaymentService.php:451:        $mergeCustomers = (bool) $settingsService->get('merge_customers', false);
