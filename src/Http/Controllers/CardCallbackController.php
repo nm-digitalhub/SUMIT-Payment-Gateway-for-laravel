@@ -43,6 +43,25 @@ class CardCallbackController extends Controller
 
         $order = OrderResolver::resolve($orderId);
 
+        // CRITICAL: Validate that order exists
+        // Without this check, invalid order_id (e.g., 264, 408) can create Transactions
+        // with no valid Order, causing SUMIT to create duplicate customers
+        if (!$order) {
+            OfficeGuyApi::writeToLog(
+                'Card callback received for non-existent order #' . $orderId .
+                '. Payment ID: ' . $paymentId .
+                '. This indicates either:
+1. Order was deleted after payment
+2. Invalid order_id in callback URL
+3. Callback URL was manually modified',
+                'error'
+            );
+
+            return $this->redirectFailed(
+                __('Order not found. Please contact support with payment ID: ') . $paymentId
+            );
+        }
+
         // Find existing transaction or create pending
         $transaction = OfficeGuyTransaction::where('order_id', $orderId)
             ->where('status', 'pending')

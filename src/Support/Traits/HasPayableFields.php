@@ -52,10 +52,11 @@ trait HasPayableFields
      */
     protected function getPayableField(string $key, mixed $default = null): mixed
     {
-        $mapping = $this->getPayableMappingService()->getMapping($key);
+        $modelMappings = $this->getPayableMappingService()->getMappingForModel($this);
 
-        if ($mapping) {
-            return $this->getAttribute($mapping) ?? $default;
+        if ($modelMappings && isset($modelMappings[$key])) {
+            $fieldName = $modelMappings[$key];
+            return $this->getAttribute($fieldName) ?? $default;
         }
 
         return $default;

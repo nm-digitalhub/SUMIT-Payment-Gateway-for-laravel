@@ -9,7 +9,7 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
-use OfficeGuy\LaravelSumitGateway\Support\RequestHelpers;
+use OfficeGuy\LaravelSumitGateway\DataTransferObjects\ResolvedPaymentIntent;
 
 /**
  * Payment Service
@@ -729,7 +729,10 @@ class PaymentService
         bool $recurring = false,
         bool $redirectMode = false,
         ?OfficeGuyToken $token = null,
-        array $extra = []
+        array $extra = [],
+        ?array $paymentMethodPayload = null,
+        ?string $singleUseToken = null,
+        ?string $customerCitizenId = null
     ): array {
         $orderTotal = round($order->getPayableAmount(), 2);
 
@@ -740,7 +743,7 @@ class PaymentService
             'Items'                => self::getPaymentOrderItems($order),
             'VATIncluded'          => 'true',
             'VATRate'              => self::getOrderVatRate($order),
-            'Customer'             => self::getOrderCustomer($order, RequestHelpers::post('og-citizenid')),
+            'Customer'             => self::getOrderCustomer($order, $customerCitizenId),
             'AuthoriseOnly'        => $authorizeOnly ? 'true' : 'false',
             'DraftDocument'        => config('officeguy.draft_document', false) ? 'true' : 'false',
             'SendDocumentByEmail'  => config('officeguy.email_document', true) ? 'true' : 'false',
@@ -770,34 +773,10 @@ class PaymentService
             $request['AuthorizeAmount'] = $authorizeAmount;
         }
 
-        if ($redirectMode) {
-            // Caller must set RedirectURL / CancelRedirectURL in $extra
-        } else {
-            // Build payment method based on PCI mode
-            $pciMode = config('officeguy.pci', 'no');
-
-            if ($token) {
-                $request['PaymentMethod'] = TokenService::getPaymentMethodFromToken($token);
-            } elseif ($pciMode === 'yes') {
-                $request['PaymentMethod'] = TokenService::getPaymentMethodPCI();
-            } else {
-                $singleUseToken = RequestHelpers::post('og-token');
-
-                // 🐛 DEBUG: Log token for troubleshooting
-                \Log::info('💳 [PaymentService] Building PaymentMethod with SingleUseToken', [
-                    'has_token' => !empty($singleUseToken),
-                    'token_length' => $singleUseToken ? strlen($singleUseToken) : 0,
-                    'token_value' => $singleUseToken ?: 'EMPTY/NULL',
-                    'pci_mode' => $pciMode,
-                    'all_request_keys' => array_keys(request()->all()),
-                    'has_og_token_in_request' => request()->has('og-token'),
-                ]);
-
-                $request['PaymentMethod'] = [
-                    'SingleUseToken' => $singleUseToken,
-                    'Type'           => 1,
-                ];
-            }
+        if ($singleUseToken !== null) {
+            $request['SingleUseToken'] = $singleUseToken;
+        } elseif (!$redirectMode && $paymentMethodPayload !== null) {
+            $request['PaymentMethod'] = $paymentMethodPayload;
         }
 
         return array_merge($request, $extra);
@@ -813,11 +792,24 @@ class PaymentService
         bool $recurring = false,
         bool $redirectMode = false,
         ?OfficeGuyToken $token = null,
-        array $extra = []
+        array $extra = [],
+        ?array $paymentMethodPayload = null,
+        ?string $singleUseToken = null,
+        ?string $customerCitizenId = null
     ): array {
         $environment = config('officeguy.environment', 'www');
 
-        $request = self::buildChargeRequest($order, $paymentsCount, $recurring, $redirectMode, $token, $extra);
+        $request = self::buildChargeRequest(
+            $order,
+            $paymentsCount,
+            $recurring,
+            $redirectMode,
+            $token,
+            $extra,
+            $paymentMethodPayload,
+            $singleUseToken,
+            $customerCitizenId
+        );
 
         $endpoint = '/billing/payments/charge/';
         if ($recurring) {
@@ -922,6 +914,32 @@ class PaymentService
             'response' => $response,
         ];
     }
+    /**
+     * Execute payment from a resolved checkout intent
+     *
+     * Single architectural entry point for payment execution.
+     * Controllers / Jobs MUST call this method only.
+     */
+    public static function processResolvedIntent(ResolvedPaymentIntent $intent): array
+    {
+        $extra = [];
+        if ($intent->redirectMode && $intent->redirectUrls) {
+            $extra['RedirectURL'] = $intent->redirectUrls['success'] ?? null;
+            $extra['CancelRedirectURL'] = $intent->redirectUrls['cancel'] ?? null;
+        }
+
+        return self::processCharge(
+            order: $intent->payable,
+            paymentsCount: $intent->paymentsCount,
+            recurring: $intent->recurring,
+            redirectMode: $intent->redirectMode,
+            token: $intent->token,
+            extra: $extra,
+            paymentMethodPayload: $intent->paymentMethodPayload,
+            singleUseToken: $intent->singleUseToken,
+            customerCitizenId: $intent->customerCitizenId
+        );
+    }
 
     /**
      * Process refund to customer's payment method
@@ -951,50 +969,53 @@ class PaymentService
         }
 
         try {
-            // SUMIT uses negative amount for refunds
+            // SUMIT uses negative amount for refunds with SupportCredit flag
             $payload = [
                 'Credentials' => self::getCredentials(),
-                'Details' => [
-                    'Customer' => [
-                        'ID' => (int) $sumitCustomerId,
-                    ],
-                    'Description' => $reason,
-                    'Currency' => 0, // ILS
-                    'Language' => 0, // Hebrew
+                'Customer' => [
+                    'ID' => (int) $sumitCustomerId,
                 ],
                 'Items' => [
                     [
                         'Item' => ['Name' => $reason],
                         'Quantity' => 1,
                         'UnitPrice' => -abs($amount), // Negative for refund
-                        'TotalPrice' => -abs($amount),
                     ],
                 ],
                 'Payment' => [
                     'CreditCardAuthNumber' => $transactionId, // Reference to original transaction
                 ],
+                'SupportCredit' => true, // Enable credit/refund support
                 'VATIncluded' => false,
             ];
 
             $environment = config('officeguy.environment', 'www');
             $response = OfficeGuyApi::post(
                 $payload,
-                '/payments/charge/',
+                '/billing/payments/charge/',
                 $environment,
                 false
             );
 
             if (($response['Status'] ?? 1) === 0 && isset($response['Data'])) {
+                // Extract refund transaction ID from Payment object
+                // SUMIT returns refund details in Data.Payment (same structure as charge)
+                $refundTransactionId = $response['Data']['Payment']['ID'] ?? null;
+                $refundAuthNumber = $response['Data']['Payment']['AuthNumber'] ?? null;
+
                 OfficeGuyApi::writeToLog(
-                    'SUMIT refund processed successfully. Transaction ID: ' . $transactionId,
+                    'SUMIT refund processed successfully. Original Transaction: ' . $transactionId .
+                    ', Refund Transaction: ' . ($refundTransactionId ?? 'N/A') .
+                    ', Auth Number: ' . ($refundAuthNumber ?? 'N/A'),
                     'info'
                 );
 
                 return [
                     'success' => true,
-                    'transaction_id' => $response['Data']['TransactionID'] ?? null,
-                    'auth_number' => $response['Data']['AuthNumber'] ?? null,
+                    'transaction_id' => $refundTransactionId,
+                    'auth_number' => $refundAuthNumber,
                     'amount' => $amount,
+                    'response' => $response, // Include full response for debugging
                 ];
             }
 
