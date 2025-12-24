@@ -190,7 +190,7 @@ class CardCallbackController extends Controller
 
         $route = config('officeguy.routes.success', 'checkout.success');
 
-        if ($route && Route::has($route)) {
+        if ($route && Route::getRoutes()->getByName($route)) {
             return redirect()->route($route, ['order' => $orderId])->with('success', $message);
         }
 

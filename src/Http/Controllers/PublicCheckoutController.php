@@ -7,13 +7,17 @@ namespace OfficeGuy\LaravelSumitGateway\Http\Controllers;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Route;
 use Illuminate\View\View;
 use OfficeGuy\LaravelSumitGateway\Actions\PrepareCheckoutIntentAction;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\CheckoutIntentResolver;
 use OfficeGuy\LaravelSumitGateway\Services\CheckoutViewResolver;
+use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\SecureSuccessUrlGenerator;
 use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 use OfficeGuy\LaravelSumitGateway\Support\ModelPayableWrapper;
 use OfficeGuy\LaravelSumitGateway\Support\OrderResolver;
@@ -320,9 +324,10 @@ if (
         // ✅ NEW: Prepare checkout intent + service data
         // NOW customer data is complete (after guest user creation and profile updates)
         $intent = app(PrepareCheckoutIntentAction::class)->execute($request, $payable);
+        $resolvedIntent = CheckoutIntentResolver::resolve($intent);
 
         // Handle card payment
-        return $this->processCardPayment($payable, $validated, $paymentsCount, $request);
+        return $this->processCardPayment($payable, $validated, $paymentsCount, $request, $resolvedIntent);
     }
 
     /**
@@ -438,7 +443,13 @@ if (
      * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-    protected function processCardPayment(Payable $payable, array $validated, int $paymentsCount, Request $request)
+    protected function processCardPayment(
+        Payable $payable,
+        array $validated,
+        int $paymentsCount,
+        Request $request,
+        \OfficeGuy\LaravelSumitGateway\DataTransferObjects\ResolvedPaymentIntent $resolvedIntent
+    )
     {
         // 🛡️ IDEMPOTENCY PROTECTION: Prevent double-charging on page refresh
         $existingTransaction = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('order_id', $payable->getPayableId())
@@ -455,18 +466,12 @@ if (
                 'user_agent' => $request->userAgent(),
             ]);
 
-            return redirect()->route(
-                config('officeguy.routes.success', 'checkout.success'),
-                ['order' => $payable->getPayableId()]
-            )->with('info', __('This order has already been paid'));
+            return $this->redirectSuccess($payable, __('This order has already been paid'));
         }
-
-        $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
-        $redirectMode = $pciMode === 'redirect';
 
         // 🐛 DEBUG: Log incoming payment data
         \Log::info('🎯 [PublicCheckoutController] processCardPayment called', [
-            'pci_mode' => $pciMode,
+            'pci_mode' => $resolvedIntent->pciMode,
             'has_og_token_in_request' => $request->has('og-token'),
             'has_og_token_in_validated' => isset($validated['og-token']),
             'og_token_value' => $request->input('og-token') ?: 'EMPTY/NULL',
@@ -474,37 +479,12 @@ if (
             'all_request_keys' => array_keys($request->all()),
         ]);
 
-        // Prepare extra parameters for redirect mode
-        $extra = [];
-        if ($redirectMode) {
-            $extra['RedirectURL'] = route(config('officeguy.routes.success', 'checkout.success'), [
-                'order' => $payable->getPayableId()
-            ]);
-            $extra['CancelRedirectURL'] = route(config('officeguy.routes.failed', 'checkout.failed'), [
-                'order' => $payable->getPayableId()
-            ]);
-        }
-
-        // Check for existing token (handle empty string as "new")
-        $token = null;
-        $tokenId = $validated['payment_token'] ?? null;
-        if (!empty($tokenId) && $tokenId !== 'new') {
-            $token = OfficeGuyToken::find($tokenId);
-        }
-
         // Process the charge
-        $result = PaymentService::processCharge(
-            $payable,
-            $paymentsCount,
-            false, // recurring
-            $redirectMode,
-            $token,
-            $extra
-        );
+        $result = PaymentService::processResolvedIntent($resolvedIntent);
 
         if ($result['success'] === true) {
             // Handle redirect flow
-            if ($redirectMode && isset($result['redirect_url'])) {
+            if ($resolvedIntent->redirectMode && isset($result['redirect_url'])) {
                 return redirect()->away($result['redirect_url']);
             }
 
@@ -514,10 +494,7 @@ if (
                 $this->saveCardToken($result['response']['Data'], $client);
             }
 
-            return redirect()->route(
-                config('officeguy.routes.success', 'checkout.success'),
-                ['order' => $payable->getPayableId()]
-            )->with('success', __('Payment completed successfully'));
+            return $this->redirectSuccess($payable, __('Payment completed successfully'));
         }
 
         $errorMessage = $result['message'] ?? __('Payment failed. Please try again.');
@@ -691,5 +668,46 @@ if (
         });
 
         return $this->process($request, $id);
+    }
+
+    /**
+     * Redirect to success page using secure URL generation
+     *
+     * @param Payable|null $payable The Payable entity (Order, Invoice, etc.)
+     * @param string $message Success message
+     * @return \Illuminate\Http\RedirectResponse
+     */
+    protected function redirectSuccess(?Payable $payable, string $message = 'Payment completed successfully')
+    {
+        // If payable entity is available and secure success is enabled, generate secure URL
+        if ($payable) {
+            $generator = app(SecureSuccessUrlGenerator::class);
+
+            if ($generator->isEnabled()) {
+                $secureUrl = $generator->generate($payable);
+
+                OfficeGuyApi::writeToLog(
+                    'Redirecting to secure success page with token for payable #' . $payable->getPayableId(),
+                    'debug'
+                );
+
+                return redirect()->away($secureUrl);
+            }
+        }
+
+        // Fallback: Legacy redirect (if secure URL is disabled or payable unavailable)
+        OfficeGuyApi::writeToLog(
+            'Using legacy success redirect for payable #' . ($payable ? $payable->getPayableId() : 'unknown'),
+            'debug'
+        );
+
+        $route = config('officeguy.routes.success', 'checkout.success');
+
+        if ($route && Route::getRoutes()->getByName($route)) {
+            return redirect()->route($route, ['order' => $payable ? $payable->getPayableId() : null])
+                ->with('success', $message);
+        }
+
+        return redirect()->to(url('/'))->with('success', $message);
     }
 }
