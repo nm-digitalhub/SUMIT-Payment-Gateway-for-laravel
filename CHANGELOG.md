@@ -7,8 +7,75 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.20.0] - 2025-12-26
+
 ### Added
-- **HasEloquentLineItems Trait** (v1.19.0)
+- **Transaction Linking System** - Bidirectional relationships between charge and refund transactions
+  - Added `refund_transaction_id` field to link charges to their refund transactions
+  - Added `parentTransaction()` relationship - refund → original charge
+  - Added `refundTransaction()` relationship - charge → refund transaction
+  - Added `childRefunds()` relationship - charge → all partial refunds
+  - Added helper methods: `isRefund()`, `isCharge()`, `hasBeenRefunded()`
+  - Added smart `getPaymentToken()` method - handles multiple token storage formats
+  - Migration: `2025_12_26_000001_add_transaction_linking_fields_to_officeguy_transactions.php`
+  - File: `src/Models/OfficeGuyTransaction.php`
+
+### Changed
+- **PaymentService::processRefund()** - Now creates new transaction record for refunds
+  - Previously: Only updated original transaction status to 'refunded'
+  - Now: Creates new `OfficeGuyTransaction` record with `transaction_type = 'refund'`
+  - Links refund to original charge via `parent_transaction_id` and `refund_transaction_id`
+  - Returns full refund record in response array
+  - Enables transaction history tracking and reporting
+  - File: `src/Services/PaymentService.php:518-605`
+
+### Enhanced
+- **TransactionResource (Filament)** - Added transaction relationship columns
+  - New column: `transaction_type` with Hebrew badges (חיוב/זיכוי/בוטל)
+  - New column: `parent_transaction_id` - clickable link to original charge (visible on refunds)
+  - New column: `refund_transaction_id` - clickable link to refund (visible on refunded charges)
+  - New column: `payment_token` - searchable, copyable, hidden by default
+  - Badge colors: charge=success, refund=warning, void=danger
+  - File: `src/Filament/Resources/TransactionResource.php`
+
+- **ViewTransaction Page (Filament)** - Refund action now shows clickable link to refund transaction
+  - After successful refund, notification includes "צפה בעסקת הזיכוי" button
+  - Links to newly created refund transaction record
+  - Original transaction automatically refreshed to show updated status
+  - Removed manual status update (PaymentService handles it)
+  - File: `src/Filament/Resources/TransactionResource/Pages/ViewTransaction.php:119-226`
+
+### Fixed
+- **MySQL Index Name Length** - Fixed 64-character limit violations
+  - `vendor_credentials` table: Index renamed to `vendor_active_idx`
+  - `subscriptions` table: Indexes renamed to `subs_status_next_idx`, `subs_subscriber_idx`
+  - `officeguy_transactions` table: Foreign key renamed to `officeguy_transactions_parent_fk`
+  - Prevents "Identifier name too long" errors on MySQL 5.7+
+  - Files:
+    - `database/migrations/2025_01_01_000005_create_vendor_credentials_table.php`
+    - `database/migrations/2025_01_01_000006_create_subscriptions_table.php`
+    - `database/migrations/2025_01_01_000007_add_donation_and_vendor_fields.php`
+
+### Database Schema
+- Added indexes for efficient querying:
+  - `idx_transaction_type` on `officeguy_transactions.transaction_type`
+  - `idx_payment_token` on `officeguy_transactions.payment_token`
+- Foreign key constraints for referential integrity:
+  - `refund_transaction_id` → `officeguy_transactions.id` (ON DELETE SET NULL)
+  - `parent_transaction_id` → `officeguy_transactions.id` (ON DELETE SET NULL)
+
+### Benefits
+- ✅ Full transaction history tracking (charge → refund → partial refunds)
+- ✅ Easy navigation between related transactions in Filament UI
+- ✅ Accurate reporting and reconciliation
+- ✅ Support for multiple partial refunds on same charge
+- ✅ Payment token tracking across transaction lifecycle
+- ✅ Backward compatible - existing transactions unaffected
+
+## [v1.19.0] - 2025-12-XX
+
+### Added
+- **HasEloquentLineItems Trait**
   - New adaptive trait for integrating Eloquent line item relationships with SUMIT payment gateway
   - Bridges between Eloquent relationships and SUMIT API format without coupling to specific models
   - Does NOT assume table names, model names, or field structures
