@@ -182,7 +182,7 @@ class OfficeGuyTransaction extends Model
         string|int $orderId,
         array $response,
         array $request = [],
-        string $orderType = null
+        ?string $orderType = null
     ): static {
         $data = $response['Data'] ?? [];
         $payment = $data['Payment'] ?? [];
@@ -233,7 +233,7 @@ class OfficeGuyTransaction extends Model
     /**
      * Mark transaction as failed
      */
-    public function markAsFailed(string $errorMessage = null): void
+    public function markAsFailed(?string $errorMessage = null): void
     {
         $this->update([
             'status' => 'failed',
