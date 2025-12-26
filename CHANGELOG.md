@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.20.1] - 2025-12-26
+
+### Fixed
+- **PHP 8.4 Compatibility** - Fixed deprecation warnings for nullable parameters
+  - `OfficeGuyTransaction::createFromApiResponse()` - explicitly marked `$orderType` as `?string`
+  - `OfficeGuyTransaction::markAsFailed()` - explicitly marked `$errorMessage` as `?string`
+  - Resolves "Implicitly marking parameter as nullable is deprecated" warnings
+  - File: `src/Models/OfficeGuyTransaction.php:185,236`
+
 ## [v1.20.0] - 2025-12-26
 
 ### Added
