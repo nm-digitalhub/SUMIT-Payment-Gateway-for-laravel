@@ -169,28 +169,40 @@ class ViewTransaction extends ViewRecord
                         \Log::info('Refund result', ['result' => $result]);
 
                         if (isset($result['success']) && $result['success'] === true) {
-                            // עדכן סטטוס Transaction
-                            $record->update([
-                                'status' => 'refunded',
-                                'status_description' => $reason,
-                            ]);
+                            // ProcessRefund already updated the original transaction status
+                            // and created the refund transaction record with proper links
+
+                            $refundRecordId = $result['refund_record']->id ?? null;
+                            $refundUrl = $refundRecordId
+                                ? route('filament.admin.resources.transactions.view', ['record' => $refundRecordId])
+                                : null;
 
                             Notification::make()
                                 ->title('זיכוי בוצע בהצלחה')
                                 ->body(match($refundType) {
                                     'credit_note' => 'תעודת זיכוי נוצרה: ' . ($result['document_id'] ?? 'N/A'),
                                     default => 'החזר כספי בוצע: ₪' . number_format($amount, 2) .
+                                        ($refundRecordId
+                                            ? ' | מזהה עסקה: ' . $refundRecordId
+                                            : ''
+                                        ) .
                                         ($result['transaction_id']
-                                            ? ' | מזהה: ' . $result['transaction_id']
-                                            : ($result['auth_number']
-                                                ? ' | אימות: ' . $result['auth_number']
-                                                : ''
-                                            )
+                                            ? ' | מזהה SUMIT: ' . $result['transaction_id']
+                                            : ''
                                         ),
                                 })
                                 ->success()
                                 ->persistent()
+                                ->actions($refundUrl ? [
+                                    \Filament\Notifications\Actions\Action::make('view_refund')
+                                        ->label('צפה בעסקת הזיכוי')
+                                        ->url($refundUrl)
+                                        ->openUrlInNewTab(),
+                                ] : [])
                                 ->send();
+
+                            // Refresh the current record to show updated status
+                            $record->refresh();
                         } else {
                             \Log::error('Refund failed', ['error' => $result['error'] ?? 'Unknown']);
                             Notification::make()

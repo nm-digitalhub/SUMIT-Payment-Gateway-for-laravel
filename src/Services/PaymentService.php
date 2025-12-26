@@ -1002,20 +1002,72 @@ class PaymentService
                 // SUMIT returns refund details in Data.Payment (same structure as charge)
                 $refundTransactionId = $response['Data']['Payment']['ID'] ?? null;
                 $refundAuthNumber = $response['Data']['Payment']['AuthNumber'] ?? null;
+                $paymentData = $response['Data']['Payment'] ?? [];
+                $paymentMethod = $paymentData['PaymentMethod'] ?? [];
+
+                // Find original transaction by payment_id (which is the auth_number we sent)
+                $originalTransaction = OfficeGuyTransaction::where('payment_id', $transactionId)
+                    ->orWhere('auth_number', $transactionId)
+                    ->first();
+
+                if (!$originalTransaction) {
+                    // Log warning but don't fail the refund
+                    OfficeGuyApi::writeToLog(
+                        'Warning: Original transaction not found for refund. Transaction ID: ' . $transactionId,
+                        'warning'
+                    );
+                }
+
+                // Create new transaction record for the refund
+                $refundRecord = OfficeGuyTransaction::create([
+                    'order_id' => 'REFUND-' . $transactionId,  // Unique identifier
+                    'payment_id' => $refundTransactionId,
+                    'auth_number' => $refundAuthNumber,
+                    'customer_id' => $sumitCustomerId,
+                    'amount' => $amount,  // Positive amount (represents refunded value)
+                    'currency' => $originalTransaction?->currency ?? config('app.currency', 'ILS'),
+                    'transaction_type' => 'refund',
+                    'parent_transaction_id' => $originalTransaction?->id,
+                    'payment_token' => $paymentMethod['CreditCard_Token'] ?? $originalTransaction?->payment_token,
+                    'last_digits' => $paymentMethod['CreditCard_LastDigits'] ?? $originalTransaction?->last_digits,
+                    'expiration_month' => $paymentMethod['CreditCard_ExpirationMonth'] ?? $originalTransaction?->expiration_month,
+                    'expiration_year' => $paymentMethod['CreditCard_ExpirationYear'] ?? $originalTransaction?->expiration_year,
+                    'card_type' => $paymentMethod['Type'] ?? $originalTransaction?->card_type,
+                    'status' => 'completed',
+                    'status_description' => $reason,
+                    'payment_method' => 'card',
+                    'payments_count' => 1,
+                    'raw_request' => $payload,
+                    'raw_response' => $response,
+                    'environment' => $environment,
+                    'is_test' => config('officeguy.testing', false),
+                ]);
+
+                // Update original transaction with refund link
+                if ($originalTransaction) {
+                    $originalTransaction->update([
+                        'status' => 'refunded',
+                        'refund_transaction_id' => $refundRecord->id,
+                        'status_description' => $reason,
+                    ]);
+                }
 
                 OfficeGuyApi::writeToLog(
                     'SUMIT refund processed successfully. Original Transaction: ' . $transactionId .
                     ', Refund Transaction: ' . ($refundTransactionId ?? 'N/A') .
-                    ', Auth Number: ' . ($refundAuthNumber ?? 'N/A'),
+                    ', Auth Number: ' . ($refundAuthNumber ?? 'N/A') .
+                    ', Refund Record ID: ' . $refundRecord->id,
                     'info'
                 );
 
                 return [
                     'success' => true,
+                    'refund_record' => $refundRecord,
+                    'original_transaction' => $originalTransaction,
                     'transaction_id' => $refundTransactionId,
                     'auth_number' => $refundAuthNumber,
                     'amount' => $amount,
-                    'response' => $response, // Include full response for debugging
+                    'response' => $response,
                 ];
             }
 

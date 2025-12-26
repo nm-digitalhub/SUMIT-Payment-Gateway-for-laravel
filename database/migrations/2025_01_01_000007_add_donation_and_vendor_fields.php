@@ -51,23 +51,17 @@ return new class extends Migration
             }
         });
 
-        // Add foreign key separately (only if column was added and foreign key doesn't exist)
+        // Add foreign key separately (only if column was added)
         if (Schema::hasColumn('officeguy_transactions', 'parent_transaction_id')) {
-            $foreignKeys = Schema::getConnection()
-                ->getDoctrineSchemaManager()
-                ->listTableForeignKeys('officeguy_transactions');
-
-            $hasParentFk = collect($foreignKeys)->contains(function ($fk) {
-                return in_array('parent_transaction_id', $fk->getColumns());
-            });
-
-            if (! $hasParentFk) {
+            try {
                 Schema::table('officeguy_transactions', function (Blueprint $table) {
-                    $table->foreign('parent_transaction_id')
+                    $table->foreign('parent_transaction_id', 'officeguy_transactions_parent_fk')
                         ->references('id')
                         ->on('officeguy_transactions')
                         ->onDelete('set null');
                 });
+            } catch (\Exception $e) {
+                // Foreign key already exists, ignore
             }
         }
     }

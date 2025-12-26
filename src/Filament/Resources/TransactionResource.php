@@ -25,6 +25,8 @@ use App\Models\Client;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Services\DebtService;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource;
 use Illuminate\Support\Facades\Mail;
 
 class TransactionResource extends Resource
@@ -218,7 +220,7 @@ class TransactionResource extends Resource
                             return null;
                         }
                         $sub = Subscription::find($record->subscription_id);
-                        return $sub ? route('filament.admin.resources.subscriptions.view', ['record' => $sub->id]) : null;
+                        return $sub ? SubscriptionResource::getUrl('view', ['record' => $sub->id]) : null;
                     })
                     ->openUrlInNewTab()
                     ->toggleable()
@@ -259,7 +261,7 @@ class TransactionResource extends Resource
                         $docId = OfficeGuyDocument::query()
                             ->where('document_id', $record->document_id)
                             ->value('id');
-                        return $docId ? route('filament.admin.resources.documents.view', ['record' => $docId]) : null;
+                        return $docId ? DocumentResource::getUrl('view', ['record' => $docId]) : null;
                     })
                     ->openUrlInNewTab()
                     ->toggleable(),
@@ -275,6 +277,51 @@ class TransactionResource extends Resource
                     ->label('מס\' אישור')
                     ->searchable()
                     ->toggleable(),
+                Tables\Columns\TextColumn::make('transaction_type')
+                    ->label('סוג')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'charge' => 'success',
+                        'refund' => 'warning',
+                        'void' => 'danger',
+                        default => 'gray',
+                    })
+                    ->formatStateUsing(fn (string $state): string => match ($state) {
+                        'charge' => 'חיוב',
+                        'refund' => 'זיכוי',
+                        'void' => 'בוטל',
+                        default => $state,
+                    })
+                    ->toggleable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('parent_transaction_id')
+                    ->label('חיוב מקורי')
+                    ->formatStateUsing(fn ($state) => $state ? "#$state" : null)
+                    ->url(function ($record) {
+                        return $record->parent_transaction_id
+                            ? route('filament.admin.resources.transactions.view', ['record' => $record->parent_transaction_id])
+                            : null;
+                    })
+                    ->openUrlInNewTab()
+                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->visible(fn ($record) => $record?->isRefund()),
+                Tables\Columns\TextColumn::make('refund_transaction_id')
+                    ->label('עסקת זיכוי')
+                    ->formatStateUsing(fn ($state) => $state ? "#$state" : null)
+                    ->url(function ($record) {
+                        return $record->refund_transaction_id
+                            ? route('filament.admin.resources.transactions.view', ['record' => $record->refund_transaction_id])
+                            : null;
+                    })
+                    ->openUrlInNewTab()
+                    ->toggleable(isToggledHiddenByDefault: false)
+                    ->visible(fn ($record) => $record?->hasBeenRefunded()),
+                Tables\Columns\TextColumn::make('payment_token')
+                    ->label('Token')
+                    ->limit(20)
+                    ->copyable()
+                    ->toggleable(isToggledHiddenByDefault: true)
+                    ->searchable(),
                 Tables\Columns\IconColumn::make('is_test')
                     ->label('בדיקות')
                     ->boolean()

@@ -32,7 +32,7 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['vendor_type', 'vendor_id', 'is_active']);
+            $table->index(['vendor_type', 'vendor_id', 'is_active'], 'vendor_active_idx');
         });
     }
 

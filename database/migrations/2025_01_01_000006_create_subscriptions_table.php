@@ -39,8 +39,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['status', 'next_charge_at']);
-            $table->index(['subscriber_type', 'subscriber_id', 'status']);
+            $table->index(['status', 'next_charge_at'], 'subs_status_next_idx');
+            $table->index(['subscriber_type', 'subscriber_id', 'status'], 'subs_subscriber_idx');
         });
     }
 

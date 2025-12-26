@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -33,7 +34,11 @@ class OfficeGuyTransaction extends Model
         'currency',
         'payments_count',
         'status',
+        'transaction_type',           // NEW: charge/refund/void
+        'parent_transaction_id',      // NEW: Link to original charge (for refunds)
+        'refund_transaction_id',      // NEW: Link to refund (for charges)
         'payment_method',
+        'payment_token',              // NEW: CreditCard_Token from SUMIT
         'last_digits',
         'expiration_month',
         'expiration_year',
@@ -79,6 +84,92 @@ class OfficeGuyTransaction extends Model
     }
 
     /**
+     * Get the parent transaction (original charge) for refund transactions.
+     *
+     * @return BelongsTo
+     */
+    public function parentTransaction(): BelongsTo
+    {
+        return $this->belongsTo(OfficeGuyTransaction::class, 'parent_transaction_id');
+    }
+
+    /**
+     * Get the refund transaction for charged transactions.
+     *
+     * @return BelongsTo
+     */
+    public function refundTransaction(): BelongsTo
+    {
+        return $this->belongsTo(OfficeGuyTransaction::class, 'refund_transaction_id');
+    }
+
+    /**
+     * Get all child refund transactions (if this charge was partially refunded multiple times).
+     *
+     * @return HasMany
+     */
+    public function childRefunds(): HasMany
+    {
+        return $this->hasMany(OfficeGuyTransaction::class, 'parent_transaction_id');
+    }
+
+    /**
+     * Check if this is a refund transaction.
+     *
+     * @return bool
+     */
+    public function isRefund(): bool
+    {
+        return $this->transaction_type === 'refund';
+    }
+
+    /**
+     * Check if this is a charge transaction.
+     *
+     * @return bool
+     */
+    public function isCharge(): bool
+    {
+        return $this->transaction_type === 'charge';
+    }
+
+    /**
+     * Check if this transaction has been refunded.
+     *
+     * @return bool
+     */
+    public function hasBeenRefunded(): bool
+    {
+        return $this->refund_transaction_id !== null;
+    }
+
+    /**
+     * Get payment token from raw_response or payment_token field.
+     * Handles both standard SUMIT responses and custom implementations.
+     *
+     * @return string|null
+     */
+    public function getPaymentToken(): ?string
+    {
+        // Priority 1: Direct field
+        if ($this->payment_token) {
+            return $this->payment_token;
+        }
+
+        // Priority 2: Standard SUMIT response
+        if (isset($this->raw_response['Data']['Payment']['PaymentMethod']['CreditCard_Token'])) {
+            return $this->raw_response['Data']['Payment']['PaymentMethod']['CreditCard_Token'];
+        }
+
+        // Priority 3: Custom implementation (eSIM/etc)
+        if (isset($this->raw_response['sumit_payment_token'])) {
+            return $this->raw_response['sumit_payment_token'];
+        }
+
+        return null;
+    }
+
+    /**
      * Create a transaction from SUMIT API response
      *
      * @param string|int $orderId
@@ -115,7 +206,9 @@ class OfficeGuyTransaction extends Model
             'currency' => $currency,
             'payments_count' => $request['Payments_Count'] ?? 1,
             'status' => ($response['Status'] === 0 && ($payment['ValidPayment'] ?? false)) ? 'completed' : 'failed',
+            'transaction_type' => 'charge',  // Default to charge (can be overridden)
             'payment_method' => 'card',
+            'payment_token' => $paymentMethod['CreditCard_Token'] ?? null,  // NEW: Store token
             'last_digits' => $paymentMethod['CreditCard_LastDigits'] ?? null,
             'expiration_month' => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
             'expiration_year' => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
