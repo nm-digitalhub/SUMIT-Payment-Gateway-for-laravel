@@ -89,7 +89,8 @@ class DocumentService
             OfficeGuyDocument::createFromApiResponse(
                 $order->getPayableId(),
                 $response,
-                $request
+                $request,
+                get_class($order) // CRITICAL: Links document to order via polymorphic relationship
             );
 
             OfficeGuyApi::writeToLog(
@@ -201,7 +202,8 @@ class DocumentService
             OfficeGuyDocument::createFromApiResponse(
                 $order->getPayableId(),
                 $response,
-                $request
+                $request,
+                get_class($order) // CRITICAL: Links document to order via polymorphic relationship
             );
 
             OfficeGuyApi::writeToLog(

@@ -880,6 +880,7 @@ class PaymentService
                 'order_id' => $order->getPayableId(),
                 'order_type' => get_class($order),
                 'payment_id' => $payment['ID'] ?? null,
+                'sumit_entity_id' => $payment['ID'] ?? null, // CRITICAL: Used by TransactionSyncListener to match CRM webhooks
                 'document_id' => $response['Data']['DocumentID'] ?? null,
                 'customer_id' => $response['Data']['CustomerID'] ?? null,
                 'auth_number' => $payment['AuthNumber'] ?? null,
@@ -1045,6 +1046,7 @@ class PaymentService
                 $refundRecord = OfficeGuyTransaction::create([
                     'order_id' => 'REFUND-' . $transactionId,  // Unique identifier
                     'payment_id' => $refundTransactionId,
+                    'sumit_entity_id' => $refundTransactionId, // CRITICAL: Used by TransactionSyncListener to match CRM webhooks
                     'auth_number' => $refundAuthNumber,
                     'customer_id' => $sumitCustomerId,
                     'amount' => $amount,  // Positive amount (represents refunded value)
