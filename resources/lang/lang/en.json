@@ -119,5 +119,14 @@
     "countries": "countries",
     "Network": "Network",
     "Key Features": "Key Features",
-    "+ :count more features": "+ :count more features"
+    "+ :count more features": "+ :count more features",
+
+    "Guest": "Guest",
+    "General": "General",
+    "General credit": "General credit",
+    "Shipping": "Shipping",
+    "Order number": "Order number",
+    "Something went wrong.": "Something went wrong.",
+    "Payment failed": "Payment failed",
+    "No response": "No response"
 }

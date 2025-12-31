@@ -1,0 +1,1469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+            <title>SUMIT Payment Gateway for Laravel</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="../">
+    <link rel="icon" href="images/favicon.ico"/>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/base.css">
+            <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@100;200;300;400;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="css/template.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0/css/all.min.css" integrity="sha256-ybRkN9dBjhcS2qrW1z+hfCxq+1aBdwyQM5wlQoQVt/0=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/themes/prism-okaidia.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-numbers/prism-line-numbers.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-highlight/prism-line-highlight.css">
+                <script src="https://cdn.jsdelivr.net/npm/fuse.js@3.4.6"></script>
+        <script src="https://cdn.jsdelivr.net/npm/css-vars-ponyfill@2"></script>
+        <script src="js/template.js"></script>
+        <script src="js/search.js"></script>
+        <script defer src="js/searchIndex.js"></script>
+        <link rel="stylesheet" href="../css/custom.css">
+</head>
+<body id="top">
+    <header class="phpdocumentor-header phpdocumentor-section">
+    <h1 class="phpdocumentor-title"><a href="" class="phpdocumentor-title__link">SUMIT Payment Gateway for Laravel</a></h1>
+    <input class="phpdocumentor-header__menu-button" type="checkbox" id="menu-button" name="menu-button" />
+    <label class="phpdocumentor-header__menu-icon" for="menu-button">
+        <i class="fas fa-bars"></i>
+    </label>
+    <section data-search-form class="phpdocumentor-search">
+    <label>
+        <span class="visually-hidden">Search for</span>
+        <svg class="phpdocumentor-search__icon" width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="2"/>
+            <line x1="12.4892" y1="12.2727" x2="19.1559" y2="18.9393" stroke="currentColor" stroke-width="3"/>
+        </svg>
+        <input type="search" class="phpdocumentor-field phpdocumentor-search__field" placeholder="Loading .." disabled />
+    </label>
+</section>
+
+    <nav class="phpdocumentor-topnav">
+    <ul class="phpdocumentor-topnav__menu">
+        </ul>
+</nav>
+</header>
+
+    <main class="phpdocumentor">
+        <div class="phpdocumentor-section">
+            <input class="phpdocumentor-sidebar__menu-button" type="checkbox" id="sidebar-button" name="sidebar-button" />
+<label class="phpdocumentor-sidebar__menu-icon" for="sidebar-button">
+    Menu
+</label>
+<aside class="phpdocumentor-column -three phpdocumentor-sidebar">
+                    <section class="phpdocumentor-sidebar__category -namespaces">
+            <h2 class="phpdocumentor-sidebar__category-header">Namespaces</h2>
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="namespaces/officeguy.html" class="">OfficeGuy</a>
+</h4>
+    <ul class="phpdocumentor-list">
+                    <li>
+                <a href="namespaces/officeguy-laravelsumitgateway.html" class="">LaravelSumitGateway</a>
+                
+            </li>
+            </ul>
+
+                        </section>
+                <section class="phpdocumentor-sidebar__category -packages">
+            <h2 class="phpdocumentor-sidebar__category-header">Packages</h2>
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="packages/Application.html" class="">Application</a>
+</h4>
+
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="packages/OfficeGuy.html" class="">OfficeGuy</a>
+</h4>
+    <ul class="phpdocumentor-list">
+                    <li>
+                <a href="packages/OfficeGuy-LaravelSumitGateway.html" class="">LaravelSumitGateway</a>
+                
+            </li>
+            </ul>
+
+                        </section>
+            
+    <section class="phpdocumentor-sidebar__category -reports">
+        <h2 class="phpdocumentor-sidebar__category-header">Reports</h2>
+                <h3 class="phpdocumentor-sidebar__root-package"><a href="graphs/classes.html">Class Diagram</a></h3>
+                <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/deprecated.html">Deprecated</a></h3>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/errors.html">Errors</a></h3>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/markers.html">Markers</a></h3>
+    </section>
+
+    <section class="phpdocumentor-sidebar__category -indices">
+        <h2 class="phpdocumentor-sidebar__category-header">Indices</h2>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="indices/files.html">Files</a></h3>
+    </section>
+</aside>
+
+            <div class="phpdocumentor-column -nine phpdocumentor-content">
+                                <section>
+                                        <ul class="phpdocumentor-breadcrumbs">
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy.html">OfficeGuy</a></li>
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy-laravelsumitgateway.html">LaravelSumitGateway</a></li>
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy-laravelsumitgateway-models.html">Models</a></li>
+    </ul>
+
+    <article class="phpdocumentor-element -class">
+        <h2 class="phpdocumentor-content__title">
+    OfficeGuyTransaction
+
+        <span class="phpdocumentor-element__extends">
+        extends <abbr title="\Illuminate\Database\Eloquent\Model">Model</abbr>
+    </span>
+    
+            <div class="phpdocumentor-element__package">
+            in package
+            <ul class="phpdocumentor-breadcrumbs">
+                                    <li class="phpdocumentor-breadcrumb"><a href="packages/Application.html">Application</a></li>
+                            </ul>
+        </div>
+    
+    
+            <span class="phpdocumentor-element__extends">
+            uses
+                            <abbr title="\Illuminate\Database\Eloquent\SoftDeletes">SoftDeletes</abbr>                    </span>
+    </h2>
+
+<div class="phpdocumentor-label-line">
+
+
+</div>
+
+        <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">18</span>
+
+    </aside>
+
+            <p class="phpdocumentor-summary">OfficeGuy Transaction Model</p>
+
+
+    <section class="phpdocumentor-description"><p>Stores payment transaction details from SUMIT gateway</p>
+</section>
+
+
+
+    
+    
+<h3 id="toc">
+    Table of Contents
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#toc" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h3>
+
+
+
+
+
+
+
+
+
+<h4 id="toc-properties">
+    Properties
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#toc-properties" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_casts">$casts</a>
+    <span>
+                        &nbsp;: mixed            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_fillable">$fillable</a>
+    <span>
+                        &nbsp;: mixed            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_table">$table</a>
+    <span>
+                        &nbsp;: mixed            </span>
+</dt>
+
+    </dl>
+
+<h4 id="toc-methods">
+    Methods
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#toc-methods" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_addNote">addNote()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Add a timestamped note to the transaction (similar to WooCommerce order notes).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_childRefunds">childRefunds()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>    </span>
+</dt>
+<dd>Get all child refund transactions (if this charge was partially refunded multiple times).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_client">client()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>    </span>
+</dt>
+<dd>Link to local Client (canonical billing identity).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_createFromApiResponse">createFromApiResponse()</a>
+    <span>
+                                &nbsp;: static    </span>
+</dt>
+<dd>Create a transaction from SUMIT API response</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getNotes">getNotes()</a>
+    <span>
+                                &nbsp;: array&lt;int, string&gt;    </span>
+</dt>
+<dd>Get all notes as array.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getPaymentToken">getPaymentToken()</a>
+    <span>
+                                &nbsp;: string|null    </span>
+</dt>
+<dd>Get payment token from raw_response or payment_token field.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getSumitCustomerIdUsed">getSumitCustomerIdUsed()</a>
+    <span>
+                                &nbsp;: string|null    </span>
+</dt>
+<dd>Get the SUMIT CustomerID that was actually used in this transaction.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_hasBeenRefunded">hasBeenRefunded()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if this transaction has been refunded.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCharge">isCharge()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if this is a charge transaction.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCompleted">isCompleted()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if transaction is completed</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isFailed">isFailed()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if transaction failed</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isPending">isPending()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if transaction is pending</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isRefund">isRefund()</a>
+    <span>
+                                &nbsp;: bool    </span>
+</dt>
+<dd>Check if this is a refund transaction.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsCompleted">markAsCompleted()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Mark transaction as completed</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsFailed">markAsFailed()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Mark transaction as failed</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsRefunded">markAsRefunded()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Mark transaction as refunded</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_order">order()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\MorphTo">MorphTo</abbr>    </span>
+</dt>
+<dd>Get the owning order model (polymorphic)</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_parentTransaction">parentTransaction()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>    </span>
+</dt>
+<dd>Get the parent transaction (original charge) for refund transactions.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_refundTransaction">refundTransaction()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>    </span>
+</dt>
+<dd>Get the refund transaction for charged transactions.</dd>
+
+    </dl>
+
+
+
+        
+
+        
+    <section class="phpdocumentor-properties">
+        <h3 class="phpdocumentor-elements__header" id="properties">
+            Properties
+            <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#properties" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_casts">
+        $casts
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_casts" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">58</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">mixed</span>
+    <span class="phpdocumentor-signature__name">$casts</span>
+     = <span class="phpdocumentor-signature__default-value">[&#039;amount&#039; =&gt; &#039;decimal:2&#039;, &#039;first_payment_amount&#039; =&gt; &#039;decimal:2&#039;, &#039;non_first_payment_amount&#039; =&gt; &#039;decimal:2&#039;, &#039;payments_count&#039; =&gt; &#039;integer&#039;, &#039;raw_request&#039; =&gt; &#039;array&#039;, &#039;raw_response&#039; =&gt; &#039;array&#039;, &#039;is_test&#039; =&gt; &#039;boolean&#039;, &#039;created_at&#039; =&gt; &#039;datetime&#039;, &#039;updated_at&#039; =&gt; &#039;datetime&#039;, &#039;deleted_at&#039; =&gt; &#039;datetime&#039;, &#039;completed_at&#039; =&gt; &#039;datetime&#039;]</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_fillable">
+        $fillable
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_fillable" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">24</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">mixed</span>
+    <span class="phpdocumentor-signature__name">$fillable</span>
+     = <span class="phpdocumentor-signature__default-value">[
+    &#039;order_id&#039;,
+    &#039;order_type&#039;,
+    &#039;payment_id&#039;,
+    &#039;document_id&#039;,
+    &#039;customer_id&#039;,
+    &#039;client_id&#039;,
+    // NEW: FK to clients (&quot;מי הלקוח אצלנו&quot;)
+    &#039;sumit_customer_id_used&#039;,
+    // NEW: What SUMIT actually used (&quot;מה SUMIT השתמש בפועל&quot;)
+    &#039;auth_number&#039;,
+    &#039;amount&#039;,
+    &#039;first_payment_amount&#039;,
+    &#039;non_first_payment_amount&#039;,
+    &#039;currency&#039;,
+    &#039;payments_count&#039;,
+    &#039;status&#039;,
+    &#039;transaction_type&#039;,
+    // NEW: charge/refund/void
+    &#039;parent_transaction_id&#039;,
+    // NEW: Link to original charge (for refunds)
+    &#039;refund_transaction_id&#039;,
+    // NEW: Link to refund (for charges)
+    &#039;payment_method&#039;,
+    &#039;payment_token&#039;,
+    // NEW: CreditCard_Token from SUMIT
+    &#039;last_digits&#039;,
+    &#039;expiration_month&#039;,
+    &#039;expiration_year&#039;,
+    &#039;card_type&#039;,
+    &#039;status_description&#039;,
+    &#039;error_message&#039;,
+    &#039;raw_request&#039;,
+    &#039;raw_response&#039;,
+    &#039;environment&#039;,
+    &#039;is_test&#039;,
+    &#039;completed_at&#039;,
+    &#039;notes&#039;,
+]</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_table">
+        $table
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_table" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">22</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">mixed</span>
+    <span class="phpdocumentor-signature__name">$table</span>
+     = <span class="phpdocumentor-signature__default-value">&#039;officeguy_transactions&#039;</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+            </section>
+
+            <section class="phpdocumentor-methods">
+        <h3 class="phpdocumentor-elements__header" id="methods">
+            Methods
+            <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#methods" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_addNote">
+        addNote()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_addNote" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">329</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Add a timestamped note to the transaction (similar to WooCommerce order notes).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">addNote</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$note</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$note</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Note content</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_childRefunds">
+        childRefunds()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_childRefunds" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">136</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get all child refund transactions (if this charge was partially refunded multiple times).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">childRefunds</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_client">
+        client()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_client" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">86</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Link to local Client (canonical billing identity).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">client</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>Uses client_id FK (direct link to clients.id) instead of the legacy
+customer_id field which may not match what SUMIT actually used.</p>
+</section>
+
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                    -static                    "
+>
+    <h4 class="phpdocumentor-element__name" id="method_createFromApiResponse">
+        createFromApiResponse()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_createFromApiResponse" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">206</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Create a transaction from SUMIT API response</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">createFromApiResponse</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type">string|int&nbsp;</span><span class="phpdocumentor-signature__argument__name">$orderId</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">array&lt;string|int, mixed&gt;&nbsp;</span><span class="phpdocumentor-signature__argument__name">$response</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__type">array&lt;string|int, mixed&gt;&nbsp;</span><span class="phpdocumentor-signature__argument__name">$request</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">[]</span><span> ]</span></span><span class="phpdocumentor-signature__argument"><span>[</span><span>, </span><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$orderType</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">static</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$orderId</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string|int</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$response</span>
+                : <span class="phpdocumentor-argument-list__argument__type">array&lt;string|int, mixed&gt;</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>SUMIT API response</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$request</span>
+                : <span class="phpdocumentor-argument-list__argument__type">array&lt;string|int, mixed&gt;</span>
+                 = <span class="phpdocumentor-argument-list__argument__default-value">[]</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Original request data</p>
+</section>
+
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$orderType</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                 = <span class="phpdocumentor-argument-list__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                    <section class="phpdocumentor-description"><p>Optional morph type</p>
+</section>
+
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">static</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_getNotes">
+        getNotes()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getNotes" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">343</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get all notes as array.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">getNotes</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;int, string&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;int, string&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_getPaymentToken">
+        getPaymentToken()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getPaymentToken" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">177</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get payment token from raw_response or payment_token field.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">getPaymentToken</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>Handles both standard SUMIT responses and custom implementations.</p>
+</section>
+
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string|null</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_getSumitCustomerIdUsed">
+        getSumitCustomerIdUsed()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getSumitCustomerIdUsed" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">99</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the SUMIT CustomerID that was actually used in this transaction.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">getSumitCustomerIdUsed</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string|null</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+        <section class="phpdocumentor-description"><p>This represents what SUMIT used, which may differ from our client's
+current sumit_customer_id (e.g., if SUMIT created a duplicate customer).</p>
+</section>
+
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string|null</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_hasBeenRefunded">
+        hasBeenRefunded()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_hasBeenRefunded" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">166</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if this transaction has been refunded.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">hasBeenRefunded</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isCharge">
+        isCharge()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCharge" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">156</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if this is a charge transaction.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">isCharge</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isCompleted">
+        isCompleted()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCompleted" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">302</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if transaction is completed</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">isCompleted</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isFailed">
+        isFailed()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isFailed" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">318</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if transaction failed</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">isFailed</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isPending">
+        isPending()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isPending" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">310</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if transaction is pending</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">isPending</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_isRefund">
+        isRefund()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isRefund" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">146</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Check if this is a refund transaction.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">isRefund</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">bool</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">bool</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_markAsCompleted">
+        markAsCompleted()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsCompleted" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">275</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Mark transaction as completed</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">markAsCompleted</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_markAsFailed">
+        markAsFailed()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsFailed" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">283</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Mark transaction as failed</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">markAsFailed</span><span>(</span><span class="phpdocumentor-signature__argument"><span>[</span><span class="phpdocumentor-signature__argument__type">string|null&nbsp;</span><span class="phpdocumentor-signature__argument__name">$errorMessage</span><span> = </span><span class="phpdocumentor-signature__argument__default-value">null</span><span> ]</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$errorMessage</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string|null</span>
+                 = <span class="phpdocumentor-argument-list__argument__default-value">null</span>            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_markAsRefunded">
+        markAsRefunded()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsRefunded" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">294</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Mark transaction as refunded</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">markAsRefunded</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_order">
+        order()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_order" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">75</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the owning order model (polymorphic)</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">order</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\MorphTo">MorphTo</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\MorphTo">MorphTo</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_parentTransaction">
+        parentTransaction()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_parentTransaction" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">116</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the parent transaction (original charge) for refund transactions.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">parentTransaction</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_refundTransaction">
+        refundTransaction()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_refundTransaction" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/OfficeGuyTransaction.php"><a href="files/src-models-officeguytransaction.html"><abbr title="src/Models/OfficeGuyTransaction.php">OfficeGuyTransaction.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">126</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the refund transaction for charged transactions.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">refundTransaction</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span>
+            </section>
+
+</article>
+            </section>
+
+        <div class="phpdocumentor-modal" id="source-view">
+    <div class="phpdocumentor-modal-bg" data-exit-button></div>
+    <div class="phpdocumentor-modal-container">
+        <div class="phpdocumentor-modal-content">
+            <pre style="max-height: 500px; overflow-y: scroll" data-src="files/src/Models/OfficeGuyTransaction.php.txt" class="language-php line-numbers linkable-line-numbers"></pre>
+        </div>
+        <button data-exit-button class="phpdocumentor-modal__close">&times;</button>
+    </div>
+</div>
+
+    <script type="text/javascript">
+        (function () {
+            function loadExternalCodeSnippet(el, url, line) {
+                Array.prototype.slice.call(el.querySelectorAll('pre[data-src]')).forEach((pre) => {
+                    const src = url || pre.getAttribute('data-src').replace(/\\/g, '/');
+                    const language = 'php';
+
+                    const code = document.createElement('code');
+                    code.className = 'language-' + language;
+                    pre.textContent = '';
+                    pre.setAttribute('data-line', line)
+                    code.textContent = 'Loading…';
+                    pre.appendChild(code);
+
+                    var xhr = new XMLHttpRequest();
+
+                    xhr.open('GET', src, true);
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) {
+                            return;
+                        }
+
+                        if (xhr.status < 400 && xhr.responseText) {
+                            code.textContent = xhr.responseText;
+                            Prism.highlightElement(code);
+                            d=document.getElementsByClassName("line-numbers");
+                            d[0].scrollTop = d[0].children[1].offsetTop;
+                            return;
+                        }
+
+                        if (xhr.status === 404) {
+                            code.textContent = '✖ Error: File could not be found';
+                            return;
+                        }
+
+                        if (xhr.status >= 400) {
+                            code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                            return;
+                        }
+
+                        code.textContent = '✖ Error: An unknown error occurred';
+                    };
+
+                    xhr.send(null);
+                });
+            }
+
+            const modalButtons = document.querySelectorAll("[data-modal]");
+            const openedAsLocalFile = window.location.protocol === 'file:';
+            if (modalButtons.length > 0 && openedAsLocalFile) {
+                console.warn(
+                    'Viewing the source code is unavailable because you are opening this page from the file:// scheme; ' +
+                    'browsers block XHR requests when a page is opened this way'
+                );
+            }
+
+            modalButtons.forEach(function (trigger) {
+                if (openedAsLocalFile) {
+                    trigger.setAttribute("hidden", "hidden");
+                }
+
+                trigger.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const modal = document.getElementById(trigger.dataset.modal);
+                    if (!modal) {
+                        console.error(`Modal with id "${trigger.dataset.modal}" could not be found`);
+                        return;
+                    }
+                    modal.classList.add("phpdocumentor-modal__open");
+
+                    loadExternalCodeSnippet(modal, trigger.dataset.src || null, trigger.dataset.line)
+                    const exits = modal.querySelectorAll("[data-exit-button]");
+                    exits.forEach(function (exit) {
+                        exit.addEventListener("click", function (event) {
+                            event.preventDefault();
+                            modal.classList.remove("phpdocumentor-modal__open");
+                        });
+                    });
+                });
+            });
+        })();
+    </script>
+
+    </article>
+                                </section>
+                <section class="phpdocumentor-on-this-page__sidebar">
+                                
+    <section class="phpdocumentor-on-this-page__content">
+        <strong class="phpdocumentor-on-this-page__title">On this page</strong>
+
+        <ul class="phpdocumentor-list -clean">
+            <li class="phpdocumentor-on-this-page-section__title">Table Of Contents</li>
+            <li>
+                <ul class="phpdocumentor-list -clean">
+                                                            <li><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#toc-properties">Properties</a></li>
+                                                            <li><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#toc-methods">Methods</a></li>
+                                    </ul>
+            </li>
+            
+                            <li class="phpdocumentor-on-this-page-section__title">Properties</li>
+                <li>
+                    <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_casts">$casts</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_fillable">$fillable</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#property_table">$table</a></li>
+                                            </ul>
+                </li>
+            
+                        <li class="phpdocumentor-on-this-page-section__title">Methods</li>
+            <li>
+                <ul class="phpdocumentor-list -clean">
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_addNote">addNote()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_childRefunds">childRefunds()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_client">client()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_createFromApiResponse">createFromApiResponse()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getNotes">getNotes()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getPaymentToken">getPaymentToken()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_getSumitCustomerIdUsed">getSumitCustomerIdUsed()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_hasBeenRefunded">hasBeenRefunded()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCharge">isCharge()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isCompleted">isCompleted()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isFailed">isFailed()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isPending">isPending()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_isRefund">isRefund()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsCompleted">markAsCompleted()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsFailed">markAsFailed()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_markAsRefunded">markAsRefunded()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_order">order()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_parentTransaction">parentTransaction()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#method_refundTransaction">refundTransaction()</a></li>
+                                    </ul>
+            </li>
+                    </ul>
+    </section>
+
+                </section>
+                            </div>
+            <section data-search-results class="phpdocumentor-search-results phpdocumentor-search-results--hidden">
+    <section class="phpdocumentor-search-results__dialog">
+        <header class="phpdocumentor-search-results__header">
+            <h2 class="phpdocumentor-search-results__title">Search results</h2>
+            <button class="phpdocumentor-search-results__close"><i class="fas fa-times"></i></button>
+        </header>
+        <section class="phpdocumentor-search-results__body">
+            <ul class="phpdocumentor-search-results__entries"></ul>
+        </section>
+    </section>
+</section>
+        </div>
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-OfficeGuyTransaction.html#top" class="phpdocumentor-back-to-top"><i class="fas fa-chevron-circle-up"></i></a>
+
+    </main>
+
+    <script>
+        cssVars({});
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-highlight/prism-line-highlight.min.js"></script>
+</body>
+</html>

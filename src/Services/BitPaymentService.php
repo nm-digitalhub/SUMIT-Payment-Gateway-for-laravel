@@ -99,6 +99,7 @@ class BitPaymentService
             // Create pending transaction
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
+                'order_type' => get_class($order),
                 'amount' => $order->getPayableAmount(),
                 'currency' => $order->getPayableCurrency(),
                 'status' => 'pending',

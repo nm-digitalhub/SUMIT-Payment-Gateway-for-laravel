@@ -1,0 +1,312 @@
+/*
+ * Custom Stylesheet for SUMIT Payment Gateway Documentation
+ * Enhanced by NM-DigitalHub
+ * Version: 1.0.0
+ */
+
+:root {
+    /* Brand Colors */
+    --nm-primary: #2563eb;
+    --nm-secondary: #0ea5e9;
+    --nm-accent: #f59e0b;
+    --nm-success: #10b981;
+    --nm-danger: #ef4444;
+
+    /* Enhanced Spacing */
+    --spacing-base: 1rem;
+    --spacing-xs: 0.5rem;
+    --spacing-sm: 0.75rem;
+    --spacing-md: 1.5rem;
+    --spacing-lg: 2rem;
+    --spacing-xl: 3rem;
+
+    /* Typography */
+    --font-primary: 'Open Sans', sans-serif;
+    --font-code: 'Source Code Pro', monospace;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Enhanced Header */
+.phpdocumentor-header {
+    background: linear-gradient(135deg, var(--nm-primary) 0%, var(--nm-secondary) 100%);
+    box-shadow: var(--shadow-md);
+    padding: 1.5rem 2rem;
+}
+
+.phpdocumentor-title__link {
+    color: white !important;
+    font-weight: 600;
+    font-size: 1.5rem;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    transition: all 0.3s ease;
+}
+
+.phpdocumentor-title__link:hover {
+    transform: translateY(-2px);
+    text-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+}
+
+/* Add Logo Before Title */
+.phpdocumentor-title__link::before {
+    content: '';
+    display: inline-block;
+    width: 40px;
+    height: 40px;
+    background-image: url('../logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    vertical-align: middle;
+    margin-right: 15px;
+    filter: brightness(0) invert(1);
+}
+
+/* Enhanced Search */
+.phpdocumentor-search__field {
+    border-radius: 25px;
+    padding: 0.75rem 1.5rem;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    background: rgba(255, 255, 255, 0.9);
+    transition: all 0.3s ease;
+    box-shadow: var(--shadow-sm);
+}
+
+.phpdocumentor-search__field:focus {
+    border-color: var(--nm-accent);
+    background: white;
+    box-shadow: var(--shadow-lg);
+    outline: none;
+}
+
+/* Enhanced Sidebar */
+.phpdocumentor-sidebar {
+    background: #f8fafc;
+    border-right: 1px solid #e2e8f0;
+    box-shadow: var(--shadow-sm);
+}
+
+.phpdocumentor-sidebar__category-header {
+    color: var(--nm-primary);
+    font-weight: 700;
+    font-size: 0.875rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: 1rem 0 0.5rem;
+    margin-top: 1.5rem;
+    border-bottom: 2px solid var(--nm-primary);
+}
+
+.phpdocumentor-sidebar__category-header:first-of-type {
+    margin-top: 0;
+}
+
+/* Enhanced Navigation Links */
+.phpdocumentor-sidebar a {
+    color: #475569;
+    transition: all 0.2s ease;
+    padding: 0.5rem 1rem;
+    display: block;
+    border-radius: 6px;
+    margin: 0.25rem 0;
+}
+
+.phpdocumentor-sidebar a:hover {
+    background: var(--nm-primary);
+    color: white;
+    transform: translateX(5px);
+    box-shadow: var(--shadow-sm);
+}
+
+/* Enhanced Content Area */
+.phpdocumentor-content {
+    background: white;
+    padding: 2rem;
+    border-radius: 8px;
+    box-shadow: var(--shadow-sm);
+}
+
+/* Enhanced Code Blocks */
+pre[class*="language-"] {
+    border-radius: 8px;
+    box-shadow: var(--shadow-md);
+    border-left: 4px solid var(--nm-primary);
+}
+
+/* Enhanced Tables */
+table {
+    border-collapse: separate;
+    border-spacing: 0;
+    border-radius: 8px;
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+}
+
+table thead {
+    background: linear-gradient(135deg, var(--nm-primary) 0%, var(--nm-secondary) 100%);
+    color: white;
+}
+
+table th {
+    padding: 1rem;
+    font-weight: 600;
+    text-align: left;
+}
+
+table td {
+    padding: 0.75rem 1rem;
+    border-bottom: 1px solid #e2e8f0;
+}
+
+table tbody tr:hover {
+    background: #f8fafc;
+    transition: background 0.2s ease;
+}
+
+/* Enhanced Badges */
+.phpdocumentor-element__modifier {
+    font-weight: 600;
+    border-radius: 12px;
+    padding: 0.25rem 0.75rem;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    box-shadow: var(--shadow-sm);
+}
+
+.phpdocumentor-element__modifier:contains("public") {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.phpdocumentor-element__modifier:contains("private") {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+.phpdocumentor-element__modifier:contains("protected") {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+/* Enhanced Method/Class Names */
+.phpdocumentor-element__name {
+    color: var(--nm-primary);
+    font-weight: 600;
+    border-left: 4px solid var(--nm-accent);
+    padding-left: 1rem;
+    margin-left: -1rem;
+}
+
+/* Back to Top Button */
+.phpdocumentor-back-to-top {
+    background: linear-gradient(135deg, var(--nm-primary) 0%, var(--nm-secondary) 100%);
+    color: white;
+    width: 50px;
+    height: 50px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: var(--shadow-lg);
+    transition: all 0.3s ease;
+}
+
+.phpdocumentor-back-to-top:hover {
+    transform: translateY(-5px);
+    box-shadow: var(--shadow-xl);
+}
+
+/* Enhanced Search Results */
+.phpdocumentor-search-results__dialog {
+    border-radius: 12px;
+    box-shadow: var(--shadow-xl);
+    border: none;
+}
+
+.phpdocumentor-search-results__header {
+    background: linear-gradient(135deg, var(--nm-primary) 0%, var(--nm-secondary) 100%);
+    color: white;
+    border-radius: 12px 12px 0 0;
+    padding: 1.5rem;
+}
+
+/* Footer Enhancement */
+.phpdocumentor-footer {
+    background: #1e293b;
+    color: #94a3b8;
+    padding: 2rem;
+    text-align: center;
+    margin-top: 4rem;
+}
+
+/* Responsive Enhancements */
+@media (max-width: 768px) {
+    .phpdocumentor-header {
+        padding: 1rem;
+    }
+
+    .phpdocumentor-title__link {
+        font-size: 1.25rem;
+    }
+
+    .phpdocumentor-content {
+        padding: 1rem;
+    }
+}
+
+/* Smooth Animations */
+* {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Loading Animation */
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+.phpdocumentor-search__field[disabled] {
+    animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* Highlight Effect for Links */
+a {
+    position: relative;
+}
+
+a::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 0;
+    width: 0;
+    height: 2px;
+    background: var(--nm-accent);
+    transition: width 0.3s ease;
+}
+
+a:hover::after {
+    width: 100%;
+}
+
+/* Print Styles */
+@media print {
+    .phpdocumentor-sidebar,
+    .phpdocumentor-search,
+    .phpdocumentor-back-to-top {
+        display: none;
+    }
+
+    .phpdocumentor-content {
+        width: 100%;
+        box-shadow: none;
+    }
+}

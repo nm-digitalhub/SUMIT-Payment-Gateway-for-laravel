@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<phpdoc
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns="https://www.phpdoc.org"
+    xsi:noNamespaceSchemaLocation="https://docs.phpdoc.org/latest/phpdoc.xsd"
+    configVersion="3">
+
+    <title>SUMIT Payment Gateway for Laravel</title>
+
+    <paths>
+        <output>docs/api</output>
+        <cache>.phpdoc/cache</cache>
+    </paths>
+
+    <version number="1.1.6">
+        <api>
+            <source dsn=".">
+                <path>src</path>
+            </source>
+            <output>docs/api</output>
+            <ignore hidden="true">
+                <path>vendor/**/*</path>
+                <path>tests/**/*</path>
+                <path>woo-plugin/**/*</path>
+                <path>temp_logo/**/*</path>
+                <path>checkout-branded-extracted/**/*</path>
+            </ignore>
+            <extensions>
+                <extension>php</extension>
+            </extensions>
+            <visibility>public</visibility>
+            <visibility>protected</visibility>
+            <visibility>private</visibility>
+            <markers>
+                <marker>TODO</marker>
+                <marker>FIXME</marker>
+                <marker>DEPRECATED</marker>
+            </markers>
+        </api>
+    </version>
+
+    <!-- Enhanced settings for better documentation -->
+    <setting name="graphs.enabled" value="true"/>
+    <setting name="graphs.format" value="svg"/>
+    <setting name="linker.enabled" value="true"/>
+
+    <!-- Default template with better styling -->
+    <template name="default"/>
+</phpdoc>

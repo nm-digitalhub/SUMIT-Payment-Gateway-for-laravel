@@ -169,6 +169,13 @@
     "Failed": "נכשל",
     "Cancelled": "בוטל",
     "Refunded": "הוחזר",
+
+    "Guest": "אורח",
+    "General": "כללי",
+    "General credit": "זיכוי כללי",
+    "Payment failed": "התשלום נכשל",
+    "No response": "אין תגובה",
+    "Something went wrong.": "משהו השתבש."
     
     "Thank you for your order!": "תודה על ההזמנה!",
     "Your order has been placed successfully.": "ההזמנה שלך בוצעה בהצלחה.",

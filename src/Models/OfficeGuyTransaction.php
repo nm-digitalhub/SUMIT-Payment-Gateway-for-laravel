@@ -27,6 +27,8 @@ class OfficeGuyTransaction extends Model
         'payment_id',
         'document_id',
         'customer_id',
+        'client_id',                   // NEW: FK to clients ("מי הלקוח אצלנו")
+        'sumit_customer_id_used',      // NEW: What SUMIT actually used ("מה SUMIT השתמש בפועל")
         'auth_number',
         'amount',
         'first_payment_amount',
@@ -76,11 +78,34 @@ class OfficeGuyTransaction extends Model
     }
 
     /**
-     * Link to local Client if matched by SUMIT customer ID.
+     * Link to local Client (canonical billing identity).
+     *
+     * Uses client_id FK (direct link to clients.id) instead of the legacy
+     * customer_id field which may not match what SUMIT actually used.
      */
     public function client(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Client::class, 'customer_id', 'sumit_customer_id');
+        return $this->belongsTo(\App\Models\Client::class, 'client_id');
+    }
+
+    /**
+     * Get the SUMIT CustomerID that was actually used in this transaction.
+     *
+     * This represents what SUMIT used, which may differ from our client's
+     * current sumit_customer_id (e.g., if SUMIT created a duplicate customer).
+     *
+     * @return string|null
+     */
+    public function getSumitCustomerIdUsed(): ?string
+    {
+        // Priority 1: Dedicated field (from raw_response at creation)
+        if ($this->sumit_customer_id_used) {
+            return $this->sumit_customer_id_used;
+        }
+
+        // Priority 2: Extract from raw_response (fallback for old data)
+        return data_get($this->raw_response, 'Data.CustomerID')
+            ?? data_get($this->raw_response, 'Data.Payment.CustomerID');
     }
 
     /**
@@ -193,12 +218,34 @@ class OfficeGuyTransaction extends Model
         $currencyMap = [0 => 'ILS', 1 => 'USD', 2 => 'EUR', 3 => 'GBP'];
         $currency = $currencyMap[$currencyEnum] ?? $request['Items'][0]['Currency'] ?? config('app.currency', 'ILS');
 
+        // Extract SUMIT CustomerID that was actually used in this transaction
+        $sumitCustomerIdUsed = $data['CustomerID'] ?? $payment['CustomerID'] ?? null;
+
+        // Find client_id (canonical billing identity)
+        $clientId = null;
+
+        // Option A: Via ExternalIdentifier in request (our client_id)
+        $externalId = data_get($request, 'Customer.ExternalIdentifier');
+        if ($externalId && is_numeric($externalId)) {
+            $clientId = (int) $externalId;
+        }
+
+        // Option B: If no ExternalIdentifier, try to find Client via sumit_customer_id
+        if (!$clientId && $sumitCustomerIdUsed) {
+            $client = \App\Models\Client::where('sumit_customer_id', $sumitCustomerIdUsed)->first();
+            if ($client) {
+                $clientId = $client->id;
+            }
+        }
+
         return static::create([
             'order_id' => $orderId,
             'order_type' => $orderType,
             'payment_id' => $payment['ID'] ?? null,
             'document_id' => $data['DocumentID'] ?? null,
-            'customer_id' => $data['CustomerID'] ?? $payment['CustomerID'] ?? null,
+            'customer_id' => $sumitCustomerIdUsed,  // Legacy field (keep for compatibility)
+            'client_id' => $clientId,  // NEW: Direct FK to clients.id
+            'sumit_customer_id_used' => $sumitCustomerIdUsed,  // NEW: Audit trail of what SUMIT used
             'auth_number' => $payment['AuthNumber'] ?? null,
             'amount' => $payment['Amount'] ?? 0,
             'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,

@@ -178,14 +178,14 @@ class SumitWebhook extends Model
     /**
      * Scope a query to filter by card.
      */
-    public function scopeForCard(Builder $query, string $cardId, string $cardType = null): Builder
+    public function scopeForCard(Builder $query, string $cardId, ?string $cardType = null): Builder
     {
         $query->where('card_id', $cardId);
-        
+
         if ($cardType) {
             $query->where('card_type', $cardType);
         }
-        
+
         return $query;
     }
 
@@ -456,19 +456,34 @@ class SumitWebhook extends Model
 
     /**
      * Helpers for CRM webhooks (payload may be keyed or positional array).
+     *
+     * CRITICAL: Backward compatible - works with normalized and legacy payloads
      */
     public function getCrmFolderId(): ?int
     {
         $payload = $this->payload;
 
         if (is_array($payload)) {
-            // keyed variants
-            $folder = $payload['FolderID'] ?? $payload['Folder'] ?? $payload['folder_id'] ?? $payload['folder'] ?? null;
+            // Direct lookup (normalized payload from getPayload() fix)
+            if (isset($payload['Folder'])) {
+                return (int) $payload['Folder'];
+            }
+
+            // Backward compatibility: old webhooks with nested json string
+            if (isset($payload['json']) && is_string($payload['json'])) {
+                $decoded = json_decode($payload['json'], true);
+                if (isset($decoded['Folder'])) {
+                    return (int) $decoded['Folder'];
+                }
+            }
+
+            // Legacy keyed variants
+            $folder = $payload['FolderID'] ?? $payload['folder_id'] ?? $payload['folder'] ?? null;
             if (is_numeric($folder)) {
                 return (int) $folder;
             }
 
-            // positional: [FolderID, EntityID, Action, Properties]
+            // Positional: [FolderID, EntityID, Action, Properties]
             $values = array_values($payload);
             if (isset($values[0]) && is_numeric($values[0])) {
                 return (int) $values[0];

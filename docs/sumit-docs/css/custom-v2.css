@@ -1,0 +1,514 @@
+/*
+ * SUMIT Payment Gateway Documentation - Developer-Friendly UX
+ * Version: 2.0.0 - Mobile-First, Developer-Focused
+ * Based on UX Audit Recommendations
+ */
+
+:root {
+    /* Brand Colors - Single Dominant Color */
+    --primary: #2563eb;
+    --primary-light: #60a5fa;
+    --primary-dark: #1e40af;
+
+    /* Neutral Colors - For UI Elements */
+    --neutral-50: #f8fafc;
+    --neutral-100: #f1f5f9;
+    --neutral-200: #e2e8f0;
+    --neutral-300: #cbd5e1;
+    --neutral-600: #475569;
+    --neutral-700: #334155;
+    --neutral-900: #0f172a;
+
+    /* Semantic Colors */
+    --success: #10b981;
+    --warning: #f59e0b;
+    --error: #ef4444;
+
+    /* Typography - Optimized for Mobile */
+    --font-base: 16px; /* WCAG AA minimum */
+    --font-sm: 14px;
+    --font-lg: 18px;
+    --font-xl: 20px;
+    --font-2xl: 24px;
+
+    /* Spacing - Consistent vertical rhythm */
+    --space-1: 0.25rem;
+    --space-2: 0.5rem;
+    --space-3: 0.75rem;
+    --space-4: 1rem;
+    --space-6: 1.5rem;
+    --space-8: 2rem;
+
+    /* Touch Targets - WCAG AAA */
+    --tap-target: 44px;
+
+    /* Shadows */
+    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+    --shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* ===========================================
+   1. MOBILE-FIRST HEADER (40-50% reduction)
+   =========================================== */
+
+.phpdocumentor-header {
+    background: var(--primary);
+    padding: var(--space-3) var(--space-4); /* Reduced from 1.5rem */
+    box-shadow: var(--shadow);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.phpdocumentor-title {
+    margin: 0;
+}
+
+.phpdocumentor-title__link {
+    color: white !important;
+    font-weight: 600;
+    font-size: var(--font-lg); /* Reduced from 1.5rem */
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+/* Logo - Smaller on mobile */
+.phpdocumentor-title__link::before {
+    content: '';
+    display: inline-block;
+    width: 28px; /* Reduced from 40px */
+    height: 28px;
+    background-image: url('../logo.png');
+    background-size: contain;
+    background-repeat: no-repeat;
+    filter: brightness(0) invert(1);
+    flex-shrink: 0;
+}
+
+/* Hide logo text on very small screens */
+@media (max-width: 400px) {
+    .phpdocumentor-title__link {
+        font-size: 0; /* Hide text */
+    }
+    .phpdocumentor-title__link::before {
+        width: 32px;
+        height: 32px;
+    }
+}
+
+/* ===========================================
+   2. SEARCH - Hidden by default on mobile
+   =========================================== */
+
+.phpdocumentor-search {
+    margin-top: var(--space-3);
+}
+
+.phpdocumentor-search__field {
+    width: 100%;
+    padding: var(--space-3) var(--space-4);
+    padding-left: 2.5rem; /* Space for icon */
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    background: rgba(255, 255, 255, 0.15);
+    color: white;
+    font-size: var(--font-base);
+    transition: all 0.2s;
+}
+
+.phpdocumentor-search__field::placeholder {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.phpdocumentor-search__field:focus {
+    background: white;
+    color: var(--neutral-900);
+    border-color: white;
+    outline: none;
+    box-shadow: var(--shadow-md);
+}
+
+.phpdocumentor-search__field:focus::placeholder {
+    color: var(--neutral-600);
+}
+
+/* Search Icon */
+.phpdocumentor-search svg {
+    position: absolute;
+    left: var(--space-4);
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.phpdocumentor-search:has(.phpdocumentor-search__field:focus) svg {
+    color: var(--primary);
+}
+
+/* Hide search on mobile until toggled */
+@media (max-width: 768px) {
+    .phpdocumentor-search {
+        display: none;
+    }
+
+    .phpdocumentor-search.is-visible {
+        display: block;
+    }
+}
+
+/* ===========================================
+   3. MENU BUTTON - Neutral color, single button
+   =========================================== */
+
+.phpdocumentor-header__menu-icon,
+.phpdocumentor-sidebar__menu-icon {
+    background: transparent;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    color: white;
+    padding: var(--space-2) var(--space-4);
+    border-radius: 6px;
+    font-size: var(--font-sm);
+    font-weight: 500;
+    cursor: pointer;
+    min-height: var(--tap-target);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    transition: all 0.2s;
+}
+
+.phpdocumentor-header__menu-icon:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.5);
+}
+
+/* Remove green color */
+.phpdocumentor-sidebar__menu-icon {
+    background: var(--neutral-100);
+    color: var(--neutral-700);
+    border-color: var(--neutral-300);
+}
+
+/* ===========================================
+   4. SIDEBAR - Information Architecture
+   =========================================== */
+
+.phpdocumentor-sidebar {
+    background: var(--neutral-50);
+    padding: var(--space-4);
+    font-size: var(--font-base);
+}
+
+.phpdocumentor-sidebar__category-header {
+    color: var(--primary);
+    font-weight: 700;
+    font-size: var(--font-sm);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    padding: var(--space-4) 0 var(--space-2);
+    margin-top: var(--space-6);
+    border-bottom: 2px solid var(--primary);
+    position: relative;
+}
+
+.phpdocumentor-sidebar__category-header:first-of-type {
+    margin-top: 0;
+}
+
+/* Add explanatory tooltips */
+.phpdocumentor-sidebar__category-header::after {
+    content: attr(data-help);
+    display: block;
+    font-size: 12px;
+    font-weight: 400;
+    color: var(--neutral-600);
+    text-transform: none;
+    letter-spacing: 0;
+    margin-top: var(--space-1);
+    opacity: 0.8;
+}
+
+.phpdocumentor-sidebar__category:has(h2:contains("Namespaces")) .phpdocumentor-sidebar__category-header::after {
+    content: "Logical code structure";
+}
+
+.phpdocumentor-sidebar__category:has(h2:contains("Packages")) .phpdocumentor-sidebar__category-header::after {
+    content: "Distribution structure";
+}
+
+/* Navigation Links - Larger tap targets */
+.phpdocumentor-sidebar a {
+    color: var(--neutral-700);
+    padding: var(--space-3) var(--space-4);
+    display: block;
+    border-radius: 6px;
+    margin: var(--space-1) 0;
+    min-height: var(--tap-target);
+    display: flex;
+    align-items: center;
+    text-decoration: none;
+    transition: all 0.15s;
+}
+
+.phpdocumentor-sidebar a:hover,
+.phpdocumentor-sidebar a:focus {
+    background: var(--primary);
+    color: white;
+    transform: translateX(4px);
+    outline: 2px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Active state */
+.phpdocumentor-sidebar a.active {
+    background: var(--primary-light);
+    color: white;
+    font-weight: 600;
+}
+
+/* ===========================================
+   5. BREADCRUMBS - Context awareness
+   =========================================== */
+
+.phpdocumentor-breadcrumbs {
+    background: var(--neutral-100);
+    padding: var(--space-3) var(--space-4);
+    border-radius: 6px;
+    margin-bottom: var(--space-6);
+    font-size: var(--font-sm);
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex-wrap: wrap;
+}
+
+.phpdocumentor-breadcrumbs a {
+    color: var(--primary);
+    text-decoration: none;
+}
+
+.phpdocumentor-breadcrumbs a:hover {
+    text-decoration: underline;
+}
+
+.phpdocumentor-breadcrumbs__separator {
+    color: var(--neutral-600);
+}
+
+/* ===========================================
+   6. CONTENT - Better readability
+   =========================================== */
+
+.phpdocumentor-content {
+    font-size: var(--font-base); /* 16px minimum */
+    line-height: 1.6;
+    padding: var(--space-6);
+}
+
+.phpdocumentor-content h1 {
+    font-size: var(--font-2xl);
+    margin-bottom: var(--space-4);
+    color: var(--neutral-900);
+}
+
+.phpdocumentor-content h2 {
+    font-size: var(--font-xl);
+    margin: var(--space-8) 0 var(--space-4);
+    color: var(--neutral-900);
+    border-bottom: 2px solid var(--neutral-200);
+    padding-bottom: var(--space-2);
+}
+
+.phpdocumentor-content h3 {
+    font-size: var(--font-lg);
+    margin: var(--space-6) 0 var(--space-3);
+    color: var(--neutral-700);
+}
+
+.phpdocumentor-content p {
+    margin-bottom: var(--space-4);
+    color: var(--neutral-700);
+}
+
+/* Vertical spacing between elements */
+.phpdocumentor-element {
+    margin-bottom: var(--space-8);
+    padding-bottom: var(--space-6);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+.phpdocumentor-element:last-child {
+    border-bottom: none;
+}
+
+/* ===========================================
+   7. CODE BLOCKS - Better visual hierarchy
+   =========================================== */
+
+pre[class*="language-"] {
+    border-radius: 8px;
+    border-left: 4px solid var(--primary);
+    box-shadow: var(--shadow);
+    font-size: var(--font-sm);
+    line-height: 1.5;
+}
+
+code {
+    font-family: 'Source Code Pro', monospace;
+    font-size: 0.9em;
+    background: var(--neutral-100);
+    padding: 0.15em 0.4em;
+    border-radius: 3px;
+}
+
+/* ===========================================
+   8. TABLES - Improved contrast
+   =========================================== */
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: var(--space-6) 0;
+    font-size: var(--font-base);
+}
+
+table thead {
+    background: var(--primary);
+    color: white;
+}
+
+table th {
+    padding: var(--space-4);
+    text-align: left;
+    font-weight: 600;
+}
+
+table td {
+    padding: var(--space-4);
+    border-bottom: 1px solid var(--neutral-200);
+}
+
+table tbody tr:hover {
+    background: var(--neutral-50);
+}
+
+/* ===========================================
+   9. BADGES - Clear visual distinction
+   =========================================== */
+
+.phpdocumentor-element__modifier {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.phpdocumentor-element__modifier[data-visibility="public"] {
+    background: #dcfce7;
+    color: #15803d;
+}
+
+.phpdocumentor-element__modifier[data-visibility="protected"] {
+    background: #fef3c7;
+    color: #92400e;
+}
+
+.phpdocumentor-element__modifier[data-visibility="private"] {
+    background: #fee2e2;
+    color: #991b1b;
+}
+
+/* ===========================================
+   10. ACCESSIBILITY - WCAG AAA compliance
+   =========================================== */
+
+/* Focus visible for keyboard navigation */
+*:focus-visible {
+    outline: 3px solid var(--primary);
+    outline-offset: 2px;
+}
+
+/* Skip to content link */
+.skip-to-content {
+    position: absolute;
+    top: -100px;
+    left: 0;
+    background: var(--primary);
+    color: white;
+    padding: var(--space-3) var(--space-4);
+    text-decoration: none;
+    z-index: 1000;
+}
+
+.skip-to-content:focus {
+    top: 0;
+}
+
+/* ===========================================
+   11. RESPONSIVE - Mobile optimizations
+   =========================================== */
+
+@media (max-width: 768px) {
+    .phpdocumentor-content {
+        padding: var(--space-4);
+    }
+
+    .phpdocumentor-content h1 {
+        font-size: var(--font-xl);
+    }
+
+    .phpdocumentor-content h2 {
+        font-size: var(--font-lg);
+    }
+
+    table {
+        font-size: var(--font-sm);
+    }
+
+    /* Horizontal scroll for wide tables */
+    .phpdocumentor-table-wrapper {
+        overflow-x: auto;
+        -webkit-overflow-scrolling: touch;
+    }
+}
+
+@media (min-width: 769px) {
+    .phpdocumentor-header {
+        padding: var(--space-4) var(--space-6);
+    }
+
+    .phpdocumentor-title__link {
+        font-size: var(--font-xl);
+    }
+
+    .phpdocumentor-search {
+        margin-top: 0;
+        max-width: 400px;
+    }
+}
+
+/* ===========================================
+   12. PRINT STYLES
+   =========================================== */
+
+@media print {
+    .phpdocumentor-header,
+    .phpdocumentor-sidebar,
+    .phpdocumentor-search,
+    .phpdocumentor-back-to-top {
+        display: none;
+    }
+
+    .phpdocumentor-content {
+        max-width: 100%;
+        padding: 0;
+    }
+}

@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en" dir="ltr">
+<head>
+    <meta charset="utf-8">
+    <title>SUMIT Payment Gateway for Laravel - Documentation</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Official Laravel package for SUMIT payment gateway integration with Filament v4 admin panels">
+    <meta name="keywords" content="SUMIT, Laravel, Payment Gateway, Filament, PHP, Credit Card, Bit, Israel">
+    <meta name="author" content="NM-DigitalHub">
+
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/base.css">
+    <link rel="stylesheet" href="css/template.css">
+    <link rel="stylesheet" href="css/custom-v2.css?v=2.0.0">
+    <link rel="preconnect" href="https://fonts.gstatic.com">
+    <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@100;200;300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0/css/all.min.css" crossorigin="anonymous" />
+
+    <style>
+        body {
+            font-family: 'Open Sans', sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+        .hero {
+            text-align: center;
+            padding: 4rem 2rem;
+            color: white;
+        }
+
+        .hero h1 {
+            font-size: 3rem;
+            font-weight: 700;
+            margin-bottom: 1rem;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+        }
+
+        .hero p {
+            font-size: 1.25rem;
+            margin-bottom: 2rem;
+            opacity: 0.9;
+        }
+
+        .hero .logo {
+            max-width: 200px;
+            margin-bottom: 2rem;
+            filter: brightness(0) invert(1);
+            opacity: 0.9;
+        }
+
+        .cta-button {
+            display: inline-block;
+            background: white;
+            color: #667eea;
+            padding: 1rem 2.5rem;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 600;
+            font-size: 1.1rem;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 40px rgba(0,0,0,0.3);
+        }
+
+        .features {
+            background: white;
+            padding: 4rem 2rem;
+        }
+
+        .features-grid {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .feature-card {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+            transition: all 0.3s ease;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+
+        .feature-card i {
+            font-size: 3rem;
+            color: #667eea;
+            margin-bottom: 1rem;
+        }
+
+        .feature-card h3 {
+            color: #1e293b;
+            margin-bottom: 0.5rem;
+        }
+
+        .feature-card p {
+            color: #64748b;
+            line-height: 1.6;
+        }
+
+        .stats {
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+            padding: 3rem 2rem;
+            text-align: center;
+            color: white;
+        }
+
+        .stats-grid {
+            max-width: 1000px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 2rem;
+        }
+
+        .stat {
+            padding: 1.5rem;
+        }
+
+        .stat-number {
+            font-size: 3rem;
+            font-weight: 700;
+            display: block;
+            margin-bottom: 0.5rem;
+        }
+
+        .stat-label {
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+
+        .footer {
+            background: #1e293b;
+            color: #94a3b8;
+            padding: 3rem 2rem 2rem;
+            text-align: center;
+        }
+
+        .footer-links {
+            margin-bottom: 2rem;
+        }
+
+        .footer-links a {
+            color: #cbd5e1;
+            text-decoration: none;
+            margin: 0 1rem;
+            transition: color 0.3s ease;
+        }
+
+        .footer-links a:hover {
+            color: white;
+        }
+
+        .footer-logo {
+            max-width: 150px;
+            margin-bottom: 1rem;
+        }
+
+        @media (max-width: 768px) {
+            .hero h1 {
+                font-size: 2rem;
+            }
+
+            .hero p {
+                font-size: 1rem;
+            }
+
+            .stat-number {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Hero Section -->
+    <div class="hero">
+        <img src="logo.png" alt="NM-DigitalHub" class="logo">
+        <h1>SUMIT Payment Gateway for Laravel</h1>
+        <p>Complete API Documentation for Laravel 12 + Filament v4</p>
+        <a href="index.html" class="cta-button">
+            <i class="fas fa-book"></i> Browse Documentation
+        </a>
+    </div>
+
+    <!-- Stats Section -->
+    <div class="stats">
+        <div class="stats-grid">
+            <div class="stat">
+                <span class="stat-number">214+</span>
+                <span class="stat-label">Classes</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">86</span>
+                <span class="stat-label">UI Components</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">12</span>
+                <span class="stat-label">Core Services</span>
+            </div>
+            <div class="stat">
+                <span class="stat-number">100%</span>
+                <span class="stat-label">Documented</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quick Start Section -->
+    <div class="quick-start">
+        <div class="container">
+            <h2>⚡ Quick Start - 5 Minutes</h2>
+            <div class="steps">
+                <div class="step">
+                    <div class="step-number">1</div>
+                    <h3>Install</h3>
+                    <pre><code>composer require officeguy/laravel-sumit-gateway</code></pre>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">2</div>
+                    <h3>Configure</h3>
+                    <pre><code>php artisan vendor:publish --provider="OfficeGuy\LaravelSumitGateway\OfficeGuyServiceProvider"</code></pre>
+                </div>
+
+                <div class="step">
+                    <div class="step-number">3</div>
+                    <h3>Use</h3>
+                    <pre><code>use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+
+$payment = app(PaymentService::class);
+$result = $payment->charge($order, $token);</code></pre>
+                </div>
+            </div>
+
+            <div class="cta-secondary">
+                <a href="index-original.html" class="btn-secondary">
+                    <i class="fas fa-book-open"></i> Full Documentation
+                </a>
+                <a href="https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel" target="_blank" class="btn-secondary">
+                    <i class="fab fa-github"></i> GitHub Repo
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <style>
+        .quick-start {
+            background: white;
+            padding: 4rem 2rem;
+        }
+
+        .quick-start .container {
+            max-width: 1000px;
+            margin: 0 auto;
+        }
+
+        .quick-start h2 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 3rem;
+            color: #1e293b;
+        }
+
+        .steps {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .step {
+            background: #f8fafc;
+            padding: 2rem;
+            border-radius: 12px;
+            border-left: 4px solid #2563eb;
+        }
+
+        .step-number {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #2563eb 0%, #0ea5e9 100%);
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            margin-bottom: 1rem;
+        }
+
+        .step h3 {
+            font-size: 1.25rem;
+            margin-bottom: 1rem;
+            color: #1e293b;
+        }
+
+        .step pre {
+            background: #1e293b;
+            color: #f8fafc;
+            padding: 1rem;
+            border-radius: 6px;
+            overflow-x: auto;
+            font-size: 0.875rem;
+            line-height: 1.5;
+        }
+
+        .step code {
+            font-family: 'Source Code Pro', monospace;
+        }
+
+        .cta-secondary {
+            display: flex;
+            gap: 1rem;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+
+        .btn-secondary {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            background: white;
+            color: #2563eb;
+            border: 2px solid #2563eb;
+            padding: 0.75rem 1.5rem;
+            border-radius: 8px;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+
+        .btn-secondary:hover {
+            background: #2563eb;
+            color: white;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            .quick-start h2 {
+                font-size: 1.5rem;
+            }
+
+            .steps {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+
+    <!-- Features Section -->
+    <div class="features">
+        <div class="features-grid">
+            <div class="feature-card">
+                <i class="fas fa-credit-card"></i>
+                <h3>Payment Processing</h3>
+                <p>Complete credit card payment integration with 3 PCI modes, authorize-only, and installment support (up to 36 months).</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-shield-alt"></i>
+                <h3>Token Management</h3>
+                <p>Secure payment method tokenization (J2/J5) for recurring payments and saved cards.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-file-invoice"></i>
+                <h3>Document Generation</h3>
+                <p>Automatic generation of invoices, receipts, and donation receipts integrated with SUMIT API.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-sync-alt"></i>
+                <h3>Subscription Billing</h3>
+                <p>Full recurring billing support with automatic renewals and flexible scheduling.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-bell"></i>
+                <h3>Webhook Handling</h3>
+                <p>Robust webhook system for both incoming SUMIT webhooks and outgoing event notifications.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-desktop"></i>
+                <h3>Filament v4 Integration</h3>
+                <p>13 admin resources + 6 client panel resources with beautiful, responsive UI components.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fab fa-bitcoin"></i>
+                <h3>Bit Payment</h3>
+                <p>Native integration with Bit payment system for instant mobile payments in Israel.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-users"></i>
+                <h3>Multi-Vendor</h3>
+                <p>Support for multiple vendor credentials and split payment scenarios.</p>
+            </div>
+
+            <div class="feature-card">
+                <i class="fas fa-code"></i>
+                <h3>Developer Friendly</h3>
+                <p>Clean, well-documented code following Laravel and Filament best practices.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+        <img src="logo.png" alt="NM-DigitalHub" class="footer-logo">
+        <div class="footer-links">
+            <a href="https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel" target="_blank">
+                <i class="fab fa-github"></i> GitHub
+            </a>
+            <a href="https://docs.sumit.co.il" target="_blank">
+                <i class="fas fa-book"></i> SUMIT API Docs
+            </a>
+            <a href="https://filamentphp.com/docs/4.x" target="_blank">
+                <i class="fas fa-file-alt"></i> Filament v4 Docs
+            </a>
+            <a href="https://nm-digitalhub.com" target="_blank">
+                <i class="fas fa-globe"></i> NM-DigitalHub
+            </a>
+        </div>
+        <p>&copy; 2025 NM-DigitalHub. All rights reserved. | Version 1.1.6 | MIT License</p>
+    </div>
+</body>
+</html>

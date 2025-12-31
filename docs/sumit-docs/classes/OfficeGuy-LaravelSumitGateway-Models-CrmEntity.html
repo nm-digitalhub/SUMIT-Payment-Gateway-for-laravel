@@ -1,0 +1,2837 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+            <title>SUMIT Payment Gateway for Laravel</title>
+    
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <base href="../">
+    <link rel="icon" href="images/favicon.ico"/>
+    <link rel="stylesheet" href="css/normalize.css">
+    <link rel="stylesheet" href="css/base.css">
+            <link rel="preconnect" href="https://fonts.gstatic.com">
+        <link href="https://fonts.googleapis.com/css2?family=Open+Sans:wght@100;200;300;400;600;700&display=swap" rel="stylesheet">
+        <link href="https://fonts.googleapis.com/css2?family=Source+Code+Pro:wght@400;600;700&display=swap" rel="stylesheet">
+        <link rel="stylesheet" href="css/template.css">
+        <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.12.0/css/all.min.css" integrity="sha256-ybRkN9dBjhcS2qrW1z+hfCxq+1aBdwyQM5wlQoQVt/0=" crossorigin="anonymous" />
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/themes/prism-okaidia.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-numbers/prism-line-numbers.css">
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-highlight/prism-line-highlight.css">
+                <script src="https://cdn.jsdelivr.net/npm/fuse.js@3.4.6"></script>
+        <script src="https://cdn.jsdelivr.net/npm/css-vars-ponyfill@2"></script>
+        <script src="js/template.js"></script>
+        <script src="js/search.js"></script>
+        <script defer src="js/searchIndex.js"></script>
+        <link rel="stylesheet" href="../css/custom.css">
+</head>
+<body id="top">
+    <header class="phpdocumentor-header phpdocumentor-section">
+    <h1 class="phpdocumentor-title"><a href="" class="phpdocumentor-title__link">SUMIT Payment Gateway for Laravel</a></h1>
+    <input class="phpdocumentor-header__menu-button" type="checkbox" id="menu-button" name="menu-button" />
+    <label class="phpdocumentor-header__menu-icon" for="menu-button">
+        <i class="fas fa-bars"></i>
+    </label>
+    <section data-search-form class="phpdocumentor-search">
+    <label>
+        <span class="visually-hidden">Search for</span>
+        <svg class="phpdocumentor-search__icon" width="21" height="20" viewBox="0 0 21 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="7.5" cy="7.5" r="6.5" stroke="currentColor" stroke-width="2"/>
+            <line x1="12.4892" y1="12.2727" x2="19.1559" y2="18.9393" stroke="currentColor" stroke-width="3"/>
+        </svg>
+        <input type="search" class="phpdocumentor-field phpdocumentor-search__field" placeholder="Loading .." disabled />
+    </label>
+</section>
+
+    <nav class="phpdocumentor-topnav">
+    <ul class="phpdocumentor-topnav__menu">
+        </ul>
+</nav>
+</header>
+
+    <main class="phpdocumentor">
+        <div class="phpdocumentor-section">
+            <input class="phpdocumentor-sidebar__menu-button" type="checkbox" id="sidebar-button" name="sidebar-button" />
+<label class="phpdocumentor-sidebar__menu-icon" for="sidebar-button">
+    Menu
+</label>
+<aside class="phpdocumentor-column -three phpdocumentor-sidebar">
+                    <section class="phpdocumentor-sidebar__category -namespaces">
+            <h2 class="phpdocumentor-sidebar__category-header">Namespaces</h2>
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="namespaces/officeguy.html" class="">OfficeGuy</a>
+</h4>
+    <ul class="phpdocumentor-list">
+                    <li>
+                <a href="namespaces/officeguy-laravelsumitgateway.html" class="">LaravelSumitGateway</a>
+                
+            </li>
+            </ul>
+
+                        </section>
+                <section class="phpdocumentor-sidebar__category -packages">
+            <h2 class="phpdocumentor-sidebar__category-header">Packages</h2>
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="packages/Application.html" class="">Application</a>
+</h4>
+
+                                    <h4 class="phpdocumentor-sidebar__root-namespace">
+    <a href="packages/OfficeGuy.html" class="">OfficeGuy</a>
+</h4>
+    <ul class="phpdocumentor-list">
+                    <li>
+                <a href="packages/OfficeGuy-LaravelSumitGateway.html" class="">LaravelSumitGateway</a>
+                
+            </li>
+            </ul>
+
+                        </section>
+            
+    <section class="phpdocumentor-sidebar__category -reports">
+        <h2 class="phpdocumentor-sidebar__category-header">Reports</h2>
+                <h3 class="phpdocumentor-sidebar__root-package"><a href="graphs/classes.html">Class Diagram</a></h3>
+                <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/deprecated.html">Deprecated</a></h3>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/errors.html">Errors</a></h3>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="reports/markers.html">Markers</a></h3>
+    </section>
+
+    <section class="phpdocumentor-sidebar__category -indices">
+        <h2 class="phpdocumentor-sidebar__category-header">Indices</h2>
+        <h3 class="phpdocumentor-sidebar__root-package"><a href="indices/files.html">Files</a></h3>
+    </section>
+</aside>
+
+            <div class="phpdocumentor-column -nine phpdocumentor-content">
+                                <section>
+                                        <ul class="phpdocumentor-breadcrumbs">
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy.html">OfficeGuy</a></li>
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy-laravelsumitgateway.html">LaravelSumitGateway</a></li>
+            <li class="phpdocumentor-breadcrumb"><a href="namespaces/officeguy-laravelsumitgateway-models.html">Models</a></li>
+    </ul>
+
+    <article class="phpdocumentor-element -class">
+        <h2 class="phpdocumentor-content__title">
+    CrmEntity
+
+        <span class="phpdocumentor-element__extends">
+        extends <abbr title="\Illuminate\Database\Eloquent\Model">Model</abbr>
+    </span>
+    
+            <div class="phpdocumentor-element__package">
+            in package
+            <ul class="phpdocumentor-breadcrumbs">
+                                    <li class="phpdocumentor-breadcrumb"><a href="packages/Application.html">Application</a></li>
+                            </ul>
+        </div>
+    
+    
+            <span class="phpdocumentor-element__extends">
+            uses
+                            <abbr title="\Illuminate\Database\Eloquent\SoftDeletes">SoftDeletes</abbr>                    </span>
+    </h2>
+
+<div class="phpdocumentor-label-line">
+
+
+</div>
+
+        <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">50</span>
+
+    </aside>
+
+            <p class="phpdocumentor-summary">CRM Entity Model</p>
+
+
+    <section class="phpdocumentor-description"><p>Represents a CRM entity (contact, lead, company, deal).
+This is the main table for all CRM data with common fields for all entity types.</p>
+</section>
+
+
+
+    
+    
+<h3 id="toc">
+    Table of Contents
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#toc" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h3>
+
+
+
+
+
+
+
+
+
+<h4 id="toc-properties">
+    Properties
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#toc-properties" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_activities">$activities</a>
+    <span>
+                        &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmActivity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmActivity">CrmActivity</abbr></a>&gt;            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_address">$address</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned">$assigned</a>
+    <span>
+                        &nbsp;: <abbr title="\App\Models\User">User</abbr>|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned_to_user_id">$assigned_to_user_id</a>
+    <span>
+                        &nbsp;: int|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_city">$city</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_company_name">$company_name</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_country">$country</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_created_at">$created_at</a>
+    <span>
+                        &nbsp;: <abbr title="\Carbon\Carbon">Carbon</abbr>            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_crm_folder_id">$crm_folder_id</a>
+    <span>
+                        &nbsp;: int            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_customFields">$customFields</a>
+    <span>
+                        &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityField.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityField">CrmEntityField</abbr></a>&gt;            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_deleted_at">$deleted_at</a>
+    <span>
+                        &nbsp;: <abbr title="\Carbon\Carbon">Carbon</abbr>|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_email">$email</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_entity_type">$entity_type</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_folder">$folder</a>
+    <span>
+                        &nbsp;: <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmFolder.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmFolder">CrmFolder</abbr></a>            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_id">$id</a>
+    <span>
+                        &nbsp;: int            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_last_contact_at">$last_contact_at</a>
+    <span>
+                        &nbsp;: <abbr title="\Carbon\Carbon">Carbon</abbr>|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_mobile">$mobile</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_name">$name</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner">$owner</a>
+    <span>
+                        &nbsp;: <abbr title="\App\Models\User">User</abbr>|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner_user_id">$owner_user_id</a>
+    <span>
+                        &nbsp;: int|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_phone">$phone</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_postal_code">$postal_code</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedFrom">$relatedFrom</a>
+    <span>
+                        &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedTo">$relatedTo</a>
+    <span>
+                        &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_source">$source</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_state">$state</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_status">$status</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_customer_id">$sumit_customer_id</a>
+    <span>
+                        &nbsp;: int|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_entity_id">$sumit_entity_id</a>
+    <span>
+                        &nbsp;: int|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_tax_id">$tax_id</a>
+    <span>
+                        &nbsp;: string|null            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_updated_at">$updated_at</a>
+    <span>
+                        &nbsp;: <abbr title="\Carbon\Carbon">Carbon</abbr>            </span>
+</dt>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_casts">$casts</a>
+    <span>
+                        &nbsp;: array&lt;string, string&gt;            </span>
+</dt>
+<dd>The attributes that should be cast.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_fillable">$fillable</a>
+    <span>
+                        &nbsp;: array&lt;string|int, string&gt;            </span>
+</dt>
+<dd>The attributes that are mass assignable.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -property -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_table">$table</a>
+    <span>
+                        &nbsp;: string            </span>
+</dt>
+<dd>The table associated with the model.</dd>
+
+    </dl>
+
+<h4 id="toc-methods">
+    Methods
+    <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#toc-methods" class="headerlink"><i class="fas fa-link"></i></a>
+
+</h4>
+<dl class="phpdocumentor-table-of-contents">
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_activities">activities()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmActivity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmActivity">CrmActivity</abbr></a>&gt;    </span>
+</dt>
+<dd>Get the activities for this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_assigned">assigned()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;    </span>
+</dt>
+<dd>Get the user this entity is assigned to.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_client">client()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>    </span>
+</dt>
+<dd>Link to local Client (if matched).</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_customFields">customFields()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityField.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityField">CrmEntityField</abbr></a>&gt;    </span>
+</dt>
+<dd>Get the custom field values for this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_folder">folder()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmFolder.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmFolder">CrmFolder</abbr></a>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;    </span>
+</dt>
+<dd>Get the folder that owns this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getCustomField">getCustomField()</a>
+    <span>
+                                &nbsp;: mixed    </span>
+</dt>
+<dd>Get custom field value by field name.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getDisplayNameAttribute">getDisplayNameAttribute()</a>
+    <span>
+                                &nbsp;: string    </span>
+</dt>
+<dd>Get the full display name for this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_owner">owner()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;    </span>
+</dt>
+<dd>Get the user who owns this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedFrom">relatedFrom()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;    </span>
+</dt>
+<dd>Get entities related from this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedTo">relatedTo()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;    </span>
+</dt>
+<dd>Get entities related to this entity.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeActive">scopeActive()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>    </span>
+</dt>
+<dd>Scope a query to only include active entities.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeAssignedTo">scopeAssignedTo()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>    </span>
+</dt>
+<dd>Scope a query to filter by assigned user.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOfType">scopeOfType()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>    </span>
+</dt>
+<dd>Scope a query to filter by entity type.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOwnedBy">scopeOwnedBy()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>    </span>
+</dt>
+<dd>Scope a query to filter by owner.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeSearch">scopeSearch()</a>
+    <span>
+                                &nbsp;: <abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>    </span>
+</dt>
+<dd>Scope a query to search entities.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_setCustomField">setCustomField()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Set custom field value by field name.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -public">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_syncToSumit">syncToSumit()</a>
+    <span>
+                                &nbsp;: array&lt;string|int, mixed&gt;    </span>
+</dt>
+<dd>Push this entity as a SUMIT customer (create/update) and update local SUMIT ID.</dd>
+
+            <dt class="phpdocumentor-table-of-contents__entry -method -protected">
+    <a class="" href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_booted">booted()</a>
+    <span>
+                                &nbsp;: void    </span>
+</dt>
+<dd>Limit to the SUMIT Customers folder by default (folder 1076734599).</dd>
+
+    </dl>
+
+
+
+        
+
+        
+    <section class="phpdocumentor-properties">
+        <h3 class="phpdocumentor-elements__header" id="properties">
+            Properties
+            <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#properties" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_activities">
+        $activities
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_activities" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmActivity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmActivity">CrmActivity</abbr></a>&gt;</span>
+    <span class="phpdocumentor-signature__name">$activities</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_address">
+        $address
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_address" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$address</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Street address</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_assigned">
+        $assigned
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\App\Models\User">User</abbr>|null</span>
+    <span class="phpdocumentor-signature__name">$assigned</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_assigned_to_user_id">
+        $assigned_to_user_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned_to_user_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int|null</span>
+    <span class="phpdocumentor-signature__name">$assigned_to_user_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Assigned to user ID</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_city">
+        $city
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_city" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$city</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>City</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_company_name">
+        $company_name
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_company_name" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$company_name</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Company name (for contacts)</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_country">
+        $country
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_country" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$country</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Country</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_created_at">
+        $created_at
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_created_at" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Carbon\Carbon">Carbon</abbr></span>
+    <span class="phpdocumentor-signature__name">$created_at</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_crm_folder_id">
+        $crm_folder_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_crm_folder_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int</span>
+    <span class="phpdocumentor-signature__name">$crm_folder_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Entity type/folder</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_customFields">
+        $customFields
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_customFields" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityField.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityField">CrmEntityField</abbr></a>&gt;</span>
+    <span class="phpdocumentor-signature__name">$customFields</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_deleted_at">
+        $deleted_at
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_deleted_at" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Carbon\Carbon">Carbon</abbr>|null</span>
+    <span class="phpdocumentor-signature__name">$deleted_at</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_email">
+        $email
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_email" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$email</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Email address</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_entity_type">
+        $entity_type
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_entity_type" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$entity_type</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Entity type: contact, lead, company, deal</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_folder">
+        $folder
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_folder" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmFolder.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmFolder">CrmFolder</abbr></a></span>
+    <span class="phpdocumentor-signature__name">$folder</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_id">
+        $id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int</span>
+    <span class="phpdocumentor-signature__name">$id</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_last_contact_at">
+        $last_contact_at
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_last_contact_at" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Carbon\Carbon">Carbon</abbr>|null</span>
+    <span class="phpdocumentor-signature__name">$last_contact_at</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Last contact date</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_mobile">
+        $mobile
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_mobile" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$mobile</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Mobile number</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_name">
+        $name
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_name" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$name</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Full name / Company name</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_owner">
+        $owner
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\App\Models\User">User</abbr>|null</span>
+    <span class="phpdocumentor-signature__name">$owner</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_owner_user_id">
+        $owner_user_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner_user_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int|null</span>
+    <span class="phpdocumentor-signature__name">$owner_user_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Owner user ID</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_phone">
+        $phone
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_phone" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$phone</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Phone number</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_postal_code">
+        $postal_code
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_postal_code" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$postal_code</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Postal code</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_relatedFrom">
+        $relatedFrom
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedFrom" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span>
+    <span class="phpdocumentor-signature__name">$relatedFrom</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                -read-only                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_relatedTo">
+        $relatedTo
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedTo" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                        <small class="phpdocumentor-element__modifier">read-only</small>                    </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Illuminate\Database\Eloquent\Collection">Collection</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span>
+    <span class="phpdocumentor-signature__name">$relatedTo</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_source">
+        $source
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_source" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$source</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Source: website, referral, import, manual</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_state">
+        $state
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_state" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$state</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>State/Region</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_status">
+        $status
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_status" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$status</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Status: active, inactive, archived</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_sumit_customer_id">
+        $sumit_customer_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_customer_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int|null</span>
+    <span class="phpdocumentor-signature__name">$sumit_customer_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>SUMIT customer ID</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_sumit_entity_id">
+        $sumit_entity_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_entity_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">int|null</span>
+    <span class="phpdocumentor-signature__name">$sumit_entity_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>SUMIT entity ID</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_tax_id">
+        $tax_id
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_tax_id" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type">string|null</span>
+    <span class="phpdocumentor-signature__name">$tax_id</span>
+    </code>
+
+        <section class="phpdocumentor-description"><p>Tax ID / VAT number</p>
+</section>
+
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -public
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_updated_at">
+        $updated_at
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_updated_at" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">0</span>
+
+    </aside>
+
+    
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">public</span>
+            <span class="phpdocumentor-signature__type"><abbr title="\Carbon\Carbon">Carbon</abbr></span>
+    <span class="phpdocumentor-signature__name">$updated_at</span>
+    </code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_casts">
+        $casts
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_casts" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">108</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The attributes that should be cast.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">array&lt;string, string&gt;</span>
+    <span class="phpdocumentor-signature__name">$casts</span>
+     = <span class="phpdocumentor-signature__default-value">[&#039;crm_folder_id&#039; =&gt; &#039;integer&#039;, &#039;sumit_entity_id&#039; =&gt; &#039;integer&#039;, &#039;client_id&#039; =&gt; &#039;integer&#039;, &#039;owner_user_id&#039; =&gt; &#039;integer&#039;, &#039;assigned_to_user_id&#039; =&gt; &#039;integer&#039;, &#039;sumit_customer_id&#039; =&gt; &#039;integer&#039;, &#039;last_contact_at&#039; =&gt; &#039;datetime&#039;]</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_fillable">
+        $fillable
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_fillable" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">79</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The attributes that are mass assignable.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">array&lt;string|int, string&gt;</span>
+    <span class="phpdocumentor-signature__name">$fillable</span>
+     = <span class="phpdocumentor-signature__default-value">[&#039;crm_folder_id&#039;, &#039;sumit_entity_id&#039;, &#039;client_id&#039;, &#039;entity_type&#039;, &#039;name&#039;, &#039;email&#039;, &#039;phone&#039;, &#039;mobile&#039;, &#039;address&#039;, &#039;city&#039;, &#039;state&#039;, &#039;postal_code&#039;, &#039;country&#039;, &#039;company_name&#039;, &#039;tax_id&#039;, &#039;status&#039;, &#039;source&#039;, &#039;owner_user_id&#039;, &#039;assigned_to_user_id&#039;, &#039;sumit_customer_id&#039;, &#039;last_contact_at&#039;]</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+                    <article
+        class="
+            phpdocumentor-element
+            -property
+            -protected
+                                                                    "
+>
+    <h4 class="phpdocumentor-element__name" id="property_table">
+        $table
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_table" class="headerlink"><i class="fas fa-link"></i></a>
+
+        <span class="phpdocumentor-element__modifiers">
+                                            </span>
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">72</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">The table associated with the model.</p>
+
+    
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+        <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__type">string</span>
+    <span class="phpdocumentor-signature__name">$table</span>
+     = <span class="phpdocumentor-signature__default-value">&#039;officeguy_crm_entities&#039;</span></code>
+
+    
+    
+    
+
+        
+        
+
+</article>
+            </section>
+
+            <section class="phpdocumentor-methods">
+        <h3 class="phpdocumentor-elements__header" id="methods">
+            Methods
+            <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#methods" class="headerlink"><i class="fas fa-link"></i></a>
+
+        </h3>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_activities">
+        activities()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_activities" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">171</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the activities for this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">activities</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmActivity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmActivity">CrmActivity</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmActivity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmActivity">CrmActivity</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_assigned">
+        assigned()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_assigned" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">151</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the user this entity is assigned to.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">assigned</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_client">
+        client()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_client" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">131</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Link to local Client (if matched).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">client</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_customFields">
+        customFields()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_customFields" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">161</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the custom field values for this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">customFields</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityField.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityField">CrmEntityField</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityField.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityField">CrmEntityField</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_folder">
+        folder()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_folder" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">123</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the folder that owns this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">folder</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmFolder.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmFolder">CrmFolder</abbr></a>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmFolder.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmFolder">CrmFolder</abbr></a>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_getCustomField">
+        getCustomField()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getCustomField" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">280</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get custom field value by field name.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">getCustomField</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$fieldName</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">mixed</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$fieldName</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_getDisplayNameAttribute">
+        getDisplayNameAttribute()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getDisplayNameAttribute" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">265</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the full display name for this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">getDisplayNameAttribute</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">string</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">string</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_owner">
+        owner()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_owner" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">141</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get the user who owns this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">owner</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\BelongsTo">BelongsTo</abbr>&lt;<abbr title="\App\Models\User">User</abbr>, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntity">CrmEntity</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_relatedFrom">
+        relatedFrom()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedFrom" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">181</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get entities related from this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">relatedFrom</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_relatedTo">
+        relatedTo()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedTo" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">191</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Get entities related to this entity.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">relatedTo</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Relations\HasMany">HasMany</abbr>&lt;string|int, <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntityRelation.html"><abbr title="\OfficeGuy\LaravelSumitGateway\Models\CrmEntityRelation">CrmEntityRelation</abbr></a>&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_scopeActive">
+        scopeActive()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeActive" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">202</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Scope a query to only include active entities.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">scopeActive</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_scopeAssignedTo">
+        scopeAssignedTo()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeAssignedTo" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">238</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Scope a query to filter by assigned user.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">scopeAssignedTo</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">int&nbsp;</span><span class="phpdocumentor-signature__argument__name">$userId</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$userId</span>
+                : <span class="phpdocumentor-argument-list__argument__type">int</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_scopeOfType">
+        scopeOfType()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOfType" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">214</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Scope a query to filter by entity type.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">scopeOfType</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$type</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$type</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_scopeOwnedBy">
+        scopeOwnedBy()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOwnedBy" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">226</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Scope a query to filter by owner.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">scopeOwnedBy</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">int&nbsp;</span><span class="phpdocumentor-signature__argument__name">$userId</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$userId</span>
+                : <span class="phpdocumentor-argument-list__argument__type">int</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_scopeSearch">
+        scopeSearch()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeSearch" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">250</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Scope a query to search entities.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">scopeSearch</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr>&nbsp;</span><span class="phpdocumentor-signature__argument__name">$query</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$search</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$query</span>
+                : <span class="phpdocumentor-argument-list__argument__type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$search</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type"><abbr title="\Illuminate\Database\Eloquent\Builder">Builder</abbr></span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_setCustomField">
+        setCustomField()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_setCustomField" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">310</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Set custom field value by field name.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">setCustomField</span><span>(</span><span class="phpdocumentor-signature__argument"><span class="phpdocumentor-signature__argument__type">string&nbsp;</span><span class="phpdocumentor-signature__argument__name">$fieldName</span></span><span class="phpdocumentor-signature__argument"><span>, </span><span class="phpdocumentor-signature__argument__type">mixed&nbsp;</span><span class="phpdocumentor-signature__argument__name">$value</span></span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+        <h5 class="phpdocumentor-argument-list__heading">Parameters</h5>
+    <dl class="phpdocumentor-argument-list">
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$fieldName</span>
+                : <span class="phpdocumentor-argument-list__argument__type">string</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+                    <dt class="phpdocumentor-argument-list__entry">
+                <span class="phpdocumentor-argument-list__argument__name">$value</span>
+                : <span class="phpdocumentor-argument-list__argument__type">mixed</span>
+                            </dt>
+            <dd class="phpdocumentor-argument-list__definition">
+                
+            </dd>
+            </dl>
+
+    
+
+        
+    
+    
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -public
+                                                        "
+>
+    <h4 class="phpdocumentor-element__name" id="method_syncToSumit">
+        syncToSumit()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_syncToSumit" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">339</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Push this entity as a SUMIT customer (create/update) and update local SUMIT ID.</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">public</span>
+                    <span class="phpdocumentor-signature__name">syncToSumit</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+            <section>
+        <h5 class="phpdocumentor-return-value__heading">Return values</h5>
+        <span class="phpdocumentor-signature__response_type">array&lt;string|int, mixed&gt;</span>
+            </section>
+
+</article>
+                    <article
+        class="phpdocumentor-element
+            -method
+            -protected
+                                    -static                    "
+>
+    <h4 class="phpdocumentor-element__name" id="method_booted">
+        booted()
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_booted" class="headerlink"><i class="fas fa-link"></i></a>
+
+    </h4>
+    <aside class="phpdocumentor-element-found-in">
+    <abbr class="phpdocumentor-element-found-in__file" title="src/Models/CrmEntity.php"><a href="files/src-models-crmentity.html"><abbr title="src/Models/CrmEntity.php">CrmEntity.php</abbr></a></abbr>
+    :
+    <span class="phpdocumentor-element-found-in__line">57</span>
+
+    </aside>
+
+        <p class="phpdocumentor-summary">Limit to the SUMIT Customers folder by default (folder 1076734599).</p>
+
+    <code class="phpdocumentor-code phpdocumentor-signature ">
+    <span class="phpdocumentor-signature__visibility">protected</span>
+            <span class="phpdocumentor-signature__static">static</span>        <span class="phpdocumentor-signature__name">booted</span><span>(</span><span>)</span><span> : </span><span class="phpdocumentor-signature__response_type">void</span></code>
+
+    <div class="phpdocumentor-label-line">
+        </div>
+    
+    
+    
+    
+
+        
+    
+    
+</article>
+            </section>
+
+        <div class="phpdocumentor-modal" id="source-view">
+    <div class="phpdocumentor-modal-bg" data-exit-button></div>
+    <div class="phpdocumentor-modal-container">
+        <div class="phpdocumentor-modal-content">
+            <pre style="max-height: 500px; overflow-y: scroll" data-src="files/src/Models/CrmEntity.php.txt" class="language-php line-numbers linkable-line-numbers"></pre>
+        </div>
+        <button data-exit-button class="phpdocumentor-modal__close">&times;</button>
+    </div>
+</div>
+
+    <script type="text/javascript">
+        (function () {
+            function loadExternalCodeSnippet(el, url, line) {
+                Array.prototype.slice.call(el.querySelectorAll('pre[data-src]')).forEach((pre) => {
+                    const src = url || pre.getAttribute('data-src').replace(/\\/g, '/');
+                    const language = 'php';
+
+                    const code = document.createElement('code');
+                    code.className = 'language-' + language;
+                    pre.textContent = '';
+                    pre.setAttribute('data-line', line)
+                    code.textContent = 'Loading…';
+                    pre.appendChild(code);
+
+                    var xhr = new XMLHttpRequest();
+
+                    xhr.open('GET', src, true);
+
+                    xhr.onreadystatechange = function () {
+                        if (xhr.readyState !== 4) {
+                            return;
+                        }
+
+                        if (xhr.status < 400 && xhr.responseText) {
+                            code.textContent = xhr.responseText;
+                            Prism.highlightElement(code);
+                            d=document.getElementsByClassName("line-numbers");
+                            d[0].scrollTop = d[0].children[1].offsetTop;
+                            return;
+                        }
+
+                        if (xhr.status === 404) {
+                            code.textContent = '✖ Error: File could not be found';
+                            return;
+                        }
+
+                        if (xhr.status >= 400) {
+                            code.textContent = '✖ Error ' + xhr.status + ' while fetching file: ' + xhr.statusText;
+                            return;
+                        }
+
+                        code.textContent = '✖ Error: An unknown error occurred';
+                    };
+
+                    xhr.send(null);
+                });
+            }
+
+            const modalButtons = document.querySelectorAll("[data-modal]");
+            const openedAsLocalFile = window.location.protocol === 'file:';
+            if (modalButtons.length > 0 && openedAsLocalFile) {
+                console.warn(
+                    'Viewing the source code is unavailable because you are opening this page from the file:// scheme; ' +
+                    'browsers block XHR requests when a page is opened this way'
+                );
+            }
+
+            modalButtons.forEach(function (trigger) {
+                if (openedAsLocalFile) {
+                    trigger.setAttribute("hidden", "hidden");
+                }
+
+                trigger.addEventListener("click", function (event) {
+                    event.preventDefault();
+                    const modal = document.getElementById(trigger.dataset.modal);
+                    if (!modal) {
+                        console.error(`Modal with id "${trigger.dataset.modal}" could not be found`);
+                        return;
+                    }
+                    modal.classList.add("phpdocumentor-modal__open");
+
+                    loadExternalCodeSnippet(modal, trigger.dataset.src || null, trigger.dataset.line)
+                    const exits = modal.querySelectorAll("[data-exit-button]");
+                    exits.forEach(function (exit) {
+                        exit.addEventListener("click", function (event) {
+                            event.preventDefault();
+                            modal.classList.remove("phpdocumentor-modal__open");
+                        });
+                    });
+                });
+            });
+        })();
+    </script>
+
+    </article>
+                                </section>
+                <section class="phpdocumentor-on-this-page__sidebar">
+                                
+    <section class="phpdocumentor-on-this-page__content">
+        <strong class="phpdocumentor-on-this-page__title">On this page</strong>
+
+        <ul class="phpdocumentor-list -clean">
+            <li class="phpdocumentor-on-this-page-section__title">Table Of Contents</li>
+            <li>
+                <ul class="phpdocumentor-list -clean">
+                                                            <li><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#toc-properties">Properties</a></li>
+                                                            <li><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#toc-methods">Methods</a></li>
+                                    </ul>
+            </li>
+            
+                            <li class="phpdocumentor-on-this-page-section__title">Properties</li>
+                <li>
+                    <ul class="phpdocumentor-list -clean">
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_activities">$activities</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_address">$address</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned">$assigned</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_assigned_to_user_id">$assigned_to_user_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_city">$city</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_company_name">$company_name</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_country">$country</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_created_at">$created_at</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_crm_folder_id">$crm_folder_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_customFields">$customFields</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_deleted_at">$deleted_at</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_email">$email</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_entity_type">$entity_type</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_folder">$folder</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_id">$id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_last_contact_at">$last_contact_at</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_mobile">$mobile</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_name">$name</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner">$owner</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_owner_user_id">$owner_user_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_phone">$phone</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_postal_code">$postal_code</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedFrom">$relatedFrom</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_relatedTo">$relatedTo</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_source">$source</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_state">$state</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_status">$status</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_customer_id">$sumit_customer_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_sumit_entity_id">$sumit_entity_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_tax_id">$tax_id</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_updated_at">$updated_at</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_casts">$casts</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_fillable">$fillable</a></li>
+                                                    <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#property_table">$table</a></li>
+                                            </ul>
+                </li>
+            
+                        <li class="phpdocumentor-on-this-page-section__title">Methods</li>
+            <li>
+                <ul class="phpdocumentor-list -clean">
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_activities">activities()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_assigned">assigned()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_client">client()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_customFields">customFields()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_folder">folder()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getCustomField">getCustomField()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_getDisplayNameAttribute">getDisplayNameAttribute()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_owner">owner()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedFrom">relatedFrom()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_relatedTo">relatedTo()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeActive">scopeActive()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeAssignedTo">scopeAssignedTo()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOfType">scopeOfType()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeOwnedBy">scopeOwnedBy()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_scopeSearch">scopeSearch()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_setCustomField">setCustomField()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_syncToSumit">syncToSumit()</a></li>
+                                            <li class=""><a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#method_booted">booted()</a></li>
+                                    </ul>
+            </li>
+                    </ul>
+    </section>
+
+                </section>
+                            </div>
+            <section data-search-results class="phpdocumentor-search-results phpdocumentor-search-results--hidden">
+    <section class="phpdocumentor-search-results__dialog">
+        <header class="phpdocumentor-search-results__header">
+            <h2 class="phpdocumentor-search-results__title">Search results</h2>
+            <button class="phpdocumentor-search-results__close"><i class="fas fa-times"></i></button>
+        </header>
+        <section class="phpdocumentor-search-results__body">
+            <ul class="phpdocumentor-search-results__entries"></ul>
+        </section>
+    </section>
+</section>
+        </div>
+        <a href="classes/OfficeGuy-LaravelSumitGateway-Models-CrmEntity.html#top" class="phpdocumentor-back-to-top"><i class="fas fa-chevron-circle-up"></i></a>
+
+    </main>
+
+    <script>
+        cssVars({});
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/prism.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/autoloader/prism-autoloader.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-numbers/prism-line-numbers.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/prismjs@1.23.0/plugins/line-highlight/prism-line-highlight.min.js"></script>
+</body>
+</html>

@@ -453,31 +453,32 @@ class PaymentService
         // Check if customer already exists in SUMIT (via Client model)
         // If client has sumit_customer_id, return ONLY the CustomerID (not full Customer object)
         // This prevents SUMIT from creating duplicate customers
+        // IMPORTANT: Always fetch fresh Client from DB to avoid stale relation cache
         $sumitCustomerId = null;
         if ($order instanceof \Illuminate\Database\Eloquent\Model && method_exists($order, 'client')) {
-            $client = $order->client;
+            $client = $order->client()->first();
             if ($client && !empty($client->sumit_customer_id)) {
                 $sumitCustomerId = $client->sumit_customer_id;
             }
         }
 
-        // If customer exists in SUMIT, return ONLY CustomerID
+        // CRITICAL: If customer exists in SUMIT, return ONLY CustomerID
+        // When Customer.ID is provided, NO other customer fields must be sent.
+        // SUMIT will use the existing customer record and ignore search logic.
         if ($sumitCustomerId) {
-            return ['ID' => (int) $sumitCustomerId];
+            return [
+                'ID' => (int) $sumitCustomerId,
+            ];
         }
 
         // Otherwise, send full Customer object for new customer creation
-        // SUMIT supports searching by multiple parameters:
-        // - EmailAddress (primary search key)
-        // - Phone (secondary search key)
-        // - ExternalIdentifier (tertiary search key)
-        // - Name (for matching)
-        // SearchMode 'Automatic' tells SUMIT to search by these parameters
+        // SearchMode values: 0=Automatic, 1=None, 6=EmailAddress
+        // Using 6 (EmailAddress) prevents duplicate customers by matching email
         $customer = [
             'Name' => $customerName,
             'EmailAddress' => $order->getCustomerEmail(),
             'Phone' => $order->getCustomerPhone(),
-            'SearchMode' => $mergeCustomers ? 'Automatic' : 'None',
+            'SearchMode' => $mergeCustomers ? 6 : 1,
         ];
 
         // Add ExternalIdentifier for additional matching (if available)
@@ -779,7 +780,19 @@ class PaymentService
             $request['PaymentMethod'] = $paymentMethodPayload;
         }
 
-        return array_merge($request, $extra);
+        // Merge extra parameters
+        $request = array_merge($request, $extra);
+
+        // SAFETY GUARD: Prevent accidental override of Customer.ID
+        // If Customer.ID exists, strip all other Customer fields to prevent SUMIT from creating duplicate customers
+        // This protects against $extra containing Customer data that would override the ID-only approach
+        if (isset($request['Customer']['ID'])) {
+            $request['Customer'] = [
+                'ID' => $request['Customer']['ID'],
+            ];
+        }
+
+        return $request;
     }
 
     /**
@@ -818,6 +831,15 @@ class PaymentService
             $endpoint = '/billing/payments/beginredirect/';
         }
 
+        // VALIDATION LOG: Verify Customer payload before sending to SUMIT
+        // Expected for existing customer: {"ID": 123456789}
+        // Incorrect (causes duplicate): {"Name": "...", "EmailAddress": "...", ...}
+        \Log::debug('SUMIT FINAL CUSTOMER PAYLOAD', [
+            'order_id' => $order->getPayableId(),
+            'customer' => $request['Customer'] ?? null,
+            'endpoint' => $endpoint,
+        ]);
+
         $response = OfficeGuyApi::post($request, $endpoint, $environment, !$recurring);
 
         // Redirect flow
@@ -851,11 +873,12 @@ class PaymentService
             // Convert SUMIT currency enum to string (0=ILS, 1=USD, 2=EUR, etc.)
             $currencyEnum = $payment['Currency'] ?? null;
             $currencyMap = [0 => 'ILS', 1 => 'USD', 2 => 'EUR', 3 => 'GBP'];
-            $currency = $currencyMap[$currencyEnum] ?? config('app.currency', 'ILS');
+            $currency = $currencyMap[$currencyEnum] ?? config('officeguy.invoice_currency_code', 'ILS');
 
             // Persist transaction
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
+                'order_type' => get_class($order),
                 'payment_id' => $payment['ID'] ?? null,
                 'document_id' => $response['Data']['DocumentID'] ?? null,
                 'customer_id' => $response['Data']['CustomerID'] ?? null,
@@ -1025,7 +1048,7 @@ class PaymentService
                     'auth_number' => $refundAuthNumber,
                     'customer_id' => $sumitCustomerId,
                     'amount' => $amount,  // Positive amount (represents refunded value)
-                    'currency' => $originalTransaction?->currency ?? config('app.currency', 'ILS'),
+                    'currency' => $originalTransaction?->currency ?? config('officeguy.invoice_currency_code', 'ILS'),
                     'transaction_type' => 'refund',
                     'parent_transaction_id' => $originalTransaction?->id,
                     'payment_token' => $paymentMethod['CreditCard_Token'] ?? $originalTransaction?->payment_token,

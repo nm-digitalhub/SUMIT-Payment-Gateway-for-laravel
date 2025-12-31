@@ -75,6 +75,7 @@ class UpsellService
             // Create transaction record for upsell
             $transaction = OfficeGuyTransaction::create([
                 'order_id' => $upsellOrder->getPayableId(),
+                'order_type' => get_class($upsellOrder),
                 'payment_id' => $payment['ID'] ?? null,
                 'document_id' => $response['Data']['DocumentID'] ?? null,
                 'customer_id' => $response['Data']['CustomerID'] ?? null,

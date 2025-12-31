@@ -138,35 +138,59 @@ class SumitWebhookController extends Controller
 
     /**
      * Get payload from request (supports JSON and form data)
+     *
+     * CRITICAL: Normalizes SUMIT CRM webhooks sent as form-data with json= parameter
      */
     private function getPayload(Request $request): array
     {
         $contentType = $request->header('Content-Type', '');
-        
+
+        // JSON body (standard)
         if (str_contains($contentType, 'application/json')) {
             return $request->json()->all();
         }
-        
-        // Form data or other formats
-        return $request->all();
+
+        // Form-data (SUMIT CRM sends: json={"Folder":...})
+        $data = $request->all();
+
+        if (isset($data['json']) && is_string($data['json'])) {
+            $decoded = json_decode($data['json'], true);
+
+            if (json_last_error() === JSON_ERROR_NONE && is_array($decoded)) {
+                return $decoded;
+            }
+        }
+
+        return $data;
     }
 
     /**
      * Detect event type from request
+     *
+     * CRITICAL: CRM webhooks are detected by Folder+Type, not event_type field
      */
     private function detectEventType(Request $request): string
     {
         // Try to detect from payload
         $payload = $this->getPayload($request);
-        
+
+        // CRM webhook detection (SUMIT CRM Triggers send: Folder + Type + EntityID)
+        if (
+            isset($payload['Folder']) &&
+            isset($payload['Type']) &&
+            in_array($payload['Type'], ['CreateOrUpdate', 'Delete'], true)
+        ) {
+            return 'crm';
+        }
+
         if (isset($payload['event_type'])) {
             return $payload['event_type'];
         }
-        
+
         if (isset($payload['EventType'])) {
             return strtolower($payload['EventType']);
         }
-        
+
         if (isset($payload['action'])) {
             return match (strtolower($payload['action'])) {
                 'create', 'created' => SumitWebhook::TYPE_CARD_CREATED,
@@ -176,7 +200,7 @@ class SumitWebhookController extends Controller
                 default => 'unknown',
             };
         }
-        
+
         // Default to unknown
         return 'unknown';
     }

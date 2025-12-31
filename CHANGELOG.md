@@ -7,6 +7,130 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [v1.20.3] - 2025-12-29
+
+### Added
+- **SUMIT Entity ID Field** - Added unique identifier for CRM Transaction Card matching
+  - Migration: `2025_12_29_020000_add_sumit_entity_id_to_officeguy_transactions.php`
+  - Field: `sumit_entity_id` (nullable, unsigned big integer) on `officeguy_transactions` table
+  - Unique index on `sumit_entity_id` for fast lookups and duplicate prevention
+  - Composite index on `['sumit_entity_id', 'is_webhook_confirmed']` for webhook queries
+  - Purpose: **The ONLY safe way** to match SUMIT CRM Transaction cards to local records
+  - Prevents: Duplicate confirmations from retries, same amounts, recurring payments
+  - Reference: ADR-004 (Handling Card Payments via SUMIT CRM Webhooks)
+
+- **TransactionSyncListener** - New listener for card payment webhook confirmations
+  - Implements ADR-004 architecture for card payment confirmations
+  - Processes SUMIT CRM Transaction webhooks (Folder 1076735286)
+  - Guards: CRM only, Transactions folder, CreateOrUpdate, Approved status, Card payments, Non-zero amount
+  - File: `src/Listeners/TransactionSyncListener.php`
+
+- **ADR-004** - Architecture Decision Record for Card Payment Webhooks
+  - Documents decision to use CRM Transaction webhooks for card payment confirmation
+  - Explains SUMIT limitation (no dedicated card payment webhook like Bit IPN)
+  - Defines 7 guard conditions for safe processing
+  - File: `docs/ADR-004-CARD-PAYMENT-WEBHOOKS.md`
+
+### Fixed
+- **TransactionSyncListener - Bug #1: Unsafe Transaction Matching**
+  - **CRITICAL**: Previously used `amount + timestamp proximity (±5 min)` - DANGEROUS
+  - Now: Uses `sumit_entity_id` unique field for exact matching
+  - Prevents: Confirming wrong order, double confirmations, cross-customer payments
+  - Why dangerous: Duplicate amounts, retries, recurring payments, refunds with same amount
+  - Impact: Card payment confirmations now 100% accurate and idempotent
+
+- **TransactionSyncListener - Bug #2: Missing Payment Method Guard**
+  - **CRITICAL**: Previously processed ALL approved transactions (Bit, refunds, accounting ops)
+  - Now: Only processes card payments (`str_contains($paymentMethod, 'כרטיס')`)
+  - Prevents: Calling `Order::onPaymentConfirmed()` for non-card payments
+  - Compliance: Enforces ADR-004 - Bit keeps dedicated webhook, cards use CRM
+  - Impact: Architectural compliance, no cross-contamination between payment types
+
+- **TransactionSyncListener - Bug #3: Webhook Not Marked Processed**
+  - **CRITICAL**: Transaction confirmed but webhook stayed in 'received' status forever
+  - Now: Calls `$webhook->markAsProcessed()` after successful processing
+  - Provides: Clear audit trail, retry protection, monitoring capability
+  - Impact: Production-ready webhook lifecycle tracking
+
+- **PaymentService - Customer Duplication Prevention**
+  - **CRITICAL**: SUMIT was creating duplicate customers despite existing `sumit_customer_id`
+  - Root Cause: `array_merge($request, $extra)` could override `Customer.ID` with full object
+  - Fix #1: Strengthened `getOrderCustomer()` to return ONLY `['ID' => ...]` with clear comment
+  - Fix #2: Added safety guard in `buildChargeRequest()` - strips all Customer fields except ID
+  - Fix #3: Added validation log before API call - `\Log::debug('SUMIT FINAL CUSTOMER PAYLOAD')`
+  - Files:
+    - `src/Services/PaymentService.php:464-471` (ID-only return with critical comment)
+    - `src/Services/PaymentService.php:789-796` (Safety guard prevents override)
+    - `src/Services/PaymentService.php:837-844` (Validation log for debugging)
+  - **SUMIT Rule**: When `Customer.ID` is sent, NO other fields must be included
+  - Impact: **Eliminates duplicate customer creation** - SUMIT will ALWAYS use existing customer
+
+- **PaymentService - Currency Configuration**
+  - Changed from `config('app.currency')` to `config('officeguy.invoice_currency_code')`
+  - Lines: 879, 1053
+  - Purpose: Use package's own configuration instead of external app config
+  - Impact: Better package self-sufficiency, uses database-managed settings
+
+- **ViewTransaction - Filament v4 Compatibility**
+  - Fixed missing import for `Filament\Actions\Action` in notification actions
+  - Added: `use Filament\Actions\Action as NotificationAction;`
+  - File: `src/Filament/Resources/Transactions/Pages/ViewTransaction.php:9`
+  - Impact: Fixes "Class 'Filament\Notifications\Actions\Action' not found" error
+
+- **Translation Keys - Missing Entries**
+  - Added 6 Hebrew translations: Guest (אורח), General (כללי), General credit, Payment failed, No response, Something went wrong
+  - Added 8 English translations: Guest, General, General credit, Shipping, Order number, Payment failed, No response, Something went wrong
+  - Files: `resources/lang/lang/he.json`, `resources/lang/lang/en.json`
+  - Impact: Resolves IDE warnings, improves translation completeness
+
+- **Transaction Resource - Restructured for Filament v4**
+  - Migrated from flat `TransactionResource/` to modular `Transactions/` structure
+  - New structure: `Transactions/{Pages,Schemas,Tables,TransactionResource.php}`
+  - Impact: Better code organization, follows Filament v4 best practices
+
+### Impact
+- **Card Payment Confirmations**: Now 100% reliable using `sumit_entity_id` unique matching
+- **Customer Management**: **Zero duplicate customers** - proper ID-only sending to SUMIT
+- **Production Readiness**: All critical bugs fixed, proper audit trail, idempotent processing
+- **ADR-004 Compliance**: Full architectural compliance for card payment webhook handling
+- **Tested**: All 3 scenarios validated via Tinker (existing customer, new customer, override attempt)
+
+## [v1.20.2] - 2025-12-29
+
+### Fixed
+- **CRM Webhook Processing** - Fixed parsing of SUMIT CRM webhooks sent as form-data
+  - `SumitWebhookController::getPayload()` - Now properly decodes `json` parameter from form-data requests
+  - Previously: Stored raw `['json' => '{...}']` string instead of decoded array
+  - Now: Automatically detects and decodes JSON parameter from form-data
+  - Fixes: CRM webhooks were saved with `event_type='unknown'` and never processed
+  - File: `src/Http/Controllers/SumitWebhookController.php:144-165`
+
+- **CRM Webhook Detection** - Fixed event type detection for CRM webhooks
+  - `SumitWebhookController::detectEventType()` - Now recognizes CRM webhooks by `Folder` + `Type` fields
+  - Previously: Only looked for `event_type`/`EventType`/`action` fields (which CRM webhooks don't have)
+  - Now: Detects CRM webhooks when `Folder` and `Type: CreateOrUpdate|Delete` are present
+  - Result: CRM webhooks now correctly identified as `event_type='crm'` instead of `'unknown'`
+  - File: `src/Http/Controllers/SumitWebhookController.php:172-206`
+
+- **CRM Folder ID Extraction** - Fixed backward-compatible folder ID extraction
+  - `SumitWebhook::getCrmFolderId()` - Now handles both normalized and legacy payload formats
+  - Previously: Failed to find `Folder` field in legacy webhooks with nested `json` string
+  - Now: Checks normalized `payload['Folder']` first, then falls back to `payload['json']` decode
+  - Enables: CrmActivitySyncListener to process both new and existing webhooks
+  - File: `src/Models/SumitWebhook.php:462-494`
+
+- **PHP 8.4 Compatibility** - Fixed deprecation warning for nullable parameter
+  - `SumitWebhook::scopeForCard()` - Explicitly marked `$cardType` parameter as `?string`
+  - Previously: `string $cardType = null` (implicit nullable - deprecated in PHP 8.4)
+  - Now: `?string $cardType = null` (explicit nullable - PHP 8.4 compliant)
+  - Resolves: "Implicitly marking parameter as nullable is deprecated" warning
+  - File: `src/Models/SumitWebhook.php:181`
+
+### Impact
+- **Existing Webhooks**: Webhook #65 and similar CRM webhooks now processable via `getCrmFolderId()`
+- **New Webhooks**: Will be normalized on arrival and processed immediately by listeners
+- **Backward Compatible**: Legacy webhooks with `['json' => string]` format still work
+
 ## [v1.20.1] - 2025-12-26
 
 ### Fixed
