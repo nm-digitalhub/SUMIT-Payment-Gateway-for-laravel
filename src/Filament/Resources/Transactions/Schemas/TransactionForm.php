@@ -5,10 +5,9 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Schemas;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\ViewField;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use OfficeGuy\LaravelSumitGateway\Filament\Components\ApiPayloadField;
-use OfficeGuy\LaravelSumitGateway\Filament\Components\ApiPayloadDiff;
 
 class TransactionForm
 {
@@ -111,9 +110,11 @@ class TransactionForm
 
                 Section::make('נתוני API גולמיים')
                     ->schema([
-                        ApiPayloadField::make('raw_request')
+                        ViewField::make('raw_request')
+                            ->view('officeguy::filament.components.api-payload')
                             ->label('נתוני בקשה (Request)'),
-                        ApiPayloadField::make('raw_response')
+                        ViewField::make('raw_response')
+                            ->view('officeguy::filament.components.api-payload')
                             ->label('נתוני תגובה (Response)'),
                     ])
                     ->collapsible()
@@ -121,7 +122,8 @@ class TransactionForm
 
                 Section::make('השוואת Request ל-Response')
                     ->schema([
-                        ApiPayloadDiff::make('api_diff')
+                        ViewField::make('api_diff')
+                            ->view('officeguy::filament.components.api-payload-diff')
                             ->label(null),
                     ])
                     ->collapsible()

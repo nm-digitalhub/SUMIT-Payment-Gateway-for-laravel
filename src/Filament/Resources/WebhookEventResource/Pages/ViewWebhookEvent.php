@@ -8,6 +8,7 @@ use Filament\Resources\Pages\ViewRecord;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
 
 class ViewWebhookEvent extends ViewRecord
@@ -50,7 +51,7 @@ class ViewWebhookEvent extends ViewRecord
                 ->icon('heroicon-o-credit-card')
                 ->color('primary')
                 ->url(fn ($record) => $record->transaction_id 
-                    ? WebhookEventResource::getUrl('view', ['record' => $record->transaction_id], resource: \OfficeGuy\LaravelSumitGateway\Filament\Resources\TransactionResource::class)
+                    ? WebhookEventResource::getUrl('view', ['record' => $record->transaction_id], resource: TransactionResource::class)
                     : null)
                 ->visible(fn ($record) => $record->transaction_id !== null),
             Actions\Action::make('view_subscription')

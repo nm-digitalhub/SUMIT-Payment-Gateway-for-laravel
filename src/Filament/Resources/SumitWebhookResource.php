@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SumitWebhookResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 /**
