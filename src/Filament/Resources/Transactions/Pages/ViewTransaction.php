@@ -12,8 +12,10 @@ use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas;
 use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Schemas\TransactionInfolist;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
@@ -23,6 +25,11 @@ use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 class ViewTransaction extends ViewRecord
 {
     protected static string $resource = TransactionResource::class;
+
+    public function infolist(Schema $schema): Schema
+    {
+        return TransactionInfolist::configure($schema);
+    }
 
     protected function getHeaderActions(): array
     {
