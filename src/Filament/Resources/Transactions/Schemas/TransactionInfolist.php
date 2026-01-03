@@ -196,23 +196,19 @@ class TransactionInfolist
                 ->columnSpanFull(),
 
             // =========================
-            // קישור למסמך להורדה ⭐⭐⭐
+            // מסמך להורדה - כרטיס אינטראקטיבי ⭐⭐⭐
             // =========================
             Section::make('מסמך להורדה')
                 ->schema([
-                    TextEntry::make('document_download_url')
-                        ->label('קישור למסמך')
-                        ->state(fn ($record) =>
-                            data_get($record->raw_response, 'Data.DocumentDownloadURL')
-                        )
-                        ->url(fn ($state) => $state)
-                        ->openUrlInNewTab()
-                        ->icon('heroicon-o-arrow-down-tray')
-                        ->visible(fn ($record) =>
-                            filled(data_get($record->raw_response, 'Data.DocumentDownloadURL'))
-                        ),
+                    ViewEntry::make('document_card')
+                        ->view('officeguy::filament.components.document-download-card')
+                        ->label(null),
                 ])
-                ->columnSpanFull(),
+                ->columnSpanFull()
+                ->icon('heroicon-o-document-text')
+                ->visible(fn ($record) =>
+                    filled(data_get($record->raw_response, 'Data.DocumentDownloadURL'))
+                ),
 
             // =========================
             // נתוני API גולמיים
