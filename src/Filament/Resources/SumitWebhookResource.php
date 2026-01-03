@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Forms;
+use Filament\Forms\Components\ViewField;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -18,6 +19,7 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Tables\Enums\FiltersLayout;
 use Illuminate\Database\Eloquent\Builder;
@@ -212,27 +214,23 @@ class SumitWebhookResource extends Resource
                     ])
                     ->visible(fn ($record) => !empty($record->error_message)),
 
-                InfolistSection::make('Full Payload')
+                InfolistSection::make('נתוני Payload גולמיים')
+                    ->columnSpanFull()
+                    ->collapsed()
                     ->schema([
-                        TextEntry::make('payload')
+                        ViewEntry::make('payload')
                             ->label('Payload Data')
-                            ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
-                            ->placeholder('—')
-                            ->columnSpanFull()
-                            ->copyable(),
-                    ])
-                    ->collapsed(),
+                            ->view('officeguy::filament.components.api-payload'),
+                    ]),
 
                 InfolistSection::make('Request Headers')
+                    ->columnSpanFull()
+                    ->collapsed()
                     ->schema([
-                        TextEntry::make('headers')
+                        ViewEntry::make('headers')
                             ->label('HTTP Headers')
-                            ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE))
-                            ->placeholder('—')
-                            ->columnSpanFull()
-                            ->copyable(),
-                    ])
-                    ->collapsed(),
+                            ->view('officeguy::filament.components.api-payload'),
+                    ]),
             ]);
     }
 

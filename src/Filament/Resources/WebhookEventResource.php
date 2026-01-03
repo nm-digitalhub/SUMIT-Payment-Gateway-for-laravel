@@ -6,7 +6,9 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
 use Filament\Forms;
 use Filament\Schemas;
+use Filament\Forms\Components\ViewField;
 use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Infolists\Components\ViewEntry;
 use Filament\Schemas\Components\Section as InfolistSection;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Schema;
@@ -128,15 +130,15 @@ class WebhookEventResource extends Resource
                     ])
                     ->visible(fn (?Model $record): bool => !empty($record?->error_message)),
 
-                Schemas\Components\Section::make('Payload & Response')
+                Schemas\Components\Section::make('נתוני Webhook')
                     ->columnSpanFull()
                     ->schema([
-                        Forms\Components\KeyValue::make('payload')
-                            ->label('Request Payload')
-                            ->disabled(),
-                        Forms\Components\KeyValue::make('response')
-                            ->label('Response Data')
-                            ->disabled(),
+                        ViewField::make('payload')
+                            ->view('officeguy::filament.components.api-payload')
+                            ->label('Request Payload'),
+                        ViewField::make('response')
+                            ->view('officeguy::filament.components.api-payload')
+                            ->label('Response Data'),
                     ])->collapsed(),
             ]);
     }
@@ -268,21 +270,23 @@ class WebhookEventResource extends Resource
                 ])
                 ->visible(fn (Model $record): bool => !empty($record->error_message)),
 
-            InfolistSection::make('Payload')
+            InfolistSection::make('נתוני Webhook גולמיים')
                 ->columnSpanFull()
-                ->schema([
-                    KeyValueEntry::make('payload')
-                        ->label('Request Payload'),
-                ])
-                ->collapsed(),
-
-            InfolistSection::make('Response')
-                ->columnSpanFull()
-                ->schema([
-                    KeyValueEntry::make('response')
-                        ->label('Response Data'),
-                ])
                 ->collapsed()
+                ->schema([
+                    ViewEntry::make('payload')
+                        ->label('Request Payload')
+                        ->view('officeguy::filament.components.api-payload'),
+                ]),
+
+            InfolistSection::make('תגובת Webhook')
+                ->columnSpanFull()
+                ->collapsed()
+                ->schema([
+                    ViewEntry::make('response')
+                        ->label('Response Data')
+                        ->view('officeguy::filament.components.api-payload'),
+                ])
                 ->visible(fn (Model $record): bool => !empty($record->response)),
         ]);
     }
