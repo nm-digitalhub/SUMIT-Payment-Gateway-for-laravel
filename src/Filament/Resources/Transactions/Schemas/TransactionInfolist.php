@@ -76,26 +76,88 @@ class TransactionInfolist
             // =========================
             Section::make('פרטי כרטיס')
                 ->schema([
+                    TextEntry::make('payment_method_type')
+                        ->label('אמצעי תשלום')
+                        ->badge()
+                        ->icon('heroicon-o-credit-card')
+                        ->state(function ($record) {
+                            // Try to get from API response first
+                            $type = data_get($record->raw_response, 'Data.Payment.PaymentMethod.Type');
+                            if ($type !== null) {
+                                return match ((int) $type) {
+                                    0 => 'אחר',
+                                    1 => 'כרטיס אשראי',
+                                    2 => 'הוראת קבע',
+                                    default => 'לא ידוע',
+                                };
+                            }
+                            // Fallback to payment_method field
+                            return match ($record->payment_method) {
+                                'card' => 'כרטיס אשראי',
+                                'bit' => 'ביט',
+                                default => $record->payment_method ?: 'לא ידוע',
+                            };
+                        })
+                        ->color(fn ($state) => match ($state) {
+                            'כרטיס אשראי' => 'success',
+                            'הוראת קבע' => 'info',
+                            'ביט' => 'warning',
+                            default => 'gray',
+                        }),
+
+                    TextEntry::make('card_mask')
+                        ->label('מספר כרטיס')
+                        ->state(function ($record) {
+                            // Try to get CardMask from API response
+                            $mask = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CardMask');
+                            if ($mask) {
+                                return $mask;
+                            }
+                            // Fallback to last_digits with manual masking
+                            return $record->last_digits ? 'XXXXXXXXXXXX' . $record->last_digits : '-';
+                        })
+                        ->copyable()
+                        ->icon('heroicon-o-hashtag'),
+
                     TextEntry::make('card_type')
                         ->label('סוג כרטיס')
                         ->badge()
-                        ->icon('heroicon-o-credit-card'),
+                        ->icon('heroicon-o-credit-card')
+                        ->visible(fn ($record) => !empty($record->card_type)),
 
-                    TextEntry::make('last_digits')
-                        ->label('4 ספרות אחרונות')
-                        ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-'),
+                    TextEntry::make('expiration')
+                        ->label('תוקף')
+                        ->icon('heroicon-o-calendar')
+                        ->state(function ($record) {
+                            // Try to get from API response first
+                            $month = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_ExpirationMonth')
+                                ?? $record->expiration_month;
+                            $year = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_ExpirationYear')
+                                ?? $record->expiration_year;
 
-                    TextEntry::make('expiration_month')
-                        ->label('חודש תפוגה')
-                        ->formatStateUsing(fn ($state, $record) =>
-                            $state && $record->expiration_year
-                                ? $state . '/' . $record->expiration_year
-                                : ($state ?: '-')
-                        ),
+                            if ($month && $year) {
+                                return sprintf('%02d/%04d', $month, $year);
+                            }
+                            return '-';
+                        }),
+
+                    TextEntry::make('citizen_id')
+                        ->label('ת.ז. מחזיק הכרטיס')
+                        ->icon('heroicon-o-identification-card')
+                        ->state(fn ($record) =>
+                            data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID') ?: '-'
+                        )
+                        ->visible(function ($record) {
+                            $citizenId = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID');
+                            return !empty($citizenId);
+                        }),
                 ])
                 ->columns(3)
                 ->columnSpanFull()
-                ->visible(fn ($record) => !empty($record->card_type) || !empty($record->last_digits)),
+                ->visible(fn ($record) =>
+                    !empty($record->last_digits) ||
+                    !empty(data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_LastDigits'))
+                ),
 
             // =========================
             // תשלומים
