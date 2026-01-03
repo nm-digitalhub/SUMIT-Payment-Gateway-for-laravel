@@ -64,6 +64,12 @@ class DigitalProductFulfillmentHandler
     /**
      * Handle eSIM provisioning (INSTANT DELIVERY)
      *
+     * Dispatches to app-specific ProcessPaidOrderJob which handles:
+     * - Maya Mobile API integration
+     * - QR code generation
+     * - Email delivery
+     * - Order status updates
+     *
      * @param OfficeGuyTransaction $transaction
      * @param mixed $payable
      * @return void
@@ -71,23 +77,24 @@ class DigitalProductFulfillmentHandler
     protected function handleEsim(OfficeGuyTransaction $transaction, $payable): void
     {
         OfficeGuyApi::writeToLog(
-            "DigitalProductFulfillmentHandler: Processing eSIM for {$payable->name}",
+            "DigitalProductFulfillmentHandler: Processing eSIM for order {$payable->id}",
             'info'
         );
 
-        // TODO: Integrate with eSIM provider (Maya Mobile, Airalo, etc.)
-        // Example steps:
-        // 1. Call eSIM provider API to generate QR code
-        // 2. Get ICCID + activation code
-        // 3. Generate QR code image
-        // 4. Send email with QR code immediately
-        // 5. Update order status to 'completed'
-        // 6. Send SMS with activation instructions (optional)
+        // Dispatch to application's provisioning job
+        if ($payable instanceof \App\Models\Order) {
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
 
-        // Reference implementation (placeholder):
-        // $this->provisionEsimWithMayaMobile($payable, $transaction);
-        // Mail::to($transaction->customer_email)->send(new EsimQrCodeMail($transaction));
-        // event(new EsimProvisioned($payable, $transaction));
+            OfficeGuyApi::writeToLog(
+                "DigitalProductFulfillmentHandler: Dispatched ProcessPaidOrderJob for eSIM order {$payable->id}",
+                'info'
+            );
+        } else {
+            OfficeGuyApi::writeToLog(
+                "DigitalProductFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'warning'
+            );
+        }
     }
 
     /**

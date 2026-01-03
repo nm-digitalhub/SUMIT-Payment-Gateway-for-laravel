@@ -422,7 +422,8 @@ class OfficeGuyServiceProvider extends ServiceProvider
             \OfficeGuy\LaravelSumitGateway\Enums\PayableType::INFRASTRUCTURE->value => \OfficeGuy\LaravelSumitGateway\Handlers\InfrastructureFulfillmentHandler::class,
             \OfficeGuy\LaravelSumitGateway\Enums\PayableType::DIGITAL_PRODUCT->value => \OfficeGuy\LaravelSumitGateway\Handlers\DigitalProductFulfillmentHandler::class,
             \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SUBSCRIPTION->value => \OfficeGuy\LaravelSumitGateway\Handlers\SubscriptionFulfillmentHandler::class,
-            // GENERIC and SERVICE types intentionally omitted - they will log warnings
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::GENERIC->value => \OfficeGuy\LaravelSumitGateway\Handlers\GenericFulfillmentHandler::class,
+            // SERVICE type intentionally omitted - it will log warnings
             // Projects can register custom handlers via dispatcher->register() in their own ServiceProvider
         ]);
     }

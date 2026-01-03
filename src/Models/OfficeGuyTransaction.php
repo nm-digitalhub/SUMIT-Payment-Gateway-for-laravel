@@ -107,6 +107,19 @@ class OfficeGuyTransaction extends Model
         return $this->hasMany(self::class, 'parent_transaction_id');
     }
 
+    /**
+     * Accessor: payable is an alias for order relationship
+     *
+     * Allows FulfillmentHandlers to use $transaction->payable
+     * while the actual relationship is stored as order/order_type/order_id
+     *
+     * @return mixed
+     */
+    public function getPayableAttribute()
+    {
+        return $this->order;
+    }
+
     /* -----------------------------------------------------------------
      | Helpers
      |-----------------------------------------------------------------*/

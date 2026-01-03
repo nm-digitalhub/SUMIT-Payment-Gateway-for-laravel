@@ -66,6 +66,12 @@ class InfrastructureFulfillmentHandler
     /**
      * Handle domain registration
      *
+     * Dispatches to app-specific ProcessPaidOrderJob which handles:
+     * - ResellerClub/NameSilo API integration
+     * - WHOIS data submission
+     * - DNS configuration
+     * - Email notifications
+     *
      * @param OfficeGuyTransaction $transaction
      * @param mixed $payable
      * @return void
@@ -73,25 +79,34 @@ class InfrastructureFulfillmentHandler
     protected function handleDomain(OfficeGuyTransaction $transaction, $payable): void
     {
         OfficeGuyApi::writeToLog(
-            "InfrastructureFulfillmentHandler: Processing domain registration for {$payable->name}",
+            "InfrastructureFulfillmentHandler: Processing domain registration for order {$payable->id}",
             'info'
         );
 
-        // TODO: Integrate with domain registrar (ResellerClub, NameSilo, etc.)
-        // Example steps:
-        // 1. Extract WHOIS data from transaction
-        // 2. Call registrar API to register domain
-        // 3. Configure DNS nameservers
-        // 4. Send welcome email with DNS propagation notice
-        // 5. Update order status
+        // Dispatch to application's provisioning job
+        if ($payable instanceof \App\Models\Order) {
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
 
-        // Reference implementation (placeholder):
-        // $this->registerDomainWithResellerClub($payable, $transaction);
-        // event(new DomainRegistered($payable, $transaction));
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for domain order {$payable->id}",
+                'info'
+            );
+        } else {
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'warning'
+            );
+        }
     }
 
     /**
      * Handle hosting provisioning
+     *
+     * Dispatches to app-specific ProcessPaidOrderJob which handles:
+     * - cPanel/WHM account creation
+     * - Resource limit configuration
+     * - Email setup
+     * - Welcome email with credentials
      *
      * @param OfficeGuyTransaction $transaction
      * @param mixed $payable
@@ -100,26 +115,34 @@ class InfrastructureFulfillmentHandler
     protected function handleHosting(OfficeGuyTransaction $transaction, $payable): void
     {
         OfficeGuyApi::writeToLog(
-            "InfrastructureFulfillmentHandler: Processing hosting provisioning for {$payable->name}",
+            "InfrastructureFulfillmentHandler: Processing hosting provisioning for order {$payable->id}",
             'info'
         );
 
-        // TODO: Integrate with hosting control panel (cPanel/WHM, Plesk, etc.)
-        // Example steps:
-        // 1. Create hosting account in cPanel/WHM
-        // 2. Generate random cPanel username/password
-        // 3. Set resource limits (disk, bandwidth)
-        // 4. Configure email accounts
-        // 5. Send welcome email with login credentials
-        // 6. Update order status
+        // Dispatch to application's provisioning job
+        if ($payable instanceof \App\Models\Order) {
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
 
-        // Reference implementation (placeholder):
-        // $this->createCpanelAccount($payable, $transaction);
-        // event(new HostingProvisioned($payable, $transaction));
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for hosting order {$payable->id}",
+                'info'
+            );
+        } else {
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'warning'
+            );
+        }
     }
 
     /**
      * Handle VPS provisioning
+     *
+     * Dispatches to app-specific ProcessPaidOrderJob which handles:
+     * - VPS instance creation
+     * - OS/resource configuration
+     * - SSH key setup
+     * - Welcome email with credentials
      *
      * @param OfficeGuyTransaction $transaction
      * @param mixed $payable
@@ -128,22 +151,24 @@ class InfrastructureFulfillmentHandler
     protected function handleVps(OfficeGuyTransaction $transaction, $payable): void
     {
         OfficeGuyApi::writeToLog(
-            "InfrastructureFulfillmentHandler: Processing VPS provisioning for {$payable->name}",
+            "InfrastructureFulfillmentHandler: Processing VPS provisioning for order {$payable->id}",
             'info'
         );
 
-        // TODO: Integrate with VPS provider (AWS, DigitalOcean, custom KVM, etc.)
-        // Example steps:
-        // 1. Create VPS instance via provider API
-        // 2. Configure OS, RAM, CPU, disk
-        // 3. Set up SSH keys
-        // 4. Configure firewall rules
-        // 5. Send welcome email with root credentials + IP
-        // 6. Update order status
+        // Dispatch to application's provisioning job
+        if ($payable instanceof \App\Models\Order) {
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
 
-        // Reference implementation (placeholder):
-        // $this->provisionVpsInstance($payable, $transaction);
-        // event(new VpsProvisioned($payable, $transaction));
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for VPS order {$payable->id}",
+                'info'
+            );
+        } else {
+            OfficeGuyApi::writeToLog(
+                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'warning'
+            );
+        }
     }
 
     /**
