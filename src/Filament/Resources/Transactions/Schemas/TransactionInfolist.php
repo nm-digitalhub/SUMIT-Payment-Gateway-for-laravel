@@ -143,7 +143,7 @@ class TransactionInfolist
 
                     TextEntry::make('citizen_id')
                         ->label('ת.ז. מחזיק הכרטיס')
-                        ->icon('heroicon-o-identification-card')
+                        ->icon('heroicon-o-identification')
                         ->state(fn ($record) =>
                             data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID') ?: '-'
                         )
