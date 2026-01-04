@@ -55,8 +55,8 @@ class CheckoutIntentResolver
         // 5. Build payment method payload
         $paymentMethodPayload = self::buildPaymentMethodPayload($request, $pciMode);
 
-        // 6. Extract customer citizen ID
-        $customerCitizenId = $intent->customer->id_number;
+        // 6. Extract customer citizen ID (CompanyNumber in SUMIT API)
+        $customerCitizenId = $intent->customer->citizenId;
 
         // 7. Determine if recurring (subscription)
         $recurring = self::isRecurringPayment($intent);

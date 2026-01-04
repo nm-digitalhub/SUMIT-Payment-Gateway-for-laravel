@@ -59,6 +59,12 @@ class OfficeGuyTransaction extends Model
 
         'completed_at',
         'notes',
+
+        // Webhook confirmation fields (ADR-004)
+        'sumit_entity_id',
+        'is_webhook_confirmed',
+        'confirmed_at',
+        'confirmed_by',
     ];
 
     protected $casts = [
@@ -71,11 +77,13 @@ class OfficeGuyTransaction extends Model
         'raw_response' => 'array',
 
         'is_test' => 'boolean',
+        'is_webhook_confirmed' => 'boolean',
 
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
         'completed_at' => 'datetime',
+        'confirmed_at' => 'datetime',
     ];
 
     /* -----------------------------------------------------------------

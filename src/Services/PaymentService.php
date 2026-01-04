@@ -775,8 +775,20 @@ class PaymentService
         }
 
         if ($singleUseToken !== null) {
+            // Use single-use token from PaymentsJS SDK
             $request['SingleUseToken'] = $singleUseToken;
-        } elseif (!$redirectMode && $paymentMethodPayload !== null) {
+        } elseif ($token !== null) {
+            // Use saved payment token
+            // CRITICAL: Must use token's citizen_id (not customer input) for bank validation
+            $request['PaymentMethod'] = [
+                'CreditCard_Token' => $token->token,
+                'CreditCard_CitizenID' => $token->citizen_id,  // ← From token, not customer input!
+                'CreditCard_ExpirationMonth' => $token->expiry_month,
+                'CreditCard_ExpirationYear' => $token->expiry_year,
+                'Type' => 1,  // Credit card
+            ];
+        } elseif (!$redirectMode && !empty($paymentMethodPayload)) {
+            // Use direct card details (PCI mode = 'yes')
             $request['PaymentMethod'] = $paymentMethodPayload;
         }
 
@@ -946,6 +958,51 @@ class PaymentService
      */
     public static function processResolvedIntent(ResolvedPaymentIntent $intent): array
     {
+        // DEBUG: Log what we received
+        OfficeGuyApi::writeToLog('🔍 processResolvedIntent called', 'info', [
+            'intent_token' => $intent->token,
+            'intent_single_use_token' => $intent->singleUseToken,
+            'intent_payment_method_payload' => $intent->paymentMethodPayload,
+            'intent_redirect_mode' => $intent->redirectMode,
+            'payable_id' => $intent->payable->getPayableId(),
+        ]);
+
+        // Resolve saved payment token with security validation
+        $tokenModel = null;
+        if (!empty($intent->token)) {
+            // Get customer ID for security validation
+            $customerId = $intent->payable->getCustomerId();
+
+            // Query by token ID (not UUID) with owner validation
+            // Note: $intent->token contains the database ID (integer), not the UUID string
+            $tokenModel = OfficeGuyToken::query()
+                ->where('id', $intent->token)  // ← Search by ID, not token UUID!
+                ->where('owner_type', 'client')  // Tokens use 'client' as owner_type
+                ->where('owner_id', $customerId)
+                ->first();
+
+            // Log warning if token not found
+            if (!$tokenModel) {
+                OfficeGuyApi::writeToLog('⚠️ Token not found for intent', 'warning', [
+                    'token' => $intent->token,
+                    'customer_id' => $customerId,
+                    'payable_id' => $intent->payable->getPayableId(),
+                ]);
+            } else {
+                OfficeGuyApi::writeToLog('✅ Token found and resolved', 'info', [
+                    'token_id' => $tokenModel->id,
+                    'token_uuid' => $tokenModel->token,
+                    'citizen_id' => $tokenModel->citizen_id,
+                    'last_four' => $tokenModel->last_four,
+                ]);
+            }
+        } else {
+            OfficeGuyApi::writeToLog('ℹ️ No saved token in intent', 'info', [
+                'has_single_use_token' => !empty($intent->singleUseToken),
+                'has_payment_method_payload' => !empty($intent->paymentMethodPayload),
+            ]);
+        }
+
         $extra = [];
         if ($intent->redirectMode && $intent->redirectUrls) {
             $extra['RedirectURL'] = $intent->redirectUrls['success'] ?? null;
@@ -957,7 +1014,7 @@ class PaymentService
             paymentsCount: $intent->paymentsCount,
             recurring: $intent->recurring,
             redirectMode: $intent->redirectMode,
-            token: $intent->token,
+            token: $tokenModel,  // Pass OfficeGuyToken model or null
             extra: $extra,
             paymentMethodPayload: $intent->paymentMethodPayload,
             singleUseToken: $intent->singleUseToken,
