@@ -57,10 +57,10 @@ class TransactionSyncListener
 
         $payload = $webhook->payload;
 
-        // Guard: CreateOrUpdate only (not Delete)
+        // Guard: Create or CreateOrUpdate only (not Delete)
         $type = $payload['Type'] ?? null;
-        if ($type !== 'CreateOrUpdate') {
-            Log::debug('TransactionSyncListener: Ignoring non-CreateOrUpdate webhook', [
+        if (!in_array($type, ['Create', 'CreateOrUpdate'], true)) {
+            Log::debug('TransactionSyncListener: Ignoring non-Create/CreateOrUpdate webhook', [
                 'webhook_id' => $webhook->id,
                 'type' => $type,
             ]);
@@ -68,13 +68,19 @@ class TransactionSyncListener
         }
 
         // Extract transaction data from webhook
+        // CRITICAL: SUMIT uses 2 different webhook structures!
+        // Structure 1 (old): Property_4=amount, Property_6=status, Property_7=payment_method
+        // Structure 2 (new): Billing_Amount=amount, Billing_PaymentMethod=payment_method (no status field)
         $entityId = $payload['EntityID'] ?? null;
-        $status = $payload['Properties']['Property_6'][0] ?? null; // Status field
-        $amount = $payload['Properties']['Property_4'][0] ?? null; // Amount field
-        $paymentMethod = $payload['Properties']['Property_7'][0] ?? null; // Payment method field
 
-        // Guard: Approved transactions only
-        if ($status !== 'מאושר') {
+        // Try new structure first (Billing_* fields), then fallback to old structure (Property_* fields)
+        $amount = $payload['Properties']['Billing_Amount'][0] ?? $payload['Properties']['Property_4'][0] ?? null;
+        $paymentMethodObj = $payload['Properties']['Billing_PaymentMethod'][0] ?? $payload['Properties']['Property_7'][0] ?? null;
+        $status = $payload['Properties']['Property_6'][0] ?? null;  // Only exists in old structure
+
+        // Guard: If old structure (has status field), check for "מאושר"
+        // If new structure (no status field), assume approved if has Billing_* fields
+        if ($status !== null && $status !== 'מאושר') {
             Log::debug('TransactionSyncListener: Ignoring non-approved transaction', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
@@ -83,23 +89,37 @@ class TransactionSyncListener
             return;
         }
 
+        // Extract payment method name from object structure
+        // SUMIT sends: {"ID": 1095061476, "Name": "כרטיס אשראי (9429)"}
+        $paymentMethodName = null;
+        if (is_array($paymentMethodObj) && isset($paymentMethodObj['Name'])) {
+            $paymentMethodName = $paymentMethodObj['Name'];
+        } elseif (is_string($paymentMethodObj)) {
+            // Backward compatibility if SUMIT changes format to string
+            $paymentMethodName = $paymentMethodObj;
+        }
+
         // Guard: Card payments only (not Bit, not refunds, not accounting operations)
         // This is critical to prevent calling Order::onPaymentConfirmed() for non-card payments
-        if (!$paymentMethod || !str_contains($paymentMethod, 'כרטיס')) {
+        if (!$paymentMethodName || !str_contains($paymentMethodName, 'כרטיס')) {
             Log::debug('TransactionSyncListener: Ignoring non-card payment', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
-                'payment_method' => $paymentMethod,
+                'payment_method_obj' => $paymentMethodObj,
+                'payment_method_name' => $paymentMethodName,
             ]);
             return;
         }
 
         // Guard: Non-zero amount
-        if (!$amount || (float)$amount === 0.0) {
+        // CRITICAL: Amount can be object (document) in old structure, or float in new structure
+        $amountValue = is_array($amount) ? null : (float)($amount ?? 0);
+        if (!$amountValue || $amountValue === 0.0) {
             Log::debug('TransactionSyncListener: Ignoring zero-amount transaction', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
                 'amount' => $amount,
+                'amount_value' => $amountValue,
             ]);
             return;
         }

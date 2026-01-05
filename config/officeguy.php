@@ -191,31 +191,45 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Secure Success Page Configuration (v1.2.0+)
+    |--------------------------------------------------------------------------
+    |
+    | 7-layer security architecture for post-payment success pages:
+    | 1. Rate Limiting - Prevents brute force attacks
+    | 2. Signed URL - Laravel HMAC signature validation
+    | 3. Token Existence - Token must exist in database
+    | 4. Token Validity - Token must not be expired
+    | 5. Single Use - Token must not be consumed
+    | 6. Nonce Matching - Cryptographic replay protection
+    | 7. Identity Proof - Guest-safe cryptographic ownership
+    |
+    */
+    'success' => [
+        // Enable secure success URLs (recommended: true)
+        'enabled' => env('OFFICEGUY_SUCCESS_SECURE_ENABLED', true),
+
+        // Token validity in hours (default: 24 hours)
+        'token_ttl' => env('OFFICEGUY_SUCCESS_TOKEN_TTL', 24),
+
+        // Rate limiting configuration
+        'rate_limit' => [
+            // Maximum attempts per IP
+            'max_attempts' => env('OFFICEGUY_SUCCESS_RATE_LIMIT_MAX', 10),
+
+            // Decay time in minutes
+            'decay_minutes' => env('OFFICEGUY_SUCCESS_RATE_LIMIT_DECAY', 1),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Order binding
     |--------------------------------------------------------------------------
     | Provide either a resolver callable or a model class implementing Payable
     */
     'order' => [
         'resolver' => null, // fn(string|int $orderId): ?Payable
-        'model' => env('OFFICEGUY_ORDER_MODEL', \App\Models\Order::class),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Secure Success URL Configuration (v1.22.0+)
-    |--------------------------------------------------------------------------
-    |
-    | Configure secure success page URL generation with one-time tokens.
-    | Provides 7-layer security: Signed URL + One-time token + Nonce + TTL + Rate limiting
-    |
-    */
-    'success' => [
-        'enabled' => env('OFFICEGUY_SUCCESS_SECURE_ENABLED', true),
-        'token_ttl' => env('OFFICEGUY_SUCCESS_TOKEN_TTL', 24), // Hours
-        'rate_limit' => [
-            'max_attempts' => env('OFFICEGUY_SUCCESS_RATE_LIMIT_MAX', 10),
-            'decay_minutes' => env('OFFICEGUY_SUCCESS_RATE_LIMIT_DECAY', 1),
-        ],
+        'model' => env('OFFICEGUY_ORDER_MODEL'),
     ],
 
     /*
@@ -295,7 +309,7 @@ return [
         'ILS', 'USD', 'EUR', 'CAD', 'GBP', 'CHF', 'AUD', 'JPY', 'SEK', 'NOK',
         'DKK', 'ZAR', 'JOD', 'LBP', 'EGP', 'BGN', 'CZK', 'HUF', 'PLN', 'RON',
         'ISK', 'HRK', 'RUB', 'TRY', 'BRL', 'CNY', 'HKD', 'IDR', 'INR', 'KRW',
-        'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB',
+        'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB'
     ],
 
     /*

@@ -85,7 +85,7 @@ class InfrastructureFulfillmentHandler
 
         // Dispatch to application's provisioning job
         if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
 
             OfficeGuyApi::writeToLog(
                 "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for domain order {$payable->id}",
@@ -121,7 +121,7 @@ class InfrastructureFulfillmentHandler
 
         // Dispatch to application's provisioning job
         if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
 
             OfficeGuyApi::writeToLog(
                 "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for hosting order {$payable->id}",
@@ -157,7 +157,7 @@ class InfrastructureFulfillmentHandler
 
         // Dispatch to application's provisioning job
         if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
 
             OfficeGuyApi::writeToLog(
                 "InfrastructureFulfillmentHandler: Dispatched ProcessPaidOrderJob for VPS order {$payable->id}",

@@ -15,6 +15,8 @@ use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
 use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\RefundWebhookListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\TransactionSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
@@ -140,6 +142,14 @@ class OfficeGuyServiceProvider extends ServiceProvider
         Event::listen(
             SumitWebhookReceived::class,
             RefundWebhookListener::class
+        );
+
+        // Register transaction sync listener (v1.18.0+)
+        // Confirms card payments from SUMIT CRM Transaction webhooks (ADR-004)
+        // This is the ONLY way to confirm card payments, as SUMIT doesn't provide dedicated card payment webhooks
+        Event::listen(
+            SumitWebhookReceived::class,
+            TransactionSyncListener::class
         );
 
         // CRM activities sync listener: refresh related entities when SUMIT CRM webhook arrives

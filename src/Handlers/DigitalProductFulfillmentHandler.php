@@ -83,7 +83,7 @@ class DigitalProductFulfillmentHandler
 
         // Dispatch to application's provisioning job
         if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
 
             OfficeGuyApi::writeToLog(
                 "DigitalProductFulfillmentHandler: Dispatched ProcessPaidOrderJob for eSIM order {$payable->id}",

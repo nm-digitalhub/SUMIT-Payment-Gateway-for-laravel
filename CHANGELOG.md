@@ -7,6 +7,97 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+No unreleased changes at this time.
+
+## [v1.21.4] - 2026-01-04
+
+### Added
+- **CheckoutIntentResolver Service** - Complete payment processing architecture bridge
+  - New `CheckoutIntentResolver::resolve()` - Converts `CheckoutIntent` → `ResolvedPaymentIntent`
+  - New `ResolvedPaymentIntent` DTO - Immutable readonly class with all payment properties
+  - Helper methods: `isUsingSavedToken()`, `isUsingSingleUseToken()`, `isRedirectMode()`, `hasInstallments()`
+  - Determines PCI mode and redirect configuration automatically
+  - Handles single-use tokens from PaymentsJS SDK
+  - Files: `src/Services/CheckoutIntentResolver.php`, `src/DataTransferObjects/ResolvedPaymentIntent.php`
+  - **Fixes**: Critical production error "Class 'CheckoutIntentResolver' not found"
+
+- **Fulfillment System Integration** - Complete order fulfillment architecture
+  - New `GenericFulfillmentHandler` - Safety net for unmapped PayableTypes
+  - Added `payable` accessor to `OfficeGuyTransaction` model for handler compatibility
+  - Fixed `DigitalProductFulfillmentHandler::handleEsim()` - Dispatches with order ID
+  - Fixed `InfrastructureFulfillmentHandler` - All methods now dispatch with order ID
+  - Prevents TypeError in `ProcessPaidOrderJob` constructor
+  - File: `src/Handlers/GenericFulfillmentHandler.php`
+
+### Enhanced
+- **Transaction Infolist UI** - Complete transaction details display
+  - Enhanced TransactionInfolist with comprehensive payment information
+  - Payment method type extraction from API response (0=אחר, 1=כרטיס אשראי, 2=הוראת קבע)
+  - Card mask extraction from `CreditCard_CardMask` (fallback to `last_digits`)
+  - Expiration date from `CreditCard_ExpirationMonth/Year` (MM/YYYY format)
+  - Citizen ID field with conditional visibility
+  - Color-coded badges for payment method types
+  - File: `src/Filament/Resources/Transactions/Schemas/TransactionInfolist.php`
+
+- **Interactive Document Download Card** - Beautiful UX-enhanced download component
+  - Gradient card design with icons and status badges
+  - Document number and type detection (חשבונית/מסמך)
+  - Creation date display with RTL Hebrew layout
+  - Three actions: Download, Open in new tab, Copy link with feedback
+  - Dark mode support with hover effects
+  - Accessible ARIA labels, mobile-friendly responsive design
+  - File: `resources/views/filament/components/document-download-card.blade.php`
+
+### Fixed
+- **Webhook Confirmation Fields** - Fixed `fillable` array in `OfficeGuyTransaction`
+  - Added `is_webhook_confirmed`, `confirmed_at`, `confirmed_by`, `sumit_entity_id`
+  - Enables webhook confirmation workflow to function correctly
+  - File: `src/Models/OfficeGuyTransaction.php`
+
+- **Heroicon Compatibility** - Replaced non-existent icon
+  - Changed `heroicon-o-identification-card` → `heroicon-o-identification`
+  - Fixes icon rendering errors in Filament v4
+
+## [v1.21.3] - 2026-01-03
+
+### Fixed
+- **ViewTransaction Page** - Fixed missing `infolist()` method
+  - Added required `infolist()` method to `ViewTransaction` page
+  - Resolves Fatal Error when viewing transaction details
+  - File: `src/Filament/Resources/TransactionResource/Pages/ViewTransaction.php`
+
+## [v1.21.2] - 2026-01-03
+
+### Fixed
+- **Transaction Resource Sync** - Synchronized Transaction resource files from vendor
+  - Updated all Transaction resource files to latest package version
+  - Ensures consistency between package and application code
+  - Files: `src/Filament/Resources/TransactionResource/*`
+
+## [v1.21.1] - 2026-01-03
+
+### Fixed
+- **Class-Not-Found Errors** - Resolved errors introduced in v1.21.0
+  - Fixed namespace and import issues from ApiPayload integration
+  - Restored correct class references throughout package
+  - All Filament resources now load correctly
+
+- **Webhook Resource Views** - Updated views and added payload mapping guide
+  - Enhanced webhook resource views with better payload display
+  - Added comprehensive payload mapping documentation
+  - Improved developer experience when debugging webhooks
+
+## [v1.21.0] - 2026-01-02
+
+### Added
+- **ApiPayload Components Integration** - Filament v4 modular structure
+  - Integrated ApiPayload components into Filament v4 architecture
+  - Modular, reusable components for API payload rendering
+  - Improved code organization and maintainability
+  - Enhanced developer experience with consistent patterns
+
+## [v1.20.3] - 2025-12-31
+
 ### Fixed
 - **Critical: Webhook Transaction Confirmation** - Fixed missing `sumit_entity_id` preventing webhook confirmation
   - `PaymentService::processCharge()` - Now saves `sumit_entity_id` field when creating transactions
@@ -25,10 +116,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Files: `src/Services/DocumentService.php:93,206`
 
 ### Impact
-- **Webhook Processing**: 97 stuck webhooks (status='received') will now process correctly
-- **Transaction Confirmation**: All future transactions will be webhook-confirmed automatically
-- **Document Linking**: All future documents will link to orders via polymorphic relationship
-- **Order Fulfillment**: `Order::onPaymentConfirmed()` now triggers provisioning/emails automatically
+- **Webhook Processing**: 97 stuck webhooks (status='received') now process correctly
+- **Transaction Confirmation**: All future transactions webhook-confirmed automatically
+- **Document Linking**: All future documents link to orders via polymorphic relationship
+- **Order Fulfillment**: `Order::onPaymentConfirmed()` triggers provisioning/emails automatically
 
 ## [v1.20.2] - 2025-12-29
 

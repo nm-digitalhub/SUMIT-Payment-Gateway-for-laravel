@@ -175,10 +175,11 @@ class SumitWebhookController extends Controller
         $payload = $this->getPayload($request);
 
         // CRM webhook detection (SUMIT CRM Triggers send: Folder + Type + EntityID)
+        // CRITICAL: Accept 'Create', 'CreateOrUpdate', and 'Delete' (not just CreateOrUpdate!)
         if (
             isset($payload['Folder']) &&
             isset($payload['Type']) &&
-            in_array($payload['Type'], ['CreateOrUpdate', 'Delete'], true)
+            in_array($payload['Type'], ['Create', 'CreateOrUpdate', 'Delete'], true)
         ) {
             return 'crm';
         }

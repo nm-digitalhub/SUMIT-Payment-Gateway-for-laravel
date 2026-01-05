@@ -45,7 +45,7 @@ class GenericFulfillmentHandler
 
         // Dispatch to application's provisioning job
         if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable);
+            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
 
             OfficeGuyApi::writeToLog(
                 "GenericFulfillmentHandler: Dispatched ProcessPaidOrderJob for order {$payable->id} (service_type: {$payable->service_type->value})",
