@@ -90,7 +90,11 @@ class ViewTransaction extends ViewRecord
                 ->label('זיכוי כספי')
                 ->icon('heroicon-o-arrow-uturn-left')
                 ->color('danger')
-                ->visible(fn ($record) => $record->status === 'completed' && $record->amount > 0)
+                ->visible(fn ($record) => 
+                    $record->status === 'completed' && 
+                    $record->amount > 0 &&
+                    $record->refund_transaction_id === null  // Prevent duplicate refunds
+                )
                 ->form([
                     Schemas\Components\Section::make('סוג הזיכוי')
                         ->description('בחר את סוג הזיכוי שברצונך לבצע')
