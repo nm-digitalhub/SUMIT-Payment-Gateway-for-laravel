@@ -18,6 +18,7 @@
 
 ## תוכן עניינים
 
+- [מבנה החבילה](#מבנה-החבילה)
 - [התקנה](#התקנה)
 - [הגדרות](#הגדרות)
 - [עמוד תשלום](#עמוד-תשלום)
@@ -44,6 +45,302 @@
 - [מיגרציות נתונים](#מיגרציות-נתונים)
 - [בדיקות](#בדיקות)
 - [קבצים לפרסום](#קבצים-לפרסום-publishable-assets)
+
+## מבנה החבילה
+
+### עץ תיקיות מלא
+
+```
+SUMIT-Payment-Gateway-for-laravel/
+├── checkout-branded-extracted/      # נכסים מותאמים אישית לדף תשלום
+├── config/
+│   └── officeguy.php               # קובץ הגדרות (74 הגדרות)
+├── database/
+│   └── migrations/                 # מיגרציות מסד נתונים
+│       ├── 2024_01_01_create_officeguy_transactions_table.php
+│       ├── 2024_01_02_create_officeguy_tokens_table.php
+│       ├── 2024_01_03_create_officeguy_documents_table.php
+│       ├── 2024_01_04_create_officeguy_settings_table.php
+│       ├── 2024_01_05_create_vendor_credentials_table.php
+│       ├── 2024_01_06_create_subscriptions_table.php
+│       ├── 2024_01_07_create_webhook_events_table.php
+│       ├── 2024_01_08_create_sumit_webhooks_table.php
+│       └── 2024_01_09_add_donation_and_vendor_fields.php
+├── docs/                           # תיעוד נוסף
+│   ├── CHECKOUT_COMPLETE_FLOW_ANALYSIS.md
+│   ├── CLIENT_PANEL_INTEGRATION.md
+│   ├── CRM_INTEGRATION.md
+│   ├── DIGITAL_PRODUCT_FULFILLMENT.md
+│   ├── INVOICE_SETTINGS_INTEGRATION.md
+│   ├── PACKAGE_COMPLETENESS_AUDIT_2025-11-30.md
+│   ├── PAYABLE_FIELD_MAPPING_WIZARD.md
+│   ├── SUBSCRIPTION_INVOICES_SPECIFICATION.md
+│   ├── WEBHOOK_SYSTEM.md
+│   └── architecture.md
+├── resources/
+│   ├── css/
+│   │   └── checkout-mobile.css     # עיצוב רספונסיבי לדף תשלום
+│   ├── js/
+│   │   └── officeguy-alpine-rtl.js # תמיכת RTL ב-Alpine.js
+│   ├── lang/                       # תרגומים (עברית/אנגלית/צרפתית)
+│   │   ├── en/
+│   │   │   └── officeguy.php
+│   │   ├── he/
+│   │   │   └── officeguy.php
+│   │   └── lang/
+│   │       ├── en.json
+│   │       ├── fr.json
+│   │       └── he.json
+│   └── views/                      # תבניות Blade
+│       ├── components/             # קומפוננטים לשימוש חוזר
+│       │   ├── error-card.blade.php
+│       │   ├── mapping-details.blade.php
+│       │   ├── payment-form.blade.php
+│       │   └── success-card.blade.php
+│       ├── errors/
+│       │   └── access-denied.blade.php
+│       ├── filament/               # תצוגות Filament Admin
+│       │   ├── client/
+│       │   ├── pages/
+│       │   └── resources/
+│       ├── pages/                  # דפים ציבוריים
+│       │   ├── partials/
+│       │   ├── checkout.blade.php  # דף תשלום ציבורי
+│       │   ├── digital.blade.php   # דף מוצרים דיגיטליים
+│       │   ├── infrastructure.blade.php
+│       │   └── subscription.blade.php
+│       └── success.blade.php       # דף הצלחת תשלום
+├── routes/
+│   └── officeguy.php               # נתיבי החבילה (7 נתיבים)
+├── scripts/                        # סקריפטים עזר
+│   ├── add-missing-translations.php
+│   ├── final-translations.php
+│   └── translate-settings-page.php
+├── src/                            # קוד המקור הראשי
+│   ├── Actions/
+│   │   └── PrepareCheckoutIntentAction.php
+│   ├── BackoffStrategy/
+│   │   ├── BackoffStrategyInterface.php
+│   │   └── ExponentialBackoffStrategy.php
+│   ├── Console/Commands/           # פקודות Artisan
+│   │   ├── CrmSyncFoldersCommand.php
+│   │   ├── CrmSyncViewsCommand.php
+│   │   ├── ProcessRecurringPaymentsCommand.php
+│   │   ├── StockSyncCommand.php
+│   │   └── SyncAllDocumentsCommand.php
+│   ├── Contracts/                  # ממשקים (Interfaces)
+│   │   ├── HasSumitCustomer.php
+│   │   ├── Invoiceable.php
+│   │   └── Payable.php             # ממשק Payable מרכזי
+│   ├── DTOs/
+│   │   └── ValidationResult.php
+│   ├── DataTransferObjects/
+│   │   ├── AddressData.php
+│   │   ├── CheckoutIntent.php
+│   │   ├── CustomerData.php
+│   │   └── PaymentPreferences.php
+│   ├── Enums/                      # Enumerations
+│   │   ├── Environment.php
+│   │   ├── PayableType.php
+│   │   ├── PaymentStatus.php
+│   │   └── PciMode.php
+│   ├── Events/                     # מחלקות אירועים (19 אירועים)
+│   │   ├── BitPaymentCompleted.php
+│   │   ├── DocumentCreated.php
+│   │   ├── PaymentCompleted.php
+│   │   ├── PaymentFailed.php
+│   │   ├── StockSynced.php
+│   │   ├── SubscriptionCancelled.php
+│   │   ├── SubscriptionCharged.php
+│   │   ├── SubscriptionCreated.php
+│   │   ├── SumitWebhookReceived.php
+│   │   └── WebhookCallSucceededEvent.php
+│   ├── Filament/                   # אינטגרציית Filament
+│   │   ├── Actions/
+│   │   │   └── CreatePayableMappingAction.php
+│   │   ├── Client/                 # פאנל לקוח (6 משאבים)
+│   │   │   ├── Pages/
+│   │   │   ├── Resources/
+│   │   │   │   ├── ClientDocumentResource/
+│   │   │   │   ├── ClientPaymentMethodResource/
+│   │   │   │   ├── ClientSubscriptionResource/
+│   │   │   │   ├── ClientSumitWebhookResource/
+│   │   │   │   ├── ClientTransactionResource/
+│   │   │   │   └── ClientWebhookEventResource/
+│   │   │   ├── Widgets/
+│   │   │   └── ClientPanelProvider.php
+│   │   ├── Clusters/
+│   │   │   ├── SumitClient.php
+│   │   │   └── SumitGateway.php
+│   │   ├── Pages/
+│   │   │   └── OfficeGuySettings.php  # עמוד הגדרות (74 הגדרות)
+│   │   ├── RelationManagers/
+│   │   │   └── InvoicesRelationManager.php
+│   │   ├── Resources/              # משאבי Admin (7 משאבים)
+│   │   │   ├── CrmActivities/
+│   │   │   ├── CrmEntities/
+│   │   │   ├── CrmFolders/
+│   │   │   ├── DocumentResource/
+│   │   │   ├── SubscriptionResource/
+│   │   │   ├── SumitWebhookResource/
+│   │   │   ├── TokenResource/
+│   │   │   ├── TransactionResource/
+│   │   │   ├── VendorCredentialResource/
+│   │   │   └── WebhookEventResource/
+│   │   └── Widgets/
+│   │       └── PayableMappingsTableWidget.php
+│   ├── Handlers/                   # Handlers למילוי הזמנות
+│   │   ├── DigitalProductFulfillmentHandler.php
+│   │   ├── InfrastructureFulfillmentHandler.php
+│   │   └── SubscriptionFulfillmentHandler.php
+│   ├── Http/
+│   │   ├── Controllers/            # בקרים ל-Webhook וחזרות
+│   │   │   ├── Api/
+│   │   │   ├── BitWebhookController.php
+│   │   │   ├── CardCallbackController.php
+│   │   │   ├── CheckoutController.php
+│   │   │   ├── CrmWebhookController.php
+│   │   │   ├── DocumentDownloadController.php
+│   │   │   ├── PublicCheckoutController.php
+│   │   │   ├── SecureSuccessController.php
+│   │   │   └── SumitWebhookController.php
+│   │   ├── Middleware/
+│   │   │   ├── OptionalAuth.php
+│   │   │   └── SetPackageLocale.php
+│   │   └── Requests/
+│   │       ├── BitRedirectRequest.php
+│   │       ├── BitWebhookRequest.php
+│   │       └── CheckoutRequest.php
+│   ├── Jobs/                       # עבודות תור (7 עבודות)
+│   │   ├── CheckSumitDebtJob.php
+│   │   ├── ProcessRecurringPaymentsJob.php
+│   │   ├── ProcessSumitWebhookJob.php
+│   │   ├── SendWebhookJob.php
+│   │   ├── StockSyncJob.php
+│   │   ├── SyncCrmFromWebhookJob.php
+│   │   └── SyncDocumentsJob.php
+│   ├── Listeners/                  # מאזינים לאירועים (6 מאזינים)
+│   │   ├── AutoCreateUserListener.php
+│   │   ├── CrmActivitySyncListener.php
+│   │   ├── CustomerSyncListener.php
+│   │   ├── DocumentSyncListener.php
+│   │   ├── FulfillmentListener.php
+│   │   └── WebhookEventListener.php
+│   ├── Models/                     # מודלים של Eloquent (19 מודלים)
+│   │   ├── CrmActivity.php
+│   │   ├── CrmEntity.php
+│   │   ├── CrmFolder.php
+│   │   ├── OfficeGuyDocument.php
+│   │   ├── OfficeGuySetting.php
+│   │   ├── OfficeGuyToken.php
+│   │   ├── OfficeGuyTransaction.php
+│   │   ├── PayableFieldMapping.php
+│   │   ├── Subscription.php
+│   │   ├── SumitWebhook.php
+│   │   ├── VendorCredential.php
+│   │   └── WebhookEvent.php
+│   ├── Policies/
+│   │   └── OfficeGuyTransactionPolicy.php
+│   ├── Services/                   # מחלקות שירות (27 שירותים)
+│   │   ├── Stock/
+│   │   │   └── StockService.php
+│   │   ├── BitPaymentService.php
+│   │   ├── CheckoutViewResolver.php
+│   │   ├── CrmDataService.php
+│   │   ├── CustomerMergeService.php
+│   │   ├── CustomerService.php
+│   │   ├── DebtService.php
+│   │   ├── DocumentService.php
+│   │   ├── DonationService.php
+│   │   ├── ExchangeRateService.php
+│   │   ├── MultiVendorPaymentService.php
+│   │   ├── OfficeGuyApi.php        # לקוח HTTP
+│   │   ├── PaymentService.php      # עיבוד תשלומים מרכזי
+│   │   ├── SettingsService.php     # ניהול הגדרות
+│   │   ├── SubscriptionService.php
+│   │   ├── TokenService.php        # ניהול טוקנים
+│   │   ├── UpsellService.php
+│   │   └── WebhookService.php
+│   ├── Support/                    # Traits ומחלקות עזר
+│   │   ├── Traits/
+│   │   │   ├── HasCheckoutTheme.php
+│   │   │   ├── HasPayableFields.php
+│   │   │   ├── HasSumitCustomerTrait.php
+│   │   │   ├── HasSumitInvoice.php
+│   │   │   └── PayableAdapter.php
+│   │   ├── DynamicPayableWrapper.php
+│   │   ├── ModelPayableWrapper.php
+│   │   ├── OrderResolver.php
+│   │   ├── RequestHelpers.php
+│   │   └── RouteConfig.php
+│   ├── View/Components/            # קומפוננטים של Blade
+│   │   └── PaymentForm.php
+│   ├── OfficeGuyServiceProvider.php # ספק השירות הראשי
+│   └── WebhookCall.php
+├── temp_logo/                      # נכסי לוגו
+├── woo-plugin/                     # התוסף המקורי של WooCommerce (לעיון)
+│   └── woo-payment-gateway-officeguy/
+│       ├── includes/
+│       │   ├── OfficeGuyAPI.php
+│       │   ├── OfficeGuyPayment.php
+│       │   ├── OfficeGuySettings.php
+│       │   ├── OfficeGuyStock.php
+│       │   ├── OfficeGuySubscriptions.php
+│       │   └── OfficeGuyTokens.php
+│       └── officeguy-woo.php
+├── CHANGELOG.md                    # היסטוריית גרסאות
+├── CLAUDE.md                       # מדריך פיתוח
+├── FILAMENT_V4_UPGRADE_SUMMARY.md  # מדריך מעבר Filament v3→v4
+├── LICENSE.md                      # רישיון MIT
+├── README.md                       # תיעוד מלא בעברית (קובץ זה)
+├── UPGRADE.md                      # הוראות שדרוג
+├── composer.json                   # תלויות החבילה
+└── sumit-openapi.json              # מפרט API של SUMIT
+
+סטטיסטיקה:
+- 19 מודלים של Eloquent
+- 27 מחלקות שירות
+- 7 משאבי Filament Admin
+- 6 משאבי פאנל לקוח
+- 19 מחלקות אירועים
+- 7 עבודות תור
+- 6 מאזינים לאירועים
+- 9 מיגרציות מסד נתונים
+- 74 הגדרות קונפיגורציה
+```
+
+### טבלאות מסד נתונים
+
+| טבלה | תיאור |
+|------|--------|
+| `officeguy_transactions` | טרנזקציות תשלום |
+| `officeguy_tokens` | כרטיסי אשראי שמורים |
+| `officeguy_documents` | חשבוניות וקבלות |
+| `officeguy_settings` | הגדרות מערכת (עדיפות גבוהה ביותר) |
+| `vendor_credentials` | נתוני כניסה לספקים |
+| `subscriptions` | מנויים |
+| `webhook_events` | אירועי Webhook (יוצאים) |
+| `sumit_webhooks` | Webhooks מ-SUMIT (נכנסים) |
+| `payable_field_mappings` | מיפוי שדות למודלים |
+| `pending_checkouts` | תשלומים ממתינים |
+| `order_success_tokens` | טוקנים לגישה מאובטחת לדפי הצלחה |
+
+### מחלקות שירות עיקריות
+
+| שירות | תיאור |
+|-------|--------|
+| `OfficeGuyApi` | לקוח HTTP לתקשורת עם API של SUMIT |
+| `PaymentService` | עיבוד תשלומים מרכזי |
+| `TokenService` | ניהול טוקנים של כרטיסי אשראי |
+| `DocumentService` | יצירת מסמכים (חשבוניות/קבלות) |
+| `SubscriptionService` | ניהול מנויים והוראות קבע |
+| `BitPaymentService` | אינטגרציית Bit |
+| `WebhookService` | טיפול ב-Webhooks |
+| `SettingsService` | ניהול הגדרות (DB → Config → .env) |
+| `CustomerMergeService` | מיזוג נתוני לקוחות |
+| `MultiVendorPaymentService` | תשלומים מרובי ספקים |
+
+---
 
 ## התקנה
 ```bash
