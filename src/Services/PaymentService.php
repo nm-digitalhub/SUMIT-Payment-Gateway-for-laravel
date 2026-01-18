@@ -877,7 +877,69 @@ class PaymentService
             'endpoint' => $endpoint,
         ]);
 
-        $response = OfficeGuyApi::post($request, $endpoint, $environment, !$recurring);
+        // Execute request using Saloon inline anonymous Request class
+        try {
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
+
+            $connector = new SumitConnector();
+            $saloonRequest = new class(
+                $credentials,
+                $request,
+                $endpoint,
+                !$recurring // sendClientIp
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly array $requestData,
+                    protected readonly string $endpoint,
+                    protected readonly bool $sendClientIp
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return $this->endpoint;
+                }
+
+                protected function defaultBody(): array
+                {
+                    return array_merge(
+                        ['Credentials' => $this->credentials->toArray()],
+                        $this->requestData
+                    );
+                }
+
+                protected function defaultHeaders(): array
+                {
+                    $headers = [];
+                    if ($this->sendClientIp && request()->ip()) {
+                        $headers['X-OG-ClientIP'] = request()->ip();
+                    }
+                    return $headers;
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            $saloonResponse = $connector->send($saloonRequest);
+            $response = $saloonResponse->json();
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog('Payment charge exception: ' . $e->getMessage(), 'error');
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . $e->getMessage(),
+            ];
+        }
 
         // Redirect flow
         if ($redirectMode) {
