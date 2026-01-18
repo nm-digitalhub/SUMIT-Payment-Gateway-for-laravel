@@ -8,6 +8,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Middleware\LoggingMiddleware;
 use OfficeGuy\LaravelSumitGateway\Http\Middleware\SensitiveDataRedactor;
 use Saloon\Contracts\Authenticator;
 use Saloon\Http\Connector;
+use Saloon\Http\PendingRequest;
 use Saloon\Traits\Plugins\AlwaysThrowOnErrors;
 
 /**
@@ -75,9 +76,10 @@ class SumitConnector extends Connector
     /**
      * Boot middleware pipeline
      *
+     * @param PendingRequest $pendingRequest The pending request instance
      * @return void
      */
-    public function boot(): void
+    public function boot(PendingRequest $pendingRequest): void
     {
         // Add logging middleware if enabled in config
         if (config('officeguy.logging', false)) {

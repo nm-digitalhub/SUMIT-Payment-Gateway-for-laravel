@@ -522,8 +522,21 @@ class SubscriptionResource extends Resource
                     ])
                     ->requiresConfirmation()
                     ->action(function (Subscription $record, array $data) {
-                        SubscriptionService::cancel($record, $data['reason'] ?? null);
-                        Notification::make()->title('Subscription cancelled')->danger()->send();
+                        $result = SubscriptionService::cancel($record, $data['reason'] ?? null);
+                        
+                        if ($result['success']) {
+                            Notification::make()
+                                ->title(__('Subscription cancelled'))
+                                ->body($result['message'])
+                                ->success()
+                                ->send();
+                        } else {
+                            Notification::make()
+                                ->title(__('Cancellation failed'))
+                                ->body($result['message'])
+                                ->danger()
+                                ->send();
+                        }
                     }),
                 Action::make('charge_now')
                     ->label('Charge Now')
@@ -562,15 +575,32 @@ class SubscriptionResource extends Resource
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function ($records) {
+                            $successCount = 0;
+                            $failCount = 0;
+                            
                             foreach ($records as $record) {
-                                if (in_array($record->status, [Subscription::STATUS_ACTIVE, Subscription::STATUS_PAUSED])) {
-                                    $record->cancel('Bulk cancellation');
+                                if ($record->canBeCancelled()) {
+                                    $result = SubscriptionService::cancel($record, 'Bulk cancellation');
+                                    if ($result['success']) {
+                                        $successCount++;
+                                    } else {
+                                        $failCount++;
+                                    }
                                 }
                             }
-                            Notification::make()
-                                ->title('Subscriptions cancelled')
-                                ->success()
-                                ->send();
+                            
+                            if ($successCount > 0 || $failCount > 0) {
+                                Notification::make()
+                                    ->title(__('Cancelled') . ": {$successCount}, " . __('Failed') . ": {$failCount}")
+                                    ->success($successCount > 0)
+                                    ->danger($successCount === 0)
+                                    ->send();
+                            } else {
+                                Notification::make()
+                                    ->title(__('No subscriptions to cancel'))
+                                    ->warning()
+                                    ->send();
+                            }
                         }),
                 ]),
             ])
