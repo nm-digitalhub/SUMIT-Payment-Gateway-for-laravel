@@ -21,26 +21,74 @@ class CustomerService
      */
     public static function syncFromEntity(CrmEntity $entity): array
     {
-        $payload = self::buildPayloadFromEntity($entity);
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        // decide endpoint: create if no sumit_entity_id, else update
-        $endpoint = $entity->sumit_entity_id ? '/accounting/customers/update/' : '/accounting/customers/create/';
+            // Build payload and determine endpoint
+            $payload = self::buildPayloadFromEntity($entity);
+            $endpoint = $entity->sumit_entity_id
+                ? '/accounting/customers/update/'
+                : '/accounting/customers/create/';
 
-        $response = OfficeGuyApi::post(
-            $payload,
-            $endpoint,
-            config('officeguy.environment', 'www'),
-            false
-        );
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $payload,
+                $endpoint
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
 
-        if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly array $payload,
+                    protected readonly string $endpoint
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return $this->endpoint;
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        ...$this->payload,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 60];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Failed to sync customer with SUMIT',
+                'error' => 'Request exception: ' . $e->getMessage(),
             ];
         }
 
-        $sumitId = $response['Data']['CustomerID'] ?? $entity->sumit_entity_id ?? null;
+        if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            return [
+                'success' => false,
+                'error' => $data['UserErrorMessage'] ?? 'Failed to sync customer with SUMIT',
+            ];
+        }
+
+        $sumitId = $data['Data']['CustomerID'] ?? $entity->sumit_entity_id ?? null;
 
         if ($sumitId) {
             $entity->updateQuietly(['sumit_entity_id' => $sumitId]);
@@ -67,28 +115,68 @@ class CustomerService
      */
     public static function pullCustomerDetails(int $sumitCustomerId, ?CrmEntity $entity = null): array
     {
-        $payload = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Customer' => [
-                'ID' => $sumitCustomerId,
-            ],
-        ];
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $response = OfficeGuyApi::post(
-            $payload,
-            '/accounting/customers/getdetailsurl/',
-            config('officeguy.environment', 'www'),
-            false
-        );
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $sumitCustomerId
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
 
-        if ($response === null || ($response['Status'] ?? 1) !== 0) {
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly int $customerId
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/customers/getdetailsurl/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Customer' => [
+                            'ID' => $this->customerId,
+                        ],
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 60];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+        } catch (\Throwable $e) {
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Failed to pull customer details from SUMIT',
+                'error' => 'Request exception: ' . $e->getMessage(),
             ];
         }
 
-        $details = $response['Data']['Customer'] ?? null;
+        if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            return [
+                'success' => false,
+                'error' => $data['UserErrorMessage'] ?? 'Failed to pull customer details from SUMIT',
+            ];
+        }
+
+        $details = $data['Data']['Customer'] ?? null;
 
         if ($entity && $details) {
             $entity->updateQuietly([

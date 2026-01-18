@@ -10,6 +10,16 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\DataTransferObjects\ResolvedPaymentIntent;
+use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\SetPaymentMethodRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\GetPaymentDetailsRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\ListPaymentsRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\GetPaymentMethodsRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\RemovePaymentMethodRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\ChargePaymentRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Subscription\ChargeSubscriptionRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Bit\CreateBitPaymentRequest;
 
 /**
  * Payment Service
@@ -121,49 +131,49 @@ class PaymentService
     public static function setPaymentMethodForCustomer(string|int $sumitCustomerId, string $token, array $method = []): array
     {
         try {
-            // Build payload - use PaymentMethod with CreditCard_Token (for permanent tokens)
-            // OR use SingleUseToken (for temporary tokens from Payments.JS)
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Customer' => [
-                    'ID' => (int) $sumitCustomerId,
-                ],
-            ];
+            // Prepare additional fields for permanent tokens
+            $additionalFields = $method;
 
-            // If token looks like a permanent token (UUID format), send as PaymentMethod
-            // Otherwise, send as SingleUseToken
+            // If token looks like a permanent token (UUID format), try to get expiry dates
             if (preg_match('/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i', $token)) {
-                // Permanent token - use PaymentMethod
-
                 // Try to find token in database to get expiry dates
                 $tokenModel = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken::where('token', $token)->first();
 
-                $payload['PaymentMethod'] = array_merge([
-                    'Type' => 1,  // CreditCard type as integer (per API examples)
-                    'CreditCard_Token' => $token,
-                    'CreditCard_ExpirationMonth' => $tokenModel ? (int) $tokenModel->expiry_month : null,
-                    'CreditCard_ExpirationYear' => $tokenModel ? (int) $tokenModel->expiry_year : null,
-                ], $method);
-            } else {
-                // Single-use token - use SingleUseToken field
-                $payload['SingleUseToken'] = $token;
+                if ($tokenModel) {
+                    $additionalFields = array_merge([
+                        'CreditCard_ExpirationMonth' => (int) $tokenModel->expiry_month,
+                        'CreditCard_ExpirationYear' => (int) $tokenModel->expiry_year,
+                    ], $additionalFields);
+                }
             }
 
-            \Log::info('setPaymentMethodForCustomer payload', ['payload' => $payload]);
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/paymentmethods/setforcustomer/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            \Log::info('setPaymentMethodForCustomer response', ['response' => $response]);
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new SetPaymentMethodRequest(
+                customerId: (int) $sumitCustomerId,
+                token: $token,
+                credentials: $credentials,
+                additionalFields: $additionalFields
+            );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            \Log::info('setPaymentMethodForCustomer request', ['customer_id' => $sumitCustomerId, 'token' => substr($token, 0, 8) . '...']);
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            \Log::info('setPaymentMethodForCustomer response', ['status' => $data['Status'] ?? null]);
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Failed to set payment method',
+                    'error' => $data['UserErrorMessage'] ?? 'Failed to set payment method',
                 ];
             }
 
@@ -187,28 +197,33 @@ class PaymentService
     public static function getPaymentDetails(int|string $paymentId): array
     {
         try {
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'PaymentID' => (int) $paymentId,
-            ];
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/payments/get/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new GetPaymentDetailsRequest(
+                paymentId: (int) $paymentId,
+                credentials: $credentials
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Failed to fetch payment details',
+                    'error' => $data['UserErrorMessage'] ?? 'Failed to fetch payment details',
                 ];
             }
 
             return [
                 'success' => true,
-                'payment' => $response['Data']['Payment'] ?? null,
+                'payment' => $data['Data']['Payment'] ?? null,
             ];
 
         } catch (\Throwable $e) {
@@ -229,26 +244,30 @@ class PaymentService
     public static function listPayments(array $filters = []): array
     {
         try {
-            // ברירת מחדל: שנה אחורה ועד היום
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Date_From' => $filters['Date_From'] ?? Carbon::now()->subYear()->startOfDay()->toIso8601String(),
-                'Date_To' => $filters['Date_To'] ?? Carbon::now()->endOfDay()->toIso8601String(),
-                'Valid' => $filters['Valid'] ?? null,
-                'StartIndex' => $filters['StartIndex'] ?? 0,
-            ];
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/payments/list/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new ListPaymentsRequest(
+                credentials: $credentials,
+                dateFrom: $filters['Date_From'] ?? null,
+                dateTo: $filters['Date_To'] ?? null,
+                valid: $filters['Valid'] ?? null,
+                startIndex: $filters['StartIndex'] ?? 0
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Failed to list payments',
+                    'error' => $data['UserErrorMessage'] ?? 'Failed to list payments',
                 ];
             }
 
@@ -278,33 +297,36 @@ class PaymentService
     public static function getPaymentMethodsForCustomer(string|int $sumitCustomerId, bool $includeInactive = false): array
     {
         try {
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Customer' => [
-                    'ID' => (int) $sumitCustomerId,
-                ],
-                'IncludeInactive' => $includeInactive,
-            ];
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/paymentmethods/getforcustomer/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new GetPaymentMethodsRequest(
+                customerId: (int) $sumitCustomerId,
+                credentials: $credentials,
+                includeInactive: $includeInactive
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Failed to fetch payment methods',
+                    'error' => $data['UserErrorMessage'] ?? 'Failed to fetch payment methods',
                 ];
             }
 
-            $data = $response['Data'] ?? [];
+            $responseData = $data['Data'] ?? [];
 
-            $active = $data['PaymentMethod'] ?? null;
-            $inactive = !empty($data['InactivePaymentMethods']) && is_array($data['InactivePaymentMethods'])
-                ? $data['InactivePaymentMethods']
+            $active = $responseData['PaymentMethod'] ?? null;
+            $inactive = !empty($responseData['InactivePaymentMethods']) && is_array($responseData['InactivePaymentMethods'])
+                ? $responseData['InactivePaymentMethods']
                 : [];
 
             $methods = [];
@@ -338,24 +360,27 @@ class PaymentService
     public static function removePaymentMethodForCustomer(string|int $sumitCustomerId): array
     {
         try {
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Customer' => [
-                    'ID' => (int) $sumitCustomerId,
-                ],
-            ];
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/paymentmethods/remove/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new RemovePaymentMethodRequest(
+                customerId: (int) $sumitCustomerId,
+                credentials: $credentials
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Failed to remove payment method',
+                    'error' => $data['UserErrorMessage'] ?? 'Failed to remove payment method',
                 ];
             }
 
@@ -380,37 +405,37 @@ class PaymentService
     public static function testPayment(string $token, string|int $sumitCustomerId): array
     {
         try {
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Customer' => [
-                    'ID' => (int) $sumitCustomerId,
-                ],
-                'PaymentMethod' => [
-                    'CreditCard_Token' => $token,
-                    'Type' => 'CreditCard (1)',
-                ],
-                'Amount' => 1, // ₪1 test charge
-                'Description' => 'Test payment - Token validation',
-                'Cancelable' => true, // Allow cancellation
-            ];
-
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/payments/charge/',
-                config('officeguy.environment', 'www'),
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new ChargePaymentRequest(
+                customerId: (int) $sumitCustomerId,
+                amount: 1.0, // ₪1 test charge
+                credentials: $credentials,
+                token: $token,
+                description: 'Test payment - Token validation',
+                cancelable: true // Allow cancellation
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data === null || ($data['Status'] ?? 1) !== 0) {
                 return [
                     'success' => false,
-                    'error' => $response['UserErrorMessage'] ?? 'Test payment failed',
+                    'error' => $data['UserErrorMessage'] ?? 'Test payment failed',
                 ];
             }
 
             return [
                 'success' => true,
-                'transaction_id' => $response['Data']['ID'] ?? null,
+                'transaction_id' => $data['Data']['ID'] ?? null,
             ];
 
         } catch (\Throwable $e) {
@@ -1051,34 +1076,42 @@ class PaymentService
 
         try {
             // SUMIT uses negative amount for refunds with SupportCredit flag
-            $payload = [
-                'Credentials' => self::getCredentials(),
-                'Customer' => [
-                    'ID' => (int) $sumitCustomerId,
-                ],
-                'Items' => [
-                    [
-                        'Item' => ['Name' => $reason],
-                        'Quantity' => 1,
-                        'UnitPrice' => -abs($amount), // Negative for refund
-                    ],
-                ],
-                'Payment' => [
-                    'CreditCardAuthNumber' => $transactionId, // Reference to original transaction
-                ],
-                'SupportCredit' => true, // Enable credit/refund support
-                'VATIncluded' => false,
-            ];
-
-            $environment = config('officeguy.environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/payments/charge/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if (($response['Status'] ?? 1) === 0 && isset($response['Data'])) {
+            // Prepare refund items (negative amount)
+            $items = [
+                [
+                    'Item' => ['Name' => $reason],
+                    'Quantity' => 1,
+                    'UnitPrice' => -abs($amount), // Negative for refund
+                ],
+            ];
+
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new ChargePaymentRequest(
+                customerId: (int) $sumitCustomerId,
+                amount: $amount, // Amount is ignored when items are provided
+                credentials: $credentials,
+                token: null, // No token needed for refunds
+                description: null,
+                cancelable: false,
+                supportCredit: true, // Enable credit/refund support
+                items: $items,
+                originalTransactionId: $transactionId, // Reference to original transaction
+                vatIncluded: false
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+            $environment = config('officeguy.environment', 'www');
+
+            if (($data['Status'] ?? 1) === 0 && isset($data['Data'])) {
                 // Extract refund transaction ID from Payment object
                 // SUMIT returns refund details in Data.Payment (same structure as charge)
                 $refundTransactionId = $response['Data']['Payment']['ID'] ?? null;

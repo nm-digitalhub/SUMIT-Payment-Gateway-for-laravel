@@ -7,10 +7,11 @@
 **Official Laravel package** for SUMIT payment gateway integration with Filament v4 admin panels.
 
 - **Package Name**: `officeguy/laravel-sumit-gateway`
-- **Version**: v1.1.6 (2025-11-26)
+- **Version**: v2.0.0 (2026-01-18) - **MAJOR RELEASE**
 - **License**: MIT
 - **Ownership**: NM-DigitalHub (https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel)
 - **Origin**: 1:1 port from WooCommerce plugin `woo-payment-gateway-officeguy`
+- **Breaking Changes**: v2.0.0 refactored from Laravel HTTP facade to Saloon PHP v3
 
 **Key Features**:
 - Credit card payments (3 PCI modes: no/redirect/yes)
@@ -29,7 +30,8 @@
 - **PHP**: ^8.2
 - **Laravel**: ^12.0
 - **Filament**: ^4.0
-- **Guzzle**: ^7.0
+- **Saloon PHP**: ^3.14.2 ⭐ **NEW in v2.0.0** - Modern HTTP client
+- **Guzzle**: ^7.0 (transitive dependency via Saloon)
 - **Testing**: PHPUnit ^11.0|^12.0, Orchestra Testbench ^10.0
 
 ## 🏗️ Package Structure
@@ -524,13 +526,224 @@ public function save(): void
 
 ## 🔌 SUMIT API Integration
 
-### API Client
+### ⭐ Saloon HTTP Architecture (v2.0.0)
 
-**File**: `src/Services/OfficeGuyApi.php`
+**BREAKING CHANGE**: Package refactored to use **Saloon PHP v3.14.2** instead of Laravel HTTP facade.
+
+#### Why Saloon?
+
+- ✅ **Type Safety**: Strong typing with readonly properties
+- ✅ **Testability**: Easy to mock and test
+- ✅ **Middleware Support**: Logging, authentication, retries
+- ✅ **Maintainability**: Clear separation of concerns
+- ✅ **Modern Architecture**: Industry standard for API clients
+
+#### Core Components
+
+**1. SumitConnector** - Central API client
+
+**File**: `src/Http/Connectors/SumitConnector.php`
+
+```php
+<?php
+
+namespace OfficeGuy\LaravelSumitGateway\Http\Connectors;
+
+use Saloon\Http\Connector;
+
+class SumitConnector extends Connector
+{
+    public function resolveBaseUrl(): string
+    {
+        $env = config('officeguy.environment', 'www');
+        return $env === 'dev'
+            ? "http://{$env}.api.sumit.co.il"
+            : 'https://api.sumit.co.il';
+    }
+
+    protected function defaultHeaders(): array
+    {
+        return [
+            'Content-Type' => 'application/json',
+            'Content-Language' => app()->getLocale(),
+            'User-Agent' => 'Laravel/12.0 SUMIT-Gateway/2.0-Saloon',
+            'X-OG-Client' => 'Laravel-Saloon',
+        ];
+    }
+
+    protected function defaultConfig(): array
+    {
+        return [
+            'timeout' => 60,
+            'verify' => config('officeguy.ssl_verify', true),
+        ];
+    }
+}
+```
+
+**2. CredentialsData DTO** - Type-safe credentials
+
+**File**: `src/Http/DTOs/CredentialsData.php`
+
+```php
+<?php
+
+namespace OfficeGuy\LaravelSumitGateway\Http\DTOs;
+
+readonly class CredentialsData
+{
+    public function __construct(
+        public int $companyId,
+        public string $apiKey
+    ) {}
+
+    public function toArray(): array
+    {
+        return [
+            'CompanyID' => $this->companyId,
+            'APIKey' => $this->apiKey,
+        ];
+    }
+}
+```
+
+**3. Inline Anonymous Request Classes**
+
+All API methods use inline anonymous Request classes for maximum co-location and clarity:
+
+```php
+public static function createToken(User $user): array
+{
+    // 1. Create credentials DTO
+    $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+        companyId: (int) config('officeguy.company_id'),
+        apiKey: (string) config('officeguy.private_key')
+    );
+
+    // 2. Extract request parameters
+    $singleUseToken = RequestHelpers::post('og-token');
+    $paramJ = config('officeguy.token_param', '5');
+    $amount = 1;
+
+    // 3. Instantiate connector
+    $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+
+    // 4. Create inline Request class
+    $request = new class(
+        $credentials,
+        $singleUseToken,
+        $paramJ,
+        $amount
+    ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+        use \Saloon\Traits\Body\HasJsonBody;
+
+        protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+        public function __construct(
+            protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+            protected readonly string $singleUseToken,
+            protected readonly string $paramJ,
+            protected readonly int $amount
+        ) {}
+
+        public function resolveEndpoint(): string
+        {
+            return '/billing/tokens/createtoken/';
+        }
+
+        protected function defaultBody(): array
+        {
+            return [
+                'Credentials' => $this->credentials->toArray(),
+                'SingleUseToken' => $this->singleUseToken,
+                'ParamJ' => $this->paramJ,
+                'Amount' => $this->amount,
+            ];
+        }
+
+        protected function defaultConfig(): array
+        {
+            return ['timeout' => 60];
+        }
+    };
+
+    // 5. Send request
+    $saloonResponse = $connector->send($request);
+    $response = $saloonResponse->json();
+
+    // 6. Build request array for logging
+    $requestArray = [
+        'Credentials' => $credentials->toArray(),
+        'SingleUseToken' => $singleUseToken,
+        'ParamJ' => $paramJ,
+        'Amount' => $amount,
+    ];
+
+    // ... response processing
+}
+```
+
+#### Saloon Pattern Benefits
+
+**Type Safety**:
+- All parameters are typed (`protected readonly Type $param`)
+- CredentialsData enforces correct credential structure
+- No more array-based ambiguity
+
+**Testability**:
+```php
+Http::fake([
+    'api.sumit.co.il/*' => Http::response(['Status' => 0], 200),
+]);
+```
+
+**Timeout Strategy**:
+- **60 seconds**: Customer operations, balance queries, document operations
+- **180 seconds**: Payment operations (charges, Bit, subscriptions, upsells)
+
+**Co-Location**:
+- Request logic lives with business logic
+- No separate Request class files to maintain
+- Easy to understand parameter flow
+
+#### Migration from v1.x to v2.0
+
+**Old Pattern** (v1.x - Laravel HTTP facade):
+```php
+$response = OfficeGuyApi::post([
+    'Credentials' => ['CompanyID' => $id, 'APIKey' => $key],
+    'Amount' => 100,
+], '/billing/payments/charge/');
+```
+
+**New Pattern** (v2.0 - Saloon):
+```php
+$credentials = new CredentialsData($id, $key);
+$connector = new SumitConnector();
+$request = new class($credentials, $amount) extends Request implements HasBody {
+    // ... inline Request class
+};
+$saloonResponse = $connector->send($request);
+$response = $saloonResponse->json();
+```
+
+**Service Layer Unchanged**:
+- All service method signatures remain identical
+- `PaymentService::chargePayment()` still accepts same parameters
+- `TokenService::createToken()` still accepts same parameters
+- 100% backward compatibility at service layer
+
+### Legacy API Client (Deprecated)
+
+**File**: `src/Services/OfficeGuyApi.php` ⚠️ **DEPRECATED in v2.0.0**
 
 ```php
 class OfficeGuyApi
 {
+    // ⚠️ DEPRECATED - Use Saloon instead
+    // Kept only for backward compatibility
+    // Will be removed in v3.0.0
+
     // Base URL builder
     public static function getUrl(string $path, string $environment): string
     {
@@ -541,7 +754,7 @@ class OfficeGuyApi
         // Production: https://api.sumit.co.il/creditguy/gateway/transaction/
     }
 
-    // HTTP POST wrapper
+    // HTTP POST wrapper (no longer used internally)
     public static function post(array $request, string $path = '/creditguy/gateway/transaction/'): array
     {
         $url = self::getUrl($path, config('officeguy.environment', 'www'));
@@ -1345,10 +1558,16 @@ resources/lang/en/messages.php
 
 ---
 
-**Package Version**: v1.1.6
-**Last Updated**: 2025-11-27
+**Package Version**: v2.0.0 (MAJOR - Breaking Changes)
+**Last Updated**: 2026-01-18
 **Maintained By**: NM-DigitalHub
 **Support**: info@nm-digitalhub.com
+
+**v2.0.0 Highlights**:
+- ⭐ Refactored to Saloon PHP v3.14.2
+- 🎯 25+ API methods modernized
+- ✅ 100% backward compatibility at service layer
+- 📚 See REFACTORING_SUMMARY.md for full details
 
 ---
 

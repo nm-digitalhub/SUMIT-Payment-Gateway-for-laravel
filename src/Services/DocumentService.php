@@ -8,6 +8,10 @@ use App\Models\Client;
 use App\Models\Order;
 use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\GetDocumentDetailsRequest;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\ListDocumentsRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 
 /**
@@ -43,76 +47,144 @@ class DocumentService
         ?string $originalDocumentId = null,
         bool $isDonation = false
     ): ?string {
-        // Determine document type - use DonationReceipt for donations
-        $documentType = $isDonation ? self::TYPE_DONATION_RECEIPT : self::TYPE_ORDER;
+        try {
+            // Determine document type - use DonationReceipt for donations
+            $documentType = $isDonation ? self::TYPE_DONATION_RECEIPT : self::TYPE_ORDER;
 
-        // Auto-detect donation from order items
-        if (!$isDonation) {
-            try {
-                $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
-                if ($isDonation) {
-                    $documentType = self::TYPE_DONATION_RECEIPT;
+            // Auto-detect donation from order items
+            if (!$isDonation) {
+                try {
+                    $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
+                    if ($isDonation) {
+                        $documentType = self::TYPE_DONATION_RECEIPT;
+                    }
+                } catch (\Throwable $e) {
+                    // DonationService not available, continue with default type
                 }
-            } catch (\Throwable $e) {
-                // DonationService not available, continue with default type
             }
-        }
 
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Items' => PaymentService::getDocumentOrderItems($order),
-            'VATIncluded' => 'true',
-            'VATRate' => PaymentService::getOrderVatRate($order),
-            'Details' => [
-                'Customer' => $customer,
-                'IsDraft' => config('officeguy.draft_document', false) ? 'true' : 'false',
-                'Language' => PaymentService::getOrderLanguage(),
-                'Currency' => $order->getPayableCurrency(),
-                'Type' => $documentType,
-                'Description' => __('Order number') . ': ' . $order->getPayableId() .
-                    (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote()),
-            ],
-        ];
-
-        if ($originalDocumentId) {
-            $request['OriginalDocumentID'] = $originalDocumentId;
-        }
-
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/accounting/documents/create/', $environment, false);
-
-        if ($response && $response['Status'] === 0) {
-            // Success
-            $documentId = $response['Data']['DocumentID'];
-
-            // Create document record
-            OfficeGuyDocument::createFromApiResponse(
-                $order->getPayableId(),
-                $response,
-                $request,
-                get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            OfficeGuyApi::writeToLog(
-                'SUMIT order document created. Document ID: ' . $documentId,
-                'info'
-            );
+            // Build request data
+            $items = PaymentService::getDocumentOrderItems($order);
+            $vatRate = PaymentService::getOrderVatRate($order);
+            $language = PaymentService::getOrderLanguage();
+            $description = __('Order number') . ': ' . $order->getPayableId() .
+                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote());
+            $isDraft = config('officeguy.draft_document', false) ? 'true' : 'false';
 
-            event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
-                $order->getPayableId(),
-                $documentId,
-                $response['Data']['CustomerID'] ?? '',
-                $response
-            ));
+            // Instantiate connector and inline request (custom structure)
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $items,
+                $vatRate,
+                $customer,
+                $isDraft,
+                $language,
+                $order->getPayableCurrency(),
+                $documentType,
+                $description,
+                $originalDocumentId
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
 
-            return null;
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly array $items,
+                    protected readonly string $vatRate,
+                    protected readonly array $customer,
+                    protected readonly string $isDraft,
+                    protected readonly string $language,
+                    protected readonly string $currency,
+                    protected readonly string $documentType,
+                    protected readonly string $description,
+                    protected readonly ?string $originalDocumentId
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/create/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    $body = [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Items' => $this->items,
+                        'VATIncluded' => 'true',
+                        'VATRate' => $this->vatRate,
+                        'Details' => [
+                            'Customer' => $this->customer,
+                            'IsDraft' => $this->isDraft,
+                            'Language' => $this->language,
+                            'Currency' => $this->currency,
+                            'Type' => $this->documentType,
+                            'Description' => $this->description,
+                        ],
+                    ];
+
+                    if ($this->originalDocumentId) {
+                        $body['OriginalDocumentID'] = $this->originalDocumentId;
+                    }
+
+                    return $body;
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data && $data['Status'] === 0) {
+                // Success
+                $documentId = $data['Data']['DocumentID'];
+
+                // Create document record
+                OfficeGuyDocument::createFromApiResponse(
+                    $order->getPayableId(),
+                    $data,
+                    $request->body()->all(),
+                    get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+                );
+
+                OfficeGuyApi::writeToLog(
+                    'SUMIT order document created. Document ID: ' . $documentId,
+                    'info'
+                );
+
+                event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
+                    $order->getPayableId(),
+                    $documentId,
+                    $data['Data']['CustomerID'] ?? '',
+                    $data
+                ));
+
+                return null;
+            }
+
+            // Error
+            $errorMessage = __('Order creation failed.') . ' - ' . ($data['UserErrorMessage'] ?? 'Unknown error');
+            OfficeGuyApi::writeToLog($errorMessage, 'error');
+
+            return $errorMessage;
+
+        } catch (\Throwable $e) {
+            $errorMessage = __('Order creation failed.') . ' - ' . $e->getMessage();
+            OfficeGuyApi::writeToLog($errorMessage, 'error');
+            return $errorMessage;
         }
-
-        // Error
-        $errorMessage = __('Order creation failed.') . ' - ' . ($response['UserErrorMessage'] ?? 'Unknown error');
-        OfficeGuyApi::writeToLog($errorMessage, 'error');
-
-        return $errorMessage;
     }
 
     /**
@@ -159,73 +231,143 @@ class DocumentService
             return null; // Skip for other payment methods
         }
 
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Items' => PaymentService::getDocumentOrderItems($order),
-            'VATIncluded' => 'true',
-            'VATRate' => PaymentService::getOrderVatRate($order),
-            'Details' => [
-                'IsDraft' => config('officeguy.draft_document', false) ? 'true' : 'false',
-                'Customer' => PaymentService::getOrderCustomer($order),
-                'Language' => PaymentService::getOrderLanguage(),
-                'Currency' => $order->getPayableCurrency(),
-                'Description' => __('Order number') . ': ' . $order->getPayableId() .
-                    (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote()),
-                'Type' => '1', // Invoice type
-            ],
-            'Payments' => [
-                [
-                    'Details_Other' => [
-                        'Type' => 'Laravel',
-                        'Description' => $paymentDescription,
-                        'DueDate' => now()->toIso8601String(),
-                    ],
-                ],
-            ],
-        ];
-
-        if (config('officeguy.email_document', true)) {
-            $request['Details']['SendByEmail'] = [
-                'Original' => 'true',
-            ];
-        }
-
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/accounting/documents/create/', $environment, false);
-
-        if ($response && $response['Status'] === 0) {
-            // Success
-            $documentId = $response['Data']['DocumentID'];
-            $customerId = $response['Data']['CustomerID'];
-
-            // Create document record
-            OfficeGuyDocument::createFromApiResponse(
-                $order->getPayableId(),
-                $response,
-                $request,
-                get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+        try {
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            OfficeGuyApi::writeToLog(
-                'SUMIT document completed. Document ID: ' . $documentId . ', Customer ID: ' . $customerId,
-                'info'
-            );
+            // Build request data
+            $items = PaymentService::getDocumentOrderItems($order);
+            $vatRate = PaymentService::getOrderVatRate($order);
+            $customer = PaymentService::getOrderCustomer($order);
+            $isDraft = config('officeguy.draft_document', false) ? 'true' : 'false';
+            $language = PaymentService::getOrderLanguage();
+            $description = __('Order number') . ': ' . $order->getPayableId() .
+                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote());
+            $sendByEmail = config('officeguy.email_document', true);
 
-            event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
-                $order->getPayableId(),
-                $documentId,
-                $customerId,
-                $response
-            ));
+            // Instantiate connector and inline request (custom Payments structure)
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $items,
+                $vatRate,
+                $customer,
+                $isDraft,
+                $language,
+                $order->getPayableCurrency(),
+                $description,
+                $paymentDescription,
+                $sendByEmail
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
 
-            return null;
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly array $items,
+                    protected readonly string $vatRate,
+                    protected readonly array $customer,
+                    protected readonly string $isDraft,
+                    protected readonly string $language,
+                    protected readonly string $currency,
+                    protected readonly string $description,
+                    protected readonly string $paymentDescription,
+                    protected readonly bool $sendByEmail
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/create/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    $body = [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Items' => $this->items,
+                        'VATIncluded' => 'true',
+                        'VATRate' => $this->vatRate,
+                        'Details' => [
+                            'IsDraft' => $this->isDraft,
+                            'Customer' => $this->customer,
+                            'Language' => $this->language,
+                            'Currency' => $this->currency,
+                            'Description' => $this->description,
+                            'Type' => '1', // Invoice type
+                        ],
+                        'Payments' => [
+                            [
+                                'Details_Other' => [
+                                    'Type' => 'Laravel',
+                                    'Description' => $this->paymentDescription,
+                                    'DueDate' => now()->toIso8601String(),
+                                ],
+                            ],
+                        ],
+                    ];
+
+                    if ($this->sendByEmail) {
+                        $body['Details']['SendByEmail'] = [
+                            'Original' => 'true',
+                        ];
+                    }
+
+                    return $body;
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if ($data && $data['Status'] === 0) {
+                // Success
+                $documentId = $data['Data']['DocumentID'];
+                $customerId = $data['Data']['CustomerID'];
+
+                // Create document record
+                OfficeGuyDocument::createFromApiResponse(
+                    $order->getPayableId(),
+                    $data,
+                    $request->body()->all(),
+                    get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+                );
+
+                OfficeGuyApi::writeToLog(
+                    'SUMIT document completed. Document ID: ' . $documentId . ', Customer ID: ' . $customerId,
+                    'info'
+                );
+
+                event(new \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated(
+                    $order->getPayableId(),
+                    $documentId,
+                    $customerId,
+                    $data
+                ));
+
+                return null;
+            }
+
+            // Error
+            $errorMessage = __('Document creation failed') . ' - ' . ($data['UserErrorMessage'] ?? 'Unknown error');
+            OfficeGuyApi::writeToLog($errorMessage, 'error');
+
+            return $errorMessage;
+
+        } catch (\Throwable $e) {
+            $errorMessage = __('Document creation failed') . ' - ' . $e->getMessage();
+            OfficeGuyApi::writeToLog($errorMessage, 'error');
+            return $errorMessage;
         }
-
-        // Error
-        $errorMessage = __('Document creation failed') . ' - ' . ($response['UserErrorMessage'] ?? 'Unknown error');
-        OfficeGuyApi::writeToLog($errorMessage, 'error');
-
-        return $errorMessage;
     }
 
     /**
@@ -361,71 +503,118 @@ class DocumentService
         ?\Carbon\Carbon $dateTo = null,
         bool $includeDrafts = false
     ): array {
-        $allDocuments = [];
-        $startIndex = 0;
-        $pageSize = 1000;
-        $hasMoreResults = true;
-        $environment = config('officeguy.environment', 'www');
+        try {
+            $allDocuments = [];
+            $startIndex = 0;
+            $pageSize = 1000;
+            $hasMoreResults = true;
 
-        // Fetch all pages using pagination
-        while ($hasMoreResults) {
-            $request = [
-                'Credentials' => PaymentService::getCredentials(),
-                'DocumentTypes' => null,
-                'DocumentNumberFrom' => null,
-                'DocumentNumberTo' => null,
-                'DateFrom' => null,
-                'DateTo' => null,
-                'IncludeDrafts' => $includeDrafts,
-                'Paging' => [
-                    'StartIndex' => $startIndex,
-                    'PageSize' => $pageSize,
-                ],
-            ];
-
-            if ($dateFrom) {
-                $request['DateFrom'] = $dateFrom->format('Y-m-d');
-            }
-
-            if ($dateTo) {
-                $request['DateTo'] = $dateTo->format('Y-m-d');
-            }
-
-            $response = OfficeGuyApi::post(
-                $request,
-                '/accounting/documents/list/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if (!$response || ($response['Status'] ?? null) !== 0) {
-                break;
+            // Instantiate connector
+            $connector = new SumitConnector();
+
+            // Fetch all pages using pagination
+            while ($hasMoreResults) {
+                // Build request inline (custom pagination format)
+                $request = new class(
+                    $credentials,
+                    $startIndex,
+                    $pageSize,
+                    $dateFrom,
+                    $dateTo,
+                    $includeDrafts
+                ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                    use \Saloon\Traits\Body\HasJsonBody;
+
+                    protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                    public function __construct(
+                        protected readonly CredentialsData $credentials,
+                        protected readonly int $startIndex,
+                        protected readonly int $pageSize,
+                        protected readonly ?\Carbon\Carbon $dateFrom,
+                        protected readonly ?\Carbon\Carbon $dateTo,
+                        protected readonly bool $includeDrafts
+                    ) {}
+
+                    public function resolveEndpoint(): string
+                    {
+                        return '/accounting/documents/list/';
+                    }
+
+                    protected function defaultBody(): array
+                    {
+                        $body = [
+                            'Credentials' => $this->credentials->toArray(),
+                            'DocumentTypes' => null,
+                            'DocumentNumberFrom' => null,
+                            'DocumentNumberTo' => null,
+                            'DateFrom' => null,
+                            'DateTo' => null,
+                            'IncludeDrafts' => $this->includeDrafts,
+                            'Paging' => [
+                                'StartIndex' => $this->startIndex,
+                                'PageSize' => $this->pageSize,
+                            ],
+                        ];
+
+                        if ($this->dateFrom) {
+                            $body['DateFrom'] = $this->dateFrom->format('Y-m-d');
+                        }
+
+                        if ($this->dateTo) {
+                            $body['DateTo'] = $this->dateTo->format('Y-m-d');
+                        }
+
+                        return $body;
+                    }
+                };
+
+                // Send request
+                $response = $connector->send($request);
+                $data = $response->json();
+
+                if (!$data || ($data['Status'] ?? null) !== 0) {
+                    break;
+                }
+
+                $documents = $data['Data']['Documents'] ?? [];
+
+                if (empty($documents)) {
+                    break;
+                }
+
+                $allDocuments = array_merge($allDocuments, $documents);
+
+                // Check if there are more results based on API response
+                $hasMoreResults = ($data['Data']['HasNextPage'] ?? false) === true;
+                $startIndex += count($documents);
+
+                // Safety limit to prevent infinite loops (max 100,000 documents)
+                if ($startIndex > 100000) {
+                    break;
+                }
             }
 
-            $documents = $response['Data']['Documents'] ?? [];
+            // Filter documents by customer ID and reindex array
+            $filtered = array_filter($allDocuments, function ($doc) use ($sumitCustomerId) {
+                return ($doc['CustomerID'] ?? null) === $sumitCustomerId;
+            });
 
-            if (empty($documents)) {
-                break;
-            }
+            return array_values($filtered);
 
-            $allDocuments = array_merge($allDocuments, $documents);
-
-            // Check if there are more results based on API response
-            $hasMoreResults = ($response['Data']['HasNextPage'] ?? false) === true;
-            $startIndex += count($documents);
-
-            // Safety limit to prevent infinite loops (max 100,000 documents)
-            if ($startIndex > 100000) {
-                break;
-            }
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'Fetch documents from SUMIT failed for customer ' . $sumitCustomerId . ': ' . $e->getMessage(),
+                'error'
+            );
+            return [];
         }
-
-        // Filter documents by customer ID and reindex array
-        $filtered = array_filter($allDocuments, function ($doc) use ($sumitCustomerId) {
-            return ($doc['CustomerID'] ?? null) === $sumitCustomerId;
-        });
-
-        return array_values($filtered);
     }
 
     /**
@@ -436,24 +625,37 @@ class DocumentService
      */
     public static function getDocumentDetails(string|int $documentId): ?array
     {
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'DocumentID' => $documentId,
-        ];
+        try {
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post(
-            $request,
-            '/accounting/documents/getdetails/',
-            $environment,
-            false
-        );
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new GetDocumentDetailsRequest(
+                documentId: $documentId,
+                credentials: $credentials
+            );
 
-        if (!$response || ($response['Status'] ?? null) !== 0) {
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if (!$data || ($data['Status'] ?? null) !== 0) {
+                return null;
+            }
+
+            return $data['Data'] ?? null;
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'Get document details failed for ID ' . $documentId . ': ' . $e->getMessage(),
+                'error'
+            );
             return null;
         }
-
-        return $response['Data'] ?? null;
     }
 
     /**
@@ -868,53 +1070,97 @@ class DocumentService
         }
 
         try {
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'Details' => [
-                    'Type' => 3, // CreditNote (תעודת זיכוי)
-                    'Customer' => [
-                        'ID' => (int) $sumitCustomerId,
-                    ],
-                    'Description' => $description,
-                    'Currency' => 0, // ILS = 0 (NOT 1!)
-                    'Language' => 0, // Hebrew
-                    'SendByEmail' => [
-                        'EmailAddress' => $customer->getSumitCustomerEmail(),
-                        'Original' => true,
-                        'SendAsPaymentRequest' => false,
-                    ],
-                ],
-                'Items' => [
-                    [
-                        'Item' => [
-                            'Name' => $description,
-                        ],
-                        'Quantity' => 1,
-                        'UnitPrice' => $amount,
-                        'TotalPrice' => $amount,
-                    ],
-                ],
-                'VATIncluded' => false,
-            ];
-
-            // Link to original document if provided
-            if ($originalDocumentId) {
-                $payload['Details']['OriginalDocumentID'] = (int) $originalDocumentId;
-            }
-
-            $environment = config('officeguy.environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/accounting/documents/create/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            $status = $response['Status'] ?? null;
+            // Extract request data
+            $customerEmail = $customer->getSumitCustomerEmail();
+
+            // Instantiate connector and inline request
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $sumitCustomerId,
+                $amount,
+                $description,
+                $customerEmail,
+                $originalDocumentId
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly string $sumitCustomerId,
+                    protected readonly float $amount,
+                    protected readonly string $description,
+                    protected readonly string $customerEmail,
+                    protected readonly ?int $originalDocumentId
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/create/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    $body = [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Details' => [
+                            'Type' => 3, // CreditNote (תעודת זיכוי)
+                            'Customer' => [
+                                'ID' => (int) $this->sumitCustomerId,
+                            ],
+                            'Description' => $this->description,
+                            'Currency' => 0, // ILS = 0 (NOT 1!)
+                            'Language' => 0, // Hebrew
+                            'SendByEmail' => [
+                                'EmailAddress' => $this->customerEmail,
+                                'Original' => true,
+                                'SendAsPaymentRequest' => false,
+                            ],
+                        ],
+                        'Items' => [
+                            [
+                                'Item' => [
+                                    'Name' => $this->description,
+                                ],
+                                'Quantity' => 1,
+                                'UnitPrice' => $this->amount,
+                                'TotalPrice' => $this->amount,
+                            ],
+                        ],
+                        'VATIncluded' => false,
+                    ];
+
+                    // Link to original document if provided
+                    if ($this->originalDocumentId) {
+                        $body['Details']['OriginalDocumentID'] = (int) $this->originalDocumentId;
+                    }
+
+                    return $body;
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            $status = $data['Status'] ?? null;
 
             if ($status === 0 || $status === '0') {
-                $documentId = $response['Data']['DocumentID'] ?? null;
-                $documentNumber = $response['Data']['DocumentNumber'] ?? null;
+                $documentId = $data['Data']['DocumentID'] ?? null;
+                $documentNumber = $data['Data']['DocumentNumber'] ?? null;
 
                 OfficeGuyApi::writeToLog(
                     'SUMIT credit note created successfully. Document ID: ' . $documentId,
@@ -930,13 +1176,13 @@ class DocumentService
             }
 
             OfficeGuyApi::writeToLog(
-                'SUMIT credit note creation failed: ' . ($response['UserErrorMessage'] ?? 'Unknown error'),
+                'SUMIT credit note creation failed: ' . ($data['UserErrorMessage'] ?? 'Unknown error'),
                 'warning'
             );
 
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Unknown error',
+                'error' => $data['UserErrorMessage'] ?? 'Unknown error',
             ];
 
         } catch (\Throwable $e) {
@@ -961,29 +1207,60 @@ class DocumentService
     public static function getDocumentPDF(int $documentId): array
     {
         try {
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'DocumentID' => $documentId,
-            ];
-
-            $environment = config('officeguy.environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/accounting/documents/getpdf/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if (($response['Status'] ?? null) === 0) {
+            // Instantiate connector and inline request
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $documentId
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly int $documentId
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/getpdf/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'DocumentID' => $this->documentId,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if (($data['Status'] ?? null) === 0) {
                 return [
                     'success' => true,
-                    'pdf_url' => $response['Data']['PDFURL'] ?? null,
+                    'pdf_url' => $data['Data']['PDFURL'] ?? null,
                 ];
             }
 
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Failed to get PDF',
+                'error' => $data['UserErrorMessage'] ?? 'Failed to get PDF',
             ];
 
         } catch (\Throwable $e) {
@@ -1030,34 +1307,73 @@ class DocumentService
                 $document = $documentModel;
             }
 
-            // Build payload using DocumentType + DocumentNumber (NOT DocumentID!)
-            // This is required by SUMIT's API - using DocumentID fails with "Document not found"
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'DocumentType' => (int) $document->document_type,
-                'DocumentNumber' => (int) $document->document_number,
-                'Original' => $original,
-            ];
-
-            // Add email address if provided (otherwise SUMIT uses customer's registered email)
-            if ($email) {
-                $payload['EmailAddress'] = $email;
-            }
-
-            // Add personal message if provided
-            if ($personalMessage) {
-                $payload['PersonalMessage'] = $personalMessage;
-            }
-
-            $environment = config('officeguy.environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/accounting/documents/send/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if (($response['Status'] ?? null) === 0) {
+            // Instantiate connector and inline request
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $document->document_type,
+                $document->document_number,
+                $original,
+                $email,
+                $personalMessage
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly int $documentType,
+                    protected readonly int $documentNumber,
+                    protected readonly bool $original,
+                    protected readonly ?string $email,
+                    protected readonly ?string $personalMessage
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/send/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    $body = [
+                        'Credentials' => $this->credentials->toArray(),
+                        'DocumentType' => $this->documentType,
+                        'DocumentNumber' => $this->documentNumber,
+                        'Original' => $this->original,
+                    ];
+
+                    // Add email address if provided (otherwise SUMIT uses customer's registered email)
+                    if ($this->email) {
+                        $body['EmailAddress'] = $this->email;
+                    }
+
+                    // Add personal message if provided
+                    if ($this->personalMessage) {
+                        $body['PersonalMessage'] = $this->personalMessage;
+                    }
+
+                    return $body;
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if (($data['Status'] ?? null) === 0) {
                 $logEmail = $email ?? 'customer registered email';
                 OfficeGuyApi::writeToLog(
                     'SUMIT document sent by email. Document #' . $document->document_number . ' (Type: ' . $document->document_type . '), Email: ' . $logEmail,
@@ -1069,7 +1385,7 @@ class DocumentService
 
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Failed to send email',
+                'error' => $data['UserErrorMessage'] ?? 'Failed to send email',
             ];
 
         } catch (\Throwable $e) {
@@ -1098,22 +1414,55 @@ class DocumentService
     public static function cancelDocument(int $documentId, string $description = 'ביטול מסמך'): array
     {
         try {
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'DocumentID' => $documentId,
-                'Description' => $description,
-            ];
-
-            $environment = config('officeguy.environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/accounting/documents/cancel/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
 
-            if (($response['Status'] ?? null) === 0) {
-                $data = $response['Data'] ?? [];
+            // Instantiate connector and inline request
+            $connector = new SumitConnector();
+            $request = new class(
+                $credentials,
+                $documentId,
+                $description
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly CredentialsData $credentials,
+                    protected readonly int $documentId,
+                    protected readonly string $description
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/cancel/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'DocumentID' => $this->documentId,
+                        'Description' => $this->description,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if (($data['Status'] ?? null) === 0) {
+                $responseData = $data['Data'] ?? [];
 
                 OfficeGuyApi::writeToLog(
                     'SUMIT document cancelled successfully. Document ID: ' . $documentId,
@@ -1123,19 +1472,19 @@ class DocumentService
                 return [
                     'success' => true,
                     'original_document_id' => $documentId,
-                    'credit_document_id' => $data['DocumentID'] ?? null,
-                    'credit_document_number' => $data['DocumentNumber'] ?? null,
-                    'credit_document_url' => $data['DocumentDownloadURL'] ?? null,
+                    'credit_document_id' => $responseData['DocumentID'] ?? null,
+                    'credit_document_number' => $responseData['DocumentNumber'] ?? null,
+                    'credit_document_url' => $responseData['DocumentDownloadURL'] ?? null,
                     'description' => $description,
                     'cancelled_at' => now()->toDateTimeString(),
-                    'gateway_response' => $response,
+                    'gateway_response' => $data,
                 ];
             }
 
             return [
                 'success' => false,
-                'error' => $response['UserErrorMessage'] ?? 'Failed to cancel document',
-                'technical_details' => $response['TechnicalErrorDetails'] ?? null,
+                'error' => $data['UserErrorMessage'] ?? 'Failed to cancel document',
+                'technical_details' => $data['TechnicalErrorDetails'] ?? null,
             ];
 
         } catch (\Throwable $e) {

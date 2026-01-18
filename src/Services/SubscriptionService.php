@@ -177,22 +177,84 @@ class SubscriptionService
             ];
         }
 
-        // Use SUMIT recurring charge API
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'RecurringPaymentID' => $subscription->recurring_id,
-            'Items' => PaymentService::getPaymentOrderItems($subscription),
-            'VATIncluded' => 'true',
-            'SendDocumentByEmail' => config('officeguy.email_document', true) ? 'true' : 'false',
-            'DocumentDescription' => __('Subscription payment') . ': ' . $subscription->name,
-            'DocumentLanguage' => PaymentService::getOrderLanguage(),
-            'ExternalReference' => 'subscription_' . $subscription->id . '_recurring_' . $subscription->recurring_id,
-        ];
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/billing/recurring/charge/', $environment, false);
+            // Prepare request data
+            $items = PaymentService::getPaymentOrderItems($subscription);
+            $sendEmail = config('officeguy.email_document', true);
+            $description = __('Subscription payment') . ': ' . $subscription->name;
+            $language = PaymentService::getOrderLanguage();
+            $externalRef = 'subscription_' . $subscription->id . '_recurring_' . $subscription->recurring_id;
 
-        if (!$response) {
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $subscription->recurring_id,
+                $items,
+                $sendEmail,
+                $description,
+                $language,
+                $externalRef
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly string $recurringId,
+                    protected readonly array $items,
+                    protected readonly bool $sendEmail,
+                    protected readonly string $description,
+                    protected readonly int $language,
+                    protected readonly string $externalReference
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/billing/recurring/charge/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'RecurringPaymentID' => $this->recurringId,
+                        'Items' => $this->items,
+                        'VATIncluded' => 'true',
+                        'SendDocumentByEmail' => $this->sendEmail ? 'true' : 'false',
+                        'DocumentDescription' => $this->description,
+                        'DocumentLanguage' => $this->language,
+                        'ExternalReference' => $this->externalReference,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+        } catch (\Throwable $e) {
+            event(new SubscriptionChargesFailed($subscription, 'Request exception: ' . $e->getMessage()));
+
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . $e->getMessage(),
+            ];
+        }
+
+        if (!$data) {
             event(new SubscriptionChargesFailed($subscription, 'No response from gateway'));
             return [
                 'success' => false,
@@ -200,8 +262,8 @@ class SubscriptionService
             ];
         }
 
-        $status = $response['Status'] ?? null;
-        $payment = $response['Data']['Payment'] ?? null;
+        $status = $data['Status'] ?? null;
+        $payment = $data['Data']['Payment'] ?? null;
 
         if ($status === 0 && $payment && ($payment['ValidPayment'] ?? false) === true) {
             $subscription->recordCharge();
@@ -211,13 +273,13 @@ class SubscriptionService
             return [
                 'success' => true,
                 'payment' => $payment,
-                'response' => $response,
+                'response' => $data,
             ];
         }
 
         // Failure
         $message = $status !== 0
-            ? ($response['UserErrorMessage'] ?? 'Gateway error')
+            ? ($data['UserErrorMessage'] ?? 'Gateway error')
             : ($payment['StatusDescription'] ?? 'Declined');
 
         event(new SubscriptionChargesFailed($subscription, $message));
@@ -225,7 +287,7 @@ class SubscriptionService
         return [
             'success' => false,
             'message' => __('Payment failed') . ' - ' . $message,
-            'response' => $response,
+            'response' => $data,
         ];
     }
 
@@ -331,22 +393,70 @@ class SubscriptionService
      */
     public static function fetchFromSumit(int $sumitCustomerId, bool $includeInactive = false): array
     {
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Customer' => [
-                'ID' => $sumitCustomerId,
-            ],
-            'IncludeInactive' => $includeInactive ? 'true' : 'false',
-        ];
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/billing/recurring/listforcustomer/', $environment, false);
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $sumitCustomerId,
+                $includeInactive
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
 
-        if (!$response || ($response['Status'] ?? null) !== 0) {
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly int $customerId,
+                    protected readonly bool $includeInactive
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/billing/recurring/listforcustomer/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Customer' => [
+                            'ID' => $this->customerId,
+                        ],
+                        'IncludeInactive' => $this->includeInactive ? 'true' : 'false',
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+            if (!$data || ($data['Status'] ?? null) !== 0) {
+                return [];
+            }
+
+            return $data['Data']['RecurringItems'] ?? [];
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'SUMIT fetch subscriptions exception for customer ' . $sumitCustomerId . ': ' . $e->getMessage(),
+                'error'
+            );
+
             return [];
         }
-
-        return $response['Data']['RecurringItems'] ?? [];
     }
 
     /**

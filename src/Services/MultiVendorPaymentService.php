@@ -280,49 +280,163 @@ class MultiVendorPaymentService
             ];
         }
 
-        // Use vendor credentials or default
-        $requestCredentials = $credentials 
-            ? $credentials->getCredentials() 
-            : PaymentService::getCredentials();
+        try {
+            // Create credentials DTO - use vendor credentials or default
+            $requestCredentials = $credentials
+                ? $credentials->getCredentials()
+                : PaymentService::getCredentials();
 
-        $request = [
-            'Credentials' => $requestCredentials,
-            'Items' => $apiItems,
-            'VATIncluded' => 'true',
-            'VATRate' => PaymentService::getOrderVatRate($order),
-            'Customer' => PaymentService::getOrderCustomer($order),
-            'AuthoriseOnly' => config('officeguy.authorize_only', false) ? 'true' : 'false',
-            'DraftDocument' => config('officeguy.draft_document', false) ? 'true' : 'false',
-            'SendDocumentByEmail' => config('officeguy.email_document', true) ? 'true' : 'false',
-            'DocumentDescription' => __('Order number') . ': ' . $order->getPayableId(),
-            'Payments_Count' => $paymentsCount,
-            'MaximumPayments' => PaymentService::getMaximumPayments($total),
-            'DocumentLanguage' => PaymentService::getOrderLanguage(),
-        ];
+            $credentialsDto = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) $requestCredentials['CompanyID'],
+                apiKey: (string) $requestCredentials['APIKey']
+            );
 
-        if ($credentials && $credentials->merchant_number) {
-            $request['MerchantNumber'] = $credentials->merchant_number;
-        }
+            // Extract request parameters
+            $vatIncluded = 'true';
+            $vatRate = PaymentService::getOrderVatRate($order);
+            $customer = PaymentService::getOrderCustomer($order);
+            $authoriseOnly = config('officeguy.authorize_only', false) ? 'true' : 'false';
+            $draftDocument = config('officeguy.draft_document', false) ? 'true' : 'false';
+            $sendDocumentByEmail = config('officeguy.email_document', true) ? 'true' : 'false';
+            $documentDescription = __('Order number') . ': ' . $order->getPayableId();
+            $maximumPayments = PaymentService::getMaximumPayments($total);
+            $documentLanguage = PaymentService::getOrderLanguage();
+            $merchantNumber = $credentials && $credentials->merchant_number ? $credentials->merchant_number : null;
+            $environment = config('officeguy.environment', 'www');
+            $endpoint = $redirectMode ? '/billing/payments/beginredirect/' : '/billing/payments/charge/';
 
-        // Add payment method
-        if (!$redirectMode) {
-            $pciMode = config('officeguy.pci', 'no');
-            if ($pciMode === 'yes') {
-                $request['PaymentMethod'] = TokenService::getPaymentMethodPCI();
-            } else {
-                $request['PaymentMethod'] = [
-                    'SingleUseToken' => \OfficeGuy\LaravelSumitGateway\Support\RequestHelpers::post('og-token'),
-                    'Type' => 1,
-                ];
+            // Build payment method (for non-redirect mode only)
+            $paymentMethod = null;
+            if (!$redirectMode) {
+                $pciMode = config('officeguy.pci', 'no');
+                if ($pciMode === 'yes') {
+                    $paymentMethod = TokenService::getPaymentMethodPCI();
+                } else {
+                    $paymentMethod = [
+                        'SingleUseToken' => \OfficeGuy\LaravelSumitGateway\Support\RequestHelpers::post('og-token'),
+                        'Type' => 1,
+                    ];
+                }
             }
+
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentialsDto,
+                $apiItems,
+                $vatIncluded,
+                $vatRate,
+                $customer,
+                $authoriseOnly,
+                $draftDocument,
+                $sendDocumentByEmail,
+                $documentDescription,
+                $paymentsCount,
+                $maximumPayments,
+                $documentLanguage,
+                $merchantNumber,
+                $paymentMethod,
+                $extra,
+                $endpoint
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly array $items,
+                    protected readonly string $vatIncluded,
+                    protected readonly int $vatRate,
+                    protected readonly array $customer,
+                    protected readonly string $authoriseOnly,
+                    protected readonly string $draftDocument,
+                    protected readonly string $sendDocumentByEmail,
+                    protected readonly string $documentDescription,
+                    protected readonly int $paymentsCount,
+                    protected readonly int $maximumPayments,
+                    protected readonly int $documentLanguage,
+                    protected readonly ?string $merchantNumber,
+                    protected readonly ?array $paymentMethod,
+                    protected readonly array $extra,
+                    protected readonly string $endpoint
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return $this->endpoint;
+                }
+
+                protected function defaultBody(): array
+                {
+                    $body = [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Items' => $this->items,
+                        'VATIncluded' => $this->vatIncluded,
+                        'VATRate' => $this->vatRate,
+                        'Customer' => $this->customer,
+                        'AuthoriseOnly' => $this->authoriseOnly,
+                        'DraftDocument' => $this->draftDocument,
+                        'SendDocumentByEmail' => $this->sendDocumentByEmail,
+                        'DocumentDescription' => $this->documentDescription,
+                        'Payments_Count' => $this->paymentsCount,
+                        'MaximumPayments' => $this->maximumPayments,
+                        'DocumentLanguage' => $this->documentLanguage,
+                    ];
+
+                    if ($this->merchantNumber) {
+                        $body['MerchantNumber'] = $this->merchantNumber;
+                    }
+
+                    if ($this->paymentMethod) {
+                        $body['PaymentMethod'] = $this->paymentMethod;
+                    }
+
+                    return array_merge($body, $this->extra);
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($request);
+            $response = $saloonResponse->json();
+
+            // Build request array for logging
+            $requestArray = [
+                'Credentials' => $credentialsDto->toArray(),
+                'Items' => $apiItems,
+                'VATIncluded' => $vatIncluded,
+                'VATRate' => $vatRate,
+                'Customer' => $customer,
+                'AuthoriseOnly' => $authoriseOnly,
+                'DraftDocument' => $draftDocument,
+                'SendDocumentByEmail' => $sendDocumentByEmail,
+                'DocumentDescription' => $documentDescription,
+                'Payments_Count' => $paymentsCount,
+                'MaximumPayments' => $maximumPayments,
+                'DocumentLanguage' => $documentLanguage,
+            ];
+
+            if ($merchantNumber) {
+                $requestArray['MerchantNumber'] = $merchantNumber;
+            }
+
+            if ($paymentMethod) {
+                $requestArray['PaymentMethod'] = $paymentMethod;
+            }
+
+            $requestArray = array_merge($requestArray, $extra);
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . $e->getMessage(),
+            ];
         }
-
-        $request = array_merge($request, $extra);
-
-        $environment = config('officeguy.environment', 'www');
-        $endpoint = $redirectMode ? '/billing/payments/beginredirect/' : '/billing/payments/charge/';
-
-        $response = OfficeGuyApi::post($request, $endpoint, $environment, !$redirectMode);
 
         // Handle redirect mode
         if ($redirectMode) {
@@ -369,7 +483,7 @@ class MultiVendorPaymentService
                 'last_digits' => $payment['PaymentMethod']['CreditCard_LastDigits'] ?? null,
                 'expiration_month' => $payment['PaymentMethod']['CreditCard_ExpirationMonth'] ?? null,
                 'expiration_year' => $payment['PaymentMethod']['CreditCard_ExpirationYear'] ?? null,
-                'raw_request' => $request,
+                'raw_request' => $requestArray,
                 'raw_response' => $response,
                 'environment' => $environment,
                 'is_test' => config('officeguy.testing', false),

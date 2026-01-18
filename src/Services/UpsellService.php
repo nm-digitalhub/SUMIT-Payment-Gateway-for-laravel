@@ -33,27 +33,129 @@ class UpsellService
         int|string|null $parentOrderId = null,
         int $paymentsCount = 1
     ): array {
-        $orderTotal = round($upsellOrder->getPayableAmount(), 2);
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Items' => PaymentService::getPaymentOrderItems($upsellOrder),
-            'VATIncluded' => 'true',
-            'VATRate' => PaymentService::getOrderVatRate($upsellOrder),
-            'Customer' => PaymentService::getOrderCustomer($upsellOrder),
-            'AuthoriseOnly' => 'false', // Upsells are always immediate charges
-            'DraftDocument' => config('officeguy.draft_document', false) ? 'true' : 'false',
-            'SendDocumentByEmail' => config('officeguy.email_document', true) ? 'true' : 'false',
-            'DocumentDescription' => __('Upsell - Order number') . ': ' . $upsellOrder->getPayableId() .
-                ($parentOrderId ? ' (' . __('Original order') . ': ' . $parentOrderId . ')' : ''),
-            'Payments_Count' => $paymentsCount,
-            'MaximumPayments' => PaymentService::getMaximumPayments($orderTotal),
-            'DocumentLanguage' => PaymentService::getOrderLanguage(),
-            'PaymentMethod' => TokenService::getPaymentMethodFromToken($token),
-        ];
+            // Extract request parameters
+            $orderTotal = round($upsellOrder->getPayableAmount(), 2);
+            $items = PaymentService::getPaymentOrderItems($upsellOrder);
+            $vatIncluded = 'true';
+            $vatRate = PaymentService::getOrderVatRate($upsellOrder);
+            $customer = PaymentService::getOrderCustomer($upsellOrder);
+            $authoriseOnly = 'false'; // Upsells are always immediate charges
+            $draftDocument = config('officeguy.draft_document', false) ? 'true' : 'false';
+            $sendDocumentByEmail = config('officeguy.email_document', true) ? 'true' : 'false';
+            $documentDescription = __('Upsell - Order number') . ': ' . $upsellOrder->getPayableId() .
+                ($parentOrderId ? ' (' . __('Original order') . ': ' . $parentOrderId . ')' : '');
+            $maximumPayments = PaymentService::getMaximumPayments($orderTotal);
+            $documentLanguage = PaymentService::getOrderLanguage();
+            $paymentMethod = TokenService::getPaymentMethodFromToken($token);
+            $environment = config('officeguy.environment', 'www');
 
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/billing/payments/charge/', $environment, true);
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $items,
+                $vatIncluded,
+                $vatRate,
+                $customer,
+                $authoriseOnly,
+                $draftDocument,
+                $sendDocumentByEmail,
+                $documentDescription,
+                $paymentsCount,
+                $maximumPayments,
+                $documentLanguage,
+                $paymentMethod
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly array $items,
+                    protected readonly string $vatIncluded,
+                    protected readonly int $vatRate,
+                    protected readonly array $customer,
+                    protected readonly string $authoriseOnly,
+                    protected readonly string $draftDocument,
+                    protected readonly string $sendDocumentByEmail,
+                    protected readonly string $documentDescription,
+                    protected readonly int $paymentsCount,
+                    protected readonly int $maximumPayments,
+                    protected readonly int $documentLanguage,
+                    protected readonly array $paymentMethod
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/billing/payments/charge/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Items' => $this->items,
+                        'VATIncluded' => $this->vatIncluded,
+                        'VATRate' => $this->vatRate,
+                        'Customer' => $this->customer,
+                        'AuthoriseOnly' => $this->authoriseOnly,
+                        'DraftDocument' => $this->draftDocument,
+                        'SendDocumentByEmail' => $this->sendDocumentByEmail,
+                        'DocumentDescription' => $this->documentDescription,
+                        'Payments_Count' => $this->paymentsCount,
+                        'MaximumPayments' => $this->maximumPayments,
+                        'DocumentLanguage' => $this->documentLanguage,
+                        'PaymentMethod' => $this->paymentMethod,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($request);
+            $response = $saloonResponse->json();
+
+            // Build request array for logging
+            $requestArray = [
+                'Credentials' => $credentials->toArray(),
+                'Items' => $items,
+                'VATIncluded' => $vatIncluded,
+                'VATRate' => $vatRate,
+                'Customer' => $customer,
+                'AuthoriseOnly' => $authoriseOnly,
+                'DraftDocument' => $draftDocument,
+                'SendDocumentByEmail' => $sendDocumentByEmail,
+                'DocumentDescription' => $documentDescription,
+                'Payments_Count' => $paymentsCount,
+                'MaximumPayments' => $maximumPayments,
+                'DocumentLanguage' => $documentLanguage,
+                'PaymentMethod' => $paymentMethod,
+            ];
+
+        } catch (\Throwable $e) {
+            event(new UpsellPaymentFailed(
+                $upsellOrder->getPayableId(),
+                $parentOrderId,
+                'Request exception: ' . $e->getMessage()
+            ));
+
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . $e->getMessage(),
+            ];
+        }
 
         if (!$response) {
             event(new UpsellPaymentFailed(
@@ -89,7 +191,7 @@ class UpsellService
                 'last_digits' => $payment['PaymentMethod']['CreditCard_LastDigits'] ?? null,
                 'expiration_month' => $payment['PaymentMethod']['CreditCard_ExpirationMonth'] ?? null,
                 'expiration_year' => $payment['PaymentMethod']['CreditCard_ExpirationYear'] ?? null,
-                'raw_request' => $request,
+                'raw_request' => $requestArray,
                 'raw_response' => $response,
                 'environment' => $environment,
                 'is_test' => config('officeguy.testing', false),

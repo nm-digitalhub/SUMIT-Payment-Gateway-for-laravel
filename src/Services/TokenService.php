@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
+use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\TokenData;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\Token\CreateTokenRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Support\RequestHelpers;
 use RuntimeException;
@@ -47,31 +51,69 @@ class TokenService
 
     public static function processToken(mixed $owner, string $pciMode = 'no'): array
     {
-        $req = self::getTokenRequest($pciMode);
+        try {
+            // Create credentials DTO
+            $credentials = new CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
 
-        $env = config('officeguy.environment', 'www');
+            // Get token type configuration
+            $paramJ = config('officeguy.token_param', '5'); // J2/J5
 
-        $response = OfficeGuyApi::post(
-            $req,
-            '/creditguy/gateway/transaction/',
-            $env,
-            false
-        );
+            // Create TokenData based on PCI mode
+            if ($pciMode === 'yes') {
+                // PCI Mode 'yes' - Direct card data
+                $month = (int) RequestHelpers::post('og-expmonth');
 
-        if (!$response) {
+                $tokenData = TokenData::fromCardData(
+                    cardNumber: RequestHelpers::post('og-ccnum'),
+                    cvv: RequestHelpers::post('og-cvv'),
+                    citizenId: RequestHelpers::post('og-citizenid'),
+                    expirationMonth: $month < 10 ? '0' . $month : (string) $month,
+                    expirationYear: RequestHelpers::post('og-expyear'),
+                    paramJ: $paramJ
+                );
+            } else {
+                // PCI Mode 'no' - Single-use token from PaymentsJS
+                $tokenData = TokenData::fromSingleUseToken(
+                    singleUseToken: RequestHelpers::post('og-token'),
+                    paramJ: $paramJ
+                );
+            }
+
+            // Instantiate connector and request
+            $connector = new SumitConnector();
+            $request = new CreateTokenRequest(
+                token: $tokenData,
+                credentials: $credentials
+            );
+
+            // Send request
+            $response = $connector->send($request);
+            $data = $response->json();
+
+        } catch (\Throwable $e) {
+            return [
+                'success' => false,
+                'message' => 'Token processing failed: ' . $e->getMessage(),
+            ];
+        }
+
+        if (!$data) {
             return [
                 'success' => false,
                 'message' => __('No response from payment gateway'),
             ];
         }
 
-        $status = $response['Status'] ?? null;
-        $data   = $response['Data'] ?? null;
+        $status = $data['Status'] ?? null;
+        $responseData = $data['Data'] ?? null;
 
         // SUCCESS: Status = 0, Success = true
-        if ($status === 0 && is_array($data) && ($data['Success'] ?? false)) {
+        if ($status === 0 && is_array($responseData) && ($responseData['Success'] ?? false)) {
             try {
-                $token = self::getTokenFromResponse($owner, $response);
+                $token = self::getTokenFromResponse($owner, $data);
             } catch (\Throwable $e) {
                 return [
                     'success' => false,
@@ -90,7 +132,7 @@ class TokenService
             return [
                 'success' => false,
                 'message' => __('Payment method update failed') . ' - ' .
-                    ($response['UserErrorMessage'] ?? 'Gateway error'),
+                    ($data['UserErrorMessage'] ?? 'Gateway error'),
             ];
         }
 
@@ -98,7 +140,7 @@ class TokenService
         return [
             'success' => false,
             'message' => __('Payment method update failed') . ' - ' .
-                ($data['ResultDescription'] ?? 'Unknown decline'),
+                ($responseData['ResultDescription'] ?? 'Unknown decline'),
         ];
     }
 

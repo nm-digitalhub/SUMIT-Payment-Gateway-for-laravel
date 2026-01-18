@@ -63,21 +63,64 @@ class DebtService
         }
 
         try {
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'CustomerID' => (int) $sumitCustomerId,
-                'DebitSource' => 4, // Receipt (קבלות - תשלומים שהתקבלו)
-                'CreditSource' => 1, // TaxInvoice (חשבוניות מס)
-                'IncludeDraftDocuments' => false,
-            ];
-
-            $environment = $this->settings->get('environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/accounting/documents/getdebt/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
+
+            // Extract request parameters
+            $customerId = (int) $sumitCustomerId;
+            $debitSource = 4; // Receipt (קבלות - תשלומים שהתקבלו)
+            $creditSource = 1; // TaxInvoice (חשבוניות מס)
+            $includeDraftDocuments = false;
+
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $customerId,
+                $debitSource,
+                $creditSource,
+                $includeDraftDocuments
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly int $customerId,
+                    protected readonly int $debitSource,
+                    protected readonly int $creditSource,
+                    protected readonly bool $includeDraftDocuments
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/getdebt/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'CustomerID' => $this->customerId,
+                        'DebitSource' => $this->debitSource,
+                        'CreditSource' => $this->creditSource,
+                        'IncludeDraftDocuments' => $this->includeDraftDocuments,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 60];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($request);
+            $response = $saloonResponse->json();
 
             if (! $response || ($response['Status'] ?? null) !== 0) {
                 Log::warning('SUMIT debt retrieval failed', [
@@ -131,9 +174,15 @@ class DebtService
      */
     public function createDebtPaymentDocument(int $sumitCustomerId, float $amount, string $description = 'Debt Payment'): ?string
     {
-        $request = [
-            'Credentials' => PaymentService::getCredentials(),
-            'Items' => [
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
+
+            // Extract request data
+            $items = [
                 [
                     'Description' => $description,
                     'Quantity' => 1,
@@ -141,9 +190,9 @@ class DebtService
                     'VATRate' => PaymentService::getOrderVatRate(null),
                     'Currency' => PaymentService::getOrderCurrency(null),
                 ],
-            ],
-            'VATIncluded' => 'true',
-            'Details' => [
+            ];
+
+            $details = [
                 'CustomerID' => $sumitCustomerId,
                 'Language' => PaymentService::getOrderLanguage(),
                 'Currency' => PaymentService::getOrderCurrency(null),
@@ -152,22 +201,73 @@ class DebtService
                 'SendByEmail' => [
                     'Original' => 'false',
                 ],
-            ],
-        ];
+            ];
 
-        $environment = config('officeguy.environment', 'www');
-        $response = OfficeGuyApi::post($request, '/accounting/documents/create/', $environment, false);
+            $vatIncluded = 'true';
 
-        if ($response && ($response['Status'] ?? 1) === 0) {
-            return $response['Data']['DocumentPaymentURL'] ?? null;
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $items,
+                $details,
+                $vatIncluded
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly array $items,
+                    protected readonly array $details,
+                    protected readonly string $vatIncluded
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/accounting/documents/create/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Items' => $this->items,
+                        'VATIncluded' => $this->vatIncluded,
+                        'Details' => $this->details,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 60];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($request);
+            $response = $saloonResponse->json();
+
+            if ($response && ($response['Status'] ?? 1) === 0) {
+                return $response['Data']['DocumentPaymentURL'] ?? null;
+            }
+
+            Log::warning('Failed to create debt payment document', [
+                'customer_id' => $sumitCustomerId,
+                'error' => $response['UserErrorMessage'] ?? 'Unknown error',
+            ]);
+
+            return null;
+
+        } catch (Throwable $e) {
+            Log::error('Debt payment document creation exception', [
+                'customer_id' => $sumitCustomerId,
+                'error' => $e->getMessage(),
+            ]);
+
+            return null;
         }
-
-        Log::warning('Failed to create debt payment document', [
-            'customer_id' => $sumitCustomerId,
-            'error' => $response['UserErrorMessage'] ?? 'Unknown error',
-        ]);
-
-        return null;
     }
 
     /**
@@ -388,21 +488,64 @@ class DebtService
                 $dateTo = now()->endOfDay();
             }
 
-            $payload = [
-                'Credentials' => PaymentService::getCredentials(),
-                'Date_From' => $dateFrom->toIso8601String(),
-                'Date_To' => $dateTo->toIso8601String(),
-                'Valid' => null, // Get all payments (valid and invalid)
-                'StartIndex' => 0,
-            ];
-
-            $environment = $this->settings->get('environment', 'www');
-            $response = OfficeGuyApi::post(
-                $payload,
-                '/billing/payments/list/',
-                $environment,
-                false
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
             );
+
+            // Extract request parameters
+            $dateFromStr = $dateFrom->toIso8601String();
+            $dateToStr = $dateTo->toIso8601String();
+            $valid = null; // Get all payments (valid and invalid)
+            $startIndex = 0;
+
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $request = new class(
+                $credentials,
+                $dateFromStr,
+                $dateToStr,
+                $valid,
+                $startIndex
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly string $dateFrom,
+                    protected readonly string $dateTo,
+                    protected readonly ?int $valid,
+                    protected readonly int $startIndex
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/billing/payments/list/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        'Date_From' => $this->dateFrom,
+                        'Date_To' => $this->dateTo,
+                        'Valid' => $this->valid,
+                        'StartIndex' => $this->startIndex,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($request);
+            $response = $saloonResponse->json();
 
             if (! $response || ($response['Status'] ?? null) !== 0) {
                 return [];

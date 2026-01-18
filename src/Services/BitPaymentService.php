@@ -84,18 +84,68 @@ class BitPaymentService
         );
 
         $request = self::buildBitPaymentRequest($order, $successUrl, $cancelUrl, $ipnUrl);
-        $environment = config('officeguy.environment', 'www');
 
         OfficeGuyApi::writeToLog('Bit payment request for order #' . $order->getPayableId(), 'debug');
 
-        $response = OfficeGuyApi::post(
-            $request,
-            '/billing/payments/beginredirect/',
-            $environment,
-            true
-        );
+        try {
+            // Create credentials DTO
+            $credentials = new \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData(
+                companyId: (int) config('officeguy.company_id'),
+                apiKey: (string) config('officeguy.private_key')
+            );
+
+            // Instantiate connector and inline request
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
+            $bitRequest = new class(
+                $credentials,
+                $request
+            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                use \Saloon\Traits\Body\HasJsonBody;
+
+                protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
+
+                public function __construct(
+                    protected readonly \OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData $credentials,
+                    protected readonly array $requestData
+                ) {}
+
+                public function resolveEndpoint(): string
+                {
+                    return '/billing/payments/beginredirect/';
+                }
+
+                protected function defaultBody(): array
+                {
+                    return [
+                        'Credentials' => $this->credentials->toArray(),
+                        ...$this->requestData,
+                    ];
+                }
+
+                protected function defaultConfig(): array
+                {
+                    return ['timeout' => 180];
+                }
+            };
+
+            // Send request
+            $saloonResponse = $connector->send($bitRequest);
+            $response = $saloonResponse->json();
+
+        } catch (\Throwable $e) {
+            OfficeGuyApi::writeToLog(
+                'Bit payment API exception for order #' . $order->getPayableId() . ': ' . $e->getMessage(),
+                'error'
+            );
+
+            return [
+                'success' => false,
+                'message' => __('Payment failed') . ' - ' . $e->getMessage(),
+            ];
+        }
 
         if ($response && $response['Status'] === 0 && isset($response['Data']['RedirectURL'])) {
+            $environment = config('officeguy.environment', 'www');
             // Create pending transaction
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
