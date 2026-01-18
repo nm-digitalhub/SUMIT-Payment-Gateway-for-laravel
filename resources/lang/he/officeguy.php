@@ -147,6 +147,8 @@ return [
         'logging_enabled_help' => 'רשום כל קריאות API ועסקאות',
         'log_channel' => 'ערוץ לוג',
         'log_channel_help' => 'ערוץ Laravel לרישום (stack, single, daily)',
+        'enable_notifications' => 'התראות מופעלות',
+        'enable_notifications_help' => 'שלח התראות למשתמשים על תשלומים, מנויים ומסמכים',
 
         // SSL
         'ssl_settings' => 'הגדרות SSL',
@@ -409,5 +411,86 @@ return [
         'min' => 'שדה :attribute חייב להיות לפחות :min.',
         'max' => 'שדה :attribute לא יכול להיות יותר מ-:max.',
         'between' => 'שדה :attribute חייב להיות בין :min ל-:max.',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | About Page
+    |--------------------------------------------------------------------------
+    */
+    'about' => [
+        // Page Titles
+        'title_description' => 'תיאור',
+        'title_features' => 'תכונות עיקריות',
+        'title_packagist' => 'סטטיסטיקות Packagist',
+        'title_saloon_migration' => 'שדרוג Saloon PHP v2.0.0',
+        'title_technology' => 'טכנולוגיות',
+        'title_credits' => 'קרדיטים',
+        'title_links' => 'קישורים חשובים',
+
+        // Description
+        'description' => 'חבילת Laravel רשמית לאינטגרציה עם שער התשלומים SUMIT. כוללת תמיכה מלאה ב-Filament v4, ניהול תשלומים, טוקנים, מסמכים, מנויים, Webhooks ועוד. נבנתה על-ידי NM-DigitalHub עם התמקדות באיכות, אבטחה ותחזוקה.',
+
+        // Features
+        'features' => [
+            'credit_card_payments' => 'תשלומי כרטיסי אשראי (3 מצבי PCI)',
+            'bit_integration' => 'אינטגרציה עם Bit',
+            'token_management' => 'ניהול טוקנים (J2/J5)',
+            'document_generation' => 'יצירת מסמכים (חשבוניות/קבלות)',
+            'recurring_billing' => 'חיובים חוזרים',
+            'multi_vendor' => 'תמיכה רב-ספקים',
+            'webhook_handling' => 'טיפול ב-Webhooks (נכנסים + יוצאים)',
+            'filament_integration' => 'אינטגרציה מלאה עם Filament v4',
+        ],
+
+        // Packagist Statistics
+        'stats' => [
+            'total_downloads' => 'סה״כ הורדות',
+            'monthly_downloads' => 'הורדות חודשיות',
+            'daily_downloads' => 'הורדות יומיות',
+            'favers' => 'מועדפים',
+            'github_stars' => 'כוכבי GitHub',
+            'github_watchers' => 'עוקבי GitHub',
+            'github_forks' => 'פיצולי GitHub',
+            'updated_hourly' => 'מתעדכן כל שעה',
+        ],
+
+        // Database Notifications
+        'notifications' => [
+            'payment_completed' => [
+                'title' => 'תשלום בוצע בהצלחה',
+                'message' => 'תשלום של :amount ש״ח עבור הזמנה :order_id בוצע בהצלחה',
+                'view_transaction' => 'צפה בפרטי העסקה',
+            ],
+            'payment_failed' => [
+                'title' => 'תשלום נכשל',
+                'message' => 'תשלום של :amount ש״ח עבור הזמנה :order_id נכשל. סיבה: :error',
+                'unknown_error' => 'שגיאה לא ידועה',
+            ],
+            'subscription_created' => [
+                'title' => 'מנוי נוצר בהצלחה',
+                'message' => 'מנוי חודשי של :amount ש״ח (:interval) נוצר בהצלחה',
+                'view_subscription' => 'צפה בפרטי המנוי',
+            ],
+            'document_created' => [
+                'title' => 'מסמך נוצר בהצלחה',
+                'message' => 'מסמך :document_type (:document_number) נוצר בהצלחה',
+                'view_document' => 'צפה במסמך',
+                'download_document' => 'הורד מסמך',
+            ],
+        ],
+
+        // Saloon Highlights
+        'saloon' => [
+            'refactored_services' => '13 שירותי API רופקטרו ל-Saloon PHP',
+            'type_safety' => 'Type Safety מלא עם Readonly Properties',
+            'testability' => 'קלות בדיקה עם Mocking',
+            'middleware_support' => 'תמיכה ב-Middleware (Logging, Authentication)',
+            'backward_compatible' => '100% תאימות לאחור בשכבת השירותים',
+        ],
+
+        // Footer
+        'footer_text' => 'נבנה עם ❤️ על-ידי NM-DigitalHub • רישיון MIT',
+        'footer_support' => 'תמיכה: info@nm-digitalhub.com',
     ],
 ];

@@ -15,6 +15,10 @@ use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
 use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\NotifyDocumentCreatedListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\NotifyPaymentCompletedListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\NotifyPaymentFailedListener;
+use OfficeGuy\LaravelSumitGateway\Listeners\NotifySubscriptionCreatedListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\RefundWebhookListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\TransactionSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
@@ -174,6 +178,28 @@ class OfficeGuyServiceProvider extends ServiceProvider
         Event::listen(
             \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted::class,
             \OfficeGuy\LaravelSumitGateway\Listeners\FulfillmentListener::class
+        );
+
+        // Register Database Notification listeners (v2.1.0+)
+        // Send database notifications to users when important events occur
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted::class,
+            NotifyPaymentCompletedListener::class
+        );
+
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\PaymentFailed::class,
+            NotifyPaymentFailedListener::class
+        );
+
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\SubscriptionCreated::class,
+            NotifySubscriptionCreatedListener::class
+        );
+
+        Event::listen(
+            \OfficeGuy\LaravelSumitGateway\Events\DocumentCreated::class,
+            NotifyDocumentCreatedListener::class
         );
 
         // Register stock sync scheduler based on settings

@@ -339,6 +339,10 @@ class OfficeGuySettings extends Page
                         ->label(__('officeguy::officeguy.settings.log_channel'))
                         ->helperText(__('officeguy::officeguy.settings.log_channel_help'))
                         ->placeholder('stack'),
+                    Toggle::make('enable_notifications')
+                        ->label(__('officeguy::officeguy.settings.enable_notifications'))
+                        ->helperText(__('officeguy::officeguy.settings.enable_notifications_help'))
+                        ->default(true),
                 ]),
 
             Section::make(__('officeguy::officeguy.settings.public_checkout'))

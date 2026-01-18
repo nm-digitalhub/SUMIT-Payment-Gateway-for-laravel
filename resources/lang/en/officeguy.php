@@ -141,6 +141,8 @@ return [
         'logging_enabled_help' => 'Log all API calls and transactions',
         'log_channel' => 'Log Channel',
         'log_channel_help' => 'Laravel channel for logging (stack, single, daily)',
+        'enable_notifications' => 'Enable Notifications',
+        'enable_notifications_help' => 'Send notifications to users about payments, subscriptions, and documents',
 
         // SSL
         'ssl_settings' => 'SSL Settings',
@@ -403,5 +405,81 @@ return [
         'min' => 'The :attribute field must be at least :min.',
         'max' => 'The :attribute field may not be greater than :max.',
         'between' => 'The :attribute field must be between :min and :max.',
+    ],
+
+    'about' => [
+        // Page Titles
+        'title_description' => 'Description',
+        'title_features' => 'Key Features',
+        'title_packagist' => 'Packagist Statistics',
+        'title_saloon_migration' => 'Saloon PHP v2.0.0 Upgrade',
+        'title_technology' => 'Technology Stack',
+        'title_credits' => 'Credits',
+        'title_links' => 'Important Links',
+
+        // Description
+        'description' => 'Official Laravel package for SUMIT payment gateway integration. Includes full Filament v4 support, payment management, tokens, documents, subscriptions, webhooks, and more. Built by NM-DigitalHub with focus on quality, security, and maintainability.',
+
+        // Features
+        'features' => [
+            'credit_card_payments' => 'Credit card payments (3 PCI modes)',
+            'bit_integration' => 'Bit payment integration',
+            'token_management' => 'Token management (J2/J5)',
+            'document_generation' => 'Document generation (invoices/receipts)',
+            'recurring_billing' => 'Recurring billing',
+            'multi_vendor' => 'Multi-vendor support',
+            'webhook_handling' => 'Webhook handling (incoming + outgoing)',
+            'filament_integration' => 'Full Filament v4 integration',
+        ],
+
+        // Packagist Statistics
+        'stats' => [
+            'total_downloads' => 'Total Downloads',
+            'monthly_downloads' => 'Monthly Downloads',
+            'daily_downloads' => 'Daily Downloads',
+            'favers' => 'Favorites',
+            'github_stars' => 'GitHub Stars',
+            'github_watchers' => 'GitHub Watchers',
+            'github_forks' => 'GitHub Forks',
+            'updated_hourly' => 'Updated hourly',
+        ],
+
+        // Database Notifications
+        'notifications' => [
+            'payment_completed' => [
+                'title' => 'Payment Completed Successfully',
+                'message' => 'Payment of :amount ILS for order :order_id was completed successfully',
+                'view_transaction' => 'View Transaction',
+            ],
+            'payment_failed' => [
+                'title' => 'Payment Failed',
+                'message' => 'Payment of :amount ILS for order :order_id failed. Reason: :error',
+                'unknown_error' => 'Unknown error',
+            ],
+            'subscription_created' => [
+                'title' => 'Subscription Created Successfully',
+                'message' => 'Monthly subscription of :amount ILS (:interval) was created successfully',
+                'view_subscription' => 'View Subscription',
+            ],
+            'document_created' => [
+                'title' => 'Document Created Successfully',
+                'message' => 'Document :document_type (:document_number) was created successfully',
+                'view_document' => 'View Document',
+                'download_document' => 'Download Document',
+            ],
+        ],
+
+        // Saloon Highlights
+        'saloon' => [
+            'refactored_services' => '13 API services refactored to Saloon PHP',
+            'type_safety' => 'Full type safety with readonly properties',
+            'testability' => 'Easy testing with mocking support',
+            'middleware_support' => 'Middleware support (Logging, Authentication)',
+            'backward_compatible' => '100% backward compatibility at service layer',
+        ],
+
+        // Footer
+        'footer_text' => 'Built with ❤️ by NM-DigitalHub • MIT License',
+        'footer_support' => 'Support: info@nm-digitalhub.com',
     ],
 ];

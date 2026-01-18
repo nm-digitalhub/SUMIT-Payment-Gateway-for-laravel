@@ -160,6 +160,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Notifications
+    |--------------------------------------------------------------------------
+    |
+    | Enable database notifications for important events (payments, subscriptions, documents, etc.)
+    | Users will receive notifications in their Filament notification panel
+    |
+    */
+    'enable_notifications' => env('OFFICEGUY_ENABLE_NOTIFICATIONS', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | SSL verification
     |--------------------------------------------------------------------------
     */
