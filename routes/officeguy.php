@@ -7,6 +7,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Controllers\Api\CheckEmailController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\BitWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CardCallbackController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CrmWebhookController;
+use OfficeGuy\LaravelSumitGateway\Http\Controllers\GithubWebhookController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\CheckoutController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\DocumentDownloadController;
 use OfficeGuy\LaravelSumitGateway\Http\Controllers\PublicCheckoutController;
@@ -237,4 +238,15 @@ Route::prefix($prefix)
             $sumitWebhookPath . '/crm',
             CrmWebhookController::class
         )->name('officeguy.webhook.crm');
+
+        // GitHub webhooks (Dependabot package updates & security advisories)
+        Route::post(
+            '/webhook/github/dependabot',
+            [GithubWebhookController::class, 'handleDependabotPr']
+        )->name('officeguy.webhook.github.dependabot');
+
+        Route::post(
+            '/webhook/github/security',
+            [GithubWebhookController::class, 'handleSecurityAdvisory']
+        )->name('officeguy.webhook.github.security');
     });
