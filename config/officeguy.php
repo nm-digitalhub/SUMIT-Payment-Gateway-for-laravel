@@ -107,6 +107,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Model Bindings
+    |--------------------------------------------------------------------------
+    |
+    | Configure the model classes used by the package.
+    | These should be class-strings pointing to your Eloquent models.
+    |
+    */
+    'models' => [
+        'customer' => 'App\\Models\\Customer',
+        'order' => 'App\\Models\\Order',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Repository Bindings
+    |--------------------------------------------------------------------------
+    |
+    | Configure the repository classes used by the package.
+    | These should be class-strings pointing to your repository implementations.
+    |
+    */
+    'repositories' => [
+        'customer' => 'App\\Repositories\\CustomerRepository',
+        'order' => 'App\\Repositories\\OrderRepository',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Guest User Auto-Creation (v1.14.0+)
     |--------------------------------------------------------------------------
     |
