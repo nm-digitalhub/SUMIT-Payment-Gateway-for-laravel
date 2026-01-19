@@ -95,31 +95,47 @@ class OfficeGuyServiceProvider extends ServiceProvider
     /**
      * Resolve the customer model class with backward compatibility.
      *
-     * Priority:
-     * 1. config('officeguy.models.customer') - New structure
-     * 2. config('officeguy.customer_model_class') - Old structure
-     * 3. Return null if neither configured
+     * Priority (3-layer system as documented in CLAUDE.md):
+     * 1. Database (officeguy_settings.customer_model_class) - HIGHEST PRIORITY
+     * 2. Config (officeguy.models.customer) - New structure
+     * 3. Config (officeguy.customer_model_class) - Legacy structure
+     * 4. Return null if not configured
+     *
+     * Note: Database priority only applies to 'customer_model_class' (flat key).
+     * The nested 'models.customer' key remains config-only.
      *
      * @return string|null The customer model class name or null if not configured
      */
     protected function resolveCustomerModel(): ?string
     {
-        // Try new config structure first
+        // 1. Try Database first (HIGHEST PRIORITY) - flat key only
+        try {
+            if (\Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
+                $dbValue = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting::get('customer_model_class');
+
+                if ($dbValue && is_string($dbValue)) {
+                    return $dbValue;
+                }
+            }
+        } catch (\Exception $e) {
+            // Silently fail if DB not ready - continue to config
+        }
+
+        // 2. Try new config structure
         $customerModel = config('officeguy.models.customer');
-        
+
         if ($customerModel && is_string($customerModel)) {
             return $customerModel;
         }
 
-        // Fallback to old config structure
+        // 3. Fallback to old config structure
         $customerModel = config('officeguy.customer_model_class');
-        
+
         if ($customerModel && is_string($customerModel)) {
             return $customerModel;
         }
 
-        // Neither is configured - return null
-        // The caller should decide whether to throw an exception
+        // 4. Return null if not configured
         return null;
     }
 
