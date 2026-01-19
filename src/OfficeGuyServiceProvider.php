@@ -87,7 +87,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         });
 
         // Bind customer model class resolution (backward compatible)
-        $this->app->bind('officeguy.customer_model', function ($app) {
+        $this->app->singleton('officeguy.customer_model', function ($app) {
             return $this->resolveCustomerModel();
         });
     }
@@ -98,10 +98,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
      * Priority:
      * 1. config('officeguy.models.customer') - New structure
      * 2. config('officeguy.customer_model_class') - Old structure
-     * 3. Throw exception if neither configured
+     * 3. Return null if neither configured
      *
      * @return string|null The customer model class name or null if not configured
-     * @throws \RuntimeException If customer model is required but not configured
      */
     protected function resolveCustomerModel(): ?string
     {
