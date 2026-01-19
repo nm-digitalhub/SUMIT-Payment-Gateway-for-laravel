@@ -33,9 +33,13 @@ class CustomerMergeService
     /**
      * Get the configured customer model class.
      *
-     * Uses backward-compatible resolution:
-     * 1. config('officeguy.models.customer') - New structure
-     * 2. config('officeguy.customer_model_class') - Old structure
+     * Uses 3-layer resolution via container binding:
+     * 1. Database: officeguy_settings.customer_model_class (Admin Panel editable)
+     * 2. Config: officeguy.models.customer (new nested structure)
+     * 3. Config: officeguy.customer_model_class (legacy flat structure)
+     *
+     * Note: Only the flat key 'customer_model_class' is database-backed.
+     * The nested 'models.customer' key is config-only.
      *
      * @return string|null The customer model class name or null if not configured
      */

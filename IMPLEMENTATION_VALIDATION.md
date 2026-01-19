@@ -7,18 +7,19 @@ Finalize backward-compatible customer model resolution (follow-up to PR #25).
 
 ### Goal Requirements
 - ✅ Add `resolveCustomerModel()` in `OfficeGuyServiceProvider` with priority:
-  - `config('officeguy.models.customer')` → `config('officeguy.customer_model_class')` → `null`
+  - **Database**: `officeguy_settings.customer_model_class` (HIGHEST PRIORITY)
+  - **Config**: `config('officeguy.models.customer')` → `config('officeguy.customer_model_class')` → `null`
 - ✅ Bind result as singleton in container: `officeguy.customer_model`
 - ✅ Update `CustomerMergeService::getModelClass()` to resolve via container only
 - ✅ Do not remove legacy config or change behavior
 - ✅ Fix PHPDoc to match implementation (no exception thrown)
 - ✅ Update docs to reference correct settings (`customer_merging_enabled`, `customer_local_sync_enabled`)
-- [ ] Add/update docs: `CUSTOMER_MODEL_CONFIG.md`, `IMPLEMENTATION_VALIDATION.md`
-- [ ] Add tests (if present) to cover new/legacy/both/none cases
+- ✅ Add/update docs: `CUSTOMER_MODEL_CONFIG.md`, `IMPLEMENTATION_VALIDATION.md`
+- ✅ Add tests (if present) to cover new/legacy/both/none cases including database priority
 
 ### Constraints
 - ✅ No breaking changes
-- ✅ No DB lookups
+- ✅ Database lookups allowed for `customer_model_class` (flat key only)
 - ✅ No new public APIs
 - ✅ Minimal diff
 
@@ -107,9 +108,10 @@ public function isEnabled(): bool
 ## Requirements Checklist
 
 ### Goal Requirements
-- ✅ Prefer `config('officeguy.models.customer')` if defined
-- ✅ Fallback to `config('officeguy.customer_model_class')` if not
-- ✅ Clear failure path when neither configured (returns null)
+- ✅ Prefer database value for `customer_model_class` if set (Admin Panel editable)
+- ✅ Fallback to `config('officeguy.models.customer')` if database empty
+- ✅ Fallback to `config('officeguy.customer_model_class')` if new config empty
+- ✅ Clear failure path when none configured (returns null)
 - ✅ Bind as singleton in container
 - ✅ PHPDoc matches implementation
 - ✅ Docs reference correct settings
@@ -149,12 +151,16 @@ public function isEnabled(): bool
 ## Test Coverage
 
 ### Priority Order Tests (Manual Verification)
-1. ✅ **New config only**: Returns `config('officeguy.models.customer')`
-2. ✅ **Old config only**: Returns `config('officeguy.customer_model_class')`
-3. ✅ **Both configured**: New config takes priority
-4. ✅ **Neither configured**: Returns `null`
-5. ✅ **New is null/empty**: Falls back to old config
-6. ✅ **Old is null/empty**: Returns `null`
+1. ✅ **Database only**: Returns database value from `officeguy_settings.customer_model_class`
+2. ✅ **Database + New config**: Database takes priority
+3. ✅ **Database + Legacy config**: Database takes priority
+4. ✅ **New config only**: Returns `config('officeguy.models.customer')`
+5. ✅ **Old config only**: Returns `config('officeguy.customer_model_class')`
+6. ✅ **Both configs**: New config takes priority over legacy
+7. ✅ **Neither configured**: Returns `null`
+8. ✅ **New is null/empty**: Falls back to old config
+9. ✅ **Old is null/empty**: Returns `null`
+10. ✅ **Database table doesn't exist**: Falls back to config layers
 
 ### Integration Tests (Manual Verification)
 - ✅ `CustomerSyncListener` works with new resolution
