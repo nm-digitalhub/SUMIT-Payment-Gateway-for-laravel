@@ -38,9 +38,27 @@ OFFICEGUY_CUSTOMER_MODEL_CLASS=App\Models\Client
 
 The package resolves the customer model class in the following order:
 
-1. **New structure**: `config('officeguy.models.customer')`
-2. **Legacy structure**: `config('officeguy.customer_model_class')`
-3. **Not configured**: Returns `null`
+1. **Database** (Admin Panel editable): `officeguy_settings.customer_model_class` - **HIGHEST PRIORITY**
+   - Only applies to the flat key `customer_model_class`
+   - Editable via Admin Panel: `/admin/office-guy-settings` → Customer Management tab
+   - Stored in `officeguy_settings` table as key-value pair
+2. **New structure** (Config-only): `config('officeguy.models.customer')`
+   - Nested key, NOT database-backed
+   - Set in `config/officeguy.php` or via published config
+3. **Legacy structure** (Config fallback): `config('officeguy.customer_model_class')`
+   - Flat key with .env support: `OFFICEGUY_CUSTOMER_MODEL_CLASS`
+   - Database value (if set) overrides this config value
+4. **Not configured**: Returns `null`
+
+### Database vs Config: Key Distinction
+
+**Important**: Only the flat key `customer_model_class` can be stored in the database and edited via Admin Panel. The nested key `models.customer` remains config-only.
+
+| Configuration Key | Database-Backed? | Admin Panel Editable? | Priority Level |
+|-------------------|------------------|------------------------|----------------|
+| `customer_model_class` (flat) | ✅ YES | ✅ YES | 🥇 Highest (Layer 1) |
+| `models.customer` (nested) | ❌ NO | ❌ NO | 🥈 Second (Layer 2) |
+| `customer_model_class` (flat, config) | 🔄 Overridden by DB | ❌ NO | 🥉 Third (Layer 3) |
 
 ## Migration Guide
 
@@ -63,7 +81,18 @@ Use the new structure in your `config/officeguy.php`:
 'customer_model_class' => env('OFFICEGUY_CUSTOMER_MODEL_CLASS', 'App\\Models\\Client'),
 ```
 
-However, you can optionally migrate to the new structure:
+However, you have **three migration options**:
+
+#### Option 1: Use Admin Panel (Recommended for Runtime Changes)
+
+1. Navigate to Admin Panel: `/admin/office-guy-settings`
+2. Go to **Customer Management** tab
+3. Set the **Customer Model Class** field to your model: `App\Models\Customer`
+4. Click **Save**
+
+This sets the database value which takes **highest priority** and can be changed without code deployment.
+
+#### Option 2: Migrate to New Config Structure (Recommended for New Projects)
 
 1. Open `config/officeguy.php`
 2. Locate the `customer_model_class` setting
@@ -86,13 +115,30 @@ However, you can optionally migrate to the new structure:
 ],
 ```
 
+#### Option 3: Keep Legacy Structure (Fully Supported)
+
+No changes needed. The flat key `customer_model_class` continues to work and can be overridden via Admin Panel.
+
 ## Implementation Details
 
 The resolution logic is implemented in:
 
-- `OfficeGuyServiceProvider::resolveCustomerModel()` - Implements the fallback logic
-- `OfficeGuyServiceProvider::register()` - Binds `officeguy.customer_model` to the container
+- `OfficeGuyServiceProvider::resolveCustomerModel()` - Implements the 3-layer fallback logic with database priority
+- `OfficeGuyServiceProvider::register()` - Binds `officeguy.customer_model` to the container as singleton
 - `CustomerMergeService::getModelClass()` - Uses the container binding
+- `OfficeGuySetting` model - Handles database storage for `customer_model_class` (flat key only)
+- Admin Panel Settings Page - Provides UI for editing `customer_model_class` at runtime
+
+**Resolution Flow**:
+```
+1. Check officeguy_settings table for 'customer_model_class'
+   ↓ (if found and is_string) → RETURN
+2. Check config('officeguy.models.customer')
+   ↓ (if found and is_string) → RETURN
+3. Check config('officeguy.customer_model_class')
+   ↓ (if found and is_string) → RETURN
+4. Return null
+```
 
 ## Usage in Your Code
 
