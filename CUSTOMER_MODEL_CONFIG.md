@@ -117,7 +117,7 @@ CustomerMergeService: Invalid or missing customer model class
 
 To enable customer sync, ensure:
 1. Customer model is configured (either new or legacy structure)
-2. `customer_sync_enabled` is set to `true`
+2. `customer_local_sync_enabled` is set to `true`
 3. Field mappings are configured
 
 ## Related Settings

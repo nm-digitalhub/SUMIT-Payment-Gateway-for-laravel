@@ -27,7 +27,7 @@ class CustomerMergeService
      */
     public function isEnabled(): bool
     {
-        return (bool) $this->settings->get('customer_sync_enabled', false);
+        return (bool) $this->settings->get('customer_local_sync_enabled', false);
     }
 
     /**
