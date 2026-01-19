@@ -115,8 +115,8 @@ return [
     |
     */
     'models' => [
-        'customer' => 'App\\Models\\Customer',
-        'order' => 'App\\Models\\Order',
+        'customer' => null,
+        'order' => null,
     ],
 
     /*
@@ -129,8 +129,8 @@ return [
     |
     */
     'repositories' => [
-        'customer' => 'App\\Repositories\\CustomerRepository',
-        'order' => 'App\\Repositories\\OrderRepository',
+        'customer' => null,
+        'order' => null,
     ],
 
     /*
