@@ -13,38 +13,38 @@ use Orchestra\Testbench\TestCase;
 /**
  * Mock models for testing - must be defined before aliases
  */
-class MockClient extends Model
+class MockClientForActivity extends Model
 {
     protected $table = 'clients';
 }
 
-class MockCustomer extends Model
+class MockCustomerForActivity extends Model
 {
     protected $table = 'customers';
 }
 
-class MockLegacyClient extends Model
+class MockLegacyClientForActivity extends Model
 {
     protected $table = 'legacy_clients';
 }
 
-class MockNewCustomer extends Model
+class MockNewCustomerForActivity extends Model
 {
     protected $table = 'new_customers';
 }
 
 // Create class aliases for App\Models namespace
 if (!class_exists('App\Models\Client')) {
-    class_alias(MockClient::class, 'App\Models\Client');
+    class_alias(MockClientForActivity::class, 'App\Models\Client');
 }
 if (!class_exists('App\Models\CustomCustomer')) {
-    class_alias(MockCustomer::class, 'App\Models\CustomCustomer');
+    class_alias(MockCustomerForActivity::class, 'App\Models\CustomCustomer');
 }
 if (!class_exists('App\Models\LegacyClient')) {
-    class_alias(MockLegacyClient::class, 'App\Models\LegacyClient');
+    class_alias(MockLegacyClientForActivity::class, 'App\Models\LegacyClient');
 }
 if (!class_exists('App\Models\NewCustomer')) {
-    class_alias(MockNewCustomer::class, 'App\Models\NewCustomer');
+    class_alias(MockNewCustomerForActivity::class, 'App\Models\NewCustomer');
 }
 
 /**
