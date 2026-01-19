@@ -85,6 +85,43 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->resolving(CheckoutRequest::class, function ($request, $app) {
             return CheckoutRequest::createFrom($app['request'], $request);
         });
+
+        // Bind customer model class resolution (backward compatible)
+        $this->app->bind('officeguy.customer_model', function ($app) {
+            return $this->resolveCustomerModel();
+        });
+    }
+
+    /**
+     * Resolve the customer model class with backward compatibility.
+     *
+     * Priority:
+     * 1. config('officeguy.models.customer') - New structure
+     * 2. config('officeguy.customer_model_class') - Old structure
+     * 3. Throw exception if neither configured
+     *
+     * @return string|null The customer model class name or null if not configured
+     * @throws \RuntimeException If customer model is required but not configured
+     */
+    protected function resolveCustomerModel(): ?string
+    {
+        // Try new config structure first
+        $customerModel = config('officeguy.models.customer');
+        
+        if ($customerModel && is_string($customerModel)) {
+            return $customerModel;
+        }
+
+        // Fallback to old config structure
+        $customerModel = config('officeguy.customer_model_class');
+        
+        if ($customerModel && is_string($customerModel)) {
+            return $customerModel;
+        }
+
+        // Neither is configured - return null
+        // The caller should decide whether to throw an exception
+        return null;
     }
 
     /**

@@ -32,10 +32,17 @@ class CustomerMergeService
 
     /**
      * Get the configured customer model class.
+     *
+     * Uses backward-compatible resolution:
+     * 1. config('officeguy.models.customer') - New structure
+     * 2. config('officeguy.customer_model_class') - Old structure
+     *
+     * @return string|null The customer model class name or null if not configured
      */
     public function getModelClass(): ?string
     {
-        return $this->settings->get('customer_model');
+        // Use container binding which handles backward compatibility
+        return app('officeguy.customer_model');
     }
 
     /**
