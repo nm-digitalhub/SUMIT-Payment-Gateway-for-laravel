@@ -95,9 +95,43 @@ class OfficeGuyTransaction extends Model
         return $this->morphTo('order', 'order_type', 'order_id');
     }
 
+    /**
+     * Get the customer relationship using dynamic model resolution.
+     *
+     * This method uses config('officeguy.models.customer') with 3-layer priority:
+     * 1. Database: officeguy_settings.customer_model_class (Admin Panel editable)
+     * 2. Config: officeguy.models.customer (new nested structure)
+     * 3. Config: officeguy.customer_model_class (legacy flat structure)
+     *
+     * Fallback: If no customer model is configured, defaults to \App\Models\Client
+     * for backward compatibility.
+     *
+     * @return BelongsTo
+     */
+    public function customer(): BelongsTo
+    {
+        $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+
+        return $this->belongsTo($customerModel, 'client_id');
+    }
+
+    /**
+     * Legacy client relationship - DEPRECATED.
+     *
+     * @deprecated Use customer() instead. This method will be removed in v3.0.0.
+     *
+     * This method is preserved for backward compatibility but delegates to customer().
+     * The relationship is identical - only the method name differs.
+     *
+     * Migration:
+     * - Replace $transaction->client with $transaction->customer
+     * - Replace $transaction->client() with $transaction->customer()
+     *
+     * @return BelongsTo
+     */
     public function client(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\Client::class, 'client_id');
+        return $this->customer();
     }
 
     public function parentTransaction(): BelongsTo
@@ -219,7 +253,9 @@ class OfficeGuyTransaction extends Model
         }
 
         if (!$clientId && $sumitCustomerIdUsed) {
-            $client = \App\Models\Client::where('sumit_customer_id', $sumitCustomerIdUsed)->first();
+            // Use dynamic customer model resolution with fallback to App\Models\Client
+            $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+            $client = $customerModel::where('sumit_customer_id', $sumitCustomerIdUsed)->first();
             $clientId = $client?->id;
         }
 
