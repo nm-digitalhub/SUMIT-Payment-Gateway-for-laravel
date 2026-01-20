@@ -7,7 +7,70 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-No unreleased changes at this time.
+### Added
+- **Dynamic Customer Model Resolution** - Complete 3-layer priority system
+  - 6 models refactored to use dynamic customer model resolution
+  - 3-layer priority: Database → Config new → Config legacy → Fallback
+  - 62 new tests (134 assertions) - 100% passing
+  - Zero hard-coded `App\Models\Client` references remaining
+  - Admin Panel support for `customer_model_class` configuration
+
+### Changed
+- `OfficeGuyTransaction` - Added `customer()` relationship (dynamic)
+- `OfficeGuyDocument` - Added `customer()` relationship (dynamic)
+- `SumitWebhook` - Added `customer()` relationship (dynamic)
+- `CrmActivity` - Added `customer()` relationship (dynamic)
+- `CrmEntity` - Added `customer()` relationship (dynamic)
+- `OfficeGuyTransaction::createFromApiResponse()` - Uses dynamic resolution
+- `CustomerMergeService::getModelClass()` - Uses container binding
+
+### Deprecated
+- `client()` relationship in all affected models - Use `customer()` instead
+  - OfficeGuyTransaction::client()
+  - OfficeGuyDocument::client()
+  - SumitWebhook::client()
+  - CrmActivity::client()
+  - CrmEntity::client()
+  - These methods will be removed in v3.0.0
+
+### Technical Details
+- **Infrastructure**: `OfficeGuyServiceProvider::resolveCustomerModel()`
+- **Container Binding**: `app('officeguy.customer_model')` (singleton)
+- **Database Priority**: `officeguy_settings.customer_model_class` (HIGHEST)
+- **Config Priority**: `config('officeguy.models.customer')` (new, nested)
+- **Fallback**: `config('officeguy.customer_model_class')` (legacy, flat)
+- **Default Fallback**: `\App\Models\Client` (backward compatibility)
+
+### Documentation
+- CUSTOMER_MODEL_CONFIG.md - Configuration guide (139 lines)
+- IMPLEMENTATION_VALIDATION.md - Validation report (225 lines)
+- EXECUTIVE_SUMMARY_CUSTOMER_MODEL.md - Executive summary (299 lines)
+- FACTUAL_FINDINGS_BULLET_LIST.md - Code review findings (371 lines)
+- FACTUAL_REVIEW_CUSTOMER_MODEL_RESOLUTION.md - Full technical review (595 lines)
+- REFACTORING_OFFICEGUYTRANSACTION_SUMMARY.md - Refactoring summary (269 lines)
+- Total: 1,898 lines of documentation
+
+### Migration Guide
+Replace `$model->client` with `$model->customer`:
+```php
+// Old (deprecated):
+$transaction->client
+$document->client
+$webhook->client
+$activity->client
+$entity->client
+
+// New (recommended):
+$transaction->customer
+$document->customer
+$webhook->customer
+$activity->customer
+$entity->customer
+```
+
+Old methods still work but emit deprecation warnings.
+
+## [Unreleased]
 
 ## [v1.21.4] - 2026-01-04
 
