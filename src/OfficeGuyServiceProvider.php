@@ -354,9 +354,11 @@ class OfficeGuyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register Filament Clusters for navigation organization.
+     * Register Filament Clusters and discover Resources automatically.
      *
      * Registers package Clusters with Filament panels so resources are grouped properly.
+     * Auto-discovers and registers all Resources from the package directory.
+     *
      * Uses Filament's serving hook to register after panels are initialized.
      */
     protected function registerFilamentClusters(): void
@@ -367,7 +369,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Use Filament's serving hook to register clusters after panels are ready
         \Filament\Facades\Filament::serving(function () {
-            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters');
+            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters and discovering resources');
 
             // Register clusters for admin panel
             try {
@@ -398,7 +400,114 @@ class OfficeGuyServiceProvider extends ServiceProvider
             } catch (\Throwable $e) {
                 \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
             }
+
+            // Auto-discover and register Resources from package directory
+            $this->discoverFilamentResources();
         });
+    }
+
+    /**
+     * Auto-discover and register Filament Resources from package directory.
+     *
+     * This method scans the package's Filament/Resources directory recursively and
+     * automatically registers all Resource classes with Filament. This eliminates the
+     * need to manually maintain a list of resources, making the codebase cleaner.
+     *
+     * Architecture: Recursive Auto-Discovery Pattern
+     * - Scans directory: __DIR__ . '/Filament/Resources' (recursive)
+     * - Namespace: OfficeGuy\LaravelSumitGateway\Filament\Resources
+     * - Registers any class ending with 'Resource.php' in any subdirectory
+     *
+     * Benefits:
+     * - ✅ Zero manual maintenance
+     * - ✅ New resources auto-register (including subdirectories)
+     * - ✅ Clean, scalable code
+     *
+     * Example structure supported:
+     * - Resources/TransactionResource.php
+     * - Resources/Transactions/TransactionResource.php
+     * - Resources/Crm/ActivityResource.php
+     */
+    protected function discoverFilamentResources(): void
+    {
+        $resourcesPath = __DIR__ . '/Filament/Resources';
+        $baseNamespace = 'OfficeGuy\\LaravelSumitGateway\\Filament\\Resources';
+
+        // Check if directory exists
+        if (!is_dir($resourcesPath)) {
+            \Log::warning("[SUMIT] Resources directory not found: {$resourcesPath}");
+            return;
+        }
+
+        // Scan for Resource files recursively (finds files in subdirectories too)
+        $resourceFiles = glob($resourcesPath . '/**/*.php');
+
+        if (empty($resourceFiles)) {
+            \Log::info("[SUMIT] No resource files found in: {$resourcesPath}");
+            return;
+        }
+
+        $registeredCount = 0;
+        $skippedCount = 0;
+
+        foreach ($resourceFiles as $file) {
+            // Only process files ending with 'Resource.php'
+            if (!str_ends_with(basename($file), 'Resource.php')) {
+                $skippedCount++;
+                continue;
+            }
+
+            // Calculate the relative path from Resources directory
+            $relativePath = str_replace($resourcesPath . '/', '', $file);
+            $relativePath = str_replace('/', '\\', $relativePath);
+
+            // Remove .php extension and build full class name
+            $classNameWithoutExtension = str_replace('.php', '', $relativePath);
+            $fullClassName = $baseNamespace . '\\' . $classNameWithoutExtension;
+
+            // Verify class exists before registering
+            if (class_exists($fullClassName)) {
+                try {
+                    \Filament\Facades\Filament::registerResources([$fullClassName]);
+                    $registeredCount++;
+                    \Log::debug("[SUMIT] Registered resource: {$fullClassName}");
+                } catch (\Throwable $e) {
+                    \Log::error("[SUMIT] Failed to register resource {$fullClassName}: {$e->getMessage()}");
+                }
+            } else {
+                \Log::warning("[SUMIT] Resource class not found: {$fullClassName}");
+            }
+        }
+
+        \Log::info("[SUMIT] Auto-discovered and registered {$registeredCount} resources (skipped {$skippedCount} non-resource files)");
+
+        // Register Pages separately (no auto-discovery for Pages)
+        $this->registerFilamentPages();
+    }
+
+    /**
+     * Register Filament Pages from package.
+     *
+     * Pages cannot be auto-discovered like Resources because Filament doesn't
+     * provide a discoverPages() method. We register them manually here.
+     */
+    protected function registerFilamentPages(): void
+    {
+        $pages = [
+            \OfficeGuy\LaravelSumitGateway\Filament\Pages\OfficeGuySettings::class,
+            \OfficeGuy\LaravelSumitGateway\Filament\Pages\AboutPage::class,
+        ];
+
+        foreach ($pages as $page) {
+            if (class_exists($page)) {
+                try {
+                    \Filament\Facades\Filament::registerPages([$page]);
+                    \Log::debug("[SUMIT] Registered page: {$page}");
+                } catch (\Throwable $e) {
+                    \Log::error("[SUMIT] Failed to register page {$page}: {$e->getMessage()}");
+                }
+            }
+        }
     }
 
     /**
