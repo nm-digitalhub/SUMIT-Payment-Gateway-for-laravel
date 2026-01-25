@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -19,6 +20,7 @@ use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
+use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkSubscriptionCancelJob;
 use Filament\Actions\DeleteAction;
 use Carbon\Carbon;
 use App\Models\Client;
@@ -569,15 +571,29 @@ class SubscriptionResource extends Resource
 
             ->bulkActions([
                 BulkActionGroup::make([
-                    BulkAction::make('cancel_selected')
+                    // Queueable bulk action (asynchronous, disabled by default)
+                    QueueableBulkAction::make('cancel_selected')
                         ->label('Cancel Selected')
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
+                        ->job(BulkSubscriptionCancelJob::class)
+                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
+                        ->successNotificationTitle(__('officeguy::messages.bulk_cancel_success'))
+                        ->failureNotificationTitle(__('officeguy::messages.bulk_cancel_partial'))
+                        ->modalHeading(__('officeguy::messages.bulk_cancel_confirm'))
+                        ->modalDescription(__('officeguy::messages.bulk_cancel_desc')),
+
+                    // Legacy synchronous bulk action (for backwards compatibility)
+                    BulkAction::make('cancel_selected_sync')
+                        ->label('Cancel Selected (Sync)')
+                        ->icon('heroicon-o-x-mark')
+                        ->color('warning')
                         ->requiresConfirmation()
+                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
                         ->action(function ($records) {
                             $successCount = 0;
                             $failCount = 0;
-                            
+
                             foreach ($records as $record) {
                                 if ($record->canBeCancelled()) {
                                     $result = SubscriptionService::cancel($record, 'Bulk cancellation');
@@ -588,7 +604,7 @@ class SubscriptionResource extends Resource
                                     }
                                 }
                             }
-                            
+
                             if ($successCount > 0 || $failCount > 0) {
                                 Notification::make()
                                     ->title(__('Cancelled') . ": {$successCount}, " . __('Failed') . ": {$failCount}")

@@ -251,6 +251,11 @@ class SettingsService
             'routes_document_download',
             'routes_success',
             'routes_failed',
+            // Secure Success Page (v1.2.0+)
+            'success_enabled',
+            'success_token_ttl',
+            'success_rate_limit_max',
+            'success_rate_limit_decay',
             // Subscriptions
             'subscriptions_enabled',
             'subscriptions_default_interval',

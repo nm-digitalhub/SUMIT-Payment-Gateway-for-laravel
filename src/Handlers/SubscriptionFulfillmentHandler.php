@@ -10,14 +10,105 @@ use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 /**
  * Subscription Fulfillment Handler
  *
- * Handles post-payment fulfillment for subscription products:
- * - Business Email (mailbox provisioning, welcome email)
- * - Recurring Billing (tokenization confirmation, auto-renewal setup)
- * - Subscription Management (billing cycle tracking, renewal reminders)
+ * Handles post-payment fulfillment for subscription products in the SUMIT Gateway package.
+ * Dispatched by `FulfillmentDispatcher` when `PayableType::SUBSCRIPTION` is received.
  *
- * This is a REFERENCE IMPLEMENTATION.
- * In production, you should implement your own handler
- * that integrates with your subscription management systems.
+ * ## Supported Subscription Types
+ *
+ * - **Business Email**: Mailbox provisioning, Google Workspace/Microsoft 365 integration
+ * - **SaaS Licenses**: Account activation, tier management, API key generation
+ * - **Recurring Services**: Auto-renewal setup, billing cycle tracking, renewal reminders
+ *
+ * ## Architecture
+ *
+ * This handler is part of the **Package Layer** fulfillment system:
+ *
+ * ```
+ * PaymentCompleted Event (from PaymentService)
+ *     ↓
+ * FulfillmentListener::handle()
+ *     ↓
+ * FulfillmentDispatcher::dispatch(payable, transaction)
+ *     ↓
+ * PayableType::SUBSCRIPTION → SubscriptionFulfillmentHandler::handle()
+ *     ↓
+ * Subscription-specific handler (e.g., handleBusinessEmail(), handleSaasLicense())
+ *     ↓
+ * Application Layer: Subscription activation + provisioning
+ * ```
+ *
+ * ## Integration with Application State Machine
+ *
+ * The **Application Layer** owns the Order State Machine. This handler:
+ * - **Receives**: PaymentCompleted event (order already in 'processing' state)
+ * - **Executes**: Subscription activation logic (mailbox, SaaS account, etc.)
+ * - **Does NOT** manage order state (app's responsibility)
+ *
+ * ## Reference Implementation
+ *
+ * **IMPORTANT**: This is a **REFERENCE IMPLEMENTATION**. For production:
+ * 1. Copy this class to your application
+ * 2. Customize handlers for your subscription systems
+ * 3. Re-register in `OfficeGuyServiceProvider::registerFulfillmentHandlers()`
+ *
+ * ## Tokenization Verification
+ *
+ * All subscription types verify tokenization for auto-renewal:
+ * - Checks `$transaction->token` relationship
+ * - Logs WARNING if no token exists (auto-renewal will fail)
+ * - Token should be J2 or J5 type from SUMIT
+ *
+ * ## Business Email Fulfillment (TODO)
+ *
+ * Reference implementation steps:
+ * 1. Verify tokenization for recurring billing
+ * 2. Create email account via provider API (Google Workspace, Microsoft 365)
+ * 3. Set mailbox quota based on package tier
+ * 4. Generate initial password or send setup link
+ * 5. Configure DNS records (MX, SPF, DKIM) - provide instructions
+ * 6. Send welcome email with login credentials + setup guide
+ * 7. Schedule first renewal reminder (e.g., 7 days before billing)
+ * 8. Update subscription status to 'active'
+ * 9. Fire `SubscriptionActivated` event
+ *
+ * ## SaaS License Fulfillment (TODO)
+ *
+ * Reference implementation steps:
+ * 1. Verify tokenization for recurring billing
+ * 2. Create or activate SaaS account via API
+ * 3. Set tier/feature limits based on subscription level
+ * 4. Generate API keys (if applicable)
+ * 5. Send welcome email with login link
+ * 6. Schedule onboarding email sequence
+ * 7. Set up usage tracking/metering (if applicable)
+ * 8. Update subscription status to 'active'
+ * 9. Fire `SubscriptionActivated` event
+ *
+ * ## Recurring Service Fulfillment (TODO)
+ *
+ * Reference implementation steps:
+ * 1. Verify tokenization for auto-renewal
+ * 2. Activate service/feature in target system
+ * 3. Send confirmation email with billing details
+ * 4. Schedule renewal reminder notifications
+ * 5. Set up usage tracking (if metered billing)
+ * 6. Update subscription status to 'active'
+ * 7. Fire `SubscriptionActivated` event
+ *
+ * ## Registration
+ *
+ * Registered in `OfficeGuyServiceProvider::registerFulfillmentHandlers()`:
+ * ```php
+ * $dispatcher->registerMany([
+ *     PayableType::SUBSCRIPTION->value => SubscriptionFulfillmentHandler::class,
+ * ]);
+ * ```
+ *
+ * @see \OfficeGuy\LaravelSumitGateway\Services\FulfillmentDispatcher
+ * @see \OfficeGuy\LaravelSumitGateway\Listeners\FulfillmentListener
+ * @see \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SUBSCRIPTION
+ * @see \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService
+ * @see docs/STATE_MACHINE_ARCHITECTURE.md
  */
 class SubscriptionFulfillmentHandler
 {

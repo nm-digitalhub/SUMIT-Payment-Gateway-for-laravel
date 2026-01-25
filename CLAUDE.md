@@ -7,11 +7,13 @@
 **Official Laravel package** for SUMIT payment gateway integration with Filament v4 admin panels.
 
 - **Package Name**: `officeguy/laravel-sumit-gateway`
-- **Version**: v2.0.0 (2026-01-18) - **MAJOR RELEASE**
+- **Version**: v2.3.0 (2026-01-20) - **Dynamic Customer Model Resolution**
 - **License**: MIT
 - **Ownership**: NM-DigitalHub (https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel)
 - **Origin**: 1:1 port from WooCommerce plugin `woo-payment-gateway-officeguy`
-- **Breaking Changes**: v2.0.0 refactored from Laravel HTTP facade to Saloon PHP v3
+- **Major Releases**:
+  - v2.3.0 - Dynamic Customer Model Resolution
+  - v2.0.0 - Refactored to Saloon PHP v3
 
 **Key Features**:
 - Credit card payments (3 PCI modes: no/redirect/yes)
@@ -358,9 +360,9 @@ Key Statistics:
 - 6 Client Panel Resources
 - 19 Event Classes
 - 7 Queue Jobs
-- 6 Event Listeners
+- 10 Event Listeners (v2.1.0+)
 - 9 Database Migrations
-- 74 Configuration Settings
+- 75+ Configuration Settings
 ```
 
 ## 📊 Core Models
@@ -523,6 +525,211 @@ public function save(): void
 - Hardcode credentials or URLs
 - Bypass SettingsService for settings retrieval
 - Assume .env is the source of truth (database overrides everything!)
+
+## 🎭 Dynamic Customer Model Resolution (v2.3.0)
+
+### Overview
+
+**BREAKING CHANGE**: Package now supports dynamic customer model resolution, eliminating all hard-coded `App\Models\Client` references.
+
+### 4-Layer Priority System
+
+**Customer model is resolved in this priority order**:
+
+1. **Database** (`officeguy_settings.customer_model_class`) - **HIGHEST PRIORITY** ✅
+2. **Config** (`config('officeguy.models.customer')`) - New nested structure
+3. **Config** (`config('officeguy.customer_model_class')`) - Legacy flat structure
+4. **Fallback** (`\App\Models\Client`) - Default for backward compatibility
+
+### How It Works
+
+```php
+// When you access a customer relationship:
+$transaction->customer
+
+// The system resolves the model in this order:
+
+// 1. Database first (if table exists)
+SELECT value FROM officeguy_settings WHERE key = 'customer_model_class';
+// Returns: "App\Models\User" ← USED IF EXISTS
+
+// 2. New config structure (nested)
+return config/officeguy.php → 'models' => ['customer' => 'App\Models\User']
+// Returns: "App\Models\User"
+
+// 3. Legacy config structure (flat)
+return config/officeguy.php → 'customer_model_class' => 'App\Models\Customer'
+// Returns: "App\Models\Customer"
+
+// 4. Fallback default
+return \App\Models\Client::class
+// Used only if nothing else configured
+```
+
+### Container Binding
+
+**File**: `src/OfficeGuyServiceProvider.php:89-140`
+
+```php
+// In register():
+$this->app->singleton('officeguy.customer_model', function ($app) {
+    return $this->resolveCustomerModel();
+});
+
+protected function resolveCustomerModel(): ?string
+{
+    // 1. Try Database first (HIGHEST PRIORITY)
+    if (\Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
+        $dbValue = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting::get('customer_model_class');
+        if ($dbValue && is_string($dbValue)) {
+            return $dbValue;
+        }
+    }
+
+    // 2. Try new config structure
+    $customerModel = config('officeguy.models.customer');
+    if ($customerModel && is_string($customerModel)) {
+        return $customerModel;
+    }
+
+    // 3. Fallback to old config structure
+    $customerModel = config('officeguy.customer_model_class');
+    if ($customerModel && is_string($customerModel)) {
+        return $customerModel;
+    }
+
+    // 4. Return null if not configured
+    return null;
+}
+```
+
+### Models with Dynamic Customer Relationship
+
+**6 models refactored with `customer()` relationship**:
+
+| Model | New Method | Deprecated Method |
+|-------|-----------|-------------------|
+| `OfficeGuyTransaction` | `customer()` | `client()` |
+| `OfficeGuyDocument` | `customer()` | `client()` |
+| `SumitWebhook` | `customer()` | `client()` |
+| `CrmActivity` | `customer()` | `client()` |
+| `CrmEntity` | `customer()` | `client()` |
+| `OfficeGuyToken` | `customer()` | N/A |
+
+**Example Usage**:
+
+```php
+// New recommended way (v2.3.0+):
+$transaction->customer          // Returns dynamically resolved customer model
+$transaction->customer()->where('active', 1)->get()
+
+// Old way (deprecated, still works):
+$transaction->client            // Delegates to customer()
+$transaction->client()          // Delegates to customer()
+
+// Both methods use the same relationship (client_id foreign key)
+// Only the method name differs
+```
+
+### Configuration Options
+
+**File**: `config/officeguy.php`
+
+```php
+/*
+|--------------------------------------------------------------------------
+| Customer Management (v1.2.4+)
+|--------------------------------------------------------------------------
+|
+| Configure customer synchronization and merging with SUMIT.
+| These settings can be managed via Admin Panel → Office Guy Settings → Customer Management
+|
+*/
+'customer_merging_enabled' => env('OFFICEGUY_CUSTOMER_MERGING_ENABLED', false),
+'customer_local_sync_enabled' => env('OFFICEGUY_CUSTOMER_LOCAL_SYNC_ENABLED', false),
+'customer_model_class' => env('OFFICEGUY_CUSTOMER_MODEL_CLASS', 'App\\Models\\Client'),
+
+/*
+|--------------------------------------------------------------------------
+| Model Bindings (v2.3.0+)
+|--------------------------------------------------------------------------
+|
+| Configure the model classes used by the package.
+| These should be class-strings pointing to your Eloquent models.
+|
+*/
+'models' => [
+    'customer' => null,  // Set to 'App\Models\User' or your customer model
+    'order' => null,
+],
+```
+
+### Admin Panel Configuration
+
+**Location**: `/admin/office-guy-settings` → Customer Management tab
+
+You can configure `customer_model_class` directly in the Admin Panel:
+
+1. Navigate to Admin Panel → Office Guy Settings
+2. Click on "Customer Management" tab
+3. Set "Customer Model Class" to your model (e.g., `App\Models\User`)
+4. Save settings
+
+**Database configuration takes HIGHEST priority**, overriding both config files and .env.
+
+### Migration Guide
+
+**Replace deprecated `client()` with `customer()`**:
+
+```php
+// Old (deprecated, works until v3.0.0):
+$transaction->client
+$document->client
+$webhook->client
+$activity->client
+$entity->client
+
+// New (recommended):
+$transaction->customer
+$document->customer
+$webhook->customer
+$activity->customer
+$entity->customer
+```
+
+**Both methods work identically** - they use the same relationship and foreign key. The deprecated `client()` method simply delegates to `customer()`.
+
+### Test Coverage
+
+**62 new tests added** (134 assertions total) - 100% passing:
+
+| Test File | Tests | Assertions |
+|-----------|-------|------------|
+| `OfficeGuyTransactionCustomerModelTest.php` | 10 | 24 |
+| `OfficeGuyDocumentCustomerModelTest.php` | 10 | 24 |
+| `SumitWebhookCustomerModelTest.php` | 10 | 24 |
+| `CrmActivityCustomerModelTest.php` | 10 | 24 |
+| `CrmEntityCustomerModelTest.php` | 10 | 24 |
+| `CustomerModelResolutionTest.php` | 12 | 14 |
+
+### Backward Compatibility
+
+✅ **No Breaking Changes**
+
+- Existing `client()` relationships continue to work
+- Database schema unchanged (still uses `client_id` column)
+- Default fallback to `\App\Models\Client` preserves existing behavior
+- All existing code works without modification
+
+### Documentation
+
+**Additional documentation available**:
+
+- `CUSTOMER_MODEL_CONFIG.md` - Configuration guide (139 lines)
+- `IMPLEMENTATION_VALIDATION.md` - Validation report (225 lines)
+- `EXECUTIVE_SUMMARY_CUSTOMER_MODEL.md` - Executive summary (299 lines)
+- `FACTUAL_REVIEW_CUSTOMER_MODEL_RESOLUTION.md` - Full technical review (595 lines)
+- `REFACTORING_OFFICEGUYTRANSACTION_SUMMARY.md` - Refactoring summary (269 lines)
 
 ## 🔌 SUMIT API Integration
 
@@ -1558,16 +1765,99 @@ resources/lang/en/messages.php
 
 ---
 
-**Package Version**: v2.0.0 (MAJOR - Breaking Changes)
-**Last Updated**: 2026-01-18
+**Package Version**: v2.3.0 (Dynamic Customer Model Resolution)
+**Last Updated**: 2026-01-22
 **Maintained By**: NM-DigitalHub
 **Support**: info@nm-digitalhub.com
 
-**v2.0.0 Highlights**:
-- ⭐ Refactored to Saloon PHP v3.14.2
-- 🎯 25+ API methods modernized
-- ✅ 100% backward compatibility at service layer
-- 📚 See REFACTORING_SUMMARY.md for full details
+**Recent Release Highlights**:
+- ⭐ **v2.3.0** (2026-01-20): Dynamic Customer Model Resolution - Zero hard-coded Client references
+- 🎯 **v2.2.0** (2026-01-19): Database notifications for key events
+- 🔧 **v2.1.0** (2026-01-18): GitHub webhook integration + subscription improvements
+- 🚀 **v2.0.0** (2026-01-18): Refactored to Saloon PHP v3.14.2
+
+---
+
+## 📝 Recent Updates (Updated: 2026-01-22)
+
+### v2.3.0 - Dynamic Customer Model Resolution (2026-01-20)
+
+**Major Feature**: Complete elimination of hard-coded `App\Models\Client` references throughout the package.
+
+**Key Changes**:
+- **6 models refactored** with dynamic `customer()` relationship:
+  - `OfficeGuyTransaction::customer()`
+  - `OfficeGuyDocument::customer()`
+  - `SumitWebhook::customer()`
+  - `CrmActivity::customer()`
+  - `CrmEntity::customer()`
+  - `OfficeGuyToken::customer()`
+
+- **4-layer priority system** for customer model resolution:
+  1. Database (`officeguy_settings.customer_model_class`) - **HIGHEST**
+  2. Config (`officeguy.models.customer`) - New nested structure
+  3. Config (`officeguy.customer_model_class`) - Legacy flat structure
+  4. Fallback (`\App\Models\Client`) - Default for backward compatibility
+
+- **62 new tests** (134 assertions) - 100% passing
+- **5 new documentation files** (1,898 total lines)
+
+**Backward Compatibility**: ✅ No breaking changes
+- Deprecated `client()` methods still work (delegate to `customer()`)
+- Database schema unchanged
+- Default fallback preserves existing behavior
+
+**Configuration**: Now supports Admin Panel configuration
+- Navigate to `/admin/office-guy-settings` → Customer Management
+- Set "Customer Model Class" to your model (e.g., `App\Models\User`)
+
+**See**: "Dynamic Customer Model Resolution (v2.3.0)" section above for complete details.
+
+---
+
+### v2.2.0 - Database Notifications (2026-01-19)
+
+**New Feature**: Database notifications for key package events.
+
+**Added**:
+- 4 notification listeners for important events:
+  - `PaymentCompletedNotification` - Sent when payment succeeds
+  - `PaymentFailedNotification` - Sent when payment fails
+  - `DocumentCreatedNotification` - Sent when invoice/receipt is generated
+  - `SubscriptionCreatedNotification` - Sent when subscription is created
+
+**Configuration**:
+```php
+// config/officeguy.php
+'enable_notifications' => env('OFFICEGUY_ENABLE_NOTIFICATIONS', true),
+```
+
+**Translations**: Added to `resources/lang/en/officeguy.php` and `resources/lang/he/officeguy.php`
+
+---
+
+### v2.1.0 - GitHub Webhook Integration (2026-01-18)
+
+**New Feature**: GitHub webhook integration for Dependabot notifications.
+
+**Added**:
+- `GithubWebhookController` - Handles GitHub webhook events
+- Support for Dependabot alerts, security advisories, and updates
+- Automatic notification routing to Filament admin panel
+
+**Bug Fixes**:
+- Fixed Saloon v3.14 compatibility issues in `SumitConnector`
+- Improved subscription cancellation flow in `SubscriptionResource`
+
+---
+
+**Additional Documentation**:
+- `CUSTOMER_MODEL_CONFIG.md` - Configuration guide (139 lines)
+- `IMPLEMENTATION_VALIDATION.md` - Validation report (225 lines)
+- `EXECUTIVE_SUMMARY_CUSTOMER_MODEL.md` - Executive summary (299 lines)
+- `FACTUAL_REVIEW_CUSTOMER_MODEL_RESOLUTION.md` - Full technical review (595 lines)
+- `REFACTORING_OFFICEGUYTRANSACTION_SUMMARY.md` - Refactoring summary (269 lines)
+- `REFACTORING_SUMMARY.md` - v2.0.0 Saloon refactoring details (669 lines)
 
 ---
 

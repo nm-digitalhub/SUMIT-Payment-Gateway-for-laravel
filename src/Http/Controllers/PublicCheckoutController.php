@@ -187,8 +187,11 @@ class PublicCheckoutController extends Controller
                 return back()->withErrors(['accept_terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
             }
 
+            // Resolve user model from container binding
+            $userModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+
             // Check if email already exists
-            if (\App\Models\User::where('email', $validated['customer_email'])->exists()) {
+            if ($userModel::where('email', $validated['customer_email'])->exists()) {
                 return back()->withErrors(['customer_email' => __('This email is already registered. Please login instead.')])->withInput();
             }
 
@@ -198,7 +201,7 @@ class PublicCheckoutController extends Controller
             $lastName = $nameParts[1] ?? '';
 
             // Create new user
-            $user = \App\Models\User::create([
+            $user = $userModel::create([
                 'name' => $validated['customer_name'],
                 'first_name' => $firstName,
                 'last_name' => $lastName,

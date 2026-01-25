@@ -363,4 +363,22 @@ return [
         'reminder_days' => env('OFFICEGUY_COLLECTION_REMINDER_DAYS', '0,3,7'),
         'max_attempts' => env('OFFICEGUY_COLLECTION_MAX_ATTEMPTS', 3),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Queueable Bulk Actions Settings (v2.4.0+)
+    |--------------------------------------------------------------------------
+    |
+    | Configure asynchronous bulk operations with real-time progress tracking.
+    | Uses bytexr/filament-queueable-bulk-actions package.
+    |
+    */
+    'bulk_actions' => [
+        'enabled' => env('OFFICEGUY_BULK_ACTIONS_ENABLED', false),
+        'queue' => env('OFFICEGUY_BULK_ACTIONS_QUEUE', 'officeguy-bulk-actions'),
+        'connection' => env('OFFICEGUY_BULK_ACTIONS_CONNECTION', config('queue.default')),
+        'timeout' => env('OFFICEGUY_BULK_ACTIONS_TIMEOUT', 3600),
+        'tries' => env('OFFICEGUY_BULK_ACTIONS_TRIES', 3),
+        'enable_legacy_actions' => env('OFFICEGUY_ENABLE_LEGACY_BULK_ACTIONS', false),
+    ],
 ];

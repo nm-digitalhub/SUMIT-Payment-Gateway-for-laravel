@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Bytexr\QueueableBulkActions\QueueableBulkActionsPlugin;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
@@ -24,6 +25,7 @@ class ClientPanelProvider extends PanelProvider
         return $panel
             ->id('client')
             ->path('client')
+            ->plugin(QueueableBulkActionsPlugin::make())
             ->login()
             ->colors([
                 'primary' => '#0ea5e9',

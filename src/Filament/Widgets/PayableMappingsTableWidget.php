@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Widgets;
 
+use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
+use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkPayableMappingActivateJob;
+use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkPayableMappingDeactivateJob;
 
 /**
  * PayableMappingsTableWidget
@@ -139,11 +142,25 @@ class PayableMappingsTableWidget extends BaseWidget
             ])
             ->bulkActions([
                 Actions\BulkActionGroup::make([
-                    Actions\BulkAction::make('activate')
+                    // Queueable bulk action (asynchronous, disabled by default)
+                    QueueableBulkAction::make('activate')
+                        ->label('הפעל נבחרים')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->job(BulkPayableMappingActivateJob::class)
+                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
+                        ->successNotificationTitle(__('officeguy::messages.bulk_mapping_activate_success'))
+                        ->failureNotificationTitle(__('officeguy::messages.bulk_mapping_partial'))
+                        ->modalHeading(__('officeguy::messages.bulk_mapping_activate_confirm'))
+                        ->modalDescription(__('officeguy::messages.bulk_mapping_activate_desc')),
+
+                    // Legacy synchronous bulk action (for backwards compatibility)
+                    Actions\BulkAction::make('activate_sync')
                         ->label('הפעל נבחרים')
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
+                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
                         ->action(function ($records) {
                             $records->each->update(['is_active' => true]);
 
@@ -153,11 +170,25 @@ class PayableMappingsTableWidget extends BaseWidget
                                 ->send();
                         }),
 
-                    Actions\BulkAction::make('deactivate')
+                    // Queueable bulk action (asynchronous, disabled by default)
+                    QueueableBulkAction::make('deactivate')
+                        ->label('השבת נבחרים')
+                        ->icon('heroicon-o-pause-circle')
+                        ->color('warning')
+                        ->job(BulkPayableMappingDeactivateJob::class)
+                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
+                        ->successNotificationTitle(__('officeguy::messages.bulk_mapping_deactivate_success'))
+                        ->failureNotificationTitle(__('officeguy::messages.bulk_mapping_partial'))
+                        ->modalHeading(__('officeguy::messages.bulk_mapping_deactivate_confirm'))
+                        ->modalDescription(__('officeguy::messages.bulk_mapping_deactivate_desc')),
+
+                    // Legacy synchronous bulk action (for backwards compatibility)
+                    Actions\BulkAction::make('deactivate_sync')
                         ->label('השבת נבחרים')
                         ->icon('heroicon-o-pause-circle')
                         ->color('warning')
                         ->requiresConfirmation()
+                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
                         ->action(function ($records) {
                             $records->each->update(['is_active' => false]);
 

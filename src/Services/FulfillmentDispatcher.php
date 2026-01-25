@@ -13,18 +13,50 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
  *
  * Container-driven fulfillment orchestration based on PayableType.
  *
- * Architecture Decision: Type-Based Dispatch (not Payable-Driven)
- * - Payable only returns its Type via getPayableType()
- * - Dispatcher maps Type→Handler (registered in ServiceProvider)
- * - Optional: Payable can override with getFulfillmentHandler() for special cases
+ * This service acts as the **bridge between payment completion and service fulfillment**.
+ * It receives PaymentCompleted events from the package and dispatches to appropriate
+ * fulfillment handlers based on the Payable type (Infrastructure, Digital, Subscription, etc.).
+ *
+ * ## Architecture Decision: Type-Based Dispatch (not Payable-Driven)
+ *
+ * **Principle:** Payable only returns its Type via getPayableType() → Dispatcher maps Type→Handler
  *
  * Benefits:
  * - ✅ Centralized configuration (all mappings in ServiceProvider)
  * - ✅ Type = Single Source of Truth
  * - ✅ Testable (easy to swap handlers in tests)
  * - ✅ Laravel convention (bindings in ServiceProvider)
+ * - ✅ Application can override by implementing getFulfillmentHandler()
+ *
+ * ## Integration with Application State Machine
+ *
+ * The Application Layer (/httpdocs) owns the Order State Machine and manages state transitions.
+ * This Package Layer receives PaymentCompleted events and dispatches fulfillment actions.
+ *
+ * Flow:
+ * ```
+ * Application: OrderStateMachine::transitionTo(PROCESSING)
+ *             → PaymentCompleted event dispatched
+ *             → Package: FulfillmentListener
+ *             → Package: FulfillmentDispatcher
+ *             → Package: Handler (provision service)
+ *             → Application: OrderStateMachine::transitionTo(COMPLETED)
+ * ```
+ *
+ * ## Registration
+ *
+ * Handlers are registered in OfficeGuyServiceProvider::registerFulfillmentHandlers():
+ *
+ * ```php
+ * $dispatcher->registerMany([
+ *     PayableType::INFRASTRUCTURE->value => InfrastructureFulfillmentHandler::class,
+ *     PayableType::DIGITAL_PRODUCT->value => DigitalProductFulfillmentHandler::class,
+ *     PayableType::SUBSCRIPTION->value => SubscriptionFulfillmentHandler::class,
+ * ]);
+ * ```
  *
  * @see docs/ARCHITECTURE_DECISION_FULFILLMENT_PATTERN.md
+ * @see docs/STATE_MACHINE_ARCHITECTURE.md
  */
 class FulfillmentDispatcher
 {

@@ -116,6 +116,14 @@ class OfficeGuyToken extends Model
     }
 
     /**
+     * האם הכרטיס תקין (לא פג תוקף)?
+     */
+    public function isValid(): bool
+    {
+        return !$this->isExpired();
+    }
+
+    /**
      * סימון ככרטיס ברירת־מחדל ללקוח
      */
     public function setAsDefault(): void
@@ -194,5 +202,51 @@ class OfficeGuyToken extends Model
             str_pad($this->expiry_month, 2, '0', STR_PAD_LEFT),
             $this->expiry_year
         );
+    }
+
+    /**
+     * קבלת מידע מפורמט על הכרטיס לתצוגה
+     *
+     * @return array<string, mixed>
+     */
+    public function getDisplayCardInfo(): array
+    {
+        return [
+            'card_brand' => $this->getCardTypeName(),
+            'last_4_digits' => $this->last_four ?? $this->getMaskedNumber(),
+            'expiry_date' => $this->getFormattedExpiry(),
+            'is_active' => !$this->trashed(),
+            'is_expired' => $this->isExpired(),
+            'usage_count' => 0, // OfficeGuy doesn't track usage count
+            'is_default' => $this->is_default ?? false,
+        ];
+    }
+
+    /**
+     * Accessor for formatted_card_mask
+     *
+     * @return string
+     */
+    public function getFormattedCardMaskAttribute(): string
+    {
+        return $this->getMaskedNumber();
+    }
+
+    /**
+     * Accessor for card_expiry
+     *
+     * @return Carbon|null
+     */
+    public function getCardExpiryAttribute(): ?Carbon
+    {
+        if (!$this->expiry_month || !$this->expiry_year) {
+            return null;
+        }
+
+        return Carbon::create(
+            (int) $this->expiry_year,
+            (int) $this->expiry_month,
+            1
+        )->endOfMonth();
     }
 }

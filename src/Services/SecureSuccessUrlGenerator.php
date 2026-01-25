@@ -7,6 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 use Illuminate\Support\Facades\URL;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
+use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 /**
  * Secure Success URL Generator
@@ -28,6 +29,13 @@ use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
  */
 class SecureSuccessUrlGenerator
 {
+    protected SettingsService $settings;
+
+    public function __construct(SettingsService $settings)
+    {
+        $this->settings = $settings;
+    }
+
     /**
      * Generate a secure success URL for a Payable entity
      *
@@ -38,17 +46,22 @@ class SecureSuccessUrlGenerator
      * - Laravel signed URL with token and nonce
      *
      * @param Payable $payable The payable entity (Order, Invoice, etc.)
-     * @param int|null $ttlHours Token validity in hours (default: from config)
+     * @param int|null $ttlHours Token validity in hours (default: from SettingsService)
      * @return string The secure signed URL
      */
     public function generate(Payable $payable, ?int $ttlHours = null): string
     {
+        // Check if enabled first
+        if (!$this->isEnabled()) {
+            return route('checkout.success');
+        }
+
         // Generate cryptographic token and nonce
         $token = $this->generateToken();
         $nonce = $this->generateNonce();
 
-        // Determine TTL
-        $ttl = $ttlHours ?? config('officeguy.success.token_ttl', 24);
+        // Determine TTL with safe parsing
+        $ttl = $ttlHours ?? $this->getDefaultTtl();
 
         // Create database record with hashed token
         $this->createTokenRecord($payable, $token, $nonce, $ttl);
@@ -130,7 +143,7 @@ class SecureSuccessUrlGenerator
     {
         $token = $this->generateToken();
         $nonce = $this->generateNonce();
-        $ttl = $ttlHours ?? config('officeguy.success.token_ttl', 24);
+        $ttl = $ttlHours ?? $this->getDefaultTtl();
 
         $this->createTokenRecord($payable, $token, $nonce, $ttl);
 
@@ -169,20 +182,35 @@ class SecureSuccessUrlGenerator
     /**
      * Get token TTL configuration
      *
+     * Priority: DB → Config → Default
+     *
      * @return int Hours
      */
     public function getDefaultTtl(): int
     {
-        return config('officeguy.success.token_ttl', 24);
+        $value = $this->settings->get(
+            'success_token_ttl',
+            config('officeguy.success.token_ttl', 24) // Fallback to legacy config
+        );
+
+        return is_numeric($value) ? (int) $value : 24;
     }
 
     /**
      * Check if URL generation is enabled
      *
+     * Priority: DB → Config → Default
+     *
      * @return bool
      */
     public function isEnabled(): bool
     {
-        return config('officeguy.success.enabled', true);
+        $value = $this->settings->get(
+            'success_enabled',
+            config('officeguy.success.enabled', true) // Fallback to legacy config
+        );
+
+        // Safe boolean conversion (handles "false", "0", "", etc.)
+        return filter_var($value, FILTER_VALIDATE_BOOLEAN);
     }
 }

@@ -322,6 +322,31 @@ return [
         'webhook_sent' => 'Webhook sent successfully',
         'webhook_failed' => 'Webhook delivery failed',
         'stock_synced' => 'Stock synchronized successfully',
+
+        // Bulk Actions (v2.4.0+)
+        'subscription_cannot_be_cancelled' => 'This subscription cannot be cancelled',
+        'subscription_cannot_be_charged' => 'This subscription cannot be charged',
+        'bulk_cancel_success' => 'Subscriptions cancelled successfully',
+        'bulk_cancel_partial' => 'Some subscriptions failed to cancel',
+        'bulk_cancel_confirm' => 'Cancel Selected Subscriptions',
+        'bulk_cancel_desc' => 'This will cancel all selected subscriptions in the background. You will receive a notification when complete.',
+        'bulk_sync_success' => 'Token sync completed',
+        'bulk_sync_partial' => 'Some tokens failed to sync',
+        'bulk_sync_confirm' => 'Sync Selected Tokens',
+        'bulk_sync_desc' => 'This will sync selected tokens from SUMIT in the background.',
+        'bulk_email_success' => 'Documents sent successfully',
+        'bulk_email_partial' => 'Some documents failed to send',
+        'bulk_email_desc' => 'This will email selected documents to customers.',
+        'bulk_charge_success' => 'Subscriptions charged successfully',
+        'bulk_charge_partial' => 'Some charges failed',
+        'bulk_charge_desc' => 'This will charge all selected subscriptions immediately.',
+        // Payable Mappings (v2.4.0+)
+        'bulk_mapping_activate_success' => 'Mappings activated successfully',
+        'bulk_mapping_deactivate_success' => 'Mappings deactivated successfully',
+        'bulk_mapping_activate_confirm' => 'Activate Selected Mappings',
+        'bulk_mapping_activate_desc' => 'This will activate all selected mappings in the background. You will receive a notification when complete.',
+        'bulk_mapping_deactivate_confirm' => 'Deactivate Selected Mappings',
+        'bulk_mapping_deactivate_desc' => 'This will deactivate all selected mappings in the background. You will receive a notification when complete.',
     ],
 
     /*
@@ -408,19 +433,44 @@ return [
     ],
 
     'about' => [
-        // Page Titles
-        'title_description' => 'Description',
+        // Page Title & Description
+        'title' => 'SUMIT Payment Gateway - About',
+        'description' => 'Official Laravel package for SUMIT payment gateway integration. Includes full Filament v4 support, payment management, tokens, documents, subscriptions, webhooks, and more. Built by NM-DigitalHub with focus on quality, security, and maintainability.',
+
+        // Section Titles
+        'title_version' => 'Version Information',
         'title_features' => 'Key Features',
+        'title_statistics' => 'Statistics & Requirements',
+        'title_support' => 'Links & Support',
+        'title_description' => 'Description',
         'title_packagist' => 'Packagist Statistics',
         'title_saloon_migration' => 'Saloon PHP v2.0.0 Upgrade',
         'title_technology' => 'Technology Stack',
         'title_credits' => 'Credits',
         'title_links' => 'Important Links',
 
-        // Description
-        'description' => 'Official Laravel package for SUMIT payment gateway integration. Includes full Filament v4 support, payment management, tokens, documents, subscriptions, webhooks, and more. Built by NM-DigitalHub with focus on quality, security, and maintainability.',
+        // Version Status
+        'installed_version' => 'Installed Version',
+        'latest_version' => 'Latest Version',
+        'view_on_packagist' => 'View on Packagist',
+        'view_changelog' => 'View Changelog',
+        'refresh_version' => 'Refresh Information',
 
-        // Features
+        // Status Messages
+        'up_to_date' => 'Up to date',
+        'update_available' => 'Update available',
+
+        // Features (short form for list)
+        'feature_payments' => 'Credit card payments (3 PCI modes)',
+        'feature_tokens' => 'Token management (J2/J5)',
+        'feature_documents' => 'Document generation (invoices/receipts)',
+        'feature_subscriptions' => 'Recurring billing & subscriptions',
+        'feature_bit' => 'Bit payment integration',
+        'feature_multi_vendor' => 'Multi-vendor support',
+        'feature_webhooks' => 'Webhook handling (incoming + outgoing)',
+        'feature_filament' => 'Full Filament v4 integration',
+
+        // Legacy Features (full form)
         'features' => [
             'credit_card_payments' => 'Credit card payments (3 PCI modes)',
             'bit_integration' => 'Bit payment integration',
@@ -432,17 +482,29 @@ return [
             'filament_integration' => 'Full Filament v4 integration',
         ],
 
-        // Packagist Statistics
-        'stats' => [
-            'total_downloads' => 'Total Downloads',
-            'monthly_downloads' => 'Monthly Downloads',
-            'daily_downloads' => 'Daily Downloads',
-            'favers' => 'Favorites',
-            'github_stars' => 'GitHub Stars',
-            'github_watchers' => 'GitHub Watchers',
-            'github_forks' => 'GitHub Forks',
-            'updated_hourly' => 'Updated hourly',
-        ],
+        // Statistics
+        'license' => 'License',
+        'total_downloads' => 'Total Downloads',
+        'monthly_downloads' => 'Monthly Downloads',
+        'daily_downloads' => 'Daily Downloads',
+        'favers' => 'Favorites',
+        'github_stars' => 'GitHub Stars',
+        'github_watchers' => 'GitHub Watchers',
+        'github_forks' => 'GitHub Forks',
+        'updated_hourly' => 'Updated hourly',
+
+        // Support Links
+        'link_documentation' => 'Documentation',
+        'link_issues' => 'Report Bugs',
+        'link_discussions' => 'Discussions',
+        'link_packagist' => 'View on Packagist',
+        'link_sumit_api' => 'SUMIT API Docs',
+
+        // Footer
+        'copyright' => '© 2026 ',
+        'made_with' => 'Built with',
+        'footer_text' => 'Built with ❤️ by NM-DigitalHub • MIT License',
+        'footer_support' => 'Support: info@nm-digitalhub.com',
 
         // Database Notifications
         'notifications' => [

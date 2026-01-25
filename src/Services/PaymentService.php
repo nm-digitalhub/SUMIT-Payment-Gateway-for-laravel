@@ -24,8 +24,107 @@ use OfficeGuy\LaravelSumitGateway\Http\Requests\Bit\CreateBitPaymentRequest;
 /**
  * Payment Service
  *
- * 1:1 port of OfficeGuyPayment.php from WooCommerce plugin
- * Handles payment processing, document creation, and order management
+ * Core payment processing service for the SUMIT Gateway package.
+ * 1:1 port of `OfficeGuyPayment.php` from the WooCommerce plugin.
+ *
+ * ## Architecture
+ *
+ * This service is the **central payment orchestration layer** in the package:
+ *
+ * ```
+ * Checkout Flow
+ *     ↓
+ * PaymentService::preparePayment()  → Create OfficeGuyTransaction record
+ *     ↓
+ * TokenService::processToken()      → Exchange single-use token for permanent token
+ *     ↓
+ * PaymentService::chargePayment()   → Execute charge via SUMIT API
+ *     ↓
+ * PaymentCompleted Event           → Trigger fulfillment
+ *     ↓
+ * FulfillmentListener               → Dispatch to fulfillment handlers
+ * ```
+ *
+ * ## Key Responsibilities
+ *
+ * 1. **Payment Processing**:
+ *    - `chargePayment()` - Execute credit card charges
+ *    - `preparePayment()` - Create transaction records
+ *    - `handleCallback()` - Process payment callbacks
+ *
+ * 2. **Document Generation**:
+ *    - Automatic invoice/receipt creation
+ *    - Donation receipt generation
+ *    - Document linking to transactions
+ *
+ * 3. **Payment Method Management**:
+ *    - `setPaymentMethodForCustomer()` - Save payment methods to SUMIT customer
+ *    - Token-based payment method storage
+ *    - Payment method retrieval and removal
+ *
+ * 4. **Installment Support**:
+ *    - `getMaximumPayments()` - Calculate allowed installments
+ *    - Configuration-based installment limits
+ *    - Minimum amount per payment validation
+ *
+ * 5. **Bit Payment Integration**:
+ *    - `createBitPayment()` - Create Bit payment transactions
+ *    - Bit-specific callback handling
+ *    - Bit payment status tracking
+ *
+ * ## Integration with Application State Machine
+ *
+ * The **Application Layer** owns the Order State Machine. This service:
+ * - **Receives**: Payment request from checkout controller
+ * - **Creates**: OfficeGuyTransaction record (technical tracking)
+ * - **Executes**: Payment charge via SUMIT API
+ * - **Dispatches**: PaymentCompleted event (triggers app state transition)
+ * - **Does NOT** manage order state (app's responsibility)
+ *
+ * ## Saloon HTTP Integration (v2.0.0+)
+ *
+ * Uses Saloon PHP v3.14.2 for type-safe API communication:
+ * - `SumitConnector` - Base API client
+ * - `CredentialsData` - Type-safe credentials DTO
+ * - Request classes - Inline anonymous Saloon Request classes
+ *
+ * ## Configuration
+ *
+ * All behavior is configurable via `config/officeguy.php`:
+ * ```php
+ * 'company_id' => env('OFFICEGUY_COMPANY_ID'),
+ * 'private_key' => env('OFFICEGUY_PRIVATE_KEY'),
+ * 'max_payments' => 12,  // Maximum installments
+ * 'min_amount_per_payment' => 10,  // Min per installment
+ * 'min_amount_for_payments' => 50,  // Min order value for installments
+ * 'automatic_languages' => true,  // Auto-detect document language
+ * ```
+ *
+ * ## PCI Compliance Modes
+ *
+ * - **PCI Mode = 'no'**: PaymentsJS SDK (recommended) - Card data never touches server
+ * - **PCI Mode = 'redirect'**: External SUMIT payment page - Simplest integration
+ * - **PCI Mode = 'yes'**: Direct API - Requires PCI DSS Level 1 certification
+ *
+ * ## Document Generation
+ *
+ * Automatically creates documents after successful payment:
+ * - **Invoice**: For standard payments (configurable)
+ * - **Receipt**: For non-invoice payments
+ * - **Donation Receipt**: For donation payments (Section 46 compliant)
+ *
+ * ## Error Handling
+ *
+ * - All API calls wrapped in try-catch
+ * - Detailed error logging via `OfficeGuyApi::writeToLog()`
+ * - Transaction status updated based on API response
+ * - Exceptions re-thrown for application layer handling
+ *
+ * @see \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector
+ * @see \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction
+ * @see \OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted
+ * @see \OfficeGuy\LaravelSumitGateway\Listeners\FulfillmentListener
+ * @see docs/STATE_MACHINE_ARCHITECTURE.md
  */
 class PaymentService
 {

@@ -5,6 +5,165 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-01-22
+
+### Added
+- **Queueable Bulk Actions** - Asynchronous bulk operations with real-time progress tracking
+- **Fixed Filament Clusters Registration** - Clusters now properly register via ServiceProvider
+  - Integration with `bytexr/filament-queueable-bulk-actions` package
+  - Process large datasets without browser timeouts
+  - Real-time progress notifications via Livewire polling
+  - Automatic retry with exponential backoff (1min, 5min, 15min)
+  - Built-in audit trail (bulk_actions, bulk_action_records tables)
+  - 100% backward compatible - existing bulk actions remain synchronous by default
+
+### New Jobs
+- `BaseBulkActionJob` - Base class with DRY pattern for all bulk actions
+  - Queue configuration from config (not hardcoded)
+  - Retry strategy with exponential backoff
+  - Enhanced telemetry (logs only failures to reduce log volume)
+- `BulkSubscriptionCancelJob` - Cancel multiple subscriptions asynchronously
+- `BulkTokenSyncJob` - Sync multiple tokens from SUMIT asynchronously
+- `BulkDocumentEmailJob` - Email documents to customers in bulk
+- `BulkSubscriptionChargeJob` - Charge subscriptions early in bulk
+
+### New Configuration
+- `config('officeguy.bulk_actions.enabled')` - Enable/disable queueable bulk actions (default: false)
+- `config('officeguy.bulk_actions.queue')` - Queue name for bulk actions (default: 'officeguy-bulk-actions')
+- `config('officeguy.bulk_actions.connection') - Queue connection (default: config('queue.default'))
+- `config('officeguy.bulk_actions.timeout')` - Job timeout in seconds (default: 3600)
+- `config('officeguy.bulk_actions.tries')` - Number of retry attempts (default: 3)
+- `config('officeguy.bulk_actions.enable_legacy_actions')` - Enable legacy synchronous actions (default: false)
+
+### Changed
+- `SubscriptionResource` - Added `QueueableBulkAction` for cancel_selected (opt-in via feature flag)
+- `TokenResource` - Added `QueueableBulkAction` for sync_all_from_sumit (opt-in via feature flag)
+- Both resources maintain backward compatibility with legacy synchronous bulk actions
+
+### Translations
+- Added Hebrew translations for bulk actions notifications
+- Added English translations for bulk actions notifications
+
+### Technical Details
+- **Filament v4 Plugin Registration**: Uses `QueueableBulkActionsPlugin::make()` in `ClientPanelProvider`
+- **Feature Flags**: All queueable bulk actions are hidden by default (`enabled=false`)
+- **Backward Compatibility**: Legacy synchronous actions remain available when queueable actions are disabled
+- **Safe-by-Default**: Requires explicit opt-in via `OFFICEGUY_BULK_ACTIONS_ENABLED=true`
+
+### Documentation
+- QUEUEABLE_BULK_ACTIONS_INTEGRATION.md - Admin Panel integration guide and supervisor configuration
+- STATE_MACHINE_ARCHITECTURE.md - Complete State Machine & Workflow architecture documentation
+  - Application vs Package layer responsibilities
+  - OrderStateMachine integration patterns
+  - Event-driven architecture flows
+  - Source of truth for status (OrderStateMachine vs model-status)
+
+### Enhanced PHPDoc
+- **FulfillmentDispatcher** - Added comprehensive architecture documentation
+  - Type-based dispatch pattern explanation
+  - Integration with Application State Machine
+  - Container-driven handler registration
+  - Priority system for handler resolution
+- **FulfillmentListener** - Added role and architecture documentation
+  - Entry point from Payment Events to Fulfillment Actions
+  - Error handling and re-throw strategy
+  - shouldQueue() behavior rationale
+- **BaseBulkActionJob** - Added complete reference documentation
+  - Template Method Pattern explanation
+  - Queue configuration from config file
+  - Exponential backoff strategy (1min, 5min, 15min)
+  - Intelligent retry control (API vs validation errors)
+  - Telemetry and logging best practices
+  - Supervisor configuration example
+- **BulkSubscriptionCancelJob** - Added flow and validation documentation
+  - Pre-cancellation validation (canBeCancelled)
+  - API error handling with retry strategy
+  - Response metadata structure
+  - Filament integration example
+  - Translation keys reference
+- **BulkTokenSyncJob** - Added sync flow and API integration documentation
+  - SUMIT API integration steps
+  - Use cases for batch token refresh
+  - Error handling by error type
+  - Performance considerations (rate limits)
+- **BulkDocumentEmailJob** - Added email delivery documentation
+  - Email template and attachment handling
+  - Privacy and compliance considerations
+  - Use cases for bulk document delivery
+  - Error handling for email service failures
+- **BulkSubscriptionChargeJob** - Added early charge documentation
+  - Security considerations (requires confirmation)
+  - Audit trail logging
+  - SUMIT API integration for recurring charges
+  - Validation checks (canBeCharged, recurring_id)
+- **BulkPayableMappingActivateJob** - Added activation documentation
+  - Idempotency guarantees (no-op if already active)
+  - Database impact analysis
+  - No cascading effects (boolean flag only)
+  - **Architectural Principle**: Package returns domain-agnostic result, Application interprets meaning
+  - Package does NOT embed `model_class`, timestamps, or `skipped` flags in responses
+- **BulkPayableMappingDeactivateJob** - Added deactivation documentation
+  - Idempotency guarantees (no-op if already inactive)
+  - Active payments consideration (no effect on existing)
+  - Database impact analysis
+  - **Architectural Principle**: Package returns domain-agnostic result, Application interprets meaning
+  - Package does NOT embed `model_class`, timestamps, or `skipped` flags in responses
+- **DigitalProductFulfillmentHandler** - Added comprehensive handler documentation
+  - Supported product types (eSIM, software licenses, digital downloads)
+  - Architecture flow diagram
+  - Integration with Application State Machine
+  - Reference implementation notice
+  - eSIM integration details (ProcessPaidOrderJob)
+  - TODO: Software license and digital download implementation steps
+- **InfrastructureFulfillmentHandler** - Added infrastructure provisioning documentation
+  - Supported service types (domains, hosting, VPS, SSL)
+  - Architecture flow diagram
+  - Integration with Application State Machine
+  - Reference implementation notice
+  - Domain/Hosting/VPS integration details
+  - TODO: SSL certificate implementation steps
+- **SubscriptionFulfillmentHandler** - Added subscription fulfillment documentation
+  - Supported subscription types (business email, SaaS licenses, recurring services)
+  - Architecture flow diagram
+  - Integration with Application State Machine
+  - Tokenization verification for auto-renewal
+  - TODO: Business email, SaaS license, and recurring service implementation steps
+- **PaymentService** - Added core payment processing documentation
+  - Central payment orchestration layer role
+  - Checkout flow diagram
+  - Key responsibilities (5 main areas)
+  - Integration with Application State Machine
+  - Saloon HTTP integration (v2.0.0+)
+  - Configuration reference
+  - PCI compliance modes explanation
+  - Document generation details
+  - Error handling strategy
+
+### New Jobs (Payable Mappings)
+- `BulkPayableMappingActivateJob` - Activate Payable field mappings in bulk
+- `BulkPayableMappingDeactivateJob` - Deactivate Payable field mappings in bulk
+
+### Changed
+- `PayableMappingsTableWidget` - Added QueueableBulkAction for activate/deactivate mappings (opt-in via feature flag)
+  - Maintains backward compatibility with legacy synchronous bulk actions
+
+### Security
+- All bulk actions require confirmation before execution
+- API/network errors are automatically retried with exponential backoff
+- Validation/business logic errors are not retried (prevents cascading failures)
+
+### Migration Guide
+1. Install package: `composer require bytexr/filament-queueable-bulk-actions`
+2. Publish migrations: `php artisan vendor:publish --tag="queueable-bulk-actions-migrations"`
+3. Run migrations: `php artisan migrate`
+4. Configure supervisor for queue worker (see documentation)
+5. Enable in `.env`: `OFFICEGUY_BULK_ACTIONS_ENABLED=true`
+
+### Breaking Changes
+- **None** - This release is 100% backward compatible
+
+---
+
 ## [Unreleased]
 
 ### Added

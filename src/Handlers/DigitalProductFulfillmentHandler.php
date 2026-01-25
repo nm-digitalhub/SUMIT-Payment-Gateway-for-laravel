@@ -10,14 +10,86 @@ use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 /**
  * Digital Product Fulfillment Handler
  *
- * Handles post-payment fulfillment for digital products:
- * - eSIM (QR code generation, instant activation)
- * - Software licenses (license key generation, download links)
- * - Digital downloads (file access, download tokens)
+ * Handles post-payment fulfillment for digital products in the SUMIT Gateway package.
+ * Dispatched by `FulfillmentDispatcher` when `PayableType::DIGITAL_PRODUCT` is received.
  *
- * This is a REFERENCE IMPLEMENTATION.
- * In production, you should implement your own handler
- * that integrates with your digital delivery systems.
+ * ## Supported Product Types
+ *
+ * - **eSIM**: QR code generation, instant activation via Maya Mobile API
+ * - **Software Licenses**: License key generation, download links, activation limits
+ * - **Digital Downloads**: Secure file access, download tokens, expiry tracking
+ *
+ * ## Architecture
+ *
+ * This handler is part of the **Package Layer** fulfillment system:
+ *
+ * ```
+ * PaymentCompleted Event (from PaymentService)
+ *     ↓
+ * FulfillmentListener::handle()
+ *     ↓
+ * FulfillmentDispatcher::dispatch(payable, transaction)
+ *     ↓
+ * PayableType::DIGITAL_PRODUCT → DigitalProductFulfillmentHandler::handle()
+ *     ↓
+ * Product-specific handler (e.g., handleEsim(), handleSoftwareLicense())
+ *     ↓
+ * Application Layer: ProcessPaidOrderJob (provisioning)
+ * ```
+ *
+ * ## Integration with Application State Machine
+ *
+ * The **Application Layer** owns the Order State Machine. This handler:
+ * - **Receives**: PaymentCompleted event (order already in 'processing' state)
+ * - **Executes**: Product provisioning logic (eSIM, license, download)
+ * - **Does NOT** manage order state (app's responsibility)
+ *
+ * ## Reference Implementation
+ *
+ * **IMPORTANT**: This is a **REFERENCE IMPLEMENTATION**. For production:
+ * 1. Copy this class to your application
+ * 2. Customize handlers for your digital delivery systems
+ * 3. Re-register in `OfficeGuyServiceProvider::registerFulfillmentHandlers()`
+ *
+ * ## eSIM Integration (Implemented)
+ *
+ * Dispatches to application's `ProcessPaidOrderJob`:
+ * - Maya Mobile API integration
+ * - QR code generation and delivery
+ * - Email with eSIM activation instructions
+ * - Order status update to 'completed'
+ *
+ * ## Software License Fulfillment (TODO)
+ *
+ * Reference implementation steps:
+ * 1. Generate unique license key (e.g., `XXXX-XXXX-XXXX-XXXX`)
+ * 2. Store license in database with activation limits
+ * 3. Create secure download token for software installer
+ * 4. Send email with license key + download link
+ * 5. Fire `LicenseGenerated` event for audit trail
+ *
+ * ## Digital Download Fulfillment (TODO)
+ *
+ * Reference implementation steps:
+ * 1. Generate signed download URL (expires after N downloads or X hours)
+ * 2. Store download token in database
+ * 3. Send email with download instructions
+ * 4. Track download attempts and expiry
+ * 5. Fire `DownloadTokenGenerated` event for analytics
+ *
+ * ## Registration
+ *
+ * Registered in `OfficeGuyServiceProvider::registerFulfillmentHandlers()`:
+ * ```php
+ * $dispatcher->registerMany([
+ *     PayableType::DIGITAL_PRODUCT->value => DigitalProductFulfillmentHandler::class,
+ * ]);
+ * ```
+ *
+ * @see \OfficeGuy\LaravelSumitGateway\Services\FulfillmentDispatcher
+ * @see \OfficeGuy\LaravelSumitGateway\Listeners\FulfillmentListener
+ * @see \OfficeGuy\LaravelSumitGateway\Enums\PayableType::DIGITAL_PRODUCT
+ * @see docs/STATE_MACHINE_ARCHITECTURE.md
  */
 class DigitalProductFulfillmentHandler
 {

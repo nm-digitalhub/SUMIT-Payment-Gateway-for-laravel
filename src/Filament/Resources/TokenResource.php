@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions\Action;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -21,6 +22,7 @@ use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkTokenSyncJob;
 use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
 
 class TokenResource extends Resource
@@ -343,11 +345,25 @@ class TokenResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    BulkAction::make('sync_all_from_sumit')
+                    // Queueable bulk action (asynchronous, disabled by default)
+                    QueueableBulkAction::make('sync_all_from_sumit')
                         ->label('Sync All from SUMIT')
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
+                        ->job(BulkTokenSyncJob::class)
+                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
+                        ->successNotificationTitle(__('officeguy::messages.bulk_sync_success'))
+                        ->failureNotificationTitle(__('officeguy::messages.bulk_sync_partial'))
+                        ->modalHeading(__('officeguy::messages.bulk_sync_confirm'))
+                        ->modalDescription(__('officeguy::messages.bulk_sync_desc')),
+
+                    // Legacy synchronous bulk action (for backwards compatibility)
+                    BulkAction::make('sync_all_from_sumit_sync')
+                        ->label('Sync All from SUMIT (Sync)')
+                        ->icon('heroicon-o-arrow-path')
+                        ->color('warning')
                         ->requiresConfirmation()
+                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
                         ->modalHeading('Sync Selected Tokens from SUMIT')
                         ->modalDescription('This will fetch the latest data from SUMIT for all selected tokens.')
                         ->action(function (\Illuminate\Database\Eloquent\Collection $records) {

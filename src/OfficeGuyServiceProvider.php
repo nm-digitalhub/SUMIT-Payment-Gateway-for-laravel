@@ -81,6 +81,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\ServiceDataFactory::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\TemporaryStorageService::class);
 
+        // Bind PackageVersionService for About page (v2.4.0)
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\PackageVersionService::class);
+
         // Resolve CheckoutRequest for route model binding
         $this->app->resolving(CheckoutRequest::class, function ($request, $app) {
             return CheckoutRequest::createFrom($app['request'], $request);
@@ -165,6 +168,10 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'officeguy-migrations');
+
+        $this->publishes([
+            __DIR__ . '/../public' => public_path('vendor/officeguy'),
+        ], 'officeguy-assets');
 
         // Load settings from database and override config
         $this->loadDatabaseSettings();
@@ -271,6 +278,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register Container-Driven Fulfillment handlers (v1.18.0)
         $this->registerFulfillmentHandlers();
+
+        // Register Filament Clusters for navigation organization
+        $this->registerFilamentClusters();
     }
 
     /**

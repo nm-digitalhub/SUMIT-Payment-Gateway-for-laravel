@@ -18,13 +18,15 @@ use Filament\Clusters\Cluster;
  * - Webhook Events (outgoing webhooks)
  * - SUMIT Webhooks (incoming webhooks)
  * - Settings Page
+ * - About Page (package information & version status)
  */
 class SumitGateway extends Cluster
 {
     /**
      * Navigation icon in main admin sidebar
+     * Uses custom SUMIT payment gateway SVG icon
      */
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-credit-card';
+    protected static string|\BackedEnum|null $navigationIcon = 'icon-sumit-icon';
 
     /**
      * Navigation label in Hebrew

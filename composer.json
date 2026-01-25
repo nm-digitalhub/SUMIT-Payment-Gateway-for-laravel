@@ -28,9 +28,10 @@
     ],
     "require": {
         "php": "^8.2",
-        "laravel/framework": "^12.0",
+        "bytexr/filament-queueable-bulk-actions": "^4.0",
         "filament/filament": "^4.0",
         "guzzlehttp/guzzle": "^7.0",
+        "laravel/framework": "^12.0",
         "saloonphp/saloon": "^3.14"
     },
     "require-dev": {

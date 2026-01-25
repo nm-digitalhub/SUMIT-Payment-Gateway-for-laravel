@@ -4,6 +4,31 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
 
+/*
+ * IMPORTANT - Form State Persistence Fix:
+ * ---------------------------------------
+ *
+ * Problem: Settings were being saved to DB but not persisting after page refresh.
+ *
+ * Root Causes:
+ * 1. Form was not reloaded after save (user saw stale form state)
+ * 2. Some fields had default(fn () => config(...)) which conflicted with DB values
+ *
+ * Solution:
+ * 1. ✅ Added $this->mount() call in save() method to reload form from DB
+ * 2. ✅ Removed all dynamic default(fn () => config(...)) from collection fields
+ * 3. ✅ All defaults now come from SettingsService::getEditableSettings()
+ *    which merges: DB overrides (if exist) → Config defaults → Static defaults
+ *
+ * Static defaults on form fields are SAFE and serve as fallback when:
+ * - Fresh installation (no DB values yet)
+ * - Settings table doesn't exist
+ * - Config is empty
+ *
+ * The mount() method ALWAYS fills the form with current effective values,
+ * ensuring DB values take precedence over static defaults.
+ */
+
 use Filament\Schemas\Components\Section;       
   
   use Filament\Forms\Components\Select;
@@ -39,9 +64,13 @@ class OfficeGuySettings extends Page
 
     public function mount(): void
     {
-        $this->form->fill(
-            $this->settingsService->getEditableSettings()
-        );
+        // Get current settings (DB overrides + Config defaults)
+        $settings = $this->settingsService->getEditableSettings();
+
+        // IMPORTANT: Do NOT use default(fn () => config(...)) on form fields
+        // because it conflicts with the values loaded here from DB.
+        // All defaults should come from config files ONLY.
+        $this->form->fill($settings);
     }
 
     public function form(Schema $schema): Schema
@@ -270,21 +299,18 @@ class OfficeGuySettings extends Page
                 ->columns(3)
                 ->schema([
                     Toggle::make('collection.email')
-                        ->label('שליחת מייל אוטומטית')
-                        ->default(fn () => config('officeguy.collection.email', true)),
+                        ->label('שליחת מייל אוטומטית'),
                     Toggle::make('collection.sms')
-                        ->label('שליחת SMS אוטומטית')
-                        ->default(fn () => config('officeguy.collection.sms', false)),
+                        ->label('שליחת SMS אוטומטית'),
                     TextInput::make('collection.schedule_time')
                         ->label('שעת ריצה יומית (HH:MM)')
-                        ->default(fn () => config('officeguy.collection.schedule_time', '02:00')),
+                        ->placeholder('02:00'),
                     TextInput::make('collection.reminder_days')
                         ->label('מרווחי תזכורות (ימים, מופרד בפסיק)')
-                        ->default(fn () => config('officeguy.collection.reminder_days', '0,3,7')),
+                        ->placeholder('0,3,7'),
                     TextInput::make('collection.max_attempts')
                         ->label('מספר ניסיונות מקסימלי')
-                        ->numeric()
-                        ->default(fn () => config('officeguy.collection.max_attempts', 3)),
+                        ->numeric(),
                 ]),
 
             Section::make(__('officeguy::officeguy.settings.multivendor'))
@@ -738,7 +764,11 @@ class OfficeGuySettings extends Page
     public function save(): void
     {
         try {
+            // Save all settings to database
             $this->settingsService->setMany($this->form->getState());
+
+            // Reload form with fresh data from database (not form state)
+            $this->mount();
 
             Notification::make()
                 ->title('Settings saved')

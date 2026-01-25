@@ -1,0 +1,7 @@
+{
+  "enabledPlugins": {
+    "svg-logo-designer@rknall-custom-skills": true,
+    "ui-design-review@rknall-custom-skills": true,
+    "web-design-builder@rknall-custom-skills": true
+  }
+}

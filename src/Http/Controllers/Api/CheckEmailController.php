@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Controllers\Api;
 
-use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -47,8 +46,11 @@ class CheckEmailController extends Controller
         // Normalize email (lowercase, trim whitespace)
         $email = strtolower(trim($validated['email']));
 
+        // Resolve user model from container binding
+        $userModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+
         // Check if user exists (case-insensitive query)
-        $exists = User::whereRaw('LOWER(email) = ?', [$email])->exists();
+        $exists = $userModel::whereRaw('LOWER(email) = ?', [$email])->exists();
 
         // Log email check for monitoring (optional, based on config)
         if (config('officeguy.logging', false)) {

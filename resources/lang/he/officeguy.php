@@ -328,6 +328,31 @@ return [
         'webhook_sent' => 'Webhook נשלח בהצלחה',
         'webhook_failed' => 'שליחת Webhook נכשלה',
         'stock_synced' => 'המלאי סונכרן בהצלחה',
+
+        // Bulk Actions (v2.4.0+)
+        'subscription_cannot_be_cancelled' => 'לא ניתן לבטל מנוי זה',
+        'subscription_cannot_be_charged' => 'לא ניתן לחייב מנוי זה',
+        'bulk_cancel_success' => 'ביטול מנויים הושלם בהצלחה',
+        'bulk_cancel_partial' => 'חלק מהמנויים נכשלו',
+        'bulk_cancel_confirm' => 'ביטול מנויים נבחרים',
+        'bulk_cancel_desc' => 'פעולה זו תבטל את כל המנויים הנבחרים ברקע. תקבל הודעה כאשר הפעולה תסתיים.',
+        'bulk_sync_success' => 'סנכרון Tokens הושלם',
+        'bulk_sync_partial' => 'חלק מה-Tokens נכשלו',
+        'bulk_sync_confirm' => 'סנכרון Tokens נבחרים',
+        'bulk_sync_desc' => 'פעולה זו תסנכרן את ה-Tokens הנבחרים מ-SUMIT ברקע.',
+        'bulk_email_success' => 'מסמכים נשלחו בהצלחה',
+        'bulk_email_partial' => 'חלק מהמסמכים לא נשלחו',
+        'bulk_email_desc' => 'פעולה זו תשלח את המסמכים הנבחרים ללקוחות באימייל.',
+        'bulk_charge_success' => 'חיוב מנויים הושלם',
+        'bulk_charge_partial' => 'חלק מהחיובים נכשלו',
+        'bulk_charge_desc' => 'פעולה זו תחייב את כל המנויים הנבחרים מיד.',
+        // Payable Mappings (v2.4.0+)
+        'bulk_mapping_activate_success' => 'מיפויים הופעלו בהצלחה',
+        'bulk_mapping_deactivate_success' => 'מיפויים הושבתו בהצלחה',
+        'bulk_mapping_activate_confirm' => 'הפעלת מיפויים נבחרים',
+        'bulk_mapping_activate_desc' => 'פעולה זו תפעיל את כל המיפויים הנבחרים ברקע. תקבל הודעה כאשר הפעולה תסתיים.',
+        'bulk_mapping_deactivate_confirm' => 'השבתת מיפויים נבחרים',
+        'bulk_mapping_deactivate_desc' => 'פעולה זו תשבית את כל המיפויים הנבחרים ברקע. תקבל הודעה כאשר הפעולה תסתיים.',
     ],
 
     /*
@@ -419,19 +444,44 @@ return [
     |--------------------------------------------------------------------------
     */
     'about' => [
-        // Page Titles
-        'title_description' => 'תיאור',
+        // Page Title & Description
+        'title' => 'SUMIT Payment Gateway - אודות',
+        'description' => 'חבילת Laravel רשמית לאינטגרציה עם שער התשלומים SUMIT. כוללת תמיכה מלאה ב-Filament v4, ניהול תשלומים, טוקנים, מסמכים, מנויים, Webhooks ועוד. נבנתה על-ידי NM-DigitalHub עם התמקדות באיכות, אבטחה ותחזוקה.',
+
+        // Section Titles
+        'title_version' => 'מידע גרסה',
         'title_features' => 'תכונות עיקריות',
+        'title_statistics' => 'סטטיסטיקות ודרישות',
+        'title_support' => 'קישורים ותמיכה',
+        'title_description' => 'תיאור',
         'title_packagist' => 'סטטיסטיקות Packagist',
         'title_saloon_migration' => 'שדרוג Saloon PHP v2.0.0',
         'title_technology' => 'טכנולוגיות',
         'title_credits' => 'קרדיטים',
         'title_links' => 'קישורים חשובים',
 
-        // Description
-        'description' => 'חבילת Laravel רשמית לאינטגרציה עם שער התשלומים SUMIT. כוללת תמיכה מלאה ב-Filament v4, ניהול תשלומים, טוקנים, מסמכים, מנויים, Webhooks ועוד. נבנתה על-ידי NM-DigitalHub עם התמקדות באיכות, אבטחה ותחזוקה.',
+        // Version Status
+        'installed_version' => 'גרסה מותקנת',
+        'latest_version' => 'גרסה אחרונה',
+        'view_on_packagist' => 'צפה ב-Packagist',
+        'view_changelog' => 'צפה ב-Changelog',
+        'refresh_version' => 'רענן מידע',
 
-        // Features
+        // Status Messages
+        'up_to_date' => 'מעודכן',
+        'update_available' => 'עדכון זמין',
+
+        // Features (short form for list)
+        'feature_payments' => 'תשלומי כרטיסי אשראי (3 מצבי PCI)',
+        'feature_tokens' => 'ניהול טוקנים (J2/J5)',
+        'feature_documents' => 'יצירת מסמכים (חשבוניות/קבלות)',
+        'feature_subscriptions' => 'חיובים חוזרים ומנויים',
+        'feature_bit' => 'אינטגרציה עם Bit',
+        'feature_multi_vendor' => 'תמיכה רב-ספקים',
+        'feature_webhooks' => 'טיפול ב-Webhooks (נכנסים + יוצאים)',
+        'feature_filament' => 'אינטגרציה מלאה עם Filament v4',
+
+        // Legacy Features (full form)
         'features' => [
             'credit_card_payments' => 'תשלומי כרטיסי אשראי (3 מצבי PCI)',
             'bit_integration' => 'אינטגרציה עם Bit',
@@ -443,19 +493,31 @@ return [
             'filament_integration' => 'אינטגרציה מלאה עם Filament v4',
         ],
 
-        // Packagist Statistics
-        'stats' => [
-            'total_downloads' => 'סה״כ הורדות',
-            'monthly_downloads' => 'הורדות חודשיות',
-            'daily_downloads' => 'הורדות יומיות',
-            'favers' => 'מועדפים',
-            'github_stars' => 'כוכבי GitHub',
-            'github_watchers' => 'עוקבי GitHub',
-            'github_forks' => 'פיצולי GitHub',
-            'updated_hourly' => 'מתעדכן כל שעה',
-        ],
+        // Statistics
+        'license' => 'רישיון',
+        'total_downloads' => 'סה״כ הורדות',
+        'monthly_downloads' => 'הורדות חודשיות',
+        'daily_downloads' => 'הורדות יומיות',
+        'favers' => 'מועדפים',
+        'github_stars' => 'כוכבי GitHub',
+        'github_watchers' => 'עוקבי GitHub',
+        'github_forks' => 'פיצולי GitHub',
+        'updated_hourly' => 'מתעדכן כל שעה',
 
-        // Database Notifications
+        // Support Links
+        'link_documentation' => 'תיעוד',
+        'link_issues' => 'דיווח באגים',
+        'link_discussions' => 'דיונים',
+        'link_packagist' => 'חבילה ב-Packagist',
+        'link_sumit_api' => 'ממשק SUMIT API',
+
+        // Footer
+        'copyright' => '© 2026 ',
+        'made_with' => 'נבנה עם',
+        'footer_text' => 'נבנה עם ❤️ על-ידי NM-DigitalHub • רישיון MIT',
+        'footer_support' => 'תמיכה: info@nm-digitalhub.com',
+
+        // Database Notifications (legacy)
         'notifications' => [
             'payment_completed' => [
                 'title' => 'תשלום בוצע בהצלחה',
@@ -488,9 +550,5 @@ return [
             'middleware_support' => 'תמיכה ב-Middleware (Logging, Authentication)',
             'backward_compatible' => '100% תאימות לאחור בשכבת השירותים',
         ],
-
-        // Footer
-        'footer_text' => 'נבנה עם ❤️ על-ידי NM-DigitalHub • רישיון MIT',
-        'footer_support' => 'תמיכה: info@nm-digitalhub.com',
     ],
 ];
