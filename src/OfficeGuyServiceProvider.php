@@ -401,8 +401,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
                 \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
             }
 
-            // Auto-discover and register Resources from package directory
+            // Auto-discover and register Resources from package directories
             $this->discoverFilamentResources();
+            $this->discoverClientResources();
         });
     }
 
@@ -449,6 +450,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         $registeredCount = 0;
         $skippedCount = 0;
+        $resourcesToRegister = [];
 
         foreach ($resourceFiles as $file) {
             // Only process files ending with 'Resource.php'
@@ -467,19 +469,30 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
             // Verify class exists before registering
             if (class_exists($fullClassName)) {
-                try {
-                    \Filament\Facades\Filament::registerResources([$fullClassName]);
-                    $registeredCount++;
-                    \Log::debug("[SUMIT] Registered resource: {$fullClassName}");
-                } catch (\Throwable $e) {
-                    \Log::error("[SUMIT] Failed to register resource {$fullClassName}: {$e->getMessage()}");
-                }
+                $resourcesToRegister[] = $fullClassName;
+                $registeredCount++;
+                \Log::debug("[SUMIT] Discovered resource: {$fullClassName}");
             } else {
                 \Log::warning("[SUMIT] Resource class not found: {$fullClassName}");
             }
         }
 
-        \Log::info("[SUMIT] Auto-discovered and registered {$registeredCount} resources (skipped {$skippedCount} non-resource files)");
+        // Register all resources to the admin panel at once
+        if (!empty($resourcesToRegister)) {
+            try {
+                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
+                if ($adminPanel !== null) {
+                    // Use $panel->resources() instead of Filament::registerResources()
+                    // This ensures proper route registration
+                    $adminPanel->resources($resourcesToRegister);
+                    \Log::info("[SUMIT] Registered {$registeredCount} resources to admin panel (skipped {$skippedCount} non-resource files)");
+                } else {
+                    \Log::warning("[SUMIT] Admin panel not found, cannot register resources");
+                }
+            } catch (\Throwable $e) {
+                \Log::error("[SUMIT] Failed to register resources: {$e->getMessage()}");
+            }
+        }
 
         // Register Pages separately (no auto-discovery for Pages)
         $this->registerFilamentPages();
@@ -498,14 +511,111 @@ class OfficeGuyServiceProvider extends ServiceProvider
             \OfficeGuy\LaravelSumitGateway\Filament\Pages\AboutPage::class,
         ];
 
+        $validPages = [];
         foreach ($pages as $page) {
             if (class_exists($page)) {
-                try {
-                    \Filament\Facades\Filament::registerPages([$page]);
-                    \Log::debug("[SUMIT] Registered page: {$page}");
-                } catch (\Throwable $e) {
-                    \Log::error("[SUMIT] Failed to register page {$page}: {$e->getMessage()}");
+                $validPages[] = $page;
+                \Log::debug("[SUMIT] Discovered page: {$page}");
+            } else {
+                \Log::warning("[SUMIT] Page class not found: {$page}");
+            }
+        }
+
+        // Register all pages to the admin panel at once
+        if (!empty($validPages)) {
+            try {
+                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
+                if ($adminPanel !== null) {
+                    // Use $panel->pages() instead of Filament::registerPages()
+                    // This ensures proper route registration
+                    $adminPanel->pages($validPages);
+                    \Log::info("[SUMIT] Registered " . count($validPages) . " pages to admin panel");
+                } else {
+                    \Log::warning("[SUMIT] Admin panel not found, cannot register pages");
                 }
+            } catch (\Throwable $e) {
+                \Log::error("[SUMIT] Failed to register pages: {$e->getMessage()}");
+            }
+        }
+    }
+
+    /**
+     * Auto-discover and register Filament Client Resources from package directory.
+     *
+     * This method scans the package's Filament/Client/Resources directory recursively
+     * and automatically registers all Client Resource classes with the client panel.
+     *
+     * Architecture: Recursive Auto-Discovery Pattern
+     * - Scans directory: __DIR__ . '/Filament/Client/Resources' (recursive)
+     * - Namespace: OfficeGuy\LaravelSumitGateway\Filament\Client\Resources
+     * - Registers any class ending with 'Resource.php' in any subdirectory
+     *
+     * Benefits:
+     * - ✅ Zero manual maintenance
+     * - ✅ New client resources auto-register
+     * - ✅ Clean, scalable code
+     */
+    protected function discoverClientResources(): void
+    {
+        $resourcesPath = __DIR__ . '/Filament/Client/Resources';
+        $baseNamespace = 'OfficeGuy\\LaravelSumitGateway\\Filament\\Client\\Resources';
+
+        // Check if directory exists
+        if (!is_dir($resourcesPath)) {
+            \Log::warning("[SUMIT] Client Resources directory not found: {$resourcesPath}");
+            return;
+        }
+
+        // Scan for Resource files recursively
+        $resourceFiles = glob($resourcesPath . '/**/*.php');
+
+        if (empty($resourceFiles)) {
+            \Log::info("[SUMIT] No client resource files found in: {$resourcesPath}");
+            return;
+        }
+
+        $registeredCount = 0;
+        $skippedCount = 0;
+        $resourcesToRegister = [];
+
+        foreach ($resourceFiles as $file) {
+            // Only process files ending with 'Resource.php'
+            if (!str_ends_with(basename($file), 'Resource.php')) {
+                $skippedCount++;
+                continue;
+            }
+
+            // Calculate the relative path from Resources directory
+            $relativePath = str_replace($resourcesPath . '/', '', $file);
+            $relativePath = str_replace('/', '\\', $relativePath);
+
+            // Remove .php extension and build full class name
+            $classNameWithoutExtension = str_replace('.php', '', $relativePath);
+            $fullClassName = $baseNamespace . '\\' . $classNameWithoutExtension;
+
+            // Verify class exists before registering
+            if (class_exists($fullClassName)) {
+                $resourcesToRegister[] = $fullClassName;
+                $registeredCount++;
+                \Log::debug("[SUMIT] Discovered client resource: {$fullClassName}");
+            } else {
+                \Log::warning("[SUMIT] Client resource class not found: {$fullClassName}");
+            }
+        }
+
+        // Register all resources to the client panel at once
+        if (!empty($resourcesToRegister)) {
+            try {
+                $clientPanel = \Filament\Facades\Filament::getPanel('client');
+                if ($clientPanel !== null) {
+                    // Use $panel->resources() for proper route registration
+                    $clientPanel->resources($resourcesToRegister);
+                    \Log::info("[SUMIT] Registered {$registeredCount} client resources to client panel (skipped {$skippedCount} non-resource files)");
+                } else {
+                    \Log::warning("[SUMIT] Client panel not found, cannot register client resources");
+                }
+            } catch (\Throwable $e) {
+                \Log::error("[SUMIT] Failed to register client resources: {$e->getMessage()}");
             }
         }
     }
