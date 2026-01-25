@@ -372,22 +372,30 @@ class OfficeGuyServiceProvider extends ServiceProvider
             // Register clusters for admin panel
             try {
                 $adminPanel = \Filament\Facades\Filament::getPanel('admin');
-                $adminPanel->clusters([
-                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
-                ]);
-                \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
-            } catch (\Exception $e) {
+                if ($adminPanel !== null) {
+                    $adminPanel->clusters([
+                        \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
+                    ]);
+                    \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
+                } else {
+                    \Log::warning('[SUMIT] Admin panel not found, skipping SumitGateway cluster registration');
+                }
+            } catch (\Throwable $e) {
                 \Log::error('[SUMIT] Failed to register SumitGateway cluster: ' . $e->getMessage());
             }
 
             // Register clusters for client panel
             try {
                 $clientPanel = \Filament\Facades\Filament::getPanel('client');
-                $clientPanel->clusters([
-                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
-                ]);
-                \Log::info('[SUMIT] SumitClient cluster registered to client panel');
-            } catch (\Exception $e) {
+                if ($clientPanel !== null) {
+                    $clientPanel->clusters([
+                        \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
+                    ]);
+                    \Log::info('[SUMIT] SumitClient cluster registered to client panel');
+                } else {
+                    \Log::warning('[SUMIT] Client panel not found, skipping SumitClient cluster registration');
+                }
+            } catch (\Throwable $e) {
                 \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
             }
         });
