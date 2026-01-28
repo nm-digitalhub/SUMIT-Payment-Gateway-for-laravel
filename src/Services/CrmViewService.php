@@ -23,7 +23,7 @@ class CrmViewService
      * Returns array of views with minimal data: ID and Name only.
      * SUMIT API provides limited view data similar to the folder limitation.
      *
-     * @param int $folderId SUMIT folder ID
+     * @param  int  $folderId  SUMIT folder ID
      * @return array{success: bool, views?: array, error?: string}
      */
     public static function listViews(int $folderId): array
@@ -79,9 +79,9 @@ class CrmViewService
      * Creates or updates a view with basic information from listViews API.
      * Note: SUMIT API provides only ID and Name for views (similar to folders limitation).
      *
-     * @param int $sumitFolderId SUMIT folder ID
-     * @param int $sumitViewId SUMIT view ID
-     * @param string $viewName View name from listViews
+     * @param  int  $sumitFolderId  SUMIT folder ID
+     * @param  int  $sumitViewId  SUMIT view ID
+     * @param  string  $viewName  View name from listViews
      * @return array{success: bool, view?: CrmView, error?: string}
      */
     public static function syncViewFromSumit(int $sumitFolderId, int $sumitViewId, string $viewName): array
@@ -90,7 +90,7 @@ class CrmViewService
             // Get local folder
             $folder = CrmFolder::where('sumit_folder_id', $sumitFolderId)->first();
 
-            if (!$folder) {
+            if (! $folder) {
                 return ['success' => false, 'error' => 'Folder not found locally'];
             }
 
@@ -135,7 +135,7 @@ class CrmViewService
      *
      * Fetches all views for a folder and syncs them to local database.
      *
-     * @param int $sumitFolderId SUMIT folder ID
+     * @param  int  $sumitFolderId  SUMIT folder ID
      * @return array{success: bool, synced_count?: int, error?: string}
      */
     public static function syncAllViews(int $sumitFolderId): array
@@ -144,7 +144,7 @@ class CrmViewService
             // Get views from SUMIT
             $result = self::listViews($sumitFolderId);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return ['success' => false, 'error' => $result['error']];
             }
 
@@ -155,7 +155,7 @@ class CrmViewService
                 $viewId = $viewData['ID'] ?? null;
                 $viewName = $viewData['Name'] ?? 'Unknown View';
 
-                if (!$viewId) {
+                if (! $viewId) {
                     continue;
                 }
 

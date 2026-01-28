@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
 use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
-use OfficeGuy\LaravelSumitGateway\Services\CustomerService;
 use OfficeGuy\LaravelSumitGateway\Services\DebtService;
 
 class CrmEntitiesTable
@@ -44,7 +43,7 @@ class CrmEntitiesTable
                 Tables\Columns\TextColumn::make('folder.name')
                     ->label('Folder')
                     ->badge()
-                    ->color(fn ($record) => match ($record->folder?->entity_type) {
+                    ->color(fn ($record): string => match ($record->folder?->entity_type) {
                         'contact' => 'success',
                         'lead' => 'warning',
                         'company' => 'info',
@@ -69,18 +68,20 @@ class CrmEntitiesTable
                         }
 
                         return Cache::remember(
-                            'sumit_balance_'.$record->sumit_customer_id,
+                            'sumit_balance_' . $record->sumit_customer_id,
                             300,
                             function () use ($record) {
                                 $service = app(DebtService::class);
+
                                 return $service->getCustomerBalanceById((int) $record->sumit_customer_id);
                             }
                         );
                     })
                     ->formatStateUsing(fn ($state) => $state['formatted'] ?? null)
                     ->badge()
-                    ->color(function ($state) {
+                    ->color(function (array $state): string {
                         $debt = $state['debt'] ?? 0;
+
                         return $debt > 0 ? 'danger' : ($debt < 0 ? 'success' : 'gray');
                     })
                     ->icon('heroicon-o-scale')
@@ -126,7 +127,7 @@ class CrmEntitiesTable
                     ->falseIcon('heroicon-o-x-circle')
                     ->trueColor('success')
                     ->falseColor('danger')
-                    ->getStateUsing(fn ($record) => $record->deleted_at === null)
+                    ->getStateUsing(fn ($record): bool => $record->deleted_at === null)
                     ->toggleable(),
             ])
             ->filters([
@@ -172,7 +173,7 @@ class CrmEntitiesTable
                     ->requiresConfirmation()
                     ->modalHeading('Sync Entity from SUMIT')
                     ->modalDescription('This will fetch the latest data from SUMIT CRM and update this entity.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             $result = CrmDataService::syncEntityFromSumit((int) $record->sumit_entity_id);
 
@@ -189,7 +190,7 @@ class CrmEntitiesTable
                                 ->send();
                         }
                     })
-                    ->visible(fn ($record) => $record->sumit_entity_id !== null),
+                    ->visible(fn ($record): bool => $record->sumit_entity_id !== null),
 
                 Action::make('sync_to_sumit')
                     ->label('Sync to SUMIT (push)')
@@ -198,7 +199,7 @@ class CrmEntitiesTable
                     ->requiresConfirmation()
                     ->modalHeading('Push entity to SUMIT')
                     ->modalDescription('Creates/updates the customer in SUMIT and stores the returned SUMIT ID locally.')
-                    ->action(function (CrmEntity $record) {
+                    ->action(function (CrmEntity $record): void {
                         $result = $record->syncToSumit();
 
                         if ($result['success'] ?? false) {
@@ -224,7 +225,7 @@ class CrmEntitiesTable
                     ->requiresConfirmation()
                     ->modalHeading('Archive Entity')
                     ->modalDescription('This will archive the entity in SUMIT. You can restore it later.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             $result = CrmDataService::archiveEntity((int) $record->sumit_entity_id);
 
@@ -245,7 +246,7 @@ class CrmEntitiesTable
                                 ->send();
                         }
                     })
-                    ->visible(fn ($record) => $record->sumit_entity_id !== null && !$record->trashed()),
+                    ->visible(fn ($record): bool => $record->sumit_entity_id !== null && ! $record->trashed()),
 
                 // Export as PDF
                 Action::make('export_pdf')
@@ -265,12 +266,12 @@ class CrmEntitiesTable
                                 $pdf = base64_decode($result['pdf']);
                                 $filename = "entity-{$record->sumit_entity_id}.pdf";
 
-                                return response()->streamDownload(function () use ($pdf) {
+                                return response()->streamDownload(function () use ($pdf): void {
                                     echo $pdf;
                                 }, $filename, ['Content-Type' => 'application/pdf']);
-                            } else {
-                                throw new \Exception($result['error']);
                             }
+
+                            throw new \Exception($result['error']);
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('Export failed')
@@ -279,7 +280,7 @@ class CrmEntitiesTable
                                 ->send();
                         }
                     })
-                    ->visible(fn ($record) => $record->sumit_entity_id !== null),
+                    ->visible(fn ($record): bool => $record->sumit_entity_id !== null),
 
                 // Check Usage Count (before deletion)
                 Action::make('check_usage')
@@ -288,7 +289,7 @@ class CrmEntitiesTable
                     ->color('gray')
                     ->modalHeading('Entity Usage Count')
                     ->modalWidth('md')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             $result = CrmDataService::countEntityUsage((int) $record->sumit_entity_id);
 
@@ -311,14 +312,14 @@ class CrmEntitiesTable
                                 ->send();
                         }
                     })
-                    ->visible(fn ($record) => $record->sumit_entity_id !== null),
+                    ->visible(fn ($record): bool => $record->sumit_entity_id !== null),
 
                 Action::make('check_debt')
                     ->label('Check Debt')
                     ->icon('heroicon-o-scale')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             if (! $record->sumit_customer_id) {
                                 throw new \Exception('Missing SUMIT customer ID on this entity.');
@@ -343,14 +344,14 @@ class CrmEntitiesTable
                                 ->send();
                         }
                     })
-                    ->visible(fn ($record) => $record->sumit_customer_id !== null),
+                    ->visible(fn ($record): bool => $record->sumit_customer_id !== null),
 
                 // Add Activity
                 Action::make('add_activity')
                     ->label('Add Activity')
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
-                    ->url(fn ($record) => route('filament.admin.resources.crm-activities.create', [
+                    ->url(fn ($record): string => route('filament.admin.resources.crm-activities.create', [
                         'crm_entity_id' => $record->id,
                     ]))
                     ->openUrlInNewTab(false),
@@ -370,14 +371,14 @@ class CrmEntitiesTable
                             $query = $table->getQuery();
                             $folder = $query->first()?->folder;
 
-                            if (!$folder) {
+                            if (! $folder) {
                                 throw new \Exception('Please select a folder filter first');
                             }
 
                             // Get first view for this folder
                             $view = $folder->views()->first();
 
-                            if (!$view || !$view->sumit_view_id) {
+                            if (! $view || ! $view->sumit_view_id) {
                                 throw new \Exception('No view available for this folder');
                             }
 
@@ -391,12 +392,12 @@ class CrmEntitiesTable
                                 $pdf = base64_decode($result['pdf']);
                                 $filename = "crm-entities-{$folder->name}.pdf";
 
-                                return response()->streamDownload(function () use ($pdf) {
+                                return response()->streamDownload(function () use ($pdf): void {
                                     echo $pdf;
                                 }, $filename, ['Content-Type' => 'application/pdf']);
-                            } else {
-                                throw new \Exception($result['error']);
                             }
+
+                            throw new \Exception($result['error']);
                         } catch (\Exception $e) {
                             Notification::make()
                                 ->title('Export failed')
@@ -421,17 +422,17 @@ class CrmEntitiesTable
                     ->modalHeading('Sync All Entities from SUMIT')
                     ->modalDescription('This will sync all entities from the selected folder. This may take a while.')
                     ->modalSubmitActionLabel('Sync Entities')
-                    ->action(function (array $data) {
+                    ->action(function (array $data): void {
                         try {
                             $folder = \OfficeGuy\LaravelSumitGateway\Models\CrmFolder::find($data['folder_id']);
 
-                            if (!$folder) {
+                            if (! $folder) {
                                 throw new \Exception('Folder not found');
                             }
 
                             $result = CrmDataService::syncAllEntities($folder->id);
 
-                            if (!$result['success']) {
+                            if (! $result['success']) {
                                 throw new \Exception($result['error'] ?? 'Sync failed');
                             }
 
@@ -461,7 +462,7 @@ class CrmEntitiesTable
                         ->color('warning')
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             $success = 0;
                             $failed = 0;
 
@@ -487,7 +488,7 @@ class CrmEntitiesTable
                         ->color('primary')
                         ->requiresConfirmation()
                         ->deselectRecordsAfterCompletion()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             $success = 0;
                             $failed = 0;
 
@@ -496,7 +497,7 @@ class CrmEntitiesTable
                                     try {
                                         $result = CrmDataService::syncEntityFromSumit((int) $record->sumit_entity_id);
                                         $success++;
-                                    } catch (\Exception $e) {
+                                    } catch (\Exception) {
                                         $failed++;
                                     }
                                 } else {

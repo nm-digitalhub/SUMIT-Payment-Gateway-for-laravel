@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
+use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -11,40 +14,36 @@ use Filament\Actions\DeleteAction;
 use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\TextInput;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Support\Enums\IconSize;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Arr;
-use Carbon\Carbon;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 class ClientPaymentMethodResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyToken::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
-
-    protected static ?string $navigationLabel = 'אמצעי תשלום';
-
-    protected static ?int $navigationSort = 2;
-
-    protected static ?string $modelLabel = 'אמצעי תשלום';
-
-    protected static ?string $pluralModelLabel = 'אמצעי תשלום';
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     /**
      * מציג רק כרטיסים של הלקוח (Client) המחובר
@@ -53,13 +52,13 @@ class ClientPaymentMethodResource extends Resource
     {
         $client = auth()->user()?->client;
 
-        if (!$client) {
+        if (! $client) {
             // אם אין Client, החזר query ריק
             return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
 
         return parent::getEloquentQuery()
-            ->where('owner_type', get_class($client))
+            ->where('owner_type', $client::class)
             ->where('owner_id', $client->id);
     }
 
@@ -73,19 +72,19 @@ class ClientPaymentMethodResource extends Resource
         $user = auth()->user();
         $client = $user?->client;
 
-        if (!$client?->sumit_customer_id) {
+        if (! $client?->sumit_customer_id) {
             return [false, 'לא נמצא מזהה SUMIT ללקוח הנוכחי'];
         }
 
         $result = PaymentService::getPaymentMethodsForCustomer($client->sumit_customer_id, true);
 
-        if (!$result['success']) {
+        if (! $result['success']) {
             return [false, $result['error'] ?? ''];
         }
 
         $methods = $result['payment_methods'] ?? [];
         $active = $result['active_method'] ?? null;
-        $ownerType = get_class($client);  // Fixed: Client instead of User
+        $ownerType = $client::class;  // Fixed: Client instead of User
         $ownerId = $client->getKey();      // Fixed: Client ID instead of User ID
         $kept = [];
         $candidateDefault = null;
@@ -94,7 +93,7 @@ class ClientPaymentMethodResource extends Resource
 
         foreach ($methods as $method) {
             $token = $method['CreditCard_Token'] ?? null;
-            if (!$token) {
+            if (! $token) {
                 continue;
             }
 
@@ -112,7 +111,7 @@ class ClientPaymentMethodResource extends Resource
                     'card_type' => (string) Arr::get($method, 'Type', '1'),
                     'last_four' => $lastFour,
                     'citizen_id' => $method['CreditCard_CitizenID'] ?? null,
-                    'expiry_month' => str_pad((string)($method['CreditCard_ExpirationMonth'] ?? '1'), 2, '0', STR_PAD_LEFT),
+                    'expiry_month' => str_pad((string) ($method['CreditCard_ExpirationMonth'] ?? '1'), 2, '0', STR_PAD_LEFT),
                     'expiry_year' => (string) ($method['CreditCard_ExpirationYear'] ?? date('Y')),
                     'is_default' => false,
                     'metadata' => $method,
@@ -143,17 +142,17 @@ class ClientPaymentMethodResource extends Resource
         if ($payments['success'] ?? false) {
             foreach ($payments['payments'] ?? [] as $payment) {
                 $token = $payment['PaymentMethod']['CreditCard_Token'] ?? null;
-                if (!$token) {
+                if (! $token) {
                     continue;
                 }
 
                 $usage[$token]['total'] = ($usage[$token]['total'] ?? 0) + 1;
-                $usage[$token]['amount'] = ($usage[$token]['amount'] ?? 0) + (float)($payment['Amount'] ?? 0);
+                $usage[$token]['amount'] = ($usage[$token]['amount'] ?? 0) + (float) ($payment['Amount'] ?? 0);
 
                 $date = $payment['Date'] ?? null;
-                if ($date && (!isset($usage[$token]['last_at']) || $date > $usage[$token]['last_at'])) {
+                if ($date && (! isset($usage[$token]['last_at']) || $date > $usage[$token]['last_at'])) {
                     $usage[$token]['last_at'] = $date;
-                    $usage[$token]['last_amount'] = (float)($payment['Amount'] ?? 0);
+                    $usage[$token]['last_amount'] = (float) ($payment['Amount'] ?? 0);
                     $usage[$token]['payment_id'] = $payment['ID'] ?? null;
                     $usage[$token]['status_desc'] = $payment['StatusDescription'] ?? null;
                     $usage[$token]['valid_payment'] = $payment['ValidPayment'] ?? null;
@@ -161,7 +160,7 @@ class ClientPaymentMethodResource extends Resource
             }
         }
 
-        if (!empty($kept)) {
+        if ($kept !== []) {
             OfficeGuyToken::where('owner_type', $ownerType)
                 ->where('owner_id', $ownerId)
                 ->whereNotIn('token', $kept)
@@ -175,7 +174,7 @@ class ClientPaymentMethodResource extends Resource
                 ->where('token', $token)
                 ->first();
 
-            if (!$record) {
+            if (! $record) {
                 continue;
             }
 
@@ -233,21 +232,21 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->size('lg')
                                     ->weight('bold')
-                                    ->color(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
+                                    ->color(fn ($record): string => match ((string) ($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'info',      // Visa - כחול
                                         '2' => 'warning',   // MasterCard - כתום
                                         '6' => 'success',   // Amex - ירוק
                                         '22' => 'primary',  // Cal - סגול
                                         default => 'gray',
                                     })
-                                    ->icon(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
+                                    ->icon(fn ($record): string => match ((string) ($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'heroicon-o-credit-card',
                                         '2' => 'heroicon-o-credit-card',
                                         '6' => 'heroicon-o-credit-card',
                                         '22' => 'heroicon-o-building-library',
                                         default => 'heroicon-o-credit-card',
                                     })
-                                    ->formatStateUsing(fn ($record) => match((string)($record->metadata['Type'] ?? $record->card_type ?? '')) {
+                                    ->formatStateUsing(fn ($record): string => match ((string) ($record->metadata['Type'] ?? $record->card_type ?? '')) {
                                         '1' => 'Visa',
                                         '2' => 'MasterCard',
                                         '6' => 'American Express',
@@ -260,7 +259,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-hashtag')
                                     ->badge()
                                     ->color('gray')
-                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין'),
+                                    ->formatStateUsing(fn ($state): string => $state ? '#' . $state : 'לא זמין'),
 
                                 // מספר כרטיס מוסתר
                                 TextEntry::make('last_four')
@@ -269,10 +268,10 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('success')
                                     ->size('lg')
                                     ->weight('bold')
-                                    ->state(fn ($record) =>
-                                        substr((string)($record->metadata['CreditCard_CardMask'] ?? '************' . $record->last_four), -4)
+                                    ->state(
+                                        fn ($record): string => substr((string) ($record->metadata['CreditCard_CardMask'] ?? '************' . $record->last_four), -4)
                                     )
-                                    ->formatStateUsing(fn ($state) => '•••• •••• •••• ' . $state)
+                                    ->formatStateUsing(fn ($state): string => '•••• •••• •••• ' . $state)
                                     ->copyable()
                                     ->copyMessage('הועתק בהצלחה!')
                                     ->copyMessageDuration(1500)
@@ -284,13 +283,13 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-calendar-days')
                                     ->badge()
                                     ->size('lg')
-                                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
-                                    ->formatStateUsing(fn ($record) =>
-                                        ($record->metadata['CreditCard_ExpirationMonth'] ?? $record->expiry_month)
-                                        . '/' . substr((string)($record->metadata['CreditCard_ExpirationYear'] ?? $record->expiry_year), -2)
+                                    ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'success')
+                                    ->formatStateUsing(
+                                        fn ($record): string => ($record->metadata['CreditCard_ExpirationMonth'] ?? $record->expiry_month)
+                                        . '/' . substr((string) ($record->metadata['CreditCard_ExpirationYear'] ?? $record->expiry_year), -2)
                                     )
-                                    ->helperText(fn ($record) =>
-                                        $record->isExpired()
+                                    ->helperText(
+                                        fn ($record): string => $record->isExpired()
                                         ? 'הכרטיס פג תוקף'
                                         : 'בתוקף עד ' . $record->expiry_month . '/' . $record->expiry_year
                                     ),
@@ -300,14 +299,14 @@ class ClientPaymentMethodResource extends Resource
                                     ->label('סטטוס')
                                     ->badge()
                                     ->size('lg')
-                                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
-                                    ->icon(fn ($record) => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                                    ->formatStateUsing(fn ($record) =>
-                                        ($record->isExpired() ? 'פג תוקף' : 'פעיל') .
+                                    ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'success')
+                                    ->icon(fn ($record): string => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                                    ->formatStateUsing(
+                                        fn ($record): string => ($record->isExpired() ? 'פג תוקף' : 'פעיל') .
                                         ($record->is_default ? ' (ברירת מחדל)' : '')
                                     )
-                                    ->helperText(fn ($record) =>
-                                        $record->is_default ? 'כרטיס ברירת מחדל לתשלומים' : ''
+                                    ->helperText(
+                                        fn ($record): string => $record->is_default ? 'כרטיס ברירת מחדל לתשלומים' : ''
                                     ),
 
                                 TextEntry::make('metadata.CreditCard_CitizenID')
@@ -320,7 +319,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-user')
                                     ->badge()
                                     ->color('gray')
-                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין'),
+                                    ->formatStateUsing(fn ($state): string => $state ? '#' . $state : 'לא זמין'),
                             ]),
                     ]),
 
@@ -339,10 +338,10 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-server')
                                     ->badge()
                                     ->color('info')
-                                    ->formatStateUsing(fn ($state) => match($state) {
+                                    ->formatStateUsing(fn ($state) => match ($state) {
                                         'officeguy' => 'SUMIT Gateway',
                                         'officeguybit' => 'Bit Payment',
-                                        default => strtoupper($state),
+                                        default => strtoupper((string) $state),
                                     }),
 
                                 TextEntry::make('token')
@@ -353,7 +352,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->copyMessage('טוקן הועתק בצורה מאובטחת!')
                                     ->copyMessageDuration(2000)
                                     ->limit(24)
-                                    ->tooltip(fn ($state) => 'טוקן מלא: ' . $state)
+                                    ->tooltip(fn ($state): string => 'טוקן מלא: ' . $state)
                                     ->helperText('לחץ להעתקת הטוקן המלא'),
 
                                 TextEntry::make('citizen_id')
@@ -390,7 +389,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->color('primary')
                                     ->state(fn ($record) => $record->metadata['TransactionID'] ?? null)
-                                    ->formatStateUsing(fn ($state) => $state ? '#' . $state : 'לא זמין')
+                                    ->formatStateUsing(fn ($state): string => $state ? '#' . $state : 'לא זמין')
                                     ->copyable()
                                     ->copyMessage('מזהה טרנזקציה הועתק!')
                                     ->helperText('מזהה בסיסטם SUMIT'),
@@ -402,7 +401,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->color('success')
                                     ->state(fn ($record) => $record->metadata['AuthNumber'] ?? null)
-                                    ->formatStateUsing(fn ($state) => $state ? trim($state) : 'לא זמין')
+                                    ->formatStateUsing(fn ($state): string => $state ? trim((string) $state) : 'לא זמין')
                                     ->copyable()
                                     ->helperText('מספר אישור מהבנק'),
 
@@ -413,7 +412,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->color('warning')
                                     ->state(fn ($record) => $record->metadata['Acquirer'] ?? null)
-                                    ->formatStateUsing(fn ($state) => match($state) {
+                                    ->formatStateUsing(fn ($state): string => match ($state) {
                                         1 => 'ישראכרט',
                                         2 => 'לאומי קארד',
                                         3 => 'כאל',
@@ -431,7 +430,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->badge()
                                     ->color('info')
                                     ->state(fn ($record) => $record->metadata['Issuer'] ?? null)
-                                    ->formatStateUsing(fn ($state) => match($state) {
+                                    ->formatStateUsing(fn ($state): string => match ($state) {
                                         1 => 'ישראכרט',
                                         2 => 'לאומי קארד',
                                         6 => 'לאומי קארד',
@@ -449,7 +448,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-signal')
                                     ->state(fn ($record) => $record->metadata['ResultCode'] ?? null)
                                     ->badge()
-                                    ->color(fn ($state) => $state === '000' ? 'success' : 'danger')
+                                    ->color(fn ($state): string => $state === '000' ? 'success' : 'danger')
                                     ->formatStateUsing(fn ($state) => $state ?: 'לא זמין'),
 
                                 TextEntry::make('result_description')
@@ -457,14 +456,14 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-chat-bubble-left-right')
                                     ->state(fn ($record) => $record->metadata['ResultDescription'] ?? null)
                                     ->badge()
-                                    ->color(fn ($state) => $state === 'Approved' ? 'success' : 'warning')
+                                    ->color(fn ($state): string => $state === 'Approved' ? 'success' : 'warning')
                                     ->formatStateUsing(fn ($state) => $state ?: 'לא זמין'),
 
                                 TextEntry::make('checkout_index')
                                     ->label('אינדקס תשלום')
                                     ->icon('heroicon-o-queue-list')
-                                    ->state(fn ($record) =>
-                                        isset($record->metadata['FileNumber'], $record->metadata['CheckoutIndex'])
+                                    ->state(
+                                        fn ($record) => isset($record->metadata['FileNumber'], $record->metadata['CheckoutIndex'])
                                         ? $record->metadata['FileNumber'] . '-' . $record->metadata['CheckoutIndex']
                                         : null
                                     )
@@ -479,14 +478,14 @@ class ClientPaymentMethodResource extends Resource
                                     ->icon('heroicon-o-hashtag')
                                     ->badge()
                                     ->color('gray')
-                                    ->formatStateUsing(fn ($state) => $state ? '#'.$state : 'לא זמין')
+                                    ->formatStateUsing(fn ($state): string => $state ? '#' . $state : 'לא זמין')
                                     ->helperText('מזהה עסקה ב‑SUMIT'),
 
                                 TextEntry::make('metadata.StatusDescription')
                                     ->label('סטטוס עסקה')
                                     ->icon('heroicon-o-information-circle')
-                                    ->formatStateUsing(fn ($state) =>
-                                        match (trim((string) $state)) {
+                                    ->formatStateUsing(
+                                        fn ($state) => match (trim((string) $state)) {
                                             'Approved', '(קוד 000)', 'קוד 000', '000', '' => 'הצלחה',
                                             default => $state ?: 'לא זמין',
                                         }
@@ -496,8 +495,8 @@ class ClientPaymentMethodResource extends Resource
                                     ->label('עסקה תקינה')
                                     ->icon('heroicon-o-check-circle')
                                     ->badge()
-                                    ->color(fn ($state) => $state ? 'success' : 'danger')
-                                    ->formatStateUsing(fn ($state) => $state ? 'Yes' : 'No'),
+                                    ->color(fn ($state): string => $state ? 'success' : 'danger')
+                                    ->formatStateUsing(fn ($state): string => $state ? 'Yes' : 'No'),
                             ]),
                     ]),
 
@@ -520,7 +519,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->size('lg')
                                     ->weight('bold')
                                     ->state(fn ($record) => $record->metadata['Usage_Total'] ?? null)
-                                    ->formatStateUsing(fn ($state) => $state !== null ? number_format((int)$state) : 'טרם בוצע')
+                                    ->formatStateUsing(fn ($state): string => $state !== null ? number_format((int) $state) : 'טרם בוצע')
                                     ->helperText('נתון מספק SUMIT (Usage_Total)'),
 
                                 TextEntry::make('total_amount')
@@ -532,7 +531,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->size('lg')
                                     ->weight('bold')
                                     ->state(fn ($record) => $record->metadata['Usage_TotalAmount'] ?? null)
-                                    ->formatStateUsing(fn ($state) => $state !== null ? '₪' . number_format((float)$state, 2) : 'אין נתונים')
+                                    ->formatStateUsing(fn ($state): string => $state !== null ? '₪' . number_format((float) $state, 2) : 'אין נתונים')
                                     ->helperText('Usage_TotalAmount מספק SUMIT'),
 
                                 TextEntry::make('last_transaction')
@@ -543,26 +542,26 @@ class ClientPaymentMethodResource extends Resource
                                     ->color('warning')
                                     ->state(fn ($record) => $record->metadata['Usage_LastAt'] ?? null)
                                     ->formatStateUsing(function ($state) {
-                                        if (!$state) {
+                                        if (! $state) {
                                             return 'אין נתונים';
                                         }
 
                                         try {
                                             return Carbon::parse($state)->timezone('Asia/Jerusalem')->format('d/m/Y H:i');
-                                        } catch (\Throwable $e) {
+                                        } catch (\Throwable) {
                                             return $state;
                                         }
                                     })
                                     ->placeholder('טרם בוצע')
-                                    ->helperText(function ($record) {
+                                    ->helperText(function ($record): string {
                                         $state = $record->metadata['Usage_LastAt'] ?? null;
-                                        if (!$state) {
+                                        if (! $state) {
                                             return 'לא נמצאו תשלומים';
                                         }
 
                                         try {
                                             return Carbon::parse($state)->timezone('Asia/Jerusalem')->diffForHumans();
-                                        } catch (\Throwable $e) {
+                                        } catch (\Throwable) {
                                             return 'מתוך נתוני SUMIT';
                                         }
                                     }),
@@ -573,7 +572,7 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('info')
                                     ->badge()
                                     ->color('info')
-                                    ->state(function ($record) {
+                                    ->state(function ($record): string {
                                         $count = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('last_digits', $record->last_four)
                                             ->where('card_type', $record->card_type)
                                             ->whereIn('status', ['completed', 'success', 'approved'])
@@ -585,11 +584,14 @@ class ClientPaymentMethodResource extends Resource
                                         $frequency = $count / max($days, 1);
                                         if ($frequency >= 1) {
                                             return 'יומי';
-                                        } elseif ($frequency >= 0.25) {
+                                        }
+                                        if ($frequency >= 0.25) {
                                             return 'שבועי';
-                                        } elseif ($frequency >= 0.1) {
+                                        }
+                                        if ($frequency >= 0.1) {
                                             return 'חודשי';
                                         }
+
                                         return 'נדיר';
                                     })
                                     ->helperText('על בסיס היסטוריית שימוש'),
@@ -612,8 +614,8 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('success')
                                     ->dateTime('d/m/Y בשעה H:i')
                                     ->timezone('Asia/Jerusalem')
-                                    ->helperText(fn ($record) =>
-                                        'לפני ' . $record->created_at->diffForHumans()
+                                    ->helperText(
+                                        fn ($record): string => 'לפני ' . $record->created_at->diffForHumans()
                                     ),
 
                                 TextEntry::make('updated_at')
@@ -622,15 +624,15 @@ class ClientPaymentMethodResource extends Resource
                                     ->iconColor('warning')
                                     ->dateTime('d/m/Y בשעה H:i')
                                     ->timezone('Asia/Jerusalem')
-                                    ->helperText(fn ($record) =>
-                                        'לפני ' . $record->updated_at->diffForHumans()
+                                    ->helperText(
+                                        fn ($record): string => 'לפני ' . $record->updated_at->diffForHumans()
                                     ),
 
                                 TextEntry::make('id')
                                     ->label('מזהה מערכת')
                                     ->icon('heroicon-o-hashtag')
                                     ->iconColor('gray')
-                                    ->formatStateUsing(fn ($state) => '#' . str_pad((string)$state, 6, '0', STR_PAD_LEFT))
+                                    ->formatStateUsing(fn ($state): string => '#' . str_pad((string) $state, 6, '0', STR_PAD_LEFT))
                                     ->copyable()
                                     ->copyMessage('מזהה הועתק!')
                                     ->helperText('מזהה פנימי למעקב'),
@@ -644,7 +646,7 @@ class ClientPaymentMethodResource extends Resource
                     ->collapsible()
                     ->collapsed(true)
                     ->columnSpanFull()
-                    ->visible(fn ($record) => !empty($record->metadata))
+                    ->visible(fn ($record): bool => ! empty($record->metadata))
                     ->schema([
                         // קטגוריה 1: סטטוס העסקה
                         Section::make('סטטוס העסקה')
@@ -654,16 +656,16 @@ class ClientPaymentMethodResource extends Resource
                                     TextEntry::make('meta_success')
                                         ->label('סטטוס הצלחה')
                                         ->state(fn ($record) => $record->metadata['Success'] ?? null)
-                                        ->formatStateUsing(fn ($state) => $state ? 'הצלחה' : 'כשלון')
+                                        ->formatStateUsing(fn ($state): string => $state ? 'הצלחה' : 'כשלון')
                                         ->badge()
-                                        ->color(fn ($state) => $state ? 'success' : 'danger'),
+                                        ->color(fn ($state): string => $state ? 'success' : 'danger'),
 
                                     TextEntry::make('meta_result_code')
                                         ->label('קוד תוצאה')
                                         ->state(fn ($record) => $record->metadata['ResultCode'] ?? null)
                                         ->formatStateUsing(fn ($state) => $state === '000' ? '000 - מאושר' : ($state ?? 'לא זמין'))
                                         ->badge()
-                                        ->color(fn ($state) => $state === '000' ? 'success' : 'warning'),
+                                        ->color(fn ($state): string => $state === '000' ? 'success' : 'warning'),
 
                                     TextEntry::make('meta_result_description')
                                         ->label('תיאור התוצאה')
@@ -707,9 +709,10 @@ class ClientPaymentMethodResource extends Resource
                                 Grid::make(3)->schema([
                                     TextEntry::make('meta_brand')
                                         ->label('מותג כרטיס')
-                                        ->state(function ($record) {
+                                        ->state(function ($record): string {
                                             $brand = $record->metadata['Brand'] ?? null;
-                                            return match((string)$brand) {
+
+                                            return match ((string) $brand) {
                                                 '1' => 'Visa',
                                                 '2' => 'MasterCard',
                                                 '6' => 'American Express',
@@ -722,9 +725,10 @@ class ClientPaymentMethodResource extends Resource
 
                                     TextEntry::make('meta_acquirer')
                                         ->label('חברת סליקה')
-                                        ->state(function ($record) {
+                                        ->state(function ($record): string {
                                             $acquirer = $record->metadata['Acquirer'] ?? null;
-                                            return match((string)$acquirer) {
+
+                                            return match ((string) $acquirer) {
                                                 '1' => 'ישראכרט',
                                                 '2' => 'לאומי קארד',
                                                 '3' => 'כ.א.ל',
@@ -739,9 +743,10 @@ class ClientPaymentMethodResource extends Resource
 
                                     TextEntry::make('meta_issuer')
                                         ->label('מנפיק הכרטיס')
-                                        ->state(function ($record) {
+                                        ->state(function ($record): string {
                                             $issuer = $record->metadata['Issuer'] ?? null;
-                                            return match((string)$issuer) {
+
+                                            return match ((string) $issuer) {
                                                 '1' => 'בנק לאומי',
                                                 '2' => 'בנק הפועלים',
                                                 '3' => 'בנק דיסקונט',
@@ -777,8 +782,8 @@ class ClientPaymentMethodResource extends Resource
                                 Grid::make(4)->schema([
                                     TextEntry::make('meta_expiration_month')
                                         ->label('חודש תפוגה')
-                                        ->state(fn ($record) => isset($record->metadata['ExpirationMonth'])
-                                            ? str_pad((string)$record->metadata['ExpirationMonth'], 2, '0', STR_PAD_LEFT)
+                                        ->state(fn ($record): string => isset($record->metadata['ExpirationMonth'])
+                                            ? str_pad((string) $record->metadata['ExpirationMonth'], 2, '0', STR_PAD_LEFT)
                                             : 'לא זמין')
                                         ->badge()
                                         ->color('gray'),
@@ -787,8 +792,11 @@ class ClientPaymentMethodResource extends Resource
                                         ->label('שנת תפוגה')
                                         ->state(function ($record) {
                                             $year = $record->metadata['ExpirationYear'] ?? null;
-                                            if (!$year) return 'לא זמין';
-                                            return strlen((string)$year) === 2 ? '20' . $year : $year;
+                                            if (! $year) {
+                                                return 'לא זמין';
+                                            }
+
+                                            return strlen((string) $year) === 2 ? '20' . $year : $year;
                                         })
                                         ->badge()
                                         ->color('gray'),
@@ -853,13 +861,13 @@ class ClientPaymentMethodResource extends Resource
 
                     TextInput::make('last_four')
                         ->label('מספר כרטיס')
-                        ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
+                        ->formatStateUsing(fn ($state): string => '**** **** **** ' . $state)
                         ->disabled(),
 
                     Placeholder::make('expiry')
                         ->label('תוקף')
-                        ->content(fn ($record) =>
-                            $record?->expiry_month . '/' . $record?->expiry_year
+                        ->content(
+                            fn ($record): string => $record?->expiry_month . '/' . $record?->expiry_year
                         ),
 
                     Checkbox::make('is_default')
@@ -873,14 +881,14 @@ class ClientPaymentMethodResource extends Resource
                 ->schema([
                     Placeholder::make('status')
                         ->label('סטטוס כרטיס')
-                        ->content(fn ($record) =>
-                            $record?->isExpired() ? '⚠️ פג תוקף' : '✓ פעיל'
+                        ->content(
+                            fn ($record): string => $record?->isExpired() ? '⚠️ פג תוקף' : '✓ פעיל'
                         ),
 
                     Placeholder::make('created_at')
                         ->label('נוסף בתאריך')
-                        ->content(fn ($record) =>
-                            $record?->created_at?->format('d/m/Y')
+                        ->content(
+                            fn ($record) => $record?->created_at?->format('d/m/Y')
                         ),
                 ])
                 ->columns(2),
@@ -902,14 +910,14 @@ class ClientPaymentMethodResource extends Resource
                     ->trueColor('warning')
                     ->falseColor('gray')
                     ->alignCenter()
-                    ->tooltip(fn ($record) => $record->is_default ? 'כרטיס ברירת מחדל' : 'לא ברירת מחדל'),
+                    ->tooltip(fn ($record): string => $record->is_default ? 'כרטיס ברירת מחדל' : 'לא ברירת מחדל'),
 
                 Tables\Columns\TextColumn::make('card_type')
                     ->label('סוג כרטיס')
                     ->badge()
                     ->color('primary')
                     ->icon('heroicon-o-credit-card')
-                    ->formatStateUsing(fn ($state) => match($state) {
+                    ->formatStateUsing(fn ($state): string => match ($state) {
                         '1' => 'Visa',
                         '2' => 'MasterCard',
                         '6' => 'American Express',
@@ -923,7 +931,7 @@ class ClientPaymentMethodResource extends Resource
                     ->label('מספר כרטיס')
                     ->icon('heroicon-o-shield-check')
                     ->iconColor('success')
-                    ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
+                    ->formatStateUsing(fn ($state): string => '**** **** **** ' . $state)
                     ->copyable()
                     ->copyMessage('הועתק!')
                     ->copyMessageDuration(1500)
@@ -932,13 +940,13 @@ class ClientPaymentMethodResource extends Resource
                 Tables\Columns\TextColumn::make('expiry_month')
                     ->label('תוקף')
                     ->icon('heroicon-o-calendar')
-                    ->formatStateUsing(fn ($record) =>
-                        $record->expiry_month . '/' . substr($record->expiry_year, -2)
+                    ->formatStateUsing(
+                        fn ($record): string => $record->expiry_month . '/' . substr((string) $record->expiry_year, -2)
                     )
                     ->badge()
-                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
-                    ->tooltip(fn ($record) =>
-                        $record->isExpired()
+                    ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'success')
+                    ->tooltip(
+                        fn ($record): string => $record->isExpired()
                         ? 'הכרטיס פג תוקף!'
                         : 'כרטיס פעיל עד ' . $record->expiry_month . '/' . $record->expiry_year
                     )
@@ -947,9 +955,9 @@ class ClientPaymentMethodResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('סטטוס')
                     ->badge()
-                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success')
-                    ->icon(fn ($record) => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
-                    ->formatStateUsing(fn ($record) => $record->isExpired() ? 'פג תוקף' : 'פעיל'),
+                    ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'success')
+                    ->icon(fn ($record): string => $record->isExpired() ? 'heroicon-o-x-circle' : 'heroicon-o-check-circle')
+                    ->formatStateUsing(fn ($record): string => $record->isExpired() ? 'פג תוקף' : 'פעיל'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('נוסף בתאריך')
@@ -969,16 +977,16 @@ class ClientPaymentMethodResource extends Resource
 
                 Tables\Filters\Filter::make('expired')
                     ->label('כרטיסים שפג תוקפם')
-                    ->query(fn (Builder $query) =>
-                        $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') < CURDATE()")
+                    ->query(
+                        fn (Builder $query) => $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') < CURDATE()")
                     )
                     ->toggle()
                     ->indicator('פג תוקף'),
 
                 Tables\Filters\Filter::make('active')
                     ->label('כרטיסים פעילים')
-                    ->query(fn (Builder $query) =>
-                        $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') >= CURDATE()")
+                    ->query(
+                        fn (Builder $query) => $query->whereRaw("STR_TO_DATE(CONCAT(expiry_year, '-', expiry_month, '-01'), '%Y-%m-%d') >= CURDATE()")
                     )
                     ->toggle()
                     ->default()
@@ -993,7 +1001,7 @@ class ClientPaymentMethodResource extends Resource
                     ->action(function (): void {
                         [$ok, $error, $count] = self::syncTokensFromSumit();
 
-                        if (!$ok) {
+                        if (! $ok) {
                             Notification::make()
                                 ->title('הריענון נכשל')
                                 ->body($error ?: 'שגיאה לא ידועה')
@@ -1021,17 +1029,17 @@ class ClientPaymentMethodResource extends Resource
                     ->label('הגדר כברירת מחדל')
                     ->icon('heroicon-o-star')
                     ->color('warning')
-                    ->visible(fn ($record) => !$record->is_default && !$record->isExpired())
+                    ->visible(fn ($record): bool => ! $record->is_default && ! $record->isExpired())
                     ->requiresConfirmation()
                     ->modalHeading('הגדרת כרטיס ברירת מחדל')
                     ->modalDescription('האם להגדיר כרטיס זה כאמצעי התשלום המועדף שלך?')
                     ->modalSubmitActionLabel('כן, הגדר כברירת מחדל')
                     ->modalCancelActionLabel('ביטול')
-                    ->action(function (OfficeGuyToken $record) {
+                    ->action(function (OfficeGuyToken $record): void {
                         $user = auth()->user();
                         $client = $user?->client;
 
-                        if (!$client?->sumit_customer_id) {
+                        if (! $client?->sumit_customer_id) {
                             Notification::make()
                                 ->title('לא נמצא מזהה SUMIT ללקוח')
                                 ->danger()
@@ -1046,7 +1054,7 @@ class ClientPaymentMethodResource extends Resource
                             $record->metadata ?? []
                         );
 
-                        if (!$push['success']) {
+                        if (! $push['success']) {
                             Notification::make()
                                 ->title('העדכון בספק נכשל')
                                 ->body($push['error'] ?? 'שגיאה לא ידועה')
@@ -1076,7 +1084,7 @@ class ClientPaymentMethodResource extends Resource
                     ->modalDescription('האם להסיר את הכרטיס מרשימת ברירת המחדל?')
                     ->modalSubmitActionLabel('כן, הסר')
                     ->modalCancelActionLabel('ביטול')
-                    ->action(function (OfficeGuyToken $record) {
+                    ->action(function (OfficeGuyToken $record): void {
                         $record->update(['is_default' => false]);
 
                         Notification::make()
@@ -1129,7 +1137,7 @@ class ClientPaymentMethodResource extends Resource
                 Action::make('add_card')
                     ->label('הוסף כרטיס חדש')
                     ->icon('heroicon-o-plus')
-                    ->url(fn () => static::getUrl('create'))
+                    ->url(fn (): string => static::getUrl('create'))
                     ->button(),
             ])
             ->striped()
@@ -1143,9 +1151,9 @@ class ClientPaymentMethodResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index'  => Pages\ListClientPaymentMethods::route('/'),
+            'index' => Pages\ListClientPaymentMethods::route('/'),
             'create' => Pages\CreateClientPaymentMethod::route('/create'),
-            'view'   => Pages\ViewClientPaymentMethod::route('/{record}'),
+            'view' => Pages\ViewClientPaymentMethod::route('/{record}'),
         ];
     }
 
@@ -1164,7 +1172,7 @@ class ClientPaymentMethodResource extends Resource
     {
         $expiredCount = static::getEloquentQuery()
             ->get()
-            ->filter(fn (OfficeGuyToken $token) => $token->isExpired())
+            ->filter(fn (OfficeGuyToken $token): bool => $token->isExpired())
             ->count();
 
         return $expiredCount > 0 ? (string) $expiredCount : null;
@@ -1184,7 +1192,7 @@ class ClientPaymentMethodResource extends Resource
     public static function getNavigationBadgeTooltip(): ?string
     {
         $count = static::getNavigationBadge();
-        if (!$count) {
+        if (! $count) {
             return null;
         }
 

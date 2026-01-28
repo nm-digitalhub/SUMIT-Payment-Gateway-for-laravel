@@ -67,8 +67,8 @@ class CrmSyncFoldersCommand extends Command
     /**
      * Sync a single folder by ID
      *
-     * @param int $folderId SUMIT folder ID
-     * @param bool $dryRun Dry run mode
+     * @param  int  $folderId  SUMIT folder ID
+     * @param  bool  $dryRun  Dry run mode
      * @return int Command exit code
      */
     protected function syncSingleFolder(int $folderId, bool $dryRun): int
@@ -82,6 +82,7 @@ class CrmSyncFoldersCommand extends Command
             $this->line('   [DRY RUN] Would sync folder fields');
             $this->newLine();
             $this->info('✅ Dry run completed');
+
             return Command::SUCCESS;
         }
 
@@ -89,17 +90,17 @@ class CrmSyncFoldersCommand extends Command
             // First, get the folder name from listFolders
             $listResult = CrmSchemaService::listFolders();
 
-            if (!$listResult['success']) {
+            if (! $listResult['success']) {
                 $this->error('✗ Failed to list folders: ' . $listResult['error']);
+
                 return Command::FAILURE;
             }
 
-            $folderData = collect($listResult['folders'])->firstWhere(function ($folder) use ($folderId) {
-                return ($folder['FolderID'] ?? $folder['ID'] ?? null) == $folderId;
-            });
+            $folderData = collect($listResult['folders'])->firstWhere(fn (array $folder): bool => ($folder['FolderID'] ?? $folder['ID'] ?? null) == $folderId);
 
-            if (!$folderData) {
+            if (! $folderData) {
                 $this->error("✗ Folder ID {$folderId} not found in SUMIT");
+
                 return Command::FAILURE;
             }
 
@@ -108,8 +109,9 @@ class CrmSyncFoldersCommand extends Command
             // Now sync the folder
             $result = CrmSchemaService::syncFolderSchema($folderId, $folderName);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $this->error('✗ Failed to sync folder: ' . $result['error']);
+
                 return Command::FAILURE;
             }
 
@@ -119,8 +121,8 @@ class CrmSyncFoldersCommand extends Command
             $this->info("✓ Synced folder: {$folder->name} (ID: {$folder->id})");
             $this->line("  • Entity type: {$folder->entity_type}");
             $this->line("  • Fields synced: {$fieldsSynced}");
-            $this->line("  • System folder: " . ($folder->is_system ? 'Yes' : 'No'));
-            $this->line("  • Active: " . ($folder->is_active ? 'Yes' : 'No'));
+            $this->line('  • System folder: ' . ($folder->is_system ? 'Yes' : 'No'));
+            $this->line('  • Active: ' . ($folder->is_active ? 'Yes' : 'No'));
 
             $this->newLine();
             $this->info('✅ Folder sync completed successfully!');
@@ -129,6 +131,7 @@ class CrmSyncFoldersCommand extends Command
 
         } catch (\Throwable $e) {
             $this->error('✗ Exception: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -136,8 +139,8 @@ class CrmSyncFoldersCommand extends Command
     /**
      * Sync all folders from SUMIT
      *
-     * @param bool $dryRun Dry run mode
-     * @param bool $force Force sync even if recently synced
+     * @param  bool  $dryRun  Dry run mode
+     * @param  bool  $force  Force sync even if recently synced
      * @return int Command exit code
      */
     protected function syncAllFolders(bool $dryRun, bool $force): int
@@ -149,8 +152,9 @@ class CrmSyncFoldersCommand extends Command
             // Get all folders from SUMIT
             $result = CrmSchemaService::listFolders();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $this->error('✗ Failed to list folders: ' . $result['error']);
+
                 return Command::FAILURE;
             }
 
@@ -159,6 +163,7 @@ class CrmSyncFoldersCommand extends Command
 
             if ($foldersCount === 0) {
                 $this->warn('⚠️  No folders found in SUMIT');
+
                 return Command::SUCCESS;
             }
 
@@ -168,7 +173,7 @@ class CrmSyncFoldersCommand extends Command
             if ($dryRun) {
                 $this->table(
                     ['Folder ID', 'Name', 'Entity Type', 'System'],
-                    collect($folders)->map(fn($f) => [
+                    collect($folders)->map(fn ($f): array => [
                         $f['FolderID'] ?? $f['ID'] ?? 'N/A',
                         $f['Name'] ?? 'Unknown',
                         $f['EntityType'] ?? 'Unknown',
@@ -178,6 +183,7 @@ class CrmSyncFoldersCommand extends Command
 
                 $this->newLine();
                 $this->info('✅ Dry run completed - no changes were saved');
+
                 return Command::SUCCESS;
             }
 
@@ -194,8 +200,9 @@ class CrmSyncFoldersCommand extends Command
                 $folderId = $folderData['FolderID'] ?? $folderData['ID'] ?? null;
                 $folderName = $folderData['Name'] ?? 'Unknown';
 
-                if (!$folderId) {
+                if (! $folderId) {
                     $errors[] = "Folder '{$folderName}' has no ID";
+
                     continue;
                 }
 
@@ -223,10 +230,11 @@ class CrmSyncFoldersCommand extends Command
             // Display summary
             $this->generateSummary($synced, $totalFields, $errors);
 
-            return empty($errors) ? Command::SUCCESS : Command::FAILURE;
+            return $errors === [] ? Command::SUCCESS : Command::FAILURE;
 
         } catch (\Throwable $e) {
             $this->error('✗ Exception: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -234,10 +242,9 @@ class CrmSyncFoldersCommand extends Command
     /**
      * Generate and display summary report
      *
-     * @param int $synced Number of folders synced
-     * @param int $totalFields Total fields synced across all folders
-     * @param array $errors Array of error messages
-     * @return void
+     * @param  int  $synced  Number of folders synced
+     * @param  int  $totalFields  Total fields synced across all folders
+     * @param  array  $errors  Array of error messages
      */
     protected function generateSummary(int $synced, int $totalFields, array $errors): void
     {
@@ -258,7 +265,7 @@ class CrmSyncFoldersCommand extends Command
             ]
         );
 
-        if (!empty($errors)) {
+        if ($errors !== []) {
             $this->newLine();
             $this->error('⚠️  Errors encountered:');
             foreach ($errors as $error) {
@@ -268,7 +275,7 @@ class CrmSyncFoldersCommand extends Command
 
         $this->newLine();
 
-        if (empty($errors)) {
+        if ($errors === []) {
             $this->info('✅ All folders synced successfully!');
         } else {
             $this->warn('⚠️  Sync completed with ' . count($errors) . ' error(s)');

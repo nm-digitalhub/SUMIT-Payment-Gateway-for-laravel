@@ -7,7 +7,7 @@ namespace OfficeGuy\LaravelSumitGateway\Events;
 class MultiVendorPaymentCompleted
 {
     public function __construct(
-        public string|int $orderId,
+        public string | int $orderId,
         public array $vendorResults
     ) {}
 }

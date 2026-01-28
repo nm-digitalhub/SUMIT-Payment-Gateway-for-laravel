@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Carbon\Carbon;
 
 /**
  * Order Success Access Log Model
@@ -74,14 +74,13 @@ class OrderSuccessAccessLog extends Model
     /**
      * Create log entry for successful access
      *
-     * @param object $payable The Payable entity (Order, Package, etc.)
-     * @param string $tokenHash SHA256 hash of the token used
-     * @param string $nonce Nonce used for access
-     * @param string $ip Client IP address
-     * @param string|null $userAgent Client User-Agent
-     * @param string|null $referer HTTP Referer
-     * @param bool $signatureValid Whether URL signature was valid
-     * @return static
+     * @param  object  $payable  The Payable entity (Order, Package, etc.)
+     * @param  string  $tokenHash  SHA256 hash of the token used
+     * @param  string  $nonce  Nonce used for access
+     * @param  string  $ip  Client IP address
+     * @param  string|null  $userAgent  Client User-Agent
+     * @param  string|null  $referer  HTTP Referer
+     * @param  bool  $signatureValid  Whether URL signature was valid
      */
     public static function logSuccessfulAccess(
         object $payable,
@@ -94,7 +93,7 @@ class OrderSuccessAccessLog extends Model
     ): static {
         return static::create([
             'payable_id' => $payable->getKey(),
-            'payable_type' => get_class($payable),
+            'payable_type' => $payable::class,
             'ip_address' => $ip,
             'user_agent' => $userAgent,
             'referer' => $referer,
@@ -110,16 +109,15 @@ class OrderSuccessAccessLog extends Model
     /**
      * Create log entry for failed access
      *
-     * @param int|null $payableId The Payable ID (may be null if not found)
-     * @param string|null $payableType The Payable type (may be null)
-     * @param array $failures Array of failed validation layers
-     * @param string $ip Client IP address
-     * @param string|null $userAgent Client User-Agent
-     * @param string|null $referer HTTP Referer
-     * @param string|null $tokenHash Token hash if available
-     * @param string|null $nonce Nonce if available
-     * @param bool $signatureValid Whether URL signature was valid
-     * @return static
+     * @param  int|null  $payableId  The Payable ID (may be null if not found)
+     * @param  string|null  $payableType  The Payable type (may be null)
+     * @param  array  $failures  Array of failed validation layers
+     * @param  string  $ip  Client IP address
+     * @param  string|null  $userAgent  Client User-Agent
+     * @param  string|null  $referer  HTTP Referer
+     * @param  string|null  $tokenHash  Token hash if available
+     * @param  string|null  $nonce  Nonce if available
+     * @param  bool  $signatureValid  Whether URL signature was valid
      */
     public static function logFailedAccess(
         ?int $payableId,
@@ -181,12 +179,10 @@ class OrderSuccessAccessLog extends Model
 
     /**
      * Get human-readable validation failures
-     *
-     * @return string
      */
     public function getFailuresDescription(): string
     {
-        if (!$this->validation_failures || empty($this->validation_failures)) {
+        if (! $this->validation_failures || empty($this->validation_failures)) {
             return 'אין כשלים';
         }
 
@@ -200,21 +196,17 @@ class OrderSuccessAccessLog extends Model
             'rate_limit' => 'חריגה ממגבלת קצב',
         ];
 
-        $failures = collect($this->validation_failures)
+        return collect($this->validation_failures)
             ->map(fn ($layer) => $descriptions[$layer] ?? $layer)
             ->join(', ');
-
-        return $failures;
     }
 
     /**
      * Get browser name from User-Agent
-     *
-     * @return string
      */
     public function getBrowserName(): string
     {
-        if (!$this->user_agent) {
+        if (! $this->user_agent) {
             return 'לא ידוע';
         }
 
@@ -226,7 +218,7 @@ class OrderSuccessAccessLog extends Model
         if (str_contains($ua, 'Firefox')) {
             return 'Firefox';
         }
-        if (str_contains($ua, 'Safari') && !str_contains($ua, 'Chrome')) {
+        if (str_contains($ua, 'Safari') && ! str_contains($ua, 'Chrome')) {
             return 'Safari';
         }
         if (str_contains($ua, 'Edge')) {
@@ -241,12 +233,10 @@ class OrderSuccessAccessLog extends Model
 
     /**
      * Check if access is from mobile device
-     *
-     * @return bool
      */
     public function isMobile(): bool
     {
-        if (!$this->user_agent) {
+        if (! $this->user_agent) {
             return false;
         }
 

@@ -26,8 +26,7 @@ class SyncCrmFromWebhookJob implements ShouldQueue
         public readonly ?int $entityId,
         public readonly ?int $folderId,
         public readonly array $payload = []
-    ) {
-    }
+    ) {}
 
     public function handle(): void
     {

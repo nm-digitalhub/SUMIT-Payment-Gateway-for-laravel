@@ -159,7 +159,7 @@ class RouteConfig
                     return $value;
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Database not available, use config
         }
 

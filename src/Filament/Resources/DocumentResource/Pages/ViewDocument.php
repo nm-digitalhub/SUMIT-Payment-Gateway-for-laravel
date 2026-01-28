@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource\Pages;
 
+use App\Models\Client;
+use App\Models\Order;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
-use App\Models\Client;
-use App\Models\Order;
 use OfficeGuy\LaravelSumitGateway\Services\DebtService;
-use Filament\Notifications\Notification;
 
 class ViewDocument extends ViewRecord
 {
@@ -24,15 +24,14 @@ class ViewDocument extends ViewRecord
                 ->label('פתח לקוח')
                 ->icon('heroicon-o-user')
                 ->color('primary')
-                ->visible(function ($record) {
-                    return Client::query()
-                        ->where('sumit_customer_id', $record->customer_id)
-                        ->exists();
-                })
-                ->url(function ($record) {
+                ->visible(fn ($record) => Client::query()
+                    ->where('sumit_customer_id', $record->customer_id)
+                    ->exists())
+                ->url(function ($record): ?string {
                     $client = Client::query()
                         ->where('sumit_customer_id', $record->customer_id)
                         ->first();
+
                     return $client ? route('filament.admin.resources.clients.view', ['record' => $client->id]) : null;
                 })
                 ->openUrlInNewTab(),
@@ -41,9 +40,10 @@ class ViewDocument extends ViewRecord
                 ->label('פתח הזמנה')
                 ->icon('heroicon-o-rectangle-stack')
                 ->color('gray')
-                ->visible(fn ($record) => $record->order_id && Order::find($record->order_id))
-                ->url(function ($record) {
+                ->visible(fn ($record): bool => $record->order_id && Order::find($record->order_id))
+                ->url(function ($record): ?string {
                     $order = Order::find($record->order_id);
+
                     return $order ? route('filament.admin.resources.orders.view', ['record' => $order->id]) : null;
                 })
                 ->openUrlInNewTab(),
@@ -52,9 +52,10 @@ class ViewDocument extends ViewRecord
                 ->label('פתח מנוי')
                 ->icon('heroicon-o-arrow-path')
                 ->color('success')
-                ->visible(fn ($record) => $record->subscription_id && Subscription::find($record->subscription_id))
-                ->url(function ($record) {
+                ->visible(fn ($record): bool => $record->subscription_id && Subscription::find($record->subscription_id))
+                ->url(function ($record): ?string {
                     $sub = Subscription::find($record->subscription_id);
+
                     return $sub ? route('filament.admin.resources.subscriptions.view', ['record' => $sub->id]) : null;
                 })
                 ->openUrlInNewTab(),
@@ -64,8 +65,8 @@ class ViewDocument extends ViewRecord
                 ->icon('heroicon-o-scale')
                 ->color('primary')
                 ->requiresConfirmation()
-                ->visible(fn ($record) => !empty($record->customer_id))
-                ->action(function ($record) {
+                ->visible(fn ($record): bool => ! empty($record->customer_id))
+                ->action(function ($record): void {
                     try {
                         $balance = app(DebtService::class)
                             ->getCustomerBalanceById((int) $record->customer_id);
@@ -92,7 +93,7 @@ class ViewDocument extends ViewRecord
                 ->label('שליחת לינק תשלום')
                 ->icon('heroicon-o-paper-airplane')
                 ->color('success')
-                ->visible(fn ($record) => !empty($record->customer_id))
+                ->visible(fn ($record): bool => ! empty($record->customer_id))
                 ->form([
                     \Filament\Forms\Components\TextInput::make('email')
                         ->label('אימייל יעד')
@@ -106,7 +107,7 @@ class ViewDocument extends ViewRecord
                         ->required(false),
                 ])
                 ->requiresConfirmation()
-                ->action(function ($record, array $data) {
+                ->action(function ($record, array $data): void {
                     $result = app(\OfficeGuy\LaravelSumitGateway\Services\DebtService::class)->sendPaymentLink(
                         (int) $record->customer_id,
                         $data['email'] ?? null,

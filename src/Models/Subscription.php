@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -20,16 +19,21 @@ use OfficeGuy\LaravelSumitGateway\Enums\PayableType;
  */
 class Subscription extends Model implements Payable
 {
-    use SoftDeletes;
-    use \OfficeGuy\LaravelSumitGateway\Support\Traits\HasPayableFields; // v2.0.0: Required for getOrderKey()
+    use \OfficeGuy\LaravelSumitGateway\Support\Traits\HasPayableFields;
+    use SoftDeletes; // v2.0.0: Required for getOrderKey()
 
     protected $table = 'officeguy_subscriptions';
 
     public const STATUS_PENDING = 'pending';
+
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_PAUSED = 'paused';
+
     public const STATUS_CANCELLED = 'cancelled';
+
     public const STATUS_EXPIRED = 'expired';
+
     public const STATUS_FAILED = 'failed';
 
     protected $fillable = [
@@ -94,9 +98,10 @@ class Subscription extends Model implements Payable
      */
     public function paymentToken()
     {
-        if (!$this->payment_method_token) {
+        if (! $this->payment_method_token) {
             return null;
         }
+
         return OfficeGuyToken::find($this->payment_method_token);
     }
 
@@ -104,7 +109,7 @@ class Subscription extends Model implements Payable
     // Payable Interface Implementation
     // ========================================
 
-    public function getPayableId(): string|int
+    public function getPayableId(): string | int
     {
         return 'subscription_' . $this->id;
     }
@@ -132,9 +137,10 @@ class Subscription extends Model implements Payable
     public function getCustomerName(): string
     {
         if ($this->subscriber) {
-            return $this->subscriber->name ?? 
+            return $this->subscriber->name ??
                    (($this->subscriber->first_name ?? '') . ' ' . ($this->subscriber->last_name ?? ''));
         }
+
         return __('Guest');
     }
 
@@ -148,7 +154,7 @@ class Subscription extends Model implements Payable
         return $this->subscriber?->company ?? null;
     }
 
-    public function getCustomerId(): string|int|null
+    public function getCustomerId(): string | int | null
     {
         return $this->subscriber_id;
     }
@@ -246,6 +252,7 @@ class Subscription extends Model implements Payable
         if ($this->total_cycles === null) {
             return false;
         }
+
         return $this->completed_cycles >= $this->total_cycles;
     }
 
@@ -265,10 +272,10 @@ class Subscription extends Model implements Payable
 
     public function canBeCharged(): bool
     {
-        return $this->isActive() && 
-               !$this->hasReachedLimit() && 
-               !$this->isInTrial() &&
-               $this->next_charge_at && 
+        return $this->isActive() &&
+               ! $this->hasReachedLimit() &&
+               ! $this->isInTrial() &&
+               $this->next_charge_at &&
                $this->next_charge_at->isPast();
     }
 
@@ -279,11 +286,11 @@ class Subscription extends Model implements Payable
     public function activate(): void
     {
         $this->status = self::STATUS_ACTIVE;
-        
-        if (!$this->next_charge_at) {
+
+        if (! $this->next_charge_at) {
             $this->next_charge_at = $this->trial_ends_at ?? now();
         }
-        
+
         $this->save();
     }
 
@@ -330,7 +337,7 @@ class Subscription extends Model implements Payable
         $this->completed_cycles++;
         $this->last_charged_at = now();
         $this->next_charge_at = now()->addMonths($this->interval_months);
-        
+
         if ($recurringId) {
             $this->recurring_id = $recurringId;
         }
@@ -355,13 +362,13 @@ class Subscription extends Model implements Payable
     public function scopeDue($query)
     {
         return $query->active()
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('total_cycles')
-                  ->orWhereColumn('completed_cycles', '<', 'total_cycles');
+                    ->orWhereColumn('completed_cycles', '<', 'total_cycles');
             })
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('trial_ends_at')
-                  ->orWhere('trial_ends_at', '<=', now());
+                    ->orWhere('trial_ends_at', '<=', now());
             })
             ->where('next_charge_at', '<=', now());
     }
@@ -377,20 +384,25 @@ class Subscription extends Model implements Payable
     public function getIntervalDescription(): string
     {
         $months = $this->interval_months;
-
         if ($months === 1) {
             return __('Month');
-        } elseif ($months === 2) {
+        }
+        if ($months === 2) {
             return __('2 months');
-        } elseif ($months === 6) {
+        }
+        if ($months === 6) {
             return __('6 months');
-        } elseif ($months % 12 === 0) {
+        }
+
+        if ($months % 12 === 0) {
             $years = $months / 12;
             if ($years === 1) {
                 return __('Year');
-            } elseif ($years === 2) {
+            }
+            if ($years === 2) {
                 return __('2 Years');
             }
+
             return $years . ' ' . __('Years');
         }
 
@@ -404,12 +416,12 @@ class Subscription extends Model implements Payable
     {
         $price = number_format((float) $this->amount, 2) . ' ' . $this->currency;
         $interval = ' / ' . $this->getIntervalDescription();
-        
+
         if ($this->total_cycles) {
             $totalMonths = $this->interval_months * $this->total_cycles;
             $interval .= ' ' . __('for') . ' ' . $this->getMonthsString($totalMonths);
         }
-        
+
         return $price . $interval;
     }
 
@@ -420,17 +432,22 @@ class Subscription extends Model implements Payable
     {
         if ($months === 1) {
             return __('Month');
-        } elseif ($months === 2) {
+        }
+        if ($months === 2) {
             return __('2 months');
-        } elseif ($months === 6) {
+        }
+        if ($months === 6) {
             return __('6 months');
-        } elseif ($months % 12 === 0) {
+        }
+        if ($months % 12 === 0) {
             $years = $months / 12;
             if ($years === 1) {
                 return __('Year');
-            } elseif ($years === 2) {
+            }
+            if ($years === 2) {
                 return __('2 Years');
             }
+
             return $years . ' ' . __('Years');
         }
 

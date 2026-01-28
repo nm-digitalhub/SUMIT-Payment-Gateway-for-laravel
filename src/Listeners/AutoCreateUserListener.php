@@ -26,21 +26,17 @@ use OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted;
  * - Links Order to User and Client
  * - Handles existing users gracefully
  *
- * @package OfficeGuy\LaravelSumitGateway\Listeners
  * @version 1.14.0
  */
 class AutoCreateUserListener
 {
     /**
      * Handle the PaymentCompleted event.
-     *
-     * @param PaymentCompleted $event
-     * @return void
      */
     public function handle(PaymentCompleted $event): void
     {
         // Check if feature is enabled
-        if (!config('officeguy.auto_create_guest_user', true)) {
+        if (! config('officeguy.auto_create_guest_user', true)) {
             return;
         }
 
@@ -48,10 +44,11 @@ class AutoCreateUserListener
             // 1. Get the Order/Payable
             $order = $this->resolveOrder($event->orderId);
 
-            if (!$order) {
+            if (! $order) {
                 Log::warning('AutoCreateUser: Order not found', [
                     'order_id' => $event->orderId,
                 ]);
+
                 return;
             }
 
@@ -62,6 +59,7 @@ class AutoCreateUserListener
                     'order_id' => $order->id,
                     'user_id' => $order->user_id,
                 ]);
+
                 return;
             }
 
@@ -70,6 +68,7 @@ class AutoCreateUserListener
                 Log::warning('AutoCreateUser: No email in order', [
                     'order_id' => $order->id,
                 ]);
+
                 return;
             }
 
@@ -79,6 +78,7 @@ class AutoCreateUserListener
             if ($existingUser) {
                 // Link order to existing user
                 $this->linkOrderToExistingUser($order, $existingUser);
+
                 return;
             }
 
@@ -121,10 +121,9 @@ class AutoCreateUserListener
     /**
      * Resolve the order from orderId.
      *
-     * @param string|int $orderId
      * @return mixed|null
      */
-    protected function resolveOrder(string|int $orderId)
+    protected function resolveOrder(string | int $orderId)
     {
         // Try to find Order by ID
         $orderClass = config('officeguy.order.model', \App\Models\Order::class);
@@ -139,15 +138,13 @@ class AutoCreateUserListener
     /**
      * Link order to existing user.
      *
-     * @param mixed $order
-     * @param User $user
-     * @return void
+     * @param  mixed  $order
      */
     protected function linkOrderToExistingUser($order, User $user): void
     {
         $client = $user->client;
 
-        if (!$client) {
+        if (! $client) {
             $client = Client::createFromUser($user);
         }
 
@@ -166,8 +163,7 @@ class AutoCreateUserListener
     /**
      * Create user from order data.
      *
-     * @param mixed $order
-     * @return User
+     * @param  mixed  $order
      */
     protected function createUserFromOrder($order): User
     {
@@ -212,7 +208,6 @@ class AutoCreateUserListener
     /**
      * Generate temporary password for user.
      *
-     * @param User $user
      * @return string The plain text temporary password
      */
     protected function generateTemporaryPassword(User $user): string
@@ -231,10 +226,7 @@ class AutoCreateUserListener
     /**
      * Send welcome email with temporary password.
      *
-     * @param User $user
-     * @param string $password
-     * @param mixed $order
-     * @return void
+     * @param  mixed  $order
      */
     protected function sendWelcomeEmail(User $user, string $password, $order): void
     {

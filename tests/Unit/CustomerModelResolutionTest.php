@@ -239,7 +239,7 @@ class CustomerModelResolutionTest extends TestCase
     {
         // This test exists to document that database priority is implemented
         // See src/OfficeGuyServiceProvider.php lines 112-122 for the actual code
-        
+
         $this->assertTrue(true, 'Database priority is implemented in OfficeGuyServiceProvider::resolveCustomerModel()');
     }
 }

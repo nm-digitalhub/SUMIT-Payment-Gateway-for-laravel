@@ -22,7 +22,7 @@ class NotifyDocumentCreatedListener
         // Determine who should receive the notification
         $notifiable = $this->getNotifiable($event);
 
-        if (! $notifiable) {
+        if (! $notifiable instanceof \Illuminate\Contracts\Auth\Authenticatable) {
             return;
         }
 
@@ -35,9 +35,6 @@ class NotifyDocumentCreatedListener
 
     /**
      * Determine who should be notified.
-     *
-     * @param DocumentCreated $event
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
      */
     protected function getNotifiable(DocumentCreated $event): ?\Illuminate\Contracts\Auth\Authenticatable
     {

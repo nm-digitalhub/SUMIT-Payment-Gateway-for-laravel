@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Pages;
 
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\CrmFolderResource;
-use OfficeGuy\LaravelSumitGateway\Services\CrmSchemaService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\CrmFolderResource;
 
 class ListCrmFolders extends ListRecords
 {

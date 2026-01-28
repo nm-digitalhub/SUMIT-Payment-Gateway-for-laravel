@@ -13,20 +13,18 @@ namespace OfficeGuy\LaravelSumitGateway\DataTransferObjects;
  *
  * This is READ-ONLY data - the service does not send notifications
  * or perform any actions based on version status.
- *
- * @package OfficeGuy\LaravelSumitGateway\DataTransferObjects
  */
 readonly class PackageVersion
 {
     /**
      * Create a new PackageVersion instance.
      *
-     * @param string $installed The currently installed version (from composer.lock)
-     * @param string $latest The latest version available on Packagist
-     * @param bool $outdated Whether the installed version is outdated
-     * @param string|null $latestUrl URL to the latest version on Packagist
-     * @param string|null $changelogUrl URL to the CHANGELOG.md on GitHub
-     * @param int|null $timestamp Unix timestamp of when this data was fetched
+     * @param  string  $installed  The currently installed version (from composer.lock)
+     * @param  string  $latest  The latest version available on Packagist
+     * @param  bool  $outdated  Whether the installed version is outdated
+     * @param  string|null  $latestUrl  URL to the latest version on Packagist
+     * @param  string|null  $changelogUrl  URL to the CHANGELOG.md on GitHub
+     * @param  int|null  $timestamp  Unix timestamp of when this data was fetched
      */
     public function __construct(
         public string $installed,
@@ -45,8 +43,7 @@ readonly class PackageVersion
     /**
      * Create from raw array data.
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -79,12 +76,10 @@ readonly class PackageVersion
 
     /**
      * Get the version comparison badge color.
-     *
-     * @return string
      */
     public function getBadgeColor(): string
     {
-        if (!$this->outdated) {
+        if (! $this->outdated) {
             return 'success'; // Green - up to date
         }
 
@@ -108,13 +103,10 @@ readonly class PackageVersion
 
     /**
      * Get human-readable status message.
-     *
-     * @param string $locale
-     * @return string
      */
     public function getStatusMessage(string $locale = 'he'): string
     {
-        if (!$this->outdated) {
+        if (! $this->outdated) {
             return $locale === 'he'
                 ? 'הגרסה מעודכנת'
                 : 'Up to date';

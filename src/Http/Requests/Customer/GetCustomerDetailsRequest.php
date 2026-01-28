@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Customer;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Get Customer Details Request
@@ -71,9 +71,9 @@ class GetCustomerDetailsRequest extends Request implements HasBody
     /**
      * Create new get customer details request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $responseLanguage Response language (he/en/fr)
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $responseLanguage  Response language (he/en/fr)
      */
     public function __construct(
         protected readonly int $customerId,
@@ -83,8 +83,6 @@ class GetCustomerDetailsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -112,7 +110,6 @@ class GetCustomerDetailsRequest extends Request implements HasBody
      *
      * Returns raw response with full customer details
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

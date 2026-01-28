@@ -10,15 +10,14 @@ use OfficeGuy\LaravelSumitGateway\Http\DTOs\TokenData;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Token\CreateTokenRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Support\RequestHelpers;
-use RuntimeException;
 
 class TokenService
 {
     public static function getTokenRequest(string $pciMode = 'no'): array
     {
         $req = [
-            'ParamJ'      => config('officeguy.token_param', '5'),
-            'Amount'      => 1,
+            'ParamJ' => config('officeguy.token_param', '5'),
+            'Amount' => 1,
             'Credentials' => PaymentService::getCredentials(),
         ];
 
@@ -26,11 +25,11 @@ class TokenService
             $month = (int) RequestHelpers::post('og-expmonth');
 
             $req += [
-                'CardNumber'      => RequestHelpers::post('og-ccnum'),
-                'CVV'             => RequestHelpers::post('og-cvv'),
-                'CitizenID'       => RequestHelpers::post('og-citizenid'),
-                'ExpirationMonth' => $month < 10 ? '0' . $month : (string)$month,
-                'ExpirationYear'  => RequestHelpers::post('og-expyear'),
+                'CardNumber' => RequestHelpers::post('og-ccnum'),
+                'CVV' => RequestHelpers::post('og-cvv'),
+                'CitizenID' => RequestHelpers::post('og-citizenid'),
+                'ExpirationMonth' => $month < 10 ? '0' . $month : (string) $month,
+                'ExpirationYear' => RequestHelpers::post('og-expyear'),
             ];
 
         } else {
@@ -83,7 +82,7 @@ class TokenService
             }
 
             // Instantiate connector and request
-            $connector = new SumitConnector();
+            $connector = new SumitConnector;
             $request = new CreateTokenRequest(
                 token: $tokenData,
                 credentials: $credentials
@@ -100,7 +99,7 @@ class TokenService
             ];
         }
 
-        if (!$data) {
+        if (! $data) {
             return [
                 'success' => false,
                 'message' => __('No response from payment gateway'),
@@ -123,7 +122,7 @@ class TokenService
 
             return [
                 'success' => true,
-                'token'   => $token,
+                'token' => $token,
             ];
         }
 
@@ -147,12 +146,12 @@ class TokenService
     public static function getPaymentMethodFromToken(OfficeGuyToken $token, ?string $cvv = null): array
     {
         return [
-            'CreditCard_Token'           => $token->token,
-            'CreditCard_CVV'             => $cvv ?? RequestHelpers::post('og-cvv'),
-            'CreditCard_CitizenID'       => $token->citizen_id,
+            'CreditCard_Token' => $token->token,
+            'CreditCard_CVV' => $cvv ?? RequestHelpers::post('og-cvv'),
+            'CreditCard_CitizenID' => $token->citizen_id,
             'CreditCard_ExpirationMonth' => $token->expiry_month,
-            'CreditCard_ExpirationYear'  => $token->expiry_year,
-            'Type'                       => 1,
+            'CreditCard_ExpirationYear' => $token->expiry_year,
+            'Type' => 1,
         ];
     }
 
@@ -161,12 +160,12 @@ class TokenService
         $month = (int) RequestHelpers::post('og-expmonth');
 
         return [
-            'CreditCard_Number'          => RequestHelpers::post('og-ccnum'),
-            'CreditCard_CVV'             => RequestHelpers::post('og-cvv'),
-            'CreditCard_CitizenID'       => RequestHelpers::post('og-citizenid'),
+            'CreditCard_Number' => RequestHelpers::post('og-ccnum'),
+            'CreditCard_CVV' => RequestHelpers::post('og-cvv'),
+            'CreditCard_CitizenID' => RequestHelpers::post('og-citizenid'),
             'CreditCard_ExpirationMonth' => $month < 10 ? '0' . $month : (string) $month,
-            'CreditCard_ExpirationYear'  => RequestHelpers::post('og-expyear'),
-            'Type'                       => 1,
+            'CreditCard_ExpirationYear' => RequestHelpers::post('og-expyear'),
+            'Type' => 1,
         ];
     }
 
@@ -174,7 +173,7 @@ class TokenService
      * Sync a single token from SUMIT API and update local database.
      * Fetches all payment methods for the token's owner and updates the matching token.
      *
-     * @param OfficeGuyToken $token Token to sync
+     * @param  OfficeGuyToken  $token  Token to sync
      * @return array{success: bool, updated?: bool, error?: string}
      */
     public static function syncTokenFromSumit(OfficeGuyToken $token): array
@@ -182,7 +181,7 @@ class TokenService
         try {
             // Get owner (should be Client after migration)
             $owner = $token->owner;
-            if (!$owner) {
+            if (! $owner) {
                 return [
                     'success' => false,
                     'error' => 'Token owner not found',
@@ -192,7 +191,7 @@ class TokenService
             // Owner should be Client with sumit_customer_id
             $sumitCustomerId = $owner->sumit_customer_id ?? null;
 
-            if (!$sumitCustomerId) {
+            if (! $sumitCustomerId) {
                 return [
                     'success' => false,
                     'error' => 'SUMIT customer ID not found for token owner',
@@ -202,7 +201,7 @@ class TokenService
             // Fetch all payment methods from SUMIT
             $result = PaymentService::getPaymentMethodsForCustomer($sumitCustomerId, true);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return [
                     'success' => false,
                     'error' => $result['error'] ?? 'Failed to fetch payment methods from SUMIT',
@@ -228,11 +227,12 @@ class TokenService
                     ]);
 
                     $updated = true;
+
                     break;
                 }
             }
 
-            if (!$updated) {
+            if (! $updated) {
                 return [
                     'success' => false,
                     'error' => 'Token not found in SUMIT (may have been deleted)',

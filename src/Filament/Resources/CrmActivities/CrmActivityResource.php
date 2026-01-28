@@ -4,36 +4,42 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\CreateCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\EditCrmActivity;
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ListCrmActivities;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ViewCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas\CrmActivityForm;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas\CrmActivityInfolist;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Tables\CrmActivitiesTable;
 use OfficeGuy\LaravelSumitGateway\Models\CrmActivity;
-use BackedEnum;
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Table;
 
 class CrmActivityResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = CrmActivity::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentList;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT CRM';
-
-    protected static ?string $navigationLabel = null;
-
+    // Keep dynamic navigationLabel method - it overrides plugin default
     public static function getNavigationLabel(): string
     {
         return __('crm_activities.nav_label');
     }
-
-    protected static ?int $navigationSort = 3;
 
     public static function form(Schema $schema): Schema
     {

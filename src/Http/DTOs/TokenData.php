@@ -59,8 +59,7 @@ class TokenData
     /**
      * Create from array (for backward compatibility)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -79,9 +78,8 @@ class TokenData
     /**
      * Create for PCI mode 'no' (Hosted Fields)
      *
-     * @param string $singleUseToken Token from PaymentsJS
-     * @param string|null $paramJ J2/J5/J6 (defaults to config)
-     * @return self
+     * @param  string  $singleUseToken  Token from PaymentsJS
+     * @param  string|null  $paramJ  J2/J5/J6 (defaults to config)
      */
     public static function fromSingleUseToken(string $singleUseToken, ?string $paramJ = null): self
     {
@@ -95,13 +93,12 @@ class TokenData
     /**
      * Create for PCI mode 'yes' (Direct API)
      *
-     * @param string $cardNumber Full card number
-     * @param string $cvv CVV code
-     * @param string $citizenId Israeli ID number
-     * @param string $expirationMonth MM format
-     * @param string $expirationYear YYYY format
-     * @param string|null $paramJ J2/J5/J6 (defaults to config)
-     * @return self
+     * @param  string  $cardNumber  Full card number
+     * @param  string  $cvv  CVV code
+     * @param  string  $citizenId  Israeli ID number
+     * @param  string  $expirationMonth  MM format
+     * @param  string  $expirationYear  YYYY format
+     * @param  string|null  $paramJ  J2/J5/J6 (defaults to config)
      */
     public static function fromCardData(
         string $cardNumber,

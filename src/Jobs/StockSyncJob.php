@@ -13,14 +13,12 @@ use OfficeGuy\LaravelSumitGateway\Services\Stock\StockService;
 
 class StockSyncJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
-    public bool $force;
-
-    public function __construct(bool $force = false)
-    {
-        $this->force = $force;
-    }
+    public function __construct(public bool $force = false) {}
 
     public function handle(StockService $service): void
     {

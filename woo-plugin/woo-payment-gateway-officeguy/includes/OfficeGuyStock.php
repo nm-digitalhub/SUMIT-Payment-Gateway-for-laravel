@@ -9,34 +9,33 @@ class OfficeGuyStock
     public static function InternalUpdateStock($ForceSync)
     {
         $Gateway = GetOfficeGuyGateway();
-        if (!isset($Gateway))
-        {
+        if (! isset($Gateway)) {
             wp_clear_scheduled_hook('officeguy_cron');
+
             return;
         }
 
-        if (!$ForceSync)
-        {
+        if (! $ForceSync) {
             $LastSyncDate = $Gateway->stock_sync_last;
-            if (isset($LastSyncDate) && (time() - $LastSyncDate) < 60 * 60)
-            {
+            if (isset($LastSyncDate) && (time() - $LastSyncDate) < 60 * 60) {
                 OfficeGuyAPI::WriteToLog('Stock: Skipping sync (LastSyncDate: ' . $LastSyncDate . ', Now: ' . time() . ')', 'debug');
+
                 return;
             }
         }
 
         $URL = OfficeGuyAPI::GetURL('/stock/stock/list/', $Gateway->get_option('environment'));
 
-        $Request = array();
+        $Request = [];
         $Request['Credentials'] = OfficeGuyPayment::GetCredentials($Gateway);
 
         $Response = OfficeGuyAPI::PostRaw($Request, '/stock/stock/list/', $Gateway->get_option('environment'), false);
-        if (is_wp_error($Response))
-        {
+        if (is_wp_error($Response)) {
             $Gateway->settings['stock_sync_freq'] = 'none';
             $Gateway->update_option('stock_sync_freq', $Gateway->settings['stock_sync_freq']);
             wp_clear_scheduled_hook('officeguy_cron');
             OfficeGuyAPI::WriteToLog(__('Problem connecting to server at ', 'officeguy') . $URL . ' (' . $Response->get_error_message() . ')', 'error');
+
             return null;
         }
 
@@ -47,19 +46,20 @@ class OfficeGuyStock
         $Gateway->stock_sync_last = time();
         $Gateway->update_option('stock_sync_last', $Gateway->stock_sync_last);
 
-        if (!isset($StockData))
+        if (! isset($StockData)) {
             return;
+        }
 
-        foreach ($StockData as $StockItem)
-        {
+        foreach ($StockData as $StockItem) {
             $ExternalIdentifier = $StockItem['ExternalIdentifier'];
-            if (empty($ExternalIdentifier))
-            {
+            if (empty($ExternalIdentifier)) {
                 $Product = get_page_by_title($StockItem['Name'], OBJECT, 'product');
-                if ($Product == null)
+                if ($Product == null) {
                     $Product = get_page_by_title($StockItem['Name'], OBJECT, 'product_variation');
-                if ($Product != null)
+                }
+                if ($Product != null) {
                     $ExternalIdentifier = $Product->ID;
+                }
             }
 
             wc_update_product_stock($ExternalIdentifier, $StockItem['Stock']);
@@ -72,29 +72,30 @@ class OfficeGuyStock
         $Gateway = GetOfficeGuyGateway();
         $Flag = $Gateway->settings['checkout_stock_sync'];
 
-        if (isset($Flag) && $Flag == 'yes')
+        if (isset($Flag) && $Flag == 'yes') {
             OfficeGuyStock::InternalUpdateStock(false);
+        }
     }
 
     public static function CreateSchedules($Gateway)
     {
-        if (empty($Gateway->settings['stock_sync_freq']))
+        if (empty($Gateway->settings['stock_sync_freq'])) {
             $Frequency = '';
-        else
+        } else {
             $Frequency = $Gateway->settings['stock_sync_freq'];
+        }
         $CronInterval = '';
 
-        if ($Frequency === '12')
+        if ($Frequency === '12') {
             $CronInterval = 'twelve_hours';
-        elseif ($Frequency === '24')
+        } elseif ($Frequency === '24') {
             $CronInterval = 'daily';
-        else
-        {
+        } else {
             wp_clear_scheduled_hook('officeguy_cron');
+
             return;
         }
-        if (wp_get_schedule('officeguy_cron') !== $CronInterval)
-        {
+        if (wp_get_schedule('officeguy_cron') !== $CronInterval) {
             wp_clear_scheduled_hook('officeguy_cron');
             wp_schedule_event(time(), $CronInterval, 'officeguy_cron');
         }
@@ -102,10 +103,11 @@ class OfficeGuyStock
 
     public static function SetupCronIntervals($schedules)
     {
-        $schedules['twelve_hours'] = array(
+        $schedules['twelve_hours'] = [
             'interval' => 43200,
-            'display' => __('Every 12 hours', 'officeguy')
-        );
+            'display' => __('Every 12 hours', 'officeguy'),
+        ];
+
         return $schedules;
     }
 
@@ -113,8 +115,9 @@ class OfficeGuyStock
     {
         wp_add_dashboard_widget('officeguy_dashboard_widget', 'SUMIT', 'OfficeGuyStock::RenderDashboardWidget');
 
-        if (isset($_POST['synchronize_officeguy']) && isset($_POST['officeguy_synchronize']) && wp_verify_nonce($_POST['officeguy_synchronize'], 'officeguy_nonce'))
+        if (isset($_POST['synchronize_officeguy']) && isset($_POST['officeguy_synchronize']) && wp_verify_nonce($_POST['officeguy_synchronize'], 'officeguy_nonce')) {
             OfficeGuyStock::InternalUpdateStock(true);
+        }
     }
 
     public static function RenderDashboardWidget()
@@ -135,15 +138,12 @@ class OfficeGuyStock
      */
     public static function DashboardSyncMessage()
     {
-        if (isset($_POST['synchronize_officeguy']) && isset($_POST['officeguy_synchronize']))
-        { ?>
+        if (isset($_POST['synchronize_officeguy']) && isset($_POST['officeguy_synchronize'])) { ?>
             <div class="notice-success notice">
                 <p><?php _e('Stock synced successfully!', 'officeguy'); ?></p>
             </div>
         <?php
-        }
-        elseif (isset($_POST['synchronize_officeguy']))
-        { ?>
+        } elseif (isset($_POST['synchronize_officeguy'])) { ?>
             <div class="error notice">
                 <p><?php _e('Something went wrong.', 'officeguy'); ?></p>
             </div>

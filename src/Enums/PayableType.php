@@ -13,7 +13,6 @@ namespace OfficeGuy\LaravelSumitGateway\Enums;
  * - Type-specific post-payment flows
  * - Type-specific required fields
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.10.0
  */
 enum PayableType: string

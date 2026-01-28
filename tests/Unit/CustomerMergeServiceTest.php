@@ -93,7 +93,7 @@ class CustomerMergeServiceTest extends TestCase
 
         // Mock the database settings table to avoid database dependency
         // We'll just verify the behavior by checking what happens when disabled
-        
+
         // Arrange
         config(['officeguy.customer_local_sync_enabled' => false]);
 

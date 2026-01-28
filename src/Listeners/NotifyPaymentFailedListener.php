@@ -22,7 +22,7 @@ class NotifyPaymentFailedListener
         // Determine who should receive the notification
         $notifiable = $this->getNotifiable($event);
 
-        if (! $notifiable) {
+        if (! $notifiable instanceof \Illuminate\Contracts\Auth\Authenticatable) {
             return;
         }
 
@@ -37,9 +37,6 @@ class NotifyPaymentFailedListener
 
     /**
      * Determine who should be notified.
-     *
-     * @param PaymentFailed $event
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
      */
     protected function getNotifiable(PaymentFailed $event): ?\Illuminate\Contracts\Auth\Authenticatable
     {

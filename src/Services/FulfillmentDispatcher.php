@@ -72,9 +72,8 @@ class FulfillmentDispatcher
      *
      * Called from ServiceProvider::boot()
      *
-     * @param PayableType $type The type to handle
-     * @param string $handlerClass Fully-qualified handler class name
-     * @return void
+     * @param  PayableType  $type  The type to handle
+     * @param  string  $handlerClass  Fully-qualified handler class name
      */
     public function register(PayableType $type, string $handlerClass): void
     {
@@ -94,9 +93,8 @@ class FulfillmentDispatcher
      * 2. Use Type-based registered handler (common)
      * 3. Fallback to generic event (if no handler registered)
      *
-     * @param Payable $payable The payable entity
-     * @param OfficeGuyTransaction $transaction The completed transaction
-     * @return void
+     * @param  Payable  $payable  The payable entity
+     * @param  OfficeGuyTransaction  $transaction  The completed transaction
      */
     public function dispatch(Payable $payable, OfficeGuyTransaction $transaction): void
     {
@@ -111,6 +109,7 @@ class FulfillmentDispatcher
                 );
 
                 app($customHandler)->handle($transaction);
+
                 return;
             }
         }
@@ -125,6 +124,7 @@ class FulfillmentDispatcher
             );
 
             app($handler)->handle($transaction);
+
             return;
         }
 
@@ -140,9 +140,6 @@ class FulfillmentDispatcher
 
     /**
      * Check if a Type has a registered handler
-     *
-     * @param PayableType $type
-     * @return bool
      */
     public function hasHandler(PayableType $type): bool
     {
@@ -161,9 +158,6 @@ class FulfillmentDispatcher
 
     /**
      * Get handler class for a specific type (if registered)
-     *
-     * @param PayableType $type
-     * @return string|null
      */
     public function getHandler(PayableType $type): ?string
     {
@@ -172,8 +166,6 @@ class FulfillmentDispatcher
 
     /**
      * Clear all registered handlers (for testing)
-     *
-     * @return void
      */
     public function clearHandlers(): void
     {
@@ -183,8 +175,7 @@ class FulfillmentDispatcher
     /**
      * Register multiple handlers at once
      *
-     * @param array<string, string> $mappings Array of PayableType value => Handler class
-     * @return void
+     * @param  array<string, string>  $mappings  Array of PayableType value => Handler class
      */
     public function registerMany(array $mappings): void
     {

@@ -4,39 +4,45 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use App\Models\Client;
+use App\Models\User;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
+use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Models\Subscription;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SubscriptionResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
-use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkSubscriptionCancelJob;
-use Filament\Actions\DeleteAction;
-use Carbon\Carbon;
-use App\Models\Client;
-use App\Models\User;
+use OfficeGuy\LaravelSumitGateway\Models\Subscription;
+use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 
 class SubscriptionResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = Subscription::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-path';
-
-    protected static ?string $navigationLabel = 'מנויים';
-
-    protected static ?int $navigationSort = 4;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -53,7 +59,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                         Forms\Components\TextInput::make('currency')
                             ->label('Currency')
-                            ->formatStateUsing(fn ($state) => match (strtoupper((string) $state)) {
+                            ->formatStateUsing(fn ($state): string => match (strtoupper((string) $state)) {
                                 '', '0', 'ILS' => '₪ ILS',
                                 'USD' => '$ USD',
                                 'EUR' => '€ EUR',
@@ -72,7 +78,7 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                         Forms\Components\TextInput::make('total_cycles')
                             ->label('Total Cycles')
-                            ->formatStateUsing(fn ($state) => $state === null ? 'Unlimited' : $state)
+                            ->formatStateUsing(fn ($state) => $state ?? 'Unlimited')
                             ->disabled(),
                         Forms\Components\TextInput::make('completed_cycles')
                             ->label('Completed Cycles')
@@ -81,7 +87,7 @@ class SubscriptionResource extends Resource
                                 $completed = $record?->completed_cycles ?? ($meta['cycles_completed'] ?? 0);
 
                                 if ((int) $completed === 0 && $record?->id) {
-                                    $completed = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument::query()
+                                    return \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument::query()
                                         ->where('subscription_id', $record->id)
                                         ->count();
                                 }
@@ -99,17 +105,16 @@ class SubscriptionResource extends Resource
                     ->schema([
                         Forms\Components\DateTimePicker::make('next_charge_at')
                             ->label('Next Charge')
-                            ->formatStateUsing(function ($record) {
-                                return $record?->next_charge_at
-                                    ?? optional($record?->metadata)['date_next']
-                                    ?? null;
-                            })
+                            ->formatStateUsing(fn ($record) => $record?->next_charge_at
+                                ?? optional($record?->metadata)['date_next']
+                                ?? null)
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('last_charged_at')
                             ->label('Last Charged')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->last_charged_at ?? ($meta['date_last'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->disabled(),
@@ -118,9 +123,10 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('expires_at')
                             ->label('Expires')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->expires_at ?? ($meta['date_end'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->disabled(),
@@ -130,7 +136,7 @@ class SubscriptionResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('subscriber_type')
                             ->label('Subscriber Type')
-                            ->formatStateUsing(fn ($state) => match ($state) {
+                            ->formatStateUsing(fn ($state): string => match ($state) {
                                 'App\\Models\\User', 'App\Models\\User' => 'User',
                                 'App\\Models\\Client', 'App\Models\\Client' => 'Client',
                                 default => ($state ? class_basename($state) : '-'),
@@ -146,6 +152,7 @@ class SubscriptionResource extends Resource
                                 if ($subscriber?->email) {
                                     return $subscriber->email;
                                 }
+
                                 return $record?->subscriber_id;
                             })
                             ->disabled(),
@@ -165,7 +172,7 @@ class SubscriptionResource extends Resource
                             ->disabled()
                             ->rows(2),
                     ])->columns(2)
-                    ->visible(fn ($record) => $record?->cancelled_at !== null),
+                    ->visible(fn ($record): bool => $record?->cancelled_at !== null),
 
                 Schemas\Components\Section::make('Metadata')
                     ->schema([
@@ -213,18 +220,20 @@ class SubscriptionResource extends Resource
                     ->schema([
                         Forms\Components\DateTimePicker::make('current_period_start')
                             ->label('Period Start')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->current_period_start ?? ($meta['date_start'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('current_period_end')
                             ->label('Period End')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->current_period_end ?? ($meta['date_end'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
@@ -235,49 +244,51 @@ class SubscriptionResource extends Resource
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('next_charge_at')
                             ->label('Next Charge')
-                            ->formatStateUsing(function ($record) {
-                                return $record?->next_charge_at
-                                    ?? optional($record?->metadata)['date_next']
-                                    ?? null;
-                            })
+                            ->formatStateUsing(fn ($record) => $record?->next_charge_at
+                                ?? optional($record?->metadata)['date_next']
+                                ?? null)
                             ->timezone('Asia/Jerusalem')
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('last_charged_at')
                             ->label('Last Charged')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->last_charged_at ?? ($meta['date_last'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('next_billing_date')
                             ->label('Next Billing Date')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->next_billing_date
                                     ?? ($meta['date_next'] ?? null)
                                     ?? $record?->next_charge_at;
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('last_billing_date')
                             ->label('Last Billing Date')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->last_billing_date
                                     ?? ($meta['date_last'] ?? null)
                                     ?? $record?->last_charged_at;
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
                             ->disabled(),
                         Forms\Components\DateTimePicker::make('expires_at')
                             ->label('Expires')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): ?\Carbon\Carbon {
                                 $meta = $record?->metadata ?? [];
                                 $date = $record?->expires_at ?? ($meta['date_end'] ?? null);
+
                                 return $date ? Carbon::parse($date) : null;
                             })
                             ->timezone('Asia/Jerusalem')
@@ -306,7 +317,7 @@ class SubscriptionResource extends Resource
                     ->label('לקוח/משתמש')
                     ->state(fn ($record) => $record->subscriber?->id ?? $record->subscriber_id)
                     ->formatStateUsing(fn ($record) => $record->subscriber?->name ?? $record->subscriber?->email ?? $record->subscriber_id)
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         $subscriber = $record->subscriber;
 
                         if (! $subscriber) {
@@ -371,7 +382,7 @@ class SubscriptionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('completed_cycles')
                     ->label('מחזורים')
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): string {
                         $completed = $record->completed_cycles;
 
                         if ((int) $completed === 0 && $record?->id) {
@@ -464,17 +475,15 @@ class SubscriptionResource extends Resource
                             ->numeric()
                             ->label('סכום מקסימלי'),
                     ])
-                    ->query(function ($query, array $data) {
-                        return $query
-                            ->when(
-                                $data['amount_from'],
-                                fn ($query, $amount) => $query->where('amount', '>=', $amount),
-                            )
-                            ->when(
-                                $data['amount_to'],
-                                fn ($query, $amount) => $query->where('amount', '<=', $amount),
-                            );
-                    }),
+                    ->query(fn ($query, array $data) => $query
+                        ->when(
+                            $data['amount_from'],
+                            fn ($query, $amount) => $query->where('amount', '>=', $amount),
+                        )
+                        ->when(
+                            $data['amount_to'],
+                            fn ($query, $amount) => $query->where('amount', '<=', $amount),
+                        )),
             ])
 
             /* 👇👇👇  ❗️כאן הבלוק שתיקנתי ❗️👇👇👇 */
@@ -486,9 +495,9 @@ class SubscriptionResource extends Resource
                     ->label('Activate')
                     ->icon('heroicon-o-play')
                     ->color('success')
-                    ->visible(fn (Subscription $record) => $record->status === Subscription::STATUS_PENDING)
+                    ->visible(fn (Subscription $record): bool => $record->status === Subscription::STATUS_PENDING)
                     ->requiresConfirmation()
-                    ->action(function (Subscription $record) {
+                    ->action(function (Subscription $record): void {
                         SubscriptionService::activate($record);
                         Notification::make()->title('Subscription activated')->success()->send();
                     }),
@@ -496,9 +505,9 @@ class SubscriptionResource extends Resource
                     ->label('Pause')
                     ->icon('heroicon-o-pause')
                     ->color('warning')
-                    ->visible(fn (Subscription $record) => $record->isActive())
+                    ->visible(fn (Subscription $record): bool => $record->isActive())
                     ->requiresConfirmation()
-                    ->action(function (Subscription $record) {
+                    ->action(function (Subscription $record): void {
                         SubscriptionService::pause($record);
                         Notification::make()->title('Subscription paused')->warning()->send();
                     }),
@@ -506,9 +515,9 @@ class SubscriptionResource extends Resource
                     ->label('Resume')
                     ->icon('heroicon-o-play-circle')
                     ->color('success')
-                    ->visible(fn (Subscription $record) => $record->status === Subscription::STATUS_PAUSED)
+                    ->visible(fn (Subscription $record): bool => $record->status === Subscription::STATUS_PAUSED)
                     ->requiresConfirmation()
-                    ->action(function (Subscription $record) {
+                    ->action(function (Subscription $record): void {
                         SubscriptionService::resume($record);
                         Notification::make()->title('Subscription resumed')->success()->send();
                     }),
@@ -516,16 +525,16 @@ class SubscriptionResource extends Resource
                     ->label('Cancel')
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
-                    ->visible(fn (Subscription $record) => $record->canBeCancelled())
+                    ->visible(fn (Subscription $record): bool => $record->canBeCancelled())
                     ->form([
                         Forms\Components\Textarea::make('reason')
                             ->label('Cancellation Reason')
                             ->rows(2),
                     ])
                     ->requiresConfirmation()
-                    ->action(function (Subscription $record, array $data) {
+                    ->action(function (Subscription $record, array $data): void {
                         $result = SubscriptionService::cancel($record, $data['reason'] ?? null);
-                        
+
                         if ($result['success']) {
                             Notification::make()
                                 ->title(__('Subscription cancelled'))
@@ -544,12 +553,12 @@ class SubscriptionResource extends Resource
                     ->label('Charge Now')
                     ->icon('heroicon-o-currency-dollar')
                     ->color('primary')
-                    ->visible(fn (Subscription $record) =>
-                        config('officeguy.subscriptions.enabled', true) &&
+                    ->visible(
+                        fn (Subscription $record): bool => config('officeguy.subscriptions.enabled', true) &&
                         $record->canBeCharged()
                     )
                     ->requiresConfirmation()
-                    ->action(function (Subscription $record) {
+                    ->action(function (Subscription $record): void {
                         $result = SubscriptionService::processRecurringCharge($record);
 
                         if ($result['success']) {
@@ -589,8 +598,8 @@ class SubscriptionResource extends Resource
                         ->icon('heroicon-o-x-mark')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
-                        ->action(function ($records) {
+                        ->visible(fn (): bool => ! config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
+                        ->action(function ($records): void {
                             $successCount = 0;
                             $failCount = 0;
 
@@ -607,9 +616,7 @@ class SubscriptionResource extends Resource
 
                             if ($successCount > 0 || $failCount > 0) {
                                 Notification::make()
-                                    ->title(__('Cancelled') . ": {$successCount}, " . __('Failed') . ": {$failCount}")
-                                    ->success($successCount > 0)
-                                    ->danger($successCount === 0)
+                                    ->title(__('Cancelled') . ": {$successCount}, " . __('Failed') . ": {$failCount}")->success()->danger()
                                     ->send();
                             } else {
                                 Notification::make()
@@ -620,7 +627,7 @@ class SubscriptionResource extends Resource
                         }),
                 ]),
             ])
-            ->defaultSort("next_charge_at", "asc");
+            ->defaultSort('next_charge_at', 'asc');
     }
 
     public static function getRelations(): array
@@ -628,10 +635,10 @@ class SubscriptionResource extends Resource
         return [];
     }
 
-
     public static function getNavigationBadge(): ?string
     {
         $count = static::getModel()::due()->count();
+
         return $count > 0 ? (string) $count : null;
     }
 

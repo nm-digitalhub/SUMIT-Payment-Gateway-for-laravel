@@ -15,12 +15,7 @@ use Illuminate\Support\Facades\Log;
  */
 class CustomerMergeService
 {
-    protected SettingsService $settings;
-
-    public function __construct(SettingsService $settings)
-    {
-        $this->settings = $settings;
-    }
+    public function __construct(protected SettingsService $settings) {}
 
     /**
      * Check if customer sync is enabled.
@@ -70,20 +65,21 @@ class CustomerMergeService
     /**
      * Find or create a local customer from SUMIT customer data.
      *
-     * @param array $sumitCustomer SUMIT customer data from webhook
+     * @param  array  $sumitCustomer  SUMIT customer data from webhook
      * @return Model|null The local customer model or null if sync disabled
      */
     public function syncFromSumit(array $sumitCustomer): ?Model
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return null;
         }
 
         $modelClass = $this->getModelClass();
-        if (!$modelClass || !class_exists($modelClass)) {
+        if (! $modelClass || ! class_exists($modelClass)) {
             Log::warning('CustomerMergeService: Invalid or missing customer model class', [
                 'configured_class' => $modelClass,
             ]);
+
             return null;
         }
 
@@ -91,8 +87,9 @@ class CustomerMergeService
         $email = $sumitCustomer['Email'] ?? $sumitCustomer['email'] ?? null;
         $sumitId = $sumitCustomer['ID'] ?? $sumitCustomer['id'] ?? $sumitCustomer['CustomerID'] ?? null;
 
-        if (!$email && !$sumitId) {
+        if (! $email && ! $sumitId) {
             Log::warning('CustomerMergeService: No email or SUMIT ID in customer data');
+
             return null;
         }
 
@@ -100,20 +97,19 @@ class CustomerMergeService
             // Try to find existing customer
             $customer = $this->findLocalCustomer($modelClass, $fieldMap, $email, $sumitId);
 
-            if ($customer) {
+            if ($customer instanceof \Illuminate\Database\Eloquent\Model) {
                 // Update existing customer
-                $customer = $this->updateCustomer($customer, $sumitCustomer, $fieldMap);
-            } else {
-                // Create new customer
-                $customer = $this->createCustomer($modelClass, $sumitCustomer, $fieldMap);
+                return $this->updateCustomer($customer, $sumitCustomer, $fieldMap);
             }
 
-            return $customer;
+            // Create new customer
+            return $this->createCustomer($modelClass, $sumitCustomer, $fieldMap);
         } catch (\Exception $e) {
             Log::error('CustomerMergeService: Failed to sync customer', [
                 'error' => $e->getMessage(),
                 'sumit_customer' => $sumitCustomer,
             ]);
+
             return null;
         }
     }
@@ -126,7 +122,7 @@ class CustomerMergeService
         $query = $modelClass::query();
 
         // First try to find by SUMIT ID (most reliable)
-        if ($sumitId && !empty($fieldMap['sumit_id'])) {
+        if ($sumitId && ! empty($fieldMap['sumit_id'])) {
             $customer = $query->where($fieldMap['sumit_id'], $sumitId)->first();
             if ($customer) {
                 return $customer;
@@ -134,7 +130,7 @@ class CustomerMergeService
         }
 
         // Then try to find by email
-        if ($email && !empty($fieldMap['email'])) {
+        if ($email && ! empty($fieldMap['email'])) {
             return $modelClass::where($fieldMap['email'], $email)->first();
         }
 
@@ -149,11 +145,11 @@ class CustomerMergeService
         $updates = $this->mapSumitToLocal($sumitData, $fieldMap);
 
         // Don't update email if it's the unique identifier
-        if (!empty($fieldMap['email']) && $customer->getAttribute($fieldMap['email'])) {
+        if (! empty($fieldMap['email']) && $customer->getAttribute($fieldMap['email'])) {
             unset($updates[$fieldMap['email']]);
         }
 
-        if (!empty($updates)) {
+        if ($updates !== []) {
             $customer->update($updates);
         }
 
@@ -178,7 +174,7 @@ class CustomerMergeService
         $mapped = [];
 
         // Map email
-        if (!empty($fieldMap['email'])) {
+        if (! empty($fieldMap['email'])) {
             $email = $sumitData['Email'] ?? $sumitData['email'] ?? null;
             if ($email) {
                 $mapped[$fieldMap['email']] = $email;
@@ -186,7 +182,7 @@ class CustomerMergeService
         }
 
         // Map phone
-        if (!empty($fieldMap['phone'])) {
+        if (! empty($fieldMap['phone'])) {
             $phone = $sumitData['Phone'] ?? $sumitData['phone'] ?? $sumitData['Mobile'] ?? null;
             if ($phone) {
                 $mapped[$fieldMap['phone']] = $phone;
@@ -198,18 +194,18 @@ class CustomerMergeService
         $lastName = $sumitData['LastName'] ?? $sumitData['last_name'] ?? '';
         $fullName = $sumitData['Name'] ?? $sumitData['name'] ?? trim("$firstName $lastName");
 
-        if (!empty($fieldMap['name']) && $fullName) {
+        if (! empty($fieldMap['name']) && $fullName) {
             $mapped[$fieldMap['name']] = $fullName;
         }
-        if (!empty($fieldMap['first_name']) && $firstName) {
+        if (! empty($fieldMap['first_name']) && $firstName) {
             $mapped[$fieldMap['first_name']] = $firstName;
         }
-        if (!empty($fieldMap['last_name']) && $lastName) {
+        if (! empty($fieldMap['last_name']) && $lastName) {
             $mapped[$fieldMap['last_name']] = $lastName;
         }
 
         // Map company
-        if (!empty($fieldMap['company'])) {
+        if (! empty($fieldMap['company'])) {
             $company = $sumitData['CompanyName'] ?? $sumitData['company'] ?? null;
             if ($company) {
                 $mapped[$fieldMap['company']] = $company;
@@ -217,7 +213,7 @@ class CustomerMergeService
         }
 
         // Map address
-        if (!empty($fieldMap['address'])) {
+        if (! empty($fieldMap['address'])) {
             $address = $sumitData['Address'] ?? $sumitData['address'] ?? null;
             if ($address) {
                 $mapped[$fieldMap['address']] = $address;
@@ -225,7 +221,7 @@ class CustomerMergeService
         }
 
         // Map city
-        if (!empty($fieldMap['city'])) {
+        if (! empty($fieldMap['city'])) {
             $city = $sumitData['City'] ?? $sumitData['city'] ?? null;
             if ($city) {
                 $mapped[$fieldMap['city']] = $city;
@@ -233,7 +229,7 @@ class CustomerMergeService
         }
 
         // Map SUMIT ID
-        if (!empty($fieldMap['sumit_id'])) {
+        if (! empty($fieldMap['sumit_id'])) {
             $sumitId = $sumitData['ID'] ?? $sumitData['id'] ?? $sumitData['CustomerID'] ?? null;
             if ($sumitId) {
                 $mapped[$fieldMap['sumit_id']] = $sumitId;
@@ -246,21 +242,20 @@ class CustomerMergeService
     /**
      * Sync a local customer to SUMIT.
      *
-     * @param Model $customer Local customer model
+     * @param  Model  $customer  Local customer model
      * @return array|null SUMIT API response or null on failure
      */
     public function syncToSumit(Model $customer): ?array
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return null;
         }
 
         $fieldMap = $this->getFieldMapping();
-        $data = $this->mapLocalToSumit($customer, $fieldMap);
 
         // This would need to use the SUMIT API to create/update customer
         // For now, return the mapped data for the developer to use
-        return $data;
+        return $this->mapLocalToSumit($customer, $fieldMap);
     }
 
     /**
@@ -270,39 +265,39 @@ class CustomerMergeService
     {
         $data = [];
 
-        if (!empty($fieldMap['email'])) {
+        if (! empty($fieldMap['email'])) {
             $data['Email'] = $customer->getAttribute($fieldMap['email']);
         }
 
-        if (!empty($fieldMap['phone'])) {
+        if (! empty($fieldMap['phone'])) {
             $data['Phone'] = $customer->getAttribute($fieldMap['phone']);
         }
 
-        if (!empty($fieldMap['name'])) {
+        if (! empty($fieldMap['name'])) {
             $data['Name'] = $customer->getAttribute($fieldMap['name']);
         }
 
-        if (!empty($fieldMap['first_name'])) {
+        if (! empty($fieldMap['first_name'])) {
             $data['FirstName'] = $customer->getAttribute($fieldMap['first_name']);
         }
 
-        if (!empty($fieldMap['last_name'])) {
+        if (! empty($fieldMap['last_name'])) {
             $data['LastName'] = $customer->getAttribute($fieldMap['last_name']);
         }
 
-        if (!empty($fieldMap['company'])) {
+        if (! empty($fieldMap['company'])) {
             $data['CompanyName'] = $customer->getAttribute($fieldMap['company']);
         }
 
-        if (!empty($fieldMap['address'])) {
+        if (! empty($fieldMap['address'])) {
             $data['Address'] = $customer->getAttribute($fieldMap['address']);
         }
 
-        if (!empty($fieldMap['city'])) {
+        if (! empty($fieldMap['city'])) {
             $data['City'] = $customer->getAttribute($fieldMap['city']);
         }
 
-        if (!empty($fieldMap['sumit_id'])) {
+        if (! empty($fieldMap['sumit_id'])) {
             $sumitId = $customer->getAttribute($fieldMap['sumit_id']);
             if ($sumitId) {
                 $data['ID'] = $sumitId;
@@ -317,12 +312,12 @@ class CustomerMergeService
      */
     public function findBySumitId($sumitId): ?Model
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return null;
         }
 
         $modelClass = $this->getModelClass();
-        if (!$modelClass || !class_exists($modelClass)) {
+        if (! $modelClass || ! class_exists($modelClass)) {
             return null;
         }
 
@@ -339,12 +334,12 @@ class CustomerMergeService
      */
     public function findByEmail(string $email): ?Model
     {
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return null;
         }
 
         $modelClass = $this->getModelClass();
-        if (!$modelClass || !class_exists($modelClass)) {
+        if (! $modelClass || ! class_exists($modelClass)) {
             return null;
         }
 

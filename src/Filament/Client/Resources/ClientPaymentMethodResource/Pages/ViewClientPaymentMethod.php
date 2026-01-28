@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
 
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource;
-use Filament\Notifications\Notification;
 
 class ViewClientPaymentMethod extends ViewRecord
 {
@@ -19,9 +19,9 @@ class ViewClientPaymentMethod extends ViewRecord
             Actions\Action::make('set_default')
                 ->label('Set as Default')
                 ->icon('heroicon-o-star')
-                ->visible(fn ($record) => !$record->is_default && !$record->isExpired())
+                ->visible(fn ($record): bool => ! $record->is_default && ! $record->isExpired())
                 ->requiresConfirmation()
-                ->action(function ($record) {
+                ->action(function ($record): void {
                     $record->setAsDefault();
                     Notification::make()
                         ->title('Payment method set as default')

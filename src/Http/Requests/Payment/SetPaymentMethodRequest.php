@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Set Payment Method for Customer Request
@@ -84,10 +84,10 @@ class SetPaymentMethodRequest extends Request implements HasBody
     /**
      * Create new set payment method request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param string $token Either permanent token (UUID) or single-use token
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param array<string, mixed> $additionalFields Optional PaymentMethod fields
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  string  $token  Either permanent token (UUID) or single-use token
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  array<string, mixed>  $additionalFields  Optional PaymentMethod fields
      */
     public function __construct(
         protected readonly int $customerId,
@@ -98,8 +98,6 @@ class SetPaymentMethodRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -157,7 +155,6 @@ class SetPaymentMethodRequest extends Request implements HasBody
      *   "UserErrorMessage": "Token invalid or expired"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -168,19 +165,18 @@ class SetPaymentMethodRequest extends Request implements HasBody
     /**
      * Check if operation was successful
      *
-     * @param Response $response
      * @return bool True if payment method was set successfully
      */
     public function isSuccessful(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? 1) === 0;
     }
 
     /**
      * Get error message from failed request
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

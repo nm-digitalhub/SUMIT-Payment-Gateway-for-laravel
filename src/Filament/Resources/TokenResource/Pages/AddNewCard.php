@@ -5,12 +5,10 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
 
 use Filament\Resources\Pages\Page;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource;
-use OfficeGuy\LaravelSumitGateway\Services\TokenService;
-use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use Illuminate\Support\Facades\Request;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
+use OfficeGuy\LaravelSumitGateway\Services\TokenService;
 
 class AddNewCard extends Page
 {
@@ -23,12 +21,16 @@ class AddNewCard extends Page
     protected static ?string $navigationLabel = 'Add Card';
 
     public ?int $ownerId = null;
+
     public ?string $ownerType = null;
+
     public ?string $singleUseToken = null;
+
     public bool $setAsDefault = true;
 
     // Result state management
     public ?string $resultStatus = null; // 'success' | 'error' | null
+
     public ?array $resultData = null;
 
     public function mount(string $ownerType, int $ownerId): void
@@ -41,7 +43,7 @@ class AddNewCard extends Page
 
     public function getOwner(): mixed
     {
-        if (!$this->ownerType || !$this->ownerId) {
+        if (! $this->ownerType || ! $this->ownerId) {
             return null;
         }
 
@@ -51,7 +53,7 @@ class AddNewCard extends Page
     public function processNewCard(): void
     {
         // DEBUG: Log at the very start
-        file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . " - processNewCard CALLED! singleUseToken: " . substr($this->singleUseToken ?? 'NULL', 0, 20) . ", setAsDefault: " . var_export($this->setAsDefault, true) . "\n", FILE_APPEND);
+        file_put_contents('/tmp/addnewcard_debug.log', date('Y-m-d H:i:s') . ' - processNewCard CALLED! singleUseToken: ' . substr($this->singleUseToken ?? 'NULL', 0, 20) . ', setAsDefault: ' . var_export($this->setAsDefault, true) . "\n", FILE_APPEND);
 
         // Debug logging
         \Log::info('processNewCard called', [
@@ -62,24 +64,26 @@ class AddNewCard extends Page
         ]);
 
         // Use Livewire properties instead of Request
-        if (!$this->singleUseToken) {
+        if (! $this->singleUseToken) {
             \Log::warning('Single-use token is missing');
             $this->resultStatus = 'error';
             $this->resultData = [
                 'message' => 'Single-use token is required',
                 'error_type' => 'validation',
             ];
+
             return;
         }
 
         $owner = $this->getOwner();
-        if (!$owner) {
+        if (! $owner) {
             \Log::warning('Owner not found', ['ownerId' => $this->ownerId, 'ownerType' => $this->ownerType]);
             $this->resultStatus = 'error';
             $this->resultData = [
                 'message' => 'Owner not found',
                 'error_type' => 'validation',
             ];
+
             return;
         }
 
@@ -93,12 +97,13 @@ class AddNewCard extends Page
             // Process the SingleUseToken to get permanent token
             $result = TokenService::processToken($owner, 'no');
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $this->resultStatus = 'error';
                 $this->resultData = [
                     'message' => $result['message'] ?? 'Unknown error',
                     'error_type' => 'gateway',
                 ];
+
                 return;
             }
 
@@ -117,7 +122,7 @@ class AddNewCard extends Page
                 if ($sumitCustomerId) {
                     \Log::info('Calling setPaymentMethodForCustomer', [
                         'sumitCustomerId' => $sumitCustomerId,
-                        'token' => substr($newToken->token, 0, 20) . '...'
+                        'token' => substr((string) $newToken->token, 0, 20) . '...',
                     ]);
 
                     $result = PaymentService::setPaymentMethodForCustomer(
@@ -127,9 +132,9 @@ class AddNewCard extends Page
 
                     \Log::info('setPaymentMethodForCustomer result', ['result' => $result]);
 
-                    if (!$result['success']) {
+                    if (! $result['success']) {
                         \Log::warning('Failed to set payment method in SUMIT', [
-                            'error' => $result['error'] ?? 'Unknown error'
+                            'error' => $result['error'] ?? 'Unknown error',
                         ]);
                         // Continue to set as default locally even if SUMIT fails
                     }
@@ -137,8 +142,8 @@ class AddNewCard extends Page
                     $newToken->setAsDefault();
                 } else {
                     \Log::warning('No SUMIT customer ID found', [
-                        'owner_type' => get_class($owner),
-                        'owner_id' => $owner->id
+                        'owner_type' => $owner::class,
+                        'owner_id' => $owner->id,
                     ]);
                 }
             } else {

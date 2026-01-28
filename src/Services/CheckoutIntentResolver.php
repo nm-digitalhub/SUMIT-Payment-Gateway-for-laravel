@@ -19,7 +19,6 @@ use OfficeGuy\LaravelSumitGateway\DataTransferObjects\ResolvedPaymentIntent;
  *
  * This is the bridge between checkout context (Intent) and payment execution (ResolvedIntent).
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.18.0
  */
 class CheckoutIntentResolver
@@ -27,14 +26,14 @@ class CheckoutIntentResolver
     /**
      * Resolve CheckoutIntent into ResolvedPaymentIntent
      *
-     * @param CheckoutIntent $intent The checkout context
-     * @param Request|null $request Optional HTTP request for extracting single-use token
+     * @param  CheckoutIntent  $intent  The checkout context
+     * @param  Request|null  $request  Optional HTTP request for extracting single-use token
      * @return ResolvedPaymentIntent Fully resolved payment intent ready for processing
      */
     public static function resolve(CheckoutIntent $intent, ?Request $request = null): ResolvedPaymentIntent
     {
         // Get current request if not provided
-        $request = $request ?? request();
+        $request ??= request();
 
         // 1. Determine PCI mode from configuration
         $pciMode = config('officeguy.pci_mode', 'no');
@@ -79,7 +78,6 @@ class CheckoutIntentResolver
     /**
      * Build redirect URLs for PCI redirect mode
      *
-     * @param CheckoutIntent $intent
      * @return array{success: string, cancel: string}
      */
     protected static function buildRedirectUrls(CheckoutIntent $intent): array
@@ -102,10 +100,6 @@ class CheckoutIntentResolver
      * For PCI mode = 'yes': Extract card details from request
      * For PCI mode = 'no': Payload is empty (uses single-use token)
      * For PCI mode = 'redirect': Payload is empty (handled by SUMIT)
-     *
-     * @param Request $request
-     * @param string $pciMode
-     * @return array
      */
     protected static function buildPaymentMethodPayload(Request $request, string $pciMode): array
     {
@@ -138,9 +132,6 @@ class CheckoutIntentResolver
 
     /**
      * Determine if payment is recurring/subscription
-     *
-     * @param CheckoutIntent $intent
-     * @return bool
      */
     protected static function isRecurringPayment(CheckoutIntent $intent): bool
     {

@@ -24,10 +24,10 @@ class BitPaymentService
      * - Fix #6: IPN URL includes orderkey for security
      * - Fix #9: Enforce bit_enabled setting
      *
-     * @param Payable $order Order instance
-     * @param string $successUrl Success redirect URL
-     * @param string $cancelUrl Cancel redirect URL
-     * @param string $webhookUrl Webhook/IPN URL
+     * @param  Payable  $order  Order instance
+     * @param  string  $successUrl  Success redirect URL
+     * @param  string  $cancelUrl  Cancel redirect URL
+     * @param  string  $webhookUrl  Webhook/IPN URL
      * @return array Result with 'success' boolean and 'redirect_url' or 'message'
      */
     public static function processOrder(
@@ -68,14 +68,14 @@ class BitPaymentService
 
         // Build complete IPN URL with security parameters
         $ipnUrl = $webhookUrl;
-        if (strpos($ipnUrl, '?') === false) {
+        if (! str_contains($ipnUrl, '?')) {
             $ipnUrl .= '?';
         } else {
             $ipnUrl .= '&';
         }
-        $ipnUrl .= 'orderid='.urlencode((string) $orderId);
+        $ipnUrl .= 'orderid=' . urlencode((string) $orderId);
         if ($orderKey) {
-            $ipnUrl .= '&orderkey='.urlencode($orderKey);
+            $ipnUrl .= '&orderkey=' . urlencode($orderKey);
         }
 
         OfficeGuyApi::writeToLog(
@@ -95,11 +95,9 @@ class BitPaymentService
             );
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $bitRequest = new class(
-                $credentials,
-                $request
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $bitRequest = new class($credentials, $request) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -149,7 +147,7 @@ class BitPaymentService
             // Create pending transaction
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
-                'order_type' => get_class($order),
+                'order_type' => $order::class,
                 'amount' => $order->getPayableAmount(),
                 'currency' => $order->getPayableCurrency(),
                 'status' => 'pending',
@@ -195,14 +193,14 @@ class BitPaymentService
     /**
      * Process zero amount order (create document only)
      *
-     * @param Payable $order Order instance
-     * @param string $successUrl Success redirect URL
+     * @param  Payable  $order  Order instance
+     * @param  string  $successUrl  Success redirect URL
      * @return array Result array
      */
     protected static function processZeroAmountOrder(Payable $order, string $successUrl): array
     {
         $customer = PaymentService::getOrderCustomer($order);
-        $result = DocumentService::createOrderDocument($order, $customer, null);
+        $result = DocumentService::createOrderDocument($order, $customer);
 
         if ($result === null) {
             return [
@@ -220,10 +218,10 @@ class BitPaymentService
     /**
      * Build Bit payment request
      *
-     * @param Payable $order Order instance
-     * @param string $successUrl Success redirect URL
-     * @param string $cancelUrl Cancel redirect URL
-     * @param string $webhookUrl Webhook/IPN URL
+     * @param  Payable  $order  Order instance
+     * @param  string  $successUrl  Success redirect URL
+     * @param  string  $cancelUrl  Cancel redirect URL
+     * @param  string  $webhookUrl  Webhook/IPN URL
      * @return array Request data
      */
     protected static function buildBitPaymentRequest(
@@ -232,7 +230,10 @@ class BitPaymentService
         string $cancelUrl,
         string $webhookUrl
     ): array {
-        $request = [
+        // Allow filtering via events
+        // do_action('og_payment_request_handle', $order, $request);
+
+        return [
             'Credentials' => PaymentService::getCredentials(),
             'Items' => PaymentService::getPaymentOrderItems($order),
             'VATIncluded' => 'true',
@@ -242,7 +243,7 @@ class BitPaymentService
             'DraftDocument' => config('officeguy.draft_document', false) ? 'true' : 'false',
             'SendDocumentByEmail' => config('officeguy.email_document', true) ? 'true' : 'false',
             'DocumentDescription' => __('Order number') . ': ' . $order->getPayableId() .
-                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote()),
+                (in_array($order->getCustomerNote(), [null, '', '0'], true) ? '' : "\r\n" . $order->getCustomerNote()),
             'Payments_Count' => 1,
             'MaximumPayments' => 1,
             'DocumentLanguage' => PaymentService::getOrderLanguage(),
@@ -252,11 +253,6 @@ class BitPaymentService
             'AutomaticallyRedirectToProviderPaymentPage' => 'UpayBit',
             'IPNURL' => $webhookUrl,
         ];
-
-        // Allow filtering via events
-        // do_action('og_payment_request_handle', $order, $request);
-
-        return $request;
     }
 
     /**
@@ -273,11 +269,11 @@ class BitPaymentService
      * - Fix #7: Order status update (not just Transaction)
      * - Fix #8: Order-level idempotency (primary check)
      *
-     * @param string $orderId Order ID from webhook
-     * @param string $orderKey Order key for verification
-     * @param string $documentId SUMIT document ID
-     * @param string $customerId SUMIT customer ID
-     * @param mixed $orderModel Order model instance (must implement Payable)
+     * @param  string  $orderId  Order ID from webhook
+     * @param  string  $orderKey  Order key for verification
+     * @param  string  $documentId  SUMIT document ID
+     * @param  string  $customerId  SUMIT customer ID
+     * @param  mixed  $orderModel  Order model instance (must implement Payable)
      * @return bool Success status
      */
     public static function processWebhook(
@@ -344,7 +340,7 @@ class BitPaymentService
 
             // Transaction exists but NOT completed → Update it
             if (in_array($transaction->status, ['pending', 'processing'])) {
-                \Illuminate\Support\Facades\DB::transaction(function () use ($transaction, $documentId, $customerId, $orderModel, $orderId) {
+                \Illuminate\Support\Facades\DB::transaction(function () use ($transaction, $documentId, $customerId, $orderModel, $orderId): void {
                     // Update Transaction
                     $transaction->update([
                         'status' => 'completed',
@@ -379,8 +375,8 @@ class BitPaymentService
                         // Add note if supported
                         if (method_exists($orderModel, 'addNote')) {
                             $orderModel->addNote(
-                                "Bit payment completed successfully.\n".
-                                "Document ID: {$documentId}\n".
+                                "Bit payment completed successfully.\n" .
+                                "Document ID: {$documentId}\n" .
                                 "Customer ID: {$customerId}"
                             );
                         }
@@ -409,7 +405,7 @@ class BitPaymentService
         // ❌ No transaction found → This should NOT happen!
         // Transaction should have been created by processOrder() before redirect
         OfficeGuyApi::writeToLog(
-            "Bit IPN error: No transaction found for order $orderId (payment_method=bit). ".
+            "Bit IPN error: No transaction found for order $orderId (payment_method=bit). " .
             'This should not happen - transaction should be created before redirecting to Bit.',
             'error'
         );

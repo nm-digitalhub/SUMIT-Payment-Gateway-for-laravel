@@ -4,8 +4,9 @@ class OfficeGuyWCVendorsMarketplace
 {
     public static function Init()
     {
-        if (!OfficeGuyWCVendorsMarketplace::PluginIsActive())
+        if (! OfficeGuyWCVendorsMarketplace::PluginIsActive()) {
             return;
+        }
 
         add_action('show_user_profile', 'OfficeGuyWCVendorsMarketplace::OfficeGuyUserAPIKeyFields');
         add_action('edit_user_profile', 'OfficeGuyWCVendorsMarketplace::OfficeGuyUserAPIKeyFields');
@@ -18,9 +19,8 @@ class OfficeGuyWCVendorsMarketplace
     public static function OfficeGuyUserAPIKeyFields($User)
     {
         $OfficeGuyValidCredentialsMsg = get_the_author_meta('OfficeGuyValidCredentials', $User->ID);
-        if ($OfficeGuyValidCredentialsMsg != null)
-        {
-?>
+        if ($OfficeGuyValidCredentialsMsg != null) {
+            ?>
             <div class="error">
                 <p><?php echo 'SUMIT error: ' . $OfficeGuyValidCredentialsMsg; ?></p>
             </div>
@@ -51,56 +51,58 @@ class OfficeGuyWCVendorsMarketplace
 
     public static function SaveOfficeGuyUserAPIKeyFields($UserID)
     {
-        if (empty($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update-user_' . $UserID))
+        if (empty($_POST['_wpnonce']) || ! wp_verify_nonce($_POST['_wpnonce'], 'update-user_' . $UserID)) {
             return;
+        }
 
-        if (!current_user_can('edit_user', $UserID))
+        if (! current_user_can('edit_user', $UserID)) {
             return false;
+        }
 
         update_user_meta($UserID, 'OfficeGuyCompanyID', $_POST['officeguycompanyid']);
         update_user_meta($UserID, 'OfficeGuyAPIKey', $_POST['officeguyapikey']);
 
-        if (!empty($_POST['officeguycompanyid']) && !empty($_POST['officeguyapikey']))
-        {
+        if (! empty($_POST['officeguycompanyid']) && ! empty($_POST['officeguyapikey'])) {
             $Response = OfficeGuyAPI::CheckCredentials($_POST['officeguycompanyid'], $_POST['officeguyapikey']);
             update_user_meta($UserID, 'OfficeGuyValidCredentials', $Response);
-        }
-        else
+        } else {
             delete_user_meta($UserID, 'OfficeGuyValidCredentials');
+        }
     }
 
     public static function GetProductVendorCredentials()
     {
-        $ProductCredentials = array();
+        $ProductCredentials = [];
         $ProductIDs = OfficeGuySubscriptions::GetCartProductIDs();
-        foreach ($ProductIDs as $ProductID)
-        {
+        foreach ($ProductIDs as $ProductID) {
             $VendorID = get_post_field('post_author', $ProductID);
             $ProductCredentials[$ProductID]['OfficeGuyCompanyID'] = get_the_author_meta('OfficeGuyCompanyID', $VendorID);
             $ProductCredentials[$ProductID]['OfficeGuyAPIKey'] = get_the_author_meta('OfficeGuyAPIKey', $VendorID);
         }
+
         return $ProductCredentials;
     }
 
     public static function PluginIsActive()
     {
-        return is_plugin_active('wc-vendors/class-wc-vendors.php') 
+        return is_plugin_active('wc-vendors/class-wc-vendors.php')
             || is_plugin_active('wc-vendors-pro/class-wc-vendors-pro.php');
     }
 
     public static function VendorsInCartCount()
     {
         $ProductCredentials = OfficeGuyWCVendorsMarketplace::GetProductVendorCredentials();
-        $CompanyIDs = array();
+        $CompanyIDs = [];
 
-        foreach ($ProductCredentials as $ProductCredential)
-        {
+        foreach ($ProductCredentials as $ProductCredential) {
             $CompanyID = $ProductCredential['OfficeGuyCompanyID'];
-            if (is_numeric($CompanyID))
+            if (is_numeric($CompanyID)) {
                 $CompanyIDs[] = $CompanyID;
+            }
         }
 
         $CompanyIDs = array_unique($CompanyIDs);
+
         return count($CompanyIDs);
     }
 }

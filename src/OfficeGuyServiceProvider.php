@@ -12,6 +12,7 @@ use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsComma
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
 use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
@@ -22,7 +23,6 @@ use OfficeGuy\LaravelSumitGateway\Listeners\NotifySubscriptionCreatedListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\RefundWebhookListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\TransactionSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
-use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
 use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
@@ -85,14 +85,14 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\PackageVersionService::class);
 
         // Resolve CheckoutRequest for route model binding
-        $this->app->resolving(CheckoutRequest::class, function ($request, $app) {
-            return CheckoutRequest::createFrom($app['request'], $request);
-        });
+        $this->app->resolving(CheckoutRequest::class, fn ($request, array $app) => CheckoutRequest::createFrom($app['request'], $request));
 
         // Bind customer model class resolution (backward compatible)
-        $this->app->singleton('officeguy.customer_model', function ($app) {
-            return $this->resolveCustomerModel();
-        });
+        $this->app->singleton('officeguy.customer_model', fn ($app): ?string => $this->resolveCustomerModel());
+
+        // Register Filament Plugin classes for auto-discovery
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin::class);
+        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin::class);
     }
 
     /**
@@ -120,7 +120,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     return $dbValue;
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             // Silently fail if DB not ready - continue to config
         }
 
@@ -278,9 +278,6 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register Container-Driven Fulfillment handlers (v1.18.0)
         $this->registerFulfillmentHandlers();
-
-        // Register Filament Clusters for navigation organization
-        $this->registerFilamentClusters();
     }
 
     /**
@@ -293,7 +290,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
     {
         try {
             // Only load if table exists (prevents errors during migration)
-            if (!\Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
+            if (! \Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
                 return;
             }
 
@@ -329,7 +326,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     config(["officeguy.webhooks.{$configKey}" => $value]);
                 }
             }
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             // Silently fail - config defaults will be used
             // This handles cases where DB isn't ready yet
         }
@@ -342,7 +339,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerLivewireComponents(): void
     {
-        if (!class_exists(\Livewire\Livewire::class)) {
+        if (! class_exists(\Livewire\Livewire::class)) {
             return;
         }
 
@@ -354,273 +351,6 @@ class OfficeGuyServiceProvider extends ServiceProvider
     }
 
     /**
-     * Register Filament Clusters and discover Resources automatically.
-     *
-     * Registers package Clusters with Filament panels so resources are grouped properly.
-     * Auto-discovers and registers all Resources from the package directory.
-     *
-     * Uses Filament's serving hook to register after panels are initialized.
-     */
-    protected function registerFilamentClusters(): void
-    {
-        if (!class_exists(\Filament\Facades\Filament::class)) {
-            return;
-        }
-
-        // Use Filament's serving hook to register clusters after panels are ready
-        \Filament\Facades\Filament::serving(function () {
-            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters and discovering resources');
-
-            // Register clusters for admin panel
-            try {
-                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
-                if ($adminPanel !== null) {
-                    $adminPanel->clusters([
-                        \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
-                    ]);
-                    \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
-                } else {
-                    \Log::warning('[SUMIT] Admin panel not found, skipping SumitGateway cluster registration');
-                }
-            } catch (\Throwable $e) {
-                \Log::error('[SUMIT] Failed to register SumitGateway cluster: ' . $e->getMessage());
-            }
-
-            // Register clusters for client panel
-            try {
-                $clientPanel = \Filament\Facades\Filament::getPanel('client');
-                if ($clientPanel !== null) {
-                    $clientPanel->clusters([
-                        \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
-                    ]);
-                    \Log::info('[SUMIT] SumitClient cluster registered to client panel');
-                } else {
-                    \Log::warning('[SUMIT] Client panel not found, skipping SumitClient cluster registration');
-                }
-            } catch (\Throwable $e) {
-                \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
-            }
-
-            // Auto-discover and register Resources from package directories
-            $this->discoverFilamentResources();
-            $this->discoverClientResources();
-        });
-    }
-
-    /**
-     * Auto-discover and register Filament Resources from package directory.
-     *
-     * This method scans the package's Filament/Resources directory recursively and
-     * automatically registers all Resource classes with Filament. This eliminates the
-     * need to manually maintain a list of resources, making the codebase cleaner.
-     *
-     * Architecture: Recursive Auto-Discovery Pattern
-     * - Scans directory: __DIR__ . '/Filament/Resources' (recursive)
-     * - Namespace: OfficeGuy\LaravelSumitGateway\Filament\Resources
-     * - Registers any class ending with 'Resource.php' in any subdirectory
-     *
-     * Benefits:
-     * - ✅ Zero manual maintenance
-     * - ✅ New resources auto-register (including subdirectories)
-     * - ✅ Clean, scalable code
-     *
-     * Example structure supported:
-     * - Resources/TransactionResource.php
-     * - Resources/Transactions/TransactionResource.php
-     * - Resources/Crm/ActivityResource.php
-     */
-    protected function discoverFilamentResources(): void
-    {
-        $resourcesPath = __DIR__ . '/Filament/Resources';
-        $baseNamespace = 'OfficeGuy\\LaravelSumitGateway\\Filament\\Resources';
-
-        // Check if directory exists
-        if (!is_dir($resourcesPath)) {
-            \Log::warning("[SUMIT] Resources directory not found: {$resourcesPath}");
-            return;
-        }
-
-        // Scan for Resource files recursively (finds files in subdirectories too)
-        $resourceFiles = glob($resourcesPath . '/**/*.php');
-
-        if (empty($resourceFiles)) {
-            \Log::info("[SUMIT] No resource files found in: {$resourcesPath}");
-            return;
-        }
-
-        $registeredCount = 0;
-        $skippedCount = 0;
-        $resourcesToRegister = [];
-
-        foreach ($resourceFiles as $file) {
-            // Only process files ending with 'Resource.php'
-            if (!str_ends_with(basename($file), 'Resource.php')) {
-                $skippedCount++;
-                continue;
-            }
-
-            // Calculate the relative path from Resources directory
-            $relativePath = str_replace($resourcesPath . '/', '', $file);
-            $relativePath = str_replace('/', '\\', $relativePath);
-
-            // Remove .php extension and build full class name
-            $classNameWithoutExtension = str_replace('.php', '', $relativePath);
-            $fullClassName = $baseNamespace . '\\' . $classNameWithoutExtension;
-
-            // Verify class exists before registering
-            if (class_exists($fullClassName)) {
-                $resourcesToRegister[] = $fullClassName;
-                $registeredCount++;
-                \Log::debug("[SUMIT] Discovered resource: {$fullClassName}");
-            } else {
-                \Log::warning("[SUMIT] Resource class not found: {$fullClassName}");
-            }
-        }
-
-        // Register all resources to the admin panel at once
-        if (!empty($resourcesToRegister)) {
-            try {
-                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
-                if ($adminPanel !== null) {
-                    // Use $panel->resources() instead of Filament::registerResources()
-                    // This ensures proper route registration
-                    $adminPanel->resources($resourcesToRegister);
-                    \Log::info("[SUMIT] Registered {$registeredCount} resources to admin panel (skipped {$skippedCount} non-resource files)");
-                } else {
-                    \Log::warning("[SUMIT] Admin panel not found, cannot register resources");
-                }
-            } catch (\Throwable $e) {
-                \Log::error("[SUMIT] Failed to register resources: {$e->getMessage()}");
-            }
-        }
-
-        // Register Pages separately (no auto-discovery for Pages)
-        $this->registerFilamentPages();
-    }
-
-    /**
-     * Register Filament Pages from package.
-     *
-     * Pages cannot be auto-discovered like Resources because Filament doesn't
-     * provide a discoverPages() method. We register them manually here.
-     */
-    protected function registerFilamentPages(): void
-    {
-        $pages = [
-            \OfficeGuy\LaravelSumitGateway\Filament\Pages\OfficeGuySettings::class,
-            \OfficeGuy\LaravelSumitGateway\Filament\Pages\AboutPage::class,
-        ];
-
-        $validPages = [];
-        foreach ($pages as $page) {
-            if (class_exists($page)) {
-                $validPages[] = $page;
-                \Log::debug("[SUMIT] Discovered page: {$page}");
-            } else {
-                \Log::warning("[SUMIT] Page class not found: {$page}");
-            }
-        }
-
-        // Register all pages to the admin panel at once
-        if (!empty($validPages)) {
-            try {
-                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
-                if ($adminPanel !== null) {
-                    // Use $panel->pages() instead of Filament::registerPages()
-                    // This ensures proper route registration
-                    $adminPanel->pages($validPages);
-                    \Log::info("[SUMIT] Registered " . count($validPages) . " pages to admin panel");
-                } else {
-                    \Log::warning("[SUMIT] Admin panel not found, cannot register pages");
-                }
-            } catch (\Throwable $e) {
-                \Log::error("[SUMIT] Failed to register pages: {$e->getMessage()}");
-            }
-        }
-    }
-
-    /**
-     * Auto-discover and register Filament Client Resources from package directory.
-     *
-     * This method scans the package's Filament/Client/Resources directory recursively
-     * and automatically registers all Client Resource classes with the client panel.
-     *
-     * Architecture: Recursive Auto-Discovery Pattern
-     * - Scans directory: __DIR__ . '/Filament/Client/Resources' (recursive)
-     * - Namespace: OfficeGuy\LaravelSumitGateway\Filament\Client\Resources
-     * - Registers any class ending with 'Resource.php' in any subdirectory
-     *
-     * Benefits:
-     * - ✅ Zero manual maintenance
-     * - ✅ New client resources auto-register
-     * - ✅ Clean, scalable code
-     */
-    protected function discoverClientResources(): void
-    {
-        $resourcesPath = __DIR__ . '/Filament/Client/Resources';
-        $baseNamespace = 'OfficeGuy\\LaravelSumitGateway\\Filament\\Client\\Resources';
-
-        // Check if directory exists
-        if (!is_dir($resourcesPath)) {
-            \Log::warning("[SUMIT] Client Resources directory not found: {$resourcesPath}");
-            return;
-        }
-
-        // Scan for Resource files recursively
-        $resourceFiles = glob($resourcesPath . '/**/*.php');
-
-        if (empty($resourceFiles)) {
-            \Log::info("[SUMIT] No client resource files found in: {$resourcesPath}");
-            return;
-        }
-
-        $registeredCount = 0;
-        $skippedCount = 0;
-        $resourcesToRegister = [];
-
-        foreach ($resourceFiles as $file) {
-            // Only process files ending with 'Resource.php'
-            if (!str_ends_with(basename($file), 'Resource.php')) {
-                $skippedCount++;
-                continue;
-            }
-
-            // Calculate the relative path from Resources directory
-            $relativePath = str_replace($resourcesPath . '/', '', $file);
-            $relativePath = str_replace('/', '\\', $relativePath);
-
-            // Remove .php extension and build full class name
-            $classNameWithoutExtension = str_replace('.php', '', $relativePath);
-            $fullClassName = $baseNamespace . '\\' . $classNameWithoutExtension;
-
-            // Verify class exists before registering
-            if (class_exists($fullClassName)) {
-                $resourcesToRegister[] = $fullClassName;
-                $registeredCount++;
-                \Log::debug("[SUMIT] Discovered client resource: {$fullClassName}");
-            } else {
-                \Log::warning("[SUMIT] Client resource class not found: {$fullClassName}");
-            }
-        }
-
-        // Register all resources to the client panel at once
-        if (!empty($resourcesToRegister)) {
-            try {
-                $clientPanel = \Filament\Facades\Filament::getPanel('client');
-                if ($clientPanel !== null) {
-                    // Use $panel->resources() for proper route registration
-                    $clientPanel->resources($resourcesToRegister);
-                    \Log::info("[SUMIT] Registered {$registeredCount} client resources to client panel (skipped {$skippedCount} non-resource files)");
-                } else {
-                    \Log::warning("[SUMIT] Client panel not found, cannot register client resources");
-                }
-            } catch (\Throwable $e) {
-                \Log::error("[SUMIT] Failed to register client resources: {$e->getMessage()}");
-            }
-        }
-    }
-
-    /**
      * Register stock sync scheduler based on settings.
      *
      * Schedules automatic stock synchronization based on the stock_sync_freq setting.
@@ -628,11 +358,11 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerStockSyncScheduler(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
             $freq = config('officeguy.stock_sync_freq', 'none');
 
             if ($freq === '12') {
@@ -653,21 +383,21 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerDocumentSyncScheduler(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
             // Daily sync at 3:00 AM (low traffic time)
             $schedule->command('sumit:sync-all-documents --days=30')
                 ->dailyAt('03:00')
                 ->name('sumit-documents-sync')
                 ->withoutOverlapping(120) // Prevent overlapping runs, timeout after 2 hours
                 ->runInBackground()
-                ->onFailure(function () {
+                ->onFailure(function (): void {
                     \Log::error('SUMIT documents auto-sync failed');
                 })
-                ->onSuccess(function () {
+                ->onSuccess(function (): void {
                     \Log::info('SUMIT documents auto-sync completed successfully');
                 });
         });
@@ -682,21 +412,21 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerCrmFoldersSyncScheduler(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
             // Daily sync at 2:00 AM (before documents sync at 3:00 AM)
             $schedule->command('crm:sync-folders')
                 ->dailyAt('02:00')
                 ->name('crm-folders-sync')
                 ->withoutOverlapping(60) // Prevent overlapping runs, timeout after 1 hour
                 ->runInBackground()
-                ->onFailure(function () {
+                ->onFailure(function (): void {
                     \Log::error('CRM folders auto-sync failed');
                 })
-                ->onSuccess(function () {
+                ->onSuccess(function (): void {
                     \Log::info('CRM folders auto-sync completed successfully');
                 });
         });
@@ -707,19 +437,19 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerDebtCollectionScheduler(): void
     {
-        if (!$this->app->runningInConsole()) {
+        if (! $this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
+        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
             $schedule->job(\OfficeGuy\LaravelSumitGateway\Jobs\CheckSumitDebtJob::class)
                 ->dailyAt(config('officeguy.collection.schedule_time', '02:00'))
                 ->name('sumit-debt-check')
                 ->withoutOverlapping(60)
-                ->onFailure(function () {
+                ->onFailure(function (): void {
                     \Log::error('SUMIT debt auto-check failed');
                 })
-                ->onSuccess(function () {
+                ->onSuccess(function (): void {
                     \Log::info('SUMIT debt auto-check completed successfully');
                 });
         });
@@ -767,9 +497,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $currentMiddleware = config('officeguy.routes.middleware', ['web', 'auth']);
 
         // Replace 'auth' with 'optional.auth' in the middleware array
-        $newMiddleware = array_map(function ($middleware) {
-            return $middleware === 'auth' ? 'optional.auth' : $middleware;
-        }, $currentMiddleware);
+        $newMiddleware = array_map(fn ($middleware) => $middleware === 'auth' ? 'optional.auth' : $middleware, $currentMiddleware);
 
         // Set the new middleware configuration
         config(['officeguy.routes.middleware' => $newMiddleware]);

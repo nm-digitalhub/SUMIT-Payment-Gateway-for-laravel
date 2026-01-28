@@ -5,6 +5,57 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-01-28
+
+### Added
+- **filament-plugin-essentials Integration** - Centralized plugin configuration with trait-based architecture
+  - Integration with `bezhansalleh/filament-plugin-essentials` package
+  - Created `OfficeGuyPlugin` (Admin Panel) with 10 resources
+  - Created `OfficeGuyClientPlugin` (Client Panel) with 6 resources
+  - 3-tier default system: User Overrides > Plugin Defaults > Filament Defaults
+  - Multi-resource configuration support via `WithMultipleResourceSupport`
+  - All Resources now use `HasNavigation`, `HasLabels` traits
+
+### New Plugins
+- `OfficeGuyPlugin` - Admin panel plugin with centralized configuration
+  - Transaction, Token, Document, Subscription, Vendor, Webhook resources
+  - CRM resources (Activities, Entities, Folders)
+  - SUMIT Webhook resources
+- `OfficeGuyClientPlugin` - Client panel plugin
+  - Payment Methods, Transactions, Documents, Subscriptions
+  - Webhook Events, SUMIT Webhooks
+
+### Developer Tools
+- **Laravel Pint** v1.27.0 - Code formatting with Laravel preset
+- **Rector** v2.3.4 - Automated code refactoring and modernization
+- **PHPStan** v2.1.37 - Static analysis for PHP 8.2+
+- Added `pint.json` and `rector.php` configuration files
+
+### Code Quality Improvements
+- Modernized 138 files with Rector
+- Applied strict type hints and return types
+- Converted closures to arrow functions where appropriate
+- Replaced string class names with `::class` constants
+- Enhanced null safety and explicit boolean comparisons
+- Improved code formatting across entire codebase
+
+### Changed
+- All Admin Resources (16) now delegate to `OfficeGuyPlugin` for navigation/labels
+- All Client Resources (6) now delegate to `OfficeGuyClientPlugin` for navigation/labels
+- Removed static properties from Resources (now managed by plugins)
+- Preserved dynamic methods like `getNavigationBadge()` for runtime customization
+
+### Technical Details
+- **Plugin Auto-discovery**: Both plugins registered in ServiceProvider
+- **Cluster Support**: Maintained SumitGateway and SumitClient clusters
+- **Backward Compatibility**: 100% - all existing functionality preserved
+- **Dynamic Methods**: Resource-level methods still override plugin defaults
+
+## [2.5.1] - 2026-01-27
+
+### Fixed
+- Minor bug fixes and improvements
+
 ## [2.4.0] - 2026-01-22
 
 ### Added

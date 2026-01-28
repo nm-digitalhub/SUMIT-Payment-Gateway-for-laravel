@@ -41,7 +41,6 @@ use OfficeGuy\LaravelSumitGateway\DataTransferObjects\PaymentPreferences;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.2.0
  */
 class PendingCheckout extends Model
@@ -95,7 +94,7 @@ class PendingCheckout extends Model
      * - CheckoutIntent = immutable context
      * - Service data = temporary storage
      *
-     * @param Payable $payable The payable entity (must be loaded separately)
+     * @param  Payable  $payable  The payable entity (must be loaded separately)
      * @return CheckoutIntent Context only (no service data)
      */
     public function toIntent(Payable $payable): CheckoutIntent
@@ -110,8 +109,6 @@ class PendingCheckout extends Model
 
     /**
      * Check if this pending checkout has expired
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -120,12 +117,10 @@ class PendingCheckout extends Model
 
     /**
      * Check if this pending checkout is still valid
-     *
-     * @return bool
      */
     public function isValid(): bool
     {
-        return !$this->isExpired();
+        return ! $this->isExpired();
     }
 
     /**
@@ -141,7 +136,7 @@ class PendingCheckout extends Model
     /**
      * Scope: Only active (not expired) checkouts
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -152,7 +147,7 @@ class PendingCheckout extends Model
     /**
      * Scope: Only expired checkouts
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeExpired($query)
@@ -163,22 +158,21 @@ class PendingCheckout extends Model
     /**
      * Scope: For specific payable
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type Payable class name
-     * @param int $id Payable ID
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     * @param  string  $type  Payable class name
+     * @param  int  $id  Payable ID
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForPayable($query, string $type, int $id)
     {
         return $query->where('payable_type', $type)
-                     ->where('payable_id', $id);
+            ->where('payable_id', $id);
     }
 
     /**
      * Scope: For specific session
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $sessionId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForSession($query, string $sessionId)

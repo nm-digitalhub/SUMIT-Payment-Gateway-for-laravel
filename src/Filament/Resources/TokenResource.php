@@ -4,38 +4,45 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions\Action;
-use Filament\Actions\EditAction;
-use Filament\Actions\ViewAction;
-use Filament\Actions\DeleteAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkTokenSyncJob;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 class TokenResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyToken::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
-
-    protected static ?string $navigationLabel = 'Payment Tokens';
-
-    protected static ?int $navigationSort = 2;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -53,7 +60,7 @@ class TokenResource extends Resource
                             ->label('Set as Default Token')
                             ->helperText('Mark this token as the default payment method for this customer')
                             ->live()
-                            ->afterStateUpdated(function ($state, $record) {
+                            ->afterStateUpdated(function ($state, $record): void {
                                 if ($state && $record) {
                                     // Get owner's SUMIT customer ID
                                     $owner = $record->owner;
@@ -68,12 +75,13 @@ class TokenResource extends Resource
                                             $record->metadata ?? []
                                         );
 
-                                        if (!$result['success']) {
+                                        if (! $result['success']) {
                                             Notification::make()
                                                 ->title('Failed to update SUMIT')
                                                 ->body($result['error'] ?? 'Unknown error')
                                                 ->danger()
                                                 ->send();
+
                                             return;
                                         }
                                     }
@@ -150,18 +158,18 @@ class TokenResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('last_four')
                     ->label('Card Number')
-                    ->formatStateUsing(fn ($state) => '**** **** **** ' . $state)
+                    ->formatStateUsing(fn ($state): string => '**** **** **** ' . $state)
                     ->searchable(),
                 Tables\Columns\TextColumn::make('expiry_month')
                     ->label('Expiry')
-                    ->formatStateUsing(fn ($record) => 
-                        $record->expiry_month . '/' . substr($record->expiry_year, -2)
+                    ->formatStateUsing(
+                        fn ($record): string => $record->expiry_month . '/' . substr((string) $record->expiry_year, -2)
                     )
                     ->badge()
-                    ->color(fn ($record) => $record->isExpired() ? 'danger' : 'success'),
+                    ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'success'),
                 Tables\Columns\TextColumn::make('owner_type')
                     ->label('Owner Type')
-                    ->formatStateUsing(fn ($state) => class_basename($state))
+                    ->formatStateUsing(fn ($state): string => class_basename($state))
                     ->toggleable(),
                 Tables\Columns\TextColumn::make('owner_id')
                     ->label('Owner ID')
@@ -191,7 +199,7 @@ class TokenResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Sync Token from SUMIT')
                     ->modalDescription('This will fetch the latest token data from SUMIT API and update the local record.')
-                    ->action(function ($record) {
+                    ->action(function (\OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken $record): void {
                         $result = \OfficeGuy\LaravelSumitGateway\Services\TokenService::syncTokenFromSumit($record);
 
                         if ($result['success']) {
@@ -215,17 +223,18 @@ class TokenResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Test Payment (₪1)')
                     ->modalDescription('This will charge ₪1 to verify the token is working. The charge can be cancelled later.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         $owner = $record->owner;
                         $client = $owner->client ?? $owner;
                         $sumitCustomerId = $client->sumit_customer_id ?? null;
 
-                        if (!$sumitCustomerId) {
+                        if (! $sumitCustomerId) {
                             Notification::make()
                                 ->title('Test failed')
                                 ->body('SUMIT customer ID not found')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
 
@@ -251,9 +260,9 @@ class TokenResource extends Resource
                 Action::make('set_default')
                     ->label('Set as Default')
                     ->icon('heroicon-o-star')
-                    ->visible(fn ($record) => !$record->is_default && !$record->deleted_at)
+                    ->visible(fn ($record): bool => ! $record->is_default && ! $record->deleted_at)
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         // Get owner's SUMIT customer ID
                         $owner = $record->owner;
                         $client = $owner?->client ?? $owner;
@@ -267,12 +276,13 @@ class TokenResource extends Resource
                                 $record->metadata ?? []
                             );
 
-                            if (!$result['success']) {
+                            if (! $result['success']) {
                                 Notification::make()
                                     ->title('Failed to update SUMIT')
                                     ->body($result['error'] ?? 'Unknown error')
                                     ->danger()
                                     ->send();
+
                                 return;
                             }
                         }
@@ -289,21 +299,22 @@ class TokenResource extends Resource
                     ->label('Remove from SUMIT')
                     ->icon('heroicon-o-trash')
                     ->color('danger')
-                    ->visible(fn ($record) => !$record->deleted_at)
+                    ->visible(fn ($record): bool => ! $record->deleted_at)
                     ->requiresConfirmation()
                     ->modalHeading('Remove Token from SUMIT')
                     ->modalDescription('This will remove the active payment method from SUMIT. This action cannot be undone!')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         $owner = $record->owner;
                         $client = $owner->client ?? $owner;
                         $sumitCustomerId = $client->sumit_customer_id ?? null;
 
-                        if (!$sumitCustomerId) {
+                        if (! $sumitCustomerId) {
                             Notification::make()
                                 ->title('Removal failed')
                                 ->body('SUMIT customer ID not found')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
 
@@ -328,11 +339,11 @@ class TokenResource extends Resource
                     ->label('Deactivate Locally')
                     ->icon('heroicon-o-no-symbol')
                     ->color('warning')
-                    ->visible(fn ($record) => !$record->deleted_at)
+                    ->visible(fn ($record): bool => ! $record->deleted_at)
                     ->requiresConfirmation()
                     ->modalHeading('Deactivate Token')
                     ->modalDescription('This will soft-delete the token locally only. It will still exist in SUMIT.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         $record->delete();
                         Notification::make()
                             ->title('Token deactivated locally')
@@ -363,10 +374,10 @@ class TokenResource extends Resource
                         ->icon('heroicon-o-arrow-path')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
+                        ->visible(fn (): bool => ! config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
                         ->modalHeading('Sync Selected Tokens from SUMIT')
                         ->modalDescription('This will fetch the latest data from SUMIT for all selected tokens.')
-                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
                             $successCount = 0;
                             $failCount = 0;
 
@@ -425,6 +436,6 @@ class TokenResource extends Resource
             ->filter(fn ($token) => $token->isExpired())
             ->count();
 
-        return $expiredCount > 0 ? (string)$expiredCount : null;
+        return $expiredCount > 0 ? (string) $expiredCount : null;
     }
 }

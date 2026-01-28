@@ -21,8 +21,8 @@ class OfficeGuyApi
      *
      * Port of: GetURL($Path, $Environment)
      *
-     * @param string $path API endpoint path
-     * @param string $environment Environment (www, dev, test)
+     * @param  string  $path  API endpoint path
+     * @param  string  $environment  Environment (www, dev, test)
      * @return string Full API URL
      */
     public static function getUrl(string $path, string $environment): string
@@ -39,10 +39,10 @@ class OfficeGuyApi
      *
      * Port of: Post($Request, $Path, $Environment, $SendClientIP)
      *
-     * @param array $request Request payload
-     * @param string $path API endpoint path
-     * @param string $environment Environment (www, dev, test)
-     * @param bool $sendClientIp Whether to send client IP in headers
+     * @param  array  $request  Request payload
+     * @param  string  $path  API endpoint path
+     * @param  string  $environment  Environment (www, dev, test)
+     * @param  bool  $sendClientIp  Whether to send client IP in headers
      * @return array|null Response body as array, or null on error
      */
     public static function post(
@@ -51,14 +51,7 @@ class OfficeGuyApi
         string $environment,
         bool $sendClientIp = false
     ): ?array {
-        $response = self::postRaw($request, $path, $environment, $sendClientIp);
-
-        // Return null on error
-        if ($response === null) {
-            return null;
-        }
-
-        return $response;
+        return self::postRaw($request, $path, $environment, $sendClientIp);
     }
 
     /**
@@ -66,10 +59,10 @@ class OfficeGuyApi
      *
      * Port of: PostRaw($Request, $Path, $Environment, $SendClientIP)
      *
-     * @param array $request Request payload
-     * @param string $path API endpoint path
-     * @param string $environment Environment (www, dev, test)
-     * @param bool $sendClientIp Whether to send client IP in headers
+     * @param  array  $request  Request payload
+     * @param  string  $path  API endpoint path
+     * @param  string  $environment  Environment (www, dev, test)
+     * @param  bool  $sendClientIp  Whether to send client IP in headers
      * @return array|null Response body as array, or null on error
      */
     public static function postRaw(
@@ -78,7 +71,7 @@ class OfficeGuyApi
         string $environment,
         bool $sendClientIp = false
     ): ?array {
-        if (empty($environment)) {
+        if ($environment === '' || $environment === '0') {
             $environment = 'www';
         }
 
@@ -130,6 +123,7 @@ class OfficeGuyApi
             return null;
         } catch (\Exception $e) {
             self::writeToLog('Exception: ' . $e->getMessage(), 'error');
+
             return null;
         }
     }
@@ -139,8 +133,8 @@ class OfficeGuyApi
      *
      * Port of: CheckCredentials($CompanyID, $APIKey)
      *
-     * @param int $companyId SUMIT company ID
-     * @param string $apiKey Private API key
+     * @param  int  $companyId  SUMIT company ID
+     * @param  string  $apiKey  Private API key
      * @return string|null Error message, or null if credentials are valid
      */
     public static function checkCredentials(int $companyId, string $apiKey): ?string
@@ -173,8 +167,8 @@ class OfficeGuyApi
      *
      * Port of: CheckPublicCredentials($CompanyID, $APIPublicKey)
      *
-     * @param int $companyId SUMIT company ID
-     * @param string $apiPublicKey Public API key
+     * @param  int  $companyId  SUMIT company ID
+     * @param  string  $apiPublicKey  Public API key
      * @return string|null Error message, or null if credentials are valid
      */
     public static function checkPublicCredentials(int $companyId, string $apiPublicKey): ?string
@@ -212,13 +206,12 @@ class OfficeGuyApi
      *
      * Port of: WriteToLog($Text, $Type)
      *
-     * @param string $text Log message
-     * @param string $type Log level (debug, info, warning, error)
-     * @return void
+     * @param  string  $text  Log message
+     * @param  string  $type  Log level (debug, info, warning, error)
      */
     public static function writeToLog(string $text, string $type = 'debug'): void
     {
-        if (!config('officeguy.logging', false)) {
+        if (! config('officeguy.logging', false)) {
             return;
         }
 

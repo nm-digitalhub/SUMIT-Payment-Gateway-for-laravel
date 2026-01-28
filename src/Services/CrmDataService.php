@@ -20,8 +20,8 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/createentity/
      *
-     * @param int $folderId Local folder ID
-     * @param array $fields Entity fields data
+     * @param  int  $folderId  Local folder ID
+     * @param  array  $fields  Entity fields data
      * @return array{success: bool, entity?: CrmEntity, sumit_entity_id?: int, error?: string}
      */
     public static function createEntity(int $folderId, array $fields): array
@@ -30,14 +30,14 @@ class CrmDataService
             // Get folder
             $folder = CrmFolder::find($folderId);
 
-            if (!$folder) {
+            if (! $folder) {
                 return [
                     'success' => false,
                     'error' => 'Folder not found',
                 ];
             }
 
-            if (!$folder->sumit_folder_id) {
+            if (! $folder->sumit_folder_id) {
                 return [
                     'success' => false,
                     'error' => 'Folder not synced with SUMIT',
@@ -74,7 +74,7 @@ class CrmDataService
 
             $sumitEntityId = $response['Data']['EntityID'] ?? null;
 
-            if (!$sumitEntityId) {
+            if (! $sumitEntityId) {
                 return [
                     'success' => false,
                     'error' => 'No entity ID returned from SUMIT',
@@ -110,7 +110,7 @@ class CrmDataService
                 if (in_array($fieldName, [
                     'name', 'email', 'phone', 'mobile', 'address', 'city', 'state',
                     'postal_code', 'country', 'company_name', 'tax_id', 'status',
-                    'source', 'owner_user_id', 'assigned_to_user_id', 'sumit_customer_id'
+                    'source', 'owner_user_id', 'assigned_to_user_id', 'sumit_customer_id',
                 ])) {
                     continue;
                 }
@@ -148,7 +148,7 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/getentity/
      *
-     * @param int $sumitEntityId SUMIT entity ID
+     * @param  int  $sumitEntityId  SUMIT entity ID
      * @return array{success: bool, entity?: array, error?: string}
      */
     public static function getEntity(int $sumitEntityId): array
@@ -203,8 +203,8 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/updateentity/
      *
-     * @param int $entityId Local entity ID
-     * @param array $fields Fields to update
+     * @param  int  $entityId  Local entity ID
+     * @param  array  $fields  Fields to update
      * @return array{success: bool, entity?: CrmEntity, error?: string}
      */
     public static function updateEntity(int $entityId, array $fields): array
@@ -213,14 +213,14 @@ class CrmDataService
             // Get local entity
             $entity = CrmEntity::find($entityId);
 
-            if (!$entity) {
+            if (! $entity) {
                 return [
                     'success' => false,
                     'error' => 'Entity not found',
                 ];
             }
 
-            if (!$entity->sumit_entity_id) {
+            if (! $entity->sumit_entity_id) {
                 return [
                     'success' => false,
                     'error' => 'Entity not synced with SUMIT',
@@ -261,19 +261,19 @@ class CrmDataService
                 if (in_array($fieldName, [
                     'name', 'email', 'phone', 'mobile', 'address', 'city', 'state',
                     'postal_code', 'country', 'company_name', 'tax_id', 'status',
-                    'source', 'owner_user_id', 'assigned_to_user_id', 'sumit_customer_id'
+                    'source', 'owner_user_id', 'assigned_to_user_id', 'sumit_customer_id',
                 ])) {
                     $standardFields[$fieldName] = $fieldValue;
                 }
             }
 
-            if (!empty($standardFields)) {
+            if ($standardFields !== []) {
                 $entity->update($standardFields);
             }
 
             // Update custom fields
             foreach ($fields as $fieldName => $fieldValue) {
-                if (!in_array($fieldName, array_keys($standardFields))) {
+                if (! in_array($fieldName, array_keys($standardFields))) {
                     $entity->setCustomField($fieldName, $fieldValue);
                 }
             }
@@ -306,7 +306,7 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/deleteentity/
      *
-     * @param int $entityId Local entity ID
+     * @param  int  $entityId  Local entity ID
      * @return array{success: bool, error?: string}
      */
     public static function deleteEntity(int $entityId): array
@@ -315,14 +315,14 @@ class CrmDataService
             // Get local entity
             $entity = CrmEntity::find($entityId);
 
-            if (!$entity) {
+            if (! $entity) {
                 return [
                     'success' => false,
                     'error' => 'Entity not found',
                 ];
             }
 
-            if (!$entity->sumit_entity_id) {
+            if (! $entity->sumit_entity_id) {
                 // Entity not synced, just delete locally
                 $entity->delete();
 
@@ -388,11 +388,11 @@ class CrmDataService
      *
      * Endpoint: POST /crm/data/listentities/
      *
-     * @param int   $folderId Local folder ID
-     * @param array $filters  Filter parameters. Special keys:
-     *                        - LoadProperties (bool)
-     *                        - Paging => ['StartIndex' => int, 'PageSize' => int]
-     *                        Other keys are sent under Filters.
+     * @param  int  $folderId  Local folder ID
+     * @param  array  $filters  Filter parameters. Special keys:
+     *                          - LoadProperties (bool)
+     *                          - Paging => ['StartIndex' => int, 'PageSize' => int]
+     *                          Other keys are sent under Filters.
      * @return array{success: bool, entities?: array, total?: int, error?: string}
      */
     public static function listEntities(int $folderId, array $filters = []): array
@@ -401,14 +401,14 @@ class CrmDataService
             // Get folder
             $folder = CrmFolder::find($folderId);
 
-            if (!$folder) {
+            if (! $folder) {
                 return [
                     'success' => false,
                     'error' => 'Folder not found',
                 ];
             }
 
-            if (!$folder->sumit_folder_id) {
+            if (! $folder->sumit_folder_id) {
                 return [
                     'success' => false,
                     'error' => 'Folder not synced with SUMIT',
@@ -482,7 +482,7 @@ class CrmDataService
     /**
      * Sync entity from SUMIT to local database
      *
-     * @param int $sumitEntityId SUMIT entity ID
+     * @param  int  $sumitEntityId  SUMIT entity ID
      * @return array{success: bool, entity?: CrmEntity, error?: string}
      */
     public static function syncEntityFromSumit(int $sumitEntityId): array
@@ -491,14 +491,14 @@ class CrmDataService
             // Get entity from SUMIT
             $result = self::getEntity($sumitEntityId);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return $result;
             }
 
             $entityData = $result['entity']['Entity'] ?? $result['entity'];
             $folderId = $entityData['Folder'] ?? $entityData['FolderID'] ?? null;
 
-            if (!$folderId) {
+            if (! $folderId) {
                 return [
                     'success' => false,
                     'error' => 'No folder ID in SUMIT entity data',
@@ -508,7 +508,7 @@ class CrmDataService
             // Find local folder by SUMIT folder ID
             $folder = CrmFolder::where('sumit_folder_id', $folderId)->first();
 
-            if (!$folder) {
+            if (! $folder) {
                 return [
                     'success' => false,
                     'error' => 'Folder not found in local database',
@@ -573,8 +573,8 @@ class CrmDataService
     /**
      * Sync all entities for a folder from SUMIT
      *
-     * @param int $folderId Local folder ID
-     * @param array $filters Optional filters
+     * @param  int  $folderId  Local folder ID
+     * @param  array  $filters  Optional filters
      * @return array{success: bool, entities_synced?: int, error?: string}
      */
     public static function syncAllEntities(int $folderId, array $filters = []): array
@@ -583,7 +583,7 @@ class CrmDataService
             // Get entities from SUMIT
             $result = self::listEntities($folderId, $filters);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return $result;
             }
 
@@ -593,7 +593,7 @@ class CrmDataService
             foreach ($entities as $entityData) {
                 $sumitEntityId = $entityData['ID'] ?? $entityData['EntityID'] ?? null;
 
-                if (!$sumitEntityId) {
+                if (! $sumitEntityId) {
                     continue;
                 }
 
@@ -635,7 +635,7 @@ class CrmDataService
      * Archives an entity instead of permanently deleting it.
      * Archived entities can potentially be restored later.
      *
-     * @param int $sumitEntityId SUMIT entity ID
+     * @param  int  $sumitEntityId  SUMIT entity ID
      * @return array{success: bool, error?: string}
      */
     public static function archiveEntity(int $sumitEntityId): array
@@ -694,7 +694,7 @@ class CrmDataService
      * Returns count of how many times this entity is referenced
      * in other entities, documents, or system objects.
      *
-     * @param int $sumitEntityId SUMIT entity ID
+     * @param  int  $sumitEntityId  SUMIT entity ID
      * @return array{success: bool, usage_count?: int, error?: string}
      */
     public static function countEntityUsage(int $sumitEntityId): array
@@ -752,9 +752,9 @@ class CrmDataService
      * Returns formatted HTML suitable for printing a single entity.
      * Can optionally return PDF instead of HTML.
      *
-     * @param int $sumitEntityId SUMIT entity ID
-     * @param int $schemaId Schema/folder ID
-     * @param bool $pdf Return PDF instead of HTML (default: false)
+     * @param  int  $sumitEntityId  SUMIT entity ID
+     * @param  int  $schemaId  Schema/folder ID
+     * @param  bool  $pdf  Return PDF instead of HTML (default: false)
      * @return array{success: bool, html?: string, pdf?: string, error?: string}
      */
     public static function getEntityPrintHTML(int $sumitEntityId, int $schemaId, bool $pdf = false): array
@@ -817,9 +817,9 @@ class CrmDataService
      * Returns formatted HTML suitable for printing a list of entities
      * based on a specific view. Can optionally return PDF instead of HTML.
      *
-     * @param int $schemaId Schema/folder ID
-     * @param int $viewId View ID for filtering/sorting
-     * @param bool $pdf Return PDF instead of HTML (default: false)
+     * @param  int  $schemaId  Schema/folder ID
+     * @param  int  $viewId  View ID for filtering/sorting
+     * @param  bool  $pdf  Return PDF instead of HTML (default: false)
      * @return array{success: bool, html?: string, pdf?: string, error?: string}
      */
     public static function getEntitiesHTML(int $schemaId, int $viewId, bool $pdf = false): array
@@ -931,7 +931,7 @@ class CrmDataService
             // 3) Fuzzy match by email
             $email = $entityData['Customers_EmailAddress'][0] ?? $entityData['Email'] ?? null;
             if ($email) {
-                $emailNorm = strtolower(trim($email));
+                $emailNorm = strtolower(trim((string) $email));
                 $client = \App\Models\Client::whereRaw('LOWER(email) = ?', [$emailNorm])
                     ->orWhereRaw('LOWER(client_email) = ?', [$emailNorm])
                     ->first();
@@ -943,7 +943,7 @@ class CrmDataService
             // 4) Fuzzy match by phone
             $phone = $entityData['Customers_Phone'][0] ?? null;
             if ($phone) {
-                $norm = preg_replace('/\\D+/', '', $phone);
+                $norm = preg_replace('/\\D+/', '', (string) $phone);
                 $client = \App\Models\Client::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
                     ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
                     ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
@@ -952,7 +952,7 @@ class CrmDataService
                     return $client->id;
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Swallow matching errors; better to return null than break sync
         }
 

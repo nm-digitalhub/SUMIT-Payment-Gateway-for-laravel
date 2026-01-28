@@ -48,7 +48,7 @@ class CrmActivityForm
                                     return $folder->entities()
                                         ->orderBy('name')
                                         ->get()
-                                        ->mapWithKeys(function ($entity) {
+                                        ->mapWithKeys(function ($entity): array {
                                             $label = $entity->name;
                                             if ($entity->client?->name) {
                                                 $label = $entity->client->name . ' — ' . $entity->name;

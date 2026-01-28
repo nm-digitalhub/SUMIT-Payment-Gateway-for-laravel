@@ -16,23 +16,17 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
  * Previously: Validation was inline in PublicCheckoutController (lines 170-206)
  * Now: Extracted to dedicated Form Request for reusability and testability
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.2.0
  */
 class CheckoutRequest extends FormRequest
 {
     /**
      * Payable entity (injected by controller for conditional validation)
-     *
-     * @var Payable|null
      */
     protected ?Payable $payable = null;
 
     /**
      * Set the payable entity (called by controller before validation)
-     *
-     * @param Payable $payable
-     * @return void
      */
     public function setPayable(Payable $payable): void
     {
@@ -41,8 +35,6 @@ class CheckoutRequest extends FormRequest
 
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -58,7 +50,7 @@ class CheckoutRequest extends FormRequest
      */
     public function rules(): array
     {
-        $rules = [
+        return [
             // Customer information
             'customer_name' => 'required|string|max:255',
             'customer_email' => 'required|email|max:255',
@@ -90,14 +82,12 @@ class CheckoutRequest extends FormRequest
             'password' => 'nullable|string|confirmed|min:8',
             'accept_terms' => 'accepted',
         ];
-
-        return $rules;
     }
 
     /**
      * Get validation rule for address field based on PayableType requirements
      *
-     * @param string $field The address field (address, city, country, postal)
+     * @param  string  $field  The address field (address, city, country, postal)
      * @return string Validation rule
      */
     protected function getAddressRule(string $field = 'address'): string
@@ -136,9 +126,7 @@ class CheckoutRequest extends FormRequest
      * Get validation rule based on client profile completeness
      * (Backward compatibility with existing behavior)
      *
-     * @param mixed $client
-     * @param string $field
-     * @return string
+     * @param  mixed  $client
      */
     protected function getClientBasedRule($client, string $field): string
     {
@@ -180,13 +168,11 @@ class CheckoutRequest extends FormRequest
      * This method tries to resolve the payable from:
      * 1. Internal property (set by controller via setPayable())
      * 2. Route binding (fallback)
-     *
-     * @return Payable|null
      */
     protected function getPayable(): ?Payable
     {
         // Priority 1: Internal property (set by controller)
-        if ($this->payable !== null) {
+        if ($this->payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             return $this->payable;
         }
 

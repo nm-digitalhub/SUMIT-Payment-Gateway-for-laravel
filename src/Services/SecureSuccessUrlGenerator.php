@@ -7,7 +7,6 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 use Illuminate\Support\Facades\URL;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
-use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 /**
  * Secure Success URL Generator
@@ -29,12 +28,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
  */
 class SecureSuccessUrlGenerator
 {
-    protected SettingsService $settings;
-
-    public function __construct(SettingsService $settings)
-    {
-        $this->settings = $settings;
-    }
+    public function __construct(protected SettingsService $settings) {}
 
     /**
      * Generate a secure success URL for a Payable entity
@@ -45,14 +39,14 @@ class SecureSuccessUrlGenerator
      * - Database record with SHA256 hash
      * - Laravel signed URL with token and nonce
      *
-     * @param Payable $payable The payable entity (Order, Invoice, etc.)
-     * @param int|null $ttlHours Token validity in hours (default: from SettingsService)
+     * @param  Payable  $payable  The payable entity (Order, Invoice, etc.)
+     * @param  int|null  $ttlHours  Token validity in hours (default: from SettingsService)
      * @return string The secure signed URL
      */
     public function generate(Payable $payable, ?int $ttlHours = null): string
     {
         // Check if enabled first
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             return route('checkout.success');
         }
 
@@ -108,10 +102,10 @@ class SecureSuccessUrlGenerator
      * Stores SHA256 hash of token (never plain text).
      * Sets expiration timestamp (single source of truth).
      *
-     * @param Payable $payable The payable entity
-     * @param string $token Plain text token (will be hashed)
-     * @param string $nonce Cryptographic nonce
-     * @param int $ttlHours Token validity in hours
+     * @param  Payable  $payable  The payable entity
+     * @param  string  $token  Plain text token (will be hashed)
+     * @param  string  $nonce  Cryptographic nonce
+     * @param  int  $ttlHours  Token validity in hours
      * @return OrderSuccessToken The created token record
      */
     protected function createTokenRecord(
@@ -122,7 +116,7 @@ class SecureSuccessUrlGenerator
     ): OrderSuccessToken {
         return OrderSuccessToken::create([
             'payable_id' => $payable->getPayableId(),
-            'payable_type' => get_class($payable),
+            'payable_type' => $payable::class,
             'token_hash' => hash('sha256', $token), // SHA256 hash
             'nonce' => $nonce,
             'expires_at' => now()->addHours($ttlHours), // Single source of truth
@@ -135,8 +129,8 @@ class SecureSuccessUrlGenerator
      * WARNING: This bypasses signature validation.
      * Only use in development/testing environments.
      *
-     * @param Payable $payable The payable entity
-     * @param int|null $ttlHours Token validity in hours
+     * @param  Payable  $payable  The payable entity
+     * @param  int|null  $ttlHours  Token validity in hours
      * @return string Unsigned URL (for testing only)
      */
     public function generateUnsigned(Payable $payable, ?int $ttlHours = null): string
@@ -159,15 +153,15 @@ class SecureSuccessUrlGenerator
      * Invalidates previous tokens and creates a new one.
      * Useful for "resend confirmation" features.
      *
-     * @param Payable $payable The payable entity
-     * @param int|null $ttlHours Token validity in hours
+     * @param  Payable  $payable  The payable entity
+     * @param  int|null  $ttlHours  Token validity in hours
      * @return string New secure signed URL
      */
     public function regenerate(Payable $payable, ?int $ttlHours = null): string
     {
         // Invalidate existing unconsumed tokens for this payable
         OrderSuccessToken::where('payable_id', $payable->getPayableId())
-            ->where('payable_type', get_class($payable))
+            ->where('payable_type', $payable::class)
             ->whereNull('consumed_at')
             ->update([
                 'consumed_at' => now(),
@@ -200,8 +194,6 @@ class SecureSuccessUrlGenerator
      * Check if URL generation is enabled
      *
      * Priority: DB → Config → Default
-     *
-     * @return bool
      */
     public function isEnabled(): bool
     {

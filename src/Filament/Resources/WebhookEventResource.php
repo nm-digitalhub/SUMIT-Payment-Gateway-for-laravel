@@ -4,46 +4,50 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Schemas;
-use Filament\Forms\Components\ViewField;
-use Filament\Infolists\Components\KeyValueEntry;
-use Filament\Infolists\Components\ViewEntry;
-use Filament\Schemas\Components\Section as InfolistSection;
-use Filament\Infolists\Components\TextEntry;
-use Filament\Schemas\Schema;
-use Filament\Notifications\Notification;
-use Filament\Resources\Resource;
-use Filament\Tables;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms;
+use Filament\Forms\Components\ViewField;
+use Filament\Infolists\Components\TextEntry;
+use Filament\Infolists\Components\ViewEntry;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Components\Section as InfolistSection;
+use Filament\Schemas\Schema;
+use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
 
 class WebhookEventResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = WebhookEvent::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-signal';
-
-    protected static ?string $navigationLabel = 'Webhook Events';
-
-    protected static ?int $navigationSort = 6;
-
-    protected static ?string $recordTitleAttribute = 'event_type';
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -128,7 +132,7 @@ class WebhookEventResource extends Resource
                             ->rows(3)
                             ->disabled(),
                     ])
-                    ->visible(fn (?Model $record): bool => !empty($record?->error_message)),
+                    ->visible(fn (?Model $record): bool => ! empty($record?->error_message)),
 
                 Schemas\Components\Section::make('נתוני Webhook')
                     ->columnSpanFull()
@@ -268,7 +272,7 @@ class WebhookEventResource extends Resource
                         ->label('Error Message')
                         ->columnSpanFull(),
                 ])
-                ->visible(fn (Model $record): bool => !empty($record->error_message)),
+                ->visible(fn (Model $record): bool => ! empty($record->error_message)),
 
             InfolistSection::make('נתוני Webhook גולמיים')
                 ->columnSpanFull()
@@ -287,7 +291,7 @@ class WebhookEventResource extends Resource
                         ->label('Response Data')
                         ->view('officeguy::filament.components.api-payload'),
                 ])
-                ->visible(fn (Model $record): bool => !empty($record->response)),
+                ->visible(fn (Model $record): bool => ! empty($record->response)),
         ]);
     }
 
@@ -419,17 +423,15 @@ class WebhookEventResource extends Resource
                         Forms\Components\DatePicker::make('created_until')
                             ->label('Until'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['created_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
-                            )
-                            ->when(
-                                $data['created_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
-                            );
-                    }),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['created_from'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['created_until'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                        )),
             ])
             ->actions([
                 ViewAction::make(),
@@ -550,12 +552,14 @@ class WebhookEventResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = static::getModel()::whereIn('status', ['pending', 'retrying', 'failed'])->count();
+
         return $count > 0 ? (string) $count : null;
     }
 
-    public static function getNavigationBadgeColor(): string|array|null
+    public static function getNavigationBadgeColor(): string | array | null
     {
         $failedCount = static::getModel()::where('status', 'failed')->count();
+
         return $failedCount > 0 ? 'danger' : 'warning';
     }
 

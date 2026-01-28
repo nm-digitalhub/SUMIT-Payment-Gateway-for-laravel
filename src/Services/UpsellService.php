@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Events\UpsellPaymentCompleted;
 use OfficeGuy\LaravelSumitGateway\Events\UpsellPaymentFailed;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 
 /**
  * Upsell Service
@@ -21,16 +21,15 @@ class UpsellService
     /**
      * Process an upsell charge using a saved token
      *
-     * @param Payable $upsellOrder The upsell order to charge
-     * @param OfficeGuyToken $token The token from the initial charge
-     * @param int|string|null $parentOrderId The ID of the original/parent order
-     * @param int $paymentsCount Number of installments
-     * @return array
+     * @param  Payable  $upsellOrder  The upsell order to charge
+     * @param  OfficeGuyToken  $token  The token from the initial charge
+     * @param  int|string|null  $parentOrderId  The ID of the original/parent order
+     * @param  int  $paymentsCount  Number of installments
      */
     public static function processUpsellCharge(
         Payable $upsellOrder,
         OfficeGuyToken $token,
-        int|string|null $parentOrderId = null,
+        int | string | null $parentOrderId = null,
         int $paymentsCount = 1
     ): array {
         try {
@@ -57,22 +56,9 @@ class UpsellService
             $environment = config('officeguy.environment', 'www');
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $items,
-                $vatIncluded,
-                $vatRate,
-                $customer,
-                $authoriseOnly,
-                $draftDocument,
-                $sendDocumentByEmail,
-                $documentDescription,
-                $paymentsCount,
-                $maximumPayments,
-                $documentLanguage,
-                $paymentMethod
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $items, $vatIncluded, $vatRate, $customer, $authoriseOnly, $draftDocument, $sendDocumentByEmail, $documentDescription, $paymentsCount, $maximumPayments, $documentLanguage, $paymentMethod) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -157,7 +143,7 @@ class UpsellService
             ];
         }
 
-        if (!$response) {
+        if (! $response) {
             event(new UpsellPaymentFailed(
                 $upsellOrder->getPayableId(),
                 $parentOrderId,
@@ -177,7 +163,7 @@ class UpsellService
             // Create transaction record for upsell
             $transaction = OfficeGuyTransaction::create([
                 'order_id' => $upsellOrder->getPayableId(),
-                'order_type' => get_class($upsellOrder),
+                'order_type' => $upsellOrder::class,
                 'payment_id' => $payment['ID'] ?? null,
                 'document_id' => $response['Data']['DocumentID'] ?? null,
                 'customer_id' => $response['Data']['CustomerID'] ?? null,
@@ -234,25 +220,22 @@ class UpsellService
 
     /**
      * Get the token from the original order's transaction
-     *
-     * @param int|string $orderId
-     * @return OfficeGuyToken|null
      */
-    public static function getTokenFromOrderTransaction(int|string $orderId): ?OfficeGuyToken
+    public static function getTokenFromOrderTransaction(int | string $orderId): ?OfficeGuyToken
     {
         $transaction = OfficeGuyTransaction::where('order_id', $orderId)
             ->where('status', 'completed')
             ->orderBy('created_at', 'desc')
             ->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             return null;
         }
 
         // Check if there's a token saved from this transaction
         $response = $transaction->raw_response;
 
-        if (!isset($response['Data']['CardToken'])) {
+        if (! isset($response['Data']['CardToken'])) {
             return null;
         }
 
@@ -262,13 +245,10 @@ class UpsellService
 
     /**
      * Get the customer's default token
-     *
-     * @param mixed $customer
-     * @return OfficeGuyToken|null
      */
     public static function getCustomerDefaultToken(mixed $customer): ?OfficeGuyToken
     {
-        return OfficeGuyToken::where('owner_type', get_class($customer))
+        return OfficeGuyToken::where('owner_type', $customer::class)
             ->where('owner_id', $customer->getKey())
             ->where('is_default', true)
             ->first();
@@ -277,15 +257,11 @@ class UpsellService
     /**
      * Process upsell with automatic token detection
      *
-     * @param Payable $upsellOrder
-     * @param int|string $parentOrderId
-     * @param mixed|null $customer Customer model for fallback to default token
-     * @param int $paymentsCount
-     * @return array
+     * @param  mixed|null  $customer  Customer model for fallback to default token
      */
     public static function processUpsellWithAutoToken(
         Payable $upsellOrder,
-        int|string $parentOrderId,
+        int | string $parentOrderId,
         mixed $customer = null,
         int $paymentsCount = 1
     ): array {
@@ -293,11 +269,11 @@ class UpsellService
         $token = self::getTokenFromOrderTransaction($parentOrderId);
 
         // Fallback to customer's default token
-        if (!$token && $customer) {
+        if (! $token && $customer) {
             $token = self::getCustomerDefaultToken($customer);
         }
 
-        if (!$token) {
+        if (! $token instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken) {
             return [
                 'success' => false,
                 'message' => __('No saved payment method found for upsell'),
@@ -309,13 +285,10 @@ class UpsellService
 
     /**
      * Get parent transaction ID from parent order ID
-     *
-     * @param int|string|null $parentOrderId
-     * @return int|null
      */
-    protected static function getParentTransactionId(int|string|null $parentOrderId): ?int
+    protected static function getParentTransactionId(int | string | null $parentOrderId): ?int
     {
-        if (!$parentOrderId) {
+        if (! $parentOrderId) {
             return null;
         }
 
@@ -330,12 +303,9 @@ class UpsellService
     /**
      * Check if upsell is available for an order
      * (Order must have completed transaction with token available)
-     *
-     * @param int|string $orderId
-     * @return bool
      */
-    public static function isUpsellAvailable(int|string $orderId): bool
+    public static function isUpsellAvailable(int | string $orderId): bool
     {
-        return self::getTokenFromOrderTransaction($orderId) !== null;
+        return self::getTokenFromOrderTransaction($orderId) instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
     }
 }

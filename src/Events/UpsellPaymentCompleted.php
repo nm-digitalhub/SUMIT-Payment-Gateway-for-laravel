@@ -7,8 +7,8 @@ namespace OfficeGuy\LaravelSumitGateway\Events;
 class UpsellPaymentCompleted
 {
     public function __construct(
-        public string|int $upsellOrderId,
-        public string|int|null $parentOrderId,
+        public string | int $upsellOrderId,
+        public string | int | null $parentOrderId,
         public array $payment,
         public array $response
     ) {}

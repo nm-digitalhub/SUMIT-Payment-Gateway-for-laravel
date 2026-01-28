@@ -3,7 +3,6 @@
 /**
  * Final translation pass - translate remaining strings
  */
-
 $filePath = __DIR__ . '/../src/Filament/Pages/OfficeGuySettings.php';
 $content = file_get_contents($filePath);
 
@@ -49,4 +48,4 @@ foreach ($translations as $old => $new) {
 file_put_contents($filePath, $content);
 
 echo "✅ Final translations applied\n";
-echo "Total: " . count($translations) . " replacements\n";
+echo 'Total: ' . count($translations) . " replacements\n";

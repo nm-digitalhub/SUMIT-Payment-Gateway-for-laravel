@@ -11,7 +11,6 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
 use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\GetDocumentDetailsRequest;
-use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\ListDocumentsRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 
 /**
@@ -26,19 +25,24 @@ class DocumentService
      * Document type constants
      */
     public const TYPE_INVOICE = '1';
+
     public const TYPE_ORDER = '8';
+
     public const TYPE_DONATION_RECEIPT = '320';
+
     public const TYPE_RECEIPT = '2';
+
     public const TYPE_CREDIT_NOTE = '3';
+
     /**
      * Create order document (invoice/receipt)
      *
      * Port of: CreateOrderDocument($Gateway, $Order, $Customer, $OriginalDocumentID)
      *
-     * @param Payable $order Order instance
-     * @param array $customer Customer data array
-     * @param string|null $originalDocumentId Original document ID for credit notes
-     * @param bool $isDonation Whether this is a donation document
+     * @param  Payable  $order  Order instance
+     * @param  array  $customer  Customer data array
+     * @param  string|null  $originalDocumentId  Original document ID for credit notes
+     * @param  bool  $isDonation  Whether this is a donation document
      * @return string|null Error message, or null on success
      */
     public static function createOrderDocument(
@@ -52,13 +56,13 @@ class DocumentService
             $documentType = $isDonation ? self::TYPE_DONATION_RECEIPT : self::TYPE_ORDER;
 
             // Auto-detect donation from order items
-            if (!$isDonation) {
+            if (! $isDonation) {
                 try {
-                    $isDonation = DonationService::containsDonation($order) && !DonationService::containsNonDonation($order);
+                    $isDonation = DonationService::containsDonation($order) && ! DonationService::containsNonDonation($order);
                     if ($isDonation) {
                         $documentType = self::TYPE_DONATION_RECEIPT;
                     }
-                } catch (\Throwable $e) {
+                } catch (\Throwable) {
                     // DonationService not available, continue with default type
                 }
             }
@@ -74,23 +78,13 @@ class DocumentService
             $vatRate = PaymentService::getOrderVatRate($order);
             $language = PaymentService::getOrderLanguage();
             $description = __('Order number') . ': ' . $order->getPayableId() .
-                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote());
+                (in_array($order->getCustomerNote(), [null, '', '0'], true) ? '' : "\r\n" . $order->getCustomerNote());
             $isDraft = config('officeguy.draft_document', false) ? 'true' : 'false';
 
             // Instantiate connector and inline request (custom structure)
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $items,
-                $vatRate,
-                $customer,
-                $isDraft,
-                $language,
-                $order->getPayableCurrency(),
-                $documentType,
-                $description,
-                $originalDocumentId
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $items, $vatRate, $customer, $isDraft, $language, $order->getPayableCurrency(), $documentType, $description, $originalDocumentId) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -156,7 +150,7 @@ class DocumentService
                     $order->getPayableId(),
                     $data,
                     $request->body()->all(),
-                    get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+                    $order::class // CRITICAL: Links document to order via polymorphic relationship
                 );
 
                 OfficeGuyApi::writeToLog(
@@ -183,6 +177,7 @@ class DocumentService
         } catch (\Throwable $e) {
             $errorMessage = __('Order creation failed.') . ' - ' . $e->getMessage();
             OfficeGuyApi::writeToLog($errorMessage, 'error');
+
             return $errorMessage;
         }
     }
@@ -192,9 +187,9 @@ class DocumentService
      *
      * Port of: CreateDocumentOnPaymentCompleteInternal($OrderID, $SkipPaymentMethodValidation)
      *
-     * @param Payable $order Order instance
-     * @param string $paymentMethod Payment method identifier
-     * @param string|null $transactionId Transaction ID from payment gateway
+     * @param  Payable  $order  Order instance
+     * @param  string  $paymentMethod  Payment method identifier
+     * @param  string|null  $transactionId  Transaction ID from payment gateway
      * @return string|null Error message, or null on success
      */
     public static function createDocumentOnPaymentComplete(
@@ -220,7 +215,7 @@ class DocumentService
                 $paymentDescription .= ' - ' . $transactionId;
             }
         } elseif ($paymentMethod === 'bluesnap') {
-            if (!config('officeguy.bluesnap_receipts', false)) {
+            if (! config('officeguy.bluesnap_receipts', false)) {
                 return null; // Skip if BlueSnap receipts disabled
             }
 
@@ -245,23 +240,13 @@ class DocumentService
             $isDraft = config('officeguy.draft_document', false) ? 'true' : 'false';
             $language = PaymentService::getOrderLanguage();
             $description = __('Order number') . ': ' . $order->getPayableId() .
-                (empty($order->getCustomerNote()) ? '' : "\r\n" . $order->getCustomerNote());
+                (in_array($order->getCustomerNote(), [null, '', '0'], true) ? '' : "\r\n" . $order->getCustomerNote());
             $sendByEmail = config('officeguy.email_document', true);
 
             // Instantiate connector and inline request (custom Payments structure)
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $items,
-                $vatRate,
-                $customer,
-                $isDraft,
-                $language,
-                $order->getPayableCurrency(),
-                $description,
-                $paymentDescription,
-                $sendByEmail
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $items, $vatRate, $customer, $isDraft, $language, $order->getPayableCurrency(), $description, $paymentDescription, $sendByEmail) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -339,7 +324,7 @@ class DocumentService
                     $order->getPayableId(),
                     $data,
                     $request->body()->all(),
-                    get_class($order) // CRITICAL: Links document to order via polymorphic relationship
+                    $order::class // CRITICAL: Links document to order via polymorphic relationship
                 );
 
                 OfficeGuyApi::writeToLog(
@@ -366,6 +351,7 @@ class DocumentService
         } catch (\Throwable $e) {
             $errorMessage = __('Document creation failed') . ' - ' . $e->getMessage();
             OfficeGuyApi::writeToLog($errorMessage, 'error');
+
             return $errorMessage;
         }
     }
@@ -373,15 +359,15 @@ class DocumentService
     /**
      * Create a donation receipt document
      *
-     * @param Payable $order Order/Donation instance
-     * @param array|null $customer Customer data array (optional, will be extracted from order if null)
+     * @param  Payable  $order  Order/Donation instance
+     * @param  array|null  $customer  Customer data array (optional, will be extracted from order if null)
      * @return string|null Error message, or null on success
      */
     public static function createDonationReceipt(
         Payable $order,
         ?array $customer = null
     ): ?string {
-        $customer = $customer ?? PaymentService::getOrderCustomer($order);
+        $customer ??= PaymentService::getOrderCustomer($order);
 
         return self::createOrderDocument($order, $customer, null, true);
     }
@@ -389,7 +375,7 @@ class DocumentService
     /**
      * Get document type name for display
      *
-     * @param string $type Document type code
+     * @param  string  $type  Document type code
      * @return string Human-readable type name
      */
     public static function getDocumentTypeName(string $type): string
@@ -407,8 +393,7 @@ class DocumentService
     /**
      * Check if document type is a donation receipt
      *
-     * @param string $type Document type code
-     * @return bool
+     * @param  string  $type  Document type code
      */
     public static function isDonationReceiptType(string $type): bool
     {
@@ -420,7 +405,7 @@ class DocumentService
      */
     public static function syncForClient(Client $client, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): int
     {
-        if (!$client->sumit_customer_id) {
+        if (! $client->sumit_customer_id) {
             return 0;
         }
 
@@ -453,7 +438,7 @@ class DocumentService
             $ext = $doc['ExternalReference'] ?? null;
             if ($ext) {
                 $order = Order::where('client_id', $client->id)
-                    ->where(function ($q) use ($ext) {
+                    ->where(function ($q) use ($ext): void {
                         $q->where('order_number', $ext)
                             ->orWhere('id', is_numeric($ext) ? (int) $ext : 0);
                     })
@@ -461,7 +446,7 @@ class DocumentService
                     ->first();
             }
 
-            if (!$order && !empty($doc['DocumentNumber'])) {
+            if (! $order && ! empty($doc['DocumentNumber'])) {
                 $order = Order::where('client_id', $client->id)
                     ->where('order_number', $doc['DocumentNumber'])
                     ->latest('id')
@@ -474,7 +459,7 @@ class DocumentService
             }
 
             // Fetch items/details for richer data (best effort)
-            if (empty($document->items) && !empty($doc['DocumentID'])) {
+            if (empty($document->items) && ! empty($doc['DocumentID'])) {
                 $details = self::getDocumentDetails($doc['DocumentID']);
                 if ($details && isset($details['Items'])) {
                     $document->items = $details['Items'];
@@ -491,10 +476,10 @@ class DocumentService
     /**
      * Fetch documents from SUMIT API for a customer
      *
-     * @param int $sumitCustomerId SUMIT customer ID
-     * @param \Carbon\Carbon|null $dateFrom Optional start date
-     * @param \Carbon\Carbon|null $dateTo Optional end date
-     * @param bool $includeDrafts Include draft documents
+     * @param  int  $sumitCustomerId  SUMIT customer ID
+     * @param  \Carbon\Carbon|null  $dateFrom  Optional start date
+     * @param  \Carbon\Carbon|null  $dateTo  Optional end date
+     * @param  bool  $includeDrafts  Include draft documents
      * @return array List of documents from SUMIT
      */
     public static function fetchFromSumit(
@@ -516,19 +501,13 @@ class DocumentService
             );
 
             // Instantiate connector
-            $connector = new SumitConnector();
+            $connector = new SumitConnector;
 
             // Fetch all pages using pagination
             while ($hasMoreResults) {
                 // Build request inline (custom pagination format)
-                $request = new class(
-                    $credentials,
-                    $startIndex,
-                    $pageSize,
-                    $dateFrom,
-                    $dateTo,
-                    $includeDrafts
-                ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+                $request = new class($credentials, $startIndex, $pageSize, $dateFrom, $dateTo, $includeDrafts) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+                {
                     use \Saloon\Traits\Body\HasJsonBody;
 
                     protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -563,11 +542,11 @@ class DocumentService
                             ],
                         ];
 
-                        if ($this->dateFrom) {
+                        if ($this->dateFrom instanceof \Carbon\Carbon) {
                             $body['DateFrom'] = $this->dateFrom->format('Y-m-d');
                         }
 
-                        if ($this->dateTo) {
+                        if ($this->dateTo instanceof \Carbon\Carbon) {
                             $body['DateTo'] = $this->dateTo->format('Y-m-d');
                         }
 
@@ -579,7 +558,7 @@ class DocumentService
                 $response = $connector->send($request);
                 $data = $response->json();
 
-                if (!$data || ($data['Status'] ?? null) !== 0) {
+                if (! $data || ($data['Status'] ?? null) !== 0) {
                     break;
                 }
 
@@ -602,9 +581,7 @@ class DocumentService
             }
 
             // Filter documents by customer ID and reindex array
-            $filtered = array_filter($allDocuments, function ($doc) use ($sumitCustomerId) {
-                return ($doc['CustomerID'] ?? null) === $sumitCustomerId;
-            });
+            $filtered = array_filter($allDocuments, fn (array $doc): bool => ($doc['CustomerID'] ?? null) === $sumitCustomerId);
 
             return array_values($filtered);
 
@@ -613,6 +590,7 @@ class DocumentService
                 'Fetch documents from SUMIT failed for customer ' . $sumitCustomerId . ': ' . $e->getMessage(),
                 'error'
             );
+
             return [];
         }
     }
@@ -620,10 +598,10 @@ class DocumentService
     /**
      * Get full document details from SUMIT including items
      *
-     * @param string|int $documentId SUMIT document ID
+     * @param  string|int  $documentId  SUMIT document ID
      * @return array|null Document details with items, or null on failure
      */
-    public static function getDocumentDetails(string|int $documentId): ?array
+    public static function getDocumentDetails(string | int $documentId): ?array
     {
         try {
             // Create credentials DTO
@@ -633,7 +611,7 @@ class DocumentService
             );
 
             // Instantiate connector and request
-            $connector = new SumitConnector();
+            $connector = new SumitConnector;
             $request = new GetDocumentDetailsRequest(
                 documentId: $documentId,
                 credentials: $credentials
@@ -643,7 +621,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (!$data || ($data['Status'] ?? null) !== 0) {
+            if (! $data || ($data['Status'] ?? null) !== 0) {
                 return null;
             }
 
@@ -654,6 +632,7 @@ class DocumentService
                 'Get document details failed for ID ' . $documentId . ': ' . $e->getMessage(),
                 'error'
             );
+
             return null;
         }
     }
@@ -664,8 +643,8 @@ class DocumentService
      * A document can contain charges for multiple subscriptions.
      * This method finds all matching subscriptions based on item names.
      *
-     * @param array $fullDetails Full document details from getDocumentDetails
-     * @param int $sumitCustomerId SUMIT customer ID to filter subscriptions
+     * @param  array  $fullDetails  Full document details from getDocumentDetails
+     * @param  int  $sumitCustomerId  SUMIT customer ID to filter subscriptions
      * @return array Array of ['subscription' => Subscription, 'amount' => float, 'items' => array]
      */
     protected static function identifySubscriptionsInDocument(array $fullDetails, int $sumitCustomerId): array
@@ -683,14 +662,14 @@ class DocumentService
         // We need to handle polymorphic 'subscriber' relationship properly
         // Since subscriber can be User or other models, we check all possible types
         $subscriptions = \OfficeGuy\LaravelSumitGateway\Models\Subscription::query()
-            ->where(function ($q) use ($sumitCustomerId) {
+            ->where(function ($q) use ($sumitCustomerId): void {
                 // For User subscribers (most common case)
                 $q->where('subscriber_type', 'App\\Models\\User')
-                  ->whereIn('subscriber_id', function ($subQ) use ($sumitCustomerId) {
-                      $subQ->select('id')
-                           ->from('users')
-                           ->where('sumit_customer_id', $sumitCustomerId);
-                  });
+                    ->whereIn('subscriber_id', function ($subQ) use ($sumitCustomerId): void {
+                        $subQ->select('id')
+                            ->from('users')
+                            ->where('sumit_customer_id', $sumitCustomerId);
+                    });
 
                 // TODO: Add other subscriber types if needed (e.g., 'App\Models\Client')
             })
@@ -700,7 +679,7 @@ class DocumentService
         // For each item in the document, try to match it to a subscription
         foreach ($items as $itemData) {
             $itemName = $itemData['Item']['Name'] ?? '';
-            $itemAmount = (float)($itemData['TotalPrice'] ?? 0);
+            $itemAmount = (float) ($itemData['TotalPrice'] ?? 0);
             $itemId = $itemData['Item']['ID'] ?? null;
 
             if (empty($itemName)) {
@@ -711,7 +690,7 @@ class DocumentService
             $matchedSubs = [];
 
             foreach ($subscriptions as $subscription) {
-                $nameMatch = strtolower(trim($itemName)) === strtolower(trim($subscription->name));
+                $nameMatch = strtolower(trim((string) $itemName)) === strtolower(trim((string) $subscription->name));
 
                 // If name matches, check if Item ID also matches (for better accuracy)
                 if ($nameMatch) {
@@ -719,7 +698,7 @@ class DocumentService
 
                     // If we have an Item ID, use it for stricter matching
                     if ($itemId && $metadataItemId) {
-                        if ((int)$itemId === (int)$metadataItemId) {
+                        if ((int) $itemId === (int) $metadataItemId) {
                             $matchedSubs[] = $subscription;
                         }
                     } else {
@@ -749,9 +728,9 @@ class DocumentService
      * This syncs all documents regardless of subscription matching.
      * Documents will be saved with intelligent subscription mapping when possible.
      *
-     * @param int $sumitCustomerId SUMIT customer ID
-     * @param \Carbon\Carbon|null $dateFrom Optional start date
-     * @param \Carbon\Carbon|null $dateTo Optional end date
+     * @param  int  $sumitCustomerId  SUMIT customer ID
+     * @param  \Carbon\Carbon|null  $dateFrom  Optional start date
+     * @param  \Carbon\Carbon|null  $dateTo  Optional end date
      * @return int Number of documents synced
      */
     public static function syncAllForCustomer(
@@ -761,11 +740,11 @@ class DocumentService
     ): int {
         // Default to 5 years ago to catch ALL historical documents
         // This ensures we get documents for subscriptions created recently but with older invoices
-        if (!$dateFrom) {
+        if (! $dateFrom instanceof \Carbon\Carbon) {
             $dateFrom = now()->subYears(5);
         }
 
-        if (!$dateTo) {
+        if (! $dateTo instanceof \Carbon\Carbon) {
             $dateTo = now();
         }
 
@@ -775,7 +754,7 @@ class DocumentService
 
         foreach ($sumitDocs as $doc) {
             $documentId = $doc['DocumentID'] ?? null;
-            if (!$documentId) {
+            if (! $documentId) {
                 continue;
             }
 
@@ -784,7 +763,7 @@ class DocumentService
 
             // Convert SUMIT numeric codes to readable values
             $currencyCode = $doc['Currency'] ?? 0;
-            $currency = match ((int)$currencyCode) {
+            $currency = match ((int) $currencyCode) {
                 0 => 'ILS',
                 1 => 'USD',
                 2 => 'EUR',
@@ -792,7 +771,7 @@ class DocumentService
             };
 
             $languageCode = $doc['Language'] ?? 0;
-            $language = match ((int)$languageCode) {
+            $language = match ((int) $languageCode) {
                 0 => 'he',
                 1 => 'en',
                 default => 'he',
@@ -810,7 +789,7 @@ class DocumentService
                     'order_type' => null,
                     'subscription_id' => null, // Will be set by pivot table
                     'customer_id' => $doc['CustomerID'] ?? null,
-                    'document_type' => (string)($doc['Type'] ?? '1'),
+                    'document_type' => (string) ($doc['Type'] ?? '1'),
                     'is_draft' => ($doc['IsDraft'] ?? false) === true || ($doc['IsDraft'] ?? false) === 'true',
                     'is_closed' => ($fullDetails['IsClosed'] ?? $doc['IsClosed'] ?? false) === true ||
                                    ($fullDetails['IsClosed'] ?? $doc['IsClosed'] ?? false) === 'true' ||
@@ -834,7 +813,7 @@ class DocumentService
                 $subscriptionsInDoc = self::identifySubscriptionsInDocument($fullDetails, $sumitCustomerId);
 
                 // Sync to pivot table
-                if (!empty($subscriptionsInDoc)) {
+                if ($subscriptionsInDoc !== []) {
                     foreach ($subscriptionsInDoc as $subData) {
                         $document->subscriptions()->syncWithoutDetaching([
                             $subData['subscription']->id => [
@@ -860,8 +839,8 @@ class DocumentService
     /**
      * Sync documents from SUMIT for a subscription
      *
-     * @param \OfficeGuy\LaravelSumitGateway\Models\Subscription $subscription
-     * @param \Carbon\Carbon|null $dateFrom Optional start date (default: subscription created_at)
+     * @param  \OfficeGuy\LaravelSumitGateway\Models\Subscription  $subscription
+     * @param  \Carbon\Carbon|null  $dateFrom  Optional start date (default: subscription created_at)
      * @return int Number of documents synced
      */
     public static function syncForSubscription(
@@ -872,13 +851,13 @@ class DocumentService
         $subscriber = $subscription->subscriber;
         $sumitCustomerId = $subscriber->sumit_customer_id ?? null;
 
-        if (!$sumitCustomerId) {
+        if (! $sumitCustomerId) {
             return 0;
         }
 
         // Default to 5 years ago to catch ALL historical documents
         // This ensures we get documents created before the subscription was synced to our system
-        if (!$dateFrom) {
+        if (! $dateFrom instanceof \Carbon\Carbon) {
             $dateFrom = now()->subYears(5);
         }
 
@@ -910,47 +889,46 @@ class DocumentService
                     $isMatch = true;
                 }
                 // Fallback: Check if it contains the recurring_id (for older documents)
-                elseif ($subscription->recurring_id && str_contains($externalRef, (string) $subscription->recurring_id)) {
+                elseif ($subscription->recurring_id && str_contains((string) $externalRef, (string) $subscription->recurring_id)) {
                     $isMatch = true;
                 }
             }
 
             // Method 2: Match by description (EXACT match for short names, contains for longer descriptions)
-            if (!$isMatch && $subscription->name) {
+            if (! $isMatch && $subscription->name) {
                 $description = $doc['Description'] ?? '';
-                if (!empty($description)) {
+                if (! empty($description)) {
                     // For very short subscription names (≤3 chars), use exact word match to avoid false positives
-                    if (mb_strlen($subscription->name) <= 3) {
+                    if (mb_strlen((string) $subscription->name) <= 3) {
                         // Match as whole word with word boundaries
-                        $pattern = '/\b' . preg_quote($subscription->name, '/') . '\b/ui';
-                        if (preg_match($pattern, $description)) {
+                        $pattern = '/\b' . preg_quote((string) $subscription->name, '/') . '\b/ui';
+                        if (preg_match($pattern, (string) $description)) {
                             $isMatch = true;
                         }
-                    } else {
+                    } elseif (str_contains((string) $description, (string) $subscription->name)) {
                         // For longer names, contains is safe
-                        if (str_contains($description, $subscription->name)) {
-                            $isMatch = true;
-                        }
+                        $isMatch = true;
                     }
                 }
             }
 
             // Method 3: Match by item name (EXACT match to avoid false positives)
-            if (!$isMatch && $subscription->name && $fullDetails && isset($fullDetails['Items'])) {
+            if (! $isMatch && $subscription->name && $fullDetails && isset($fullDetails['Items'])) {
                 foreach ($fullDetails['Items'] as $item) {
                     $itemName = $item['Item']['Name'] ?? '';
                     // Use exact match (case-insensitive) to avoid matching "היי" to "הייי"
-                    if (!empty($itemName) && strtolower(trim($itemName)) === strtolower(trim($subscription->name))) {
+                    if (! empty($itemName) && strtolower(trim((string) $itemName)) === strtolower(trim((string) $subscription->name))) {
                         $isMatch = true;
+
                         break;
                     }
                 }
             }
 
             // Method 4: Match by amount (ONLY as last resort with strict conditions)
-            if (!$isMatch && $subscription->amount) {
-                $docAmount = abs((float)($doc['DocumentValue'] ?? 0));
-                $subAmount = (float)$subscription->amount;
+            if (! $isMatch && $subscription->amount) {
+                $docAmount = abs((float) ($doc['DocumentValue'] ?? 0));
+                $subAmount = (float) $subscription->amount;
 
                 // Allow small rounding differences (1 cent)
                 $amountMatches = abs($docAmount - $subAmount) < 0.01;
@@ -960,7 +938,7 @@ class DocumentService
                     // 1. Document has NO description or items (fallback only)
                     // 2. OR amount is very unique (> 100 to reduce false positives)
                     $hasNoMetadata = empty($doc['Description']) &&
-                                     (!isset($fullDetails['Items']) || empty($fullDetails['Items']));
+                                     (! isset($fullDetails['Items']) || empty($fullDetails['Items']));
                     $isUniqueAmount = $subAmount > 100;
 
                     if ($hasNoMetadata || $isUniqueAmount) {
@@ -974,7 +952,7 @@ class DocumentService
             if ($isMatch) {
                 // Convert SUMIT numeric codes to readable values
                 $currencyCode = $doc['Currency'] ?? 0;
-                $currency = match ((int)$currencyCode) {
+                $currency = match ((int) $currencyCode) {
                     0 => 'ILS',
                     1 => 'USD',
                     2 => 'EUR',
@@ -982,7 +960,7 @@ class DocumentService
                 };
 
                 $languageCode = $doc['Language'] ?? 0;
-                $language = match ((int)$languageCode) {
+                $language = match ((int) $languageCode) {
                     0 => 'he',
                     1 => 'en',
                     default => 'he',
@@ -999,7 +977,7 @@ class DocumentService
                         'order_type' => null,
                         'subscription_id' => $subscription->id, // Legacy: keep first/primary subscription
                         'customer_id' => $doc['CustomerID'] ?? null,
-                        'document_type' => (string)($doc['Type'] ?? '1'),
+                        'document_type' => (string) ($doc['Type'] ?? '1'),
                         'is_draft' => ($doc['IsDraft'] ?? false) === true || ($doc['IsDraft'] ?? false) === 'true',
                         // SUMIT logic: if DocumentPaymentURL is null = paid, if exists = unpaid
                         // Use fullDetails (getdetails) for accurate payment status
@@ -1022,7 +1000,7 @@ class DocumentService
 
                 // NEW: Identify ALL subscriptions in this document (many-to-many)
                 if ($fullDetails && $sumitCustomerId) {
-                    $subscriptionsInDoc = self::identifySubscriptionsInDocument($fullDetails, (int)$sumitCustomerId);
+                    $subscriptionsInDoc = self::identifySubscriptionsInDocument($fullDetails, (int) $sumitCustomerId);
 
                     // Sync to pivot table
                     foreach ($subscriptionsInDoc as $subData) {
@@ -1048,10 +1026,10 @@ class DocumentService
      * Creates a credit note (תעודת זיכוי) for a customer, optionally linked to an original document.
      * This is an accounting credit, NOT a refund to the payment method.
      *
-     * @param \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer $customer Customer instance
-     * @param float $amount Credit amount
-     * @param string $description Credit description (default: זיכוי)
-     * @param int|null $originalDocumentId Optional original document ID to link to
+     * @param  \OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer  $customer  Customer instance
+     * @param  float  $amount  Credit amount
+     * @param  string  $description  Credit description (default: זיכוי)
+     * @param  int|null  $originalDocumentId  Optional original document ID to link to
      * @return array{success: bool, document_id?: int, document_number?: string, amount?: float, error?: string}
      */
     public static function createCreditNote(
@@ -1062,7 +1040,7 @@ class DocumentService
     ): array {
         $sumitCustomerId = $customer->getSumitCustomerId();
 
-        if (!$sumitCustomerId) {
+        if (! $sumitCustomerId) {
             return [
                 'success' => false,
                 'error' => 'Customer not synced with SUMIT',
@@ -1080,15 +1058,9 @@ class DocumentService
             $customerEmail = $customer->getSumitCustomerEmail();
 
             // Instantiate connector and inline request
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $sumitCustomerId,
-                $amount,
-                $description,
-                $customerEmail,
-                $originalDocumentId
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $sumitCustomerId, $amount, $description, $customerEmail, $originalDocumentId) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -1201,7 +1173,7 @@ class DocumentService
     /**
      * Get document PDF URL from SUMIT
      *
-     * @param int $documentId SUMIT document ID
+     * @param  int  $documentId  SUMIT document ID
      * @return array{success: bool, pdf_url?: string, error?: string}
      */
     public static function getDocumentPDF(int $documentId): array
@@ -1214,11 +1186,9 @@ class DocumentService
             );
 
             // Instantiate connector and inline request
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $documentId
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $documentId) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -1282,14 +1252,14 @@ class DocumentService
      * CRITICAL: SUMIT's /send/ endpoint requires DocumentType + DocumentNumber,
      * NOT DocumentID! Using DocumentID will result in "Document not found" error.
      *
-     * @param int|OfficeGuyDocument $document SUMIT document ID OR OfficeGuyDocument model
-     * @param string|null $email Email address to send to (null = use customer's SUMIT email)
-     * @param string|null $personalMessage Optional personal message to include in email
-     * @param bool $original Send original document (default: true)
+     * @param  int|OfficeGuyDocument  $document  SUMIT document ID OR OfficeGuyDocument model
+     * @param  string|null  $email  Email address to send to (null = use customer's SUMIT email)
+     * @param  string|null  $personalMessage  Optional personal message to include in email
+     * @param  bool  $original  Send original document (default: true)
      * @return array{success: bool, error?: string}
      */
     public static function sendByEmail(
-        int|OfficeGuyDocument $document,
+        int | OfficeGuyDocument $document,
         ?string $email = null,
         ?string $personalMessage = null,
         bool $original = true
@@ -1298,7 +1268,7 @@ class DocumentService
             // If integer provided (legacy), fetch the document model
             if (is_int($document)) {
                 $documentModel = OfficeGuyDocument::where('document_id', $document)->first();
-                if (!$documentModel) {
+                if (! $documentModel) {
                     return [
                         'success' => false,
                         'error' => 'Document not found in local database',
@@ -1314,15 +1284,9 @@ class DocumentService
             );
 
             // Instantiate connector and inline request
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $document->document_type,
-                $document->document_number,
-                $original,
-                $email,
-                $personalMessage
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $document->document_type, $document->document_number, $original, $email, $personalMessage) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -1407,8 +1371,8 @@ class DocumentService
      *
      * Creates a cancellation credit note for the specified document.
      *
-     * @param int $documentId SUMIT document ID to cancel
-     * @param string $description Reason for cancellation (default: ביטול מסמך)
+     * @param  int  $documentId  SUMIT document ID to cancel
+     * @param  string  $description  Reason for cancellation (default: ביטול מסמך)
      * @return array{success: bool, original_document_id?: int, credit_document_id?: int, credit_document_number?: string, credit_document_url?: string, error?: string}
      */
     public static function cancelDocument(int $documentId, string $description = 'ביטול מסמך'): array
@@ -1421,12 +1385,9 @@ class DocumentService
             );
 
             // Instantiate connector and inline request
-            $connector = new SumitConnector();
-            $request = new class(
-                $credentials,
-                $documentId,
-                $description
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new SumitConnector;
+            $request = new class($credentials, $documentId, $description) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;

@@ -32,9 +32,6 @@ class PaymentResponse
 
     /**
      * Create from Saloon response
-     *
-     * @param SaloonResponse $response
-     * @return self
      */
     public static function fromSaloonResponse(SaloonResponse $response): self
     {
@@ -63,8 +60,6 @@ class PaymentResponse
 
     /**
      * Check if transaction was successful
-     *
-     * @return bool
      */
     public function isSuccessful(): bool
     {
@@ -73,8 +68,6 @@ class PaymentResponse
 
     /**
      * Check if API call failed (not declined)
-     *
-     * @return bool
      */
     public function isApiError(): bool
     {
@@ -83,18 +76,14 @@ class PaymentResponse
 
     /**
      * Check if transaction was declined by gateway
-     *
-     * @return bool
      */
     public function isDeclined(): bool
     {
-        return $this->status === 0 && !$this->success;
+        return $this->status === 0 && ! $this->success;
     }
 
     /**
      * Get human-readable error/decline message
-     *
-     * @return string|null
      */
     public function getErrorMessage(): ?string
     {
@@ -131,10 +120,6 @@ class PaymentResponse
 
     /**
      * Get specific data field
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
      */
     public function getData(string $key, mixed $default = null): mixed
     {
@@ -143,8 +128,6 @@ class PaymentResponse
 
     /**
      * Check if response has token
-     *
-     * @return bool
      */
     public function hasToken(): bool
     {
@@ -153,8 +136,6 @@ class PaymentResponse
 
     /**
      * Check if response has transaction ID
-     *
-     * @return bool
      */
     public function hasTransactionId(): bool
     {

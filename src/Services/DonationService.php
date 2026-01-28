@@ -18,13 +18,12 @@ class DonationService
      * Check if an order/cart contains donation items
      * Port of: CartContainsDonation() from OfficeGuyDonation.php
      *
-     * @param Payable|array $orderOrItems Order instance or array of line items
-     * @return bool
+     * @param  Payable|array  $orderOrItems  Order instance or array of line items
      */
-    public static function containsDonation(Payable|array $orderOrItems): bool
+    public static function containsDonation(Payable | array $orderOrItems): bool
     {
-        $items = $orderOrItems instanceof Payable 
-            ? $orderOrItems->getLineItems() 
+        $items = $orderOrItems instanceof Payable
+            ? $orderOrItems->getLineItems()
             : $orderOrItems;
 
         foreach ($items as $item) {
@@ -39,18 +38,15 @@ class DonationService
     /**
      * Check if an order/cart contains non-donation items
      * Port of: CartContainsNonDonation() from OfficeGuyDonation.php
-     *
-     * @param Payable|array $orderOrItems
-     * @return bool
      */
-    public static function containsNonDonation(Payable|array $orderOrItems): bool
+    public static function containsNonDonation(Payable | array $orderOrItems): bool
     {
-        $items = $orderOrItems instanceof Payable 
-            ? $orderOrItems->getLineItems() 
+        $items = $orderOrItems instanceof Payable
+            ? $orderOrItems->getLineItems()
             : $orderOrItems;
 
         foreach ($items as $item) {
-            if (!self::isDonationItem($item)) {
+            if (! self::isDonationItem($item)) {
                 return true;
             }
         }
@@ -60,9 +56,6 @@ class DonationService
 
     /**
      * Check if item is a donation
-     *
-     * @param array $item
-     * @return bool
      */
     public static function isDonationItem(array $item): bool
     {
@@ -74,11 +67,8 @@ class DonationService
 
     /**
      * Check if cart has mixed items (donations and non-donations)
-     *
-     * @param Payable|array $orderOrItems
-     * @return bool
      */
-    public static function hasMixedItems(Payable|array $orderOrItems): bool
+    public static function hasMixedItems(Payable | array $orderOrItems): bool
     {
         return self::containsDonation($orderOrItems) && self::containsNonDonation($orderOrItems);
     }
@@ -87,10 +77,9 @@ class DonationService
      * Validate that cart doesn't have mixed donations and regular products
      * Port of: UpdateAvailableGateways logic from OfficeGuyDonation.php
      *
-     * @param Payable|array $orderOrItems
      * @return array Validation result with 'valid' bool and 'message' string
      */
-    public static function validateCart(Payable|array $orderOrItems): array
+    public static function validateCart(Payable | array $orderOrItems): array
     {
         if (self::hasMixedItems($orderOrItems)) {
             return [
@@ -109,12 +98,11 @@ class DonationService
      * Get the document type for the order
      * Returns 'DonationReceipt' (type 320) for donations, or the configured default type
      *
-     * @param Payable|array $orderOrItems
      * @return string Document type identifier
      */
-    public static function getDocumentType(Payable|array $orderOrItems): string
+    public static function getDocumentType(Payable | array $orderOrItems): string
     {
-        if (self::containsDonation($orderOrItems) && !self::containsNonDonation($orderOrItems)) {
+        if (self::containsDonation($orderOrItems) && ! self::containsNonDonation($orderOrItems)) {
             return 'DonationReceipt'; // SUMIT document type for donation receipts
         }
 
@@ -123,13 +111,10 @@ class DonationService
 
     /**
      * Get the numeric document type code for the order
-     *
-     * @param Payable|array $orderOrItems
-     * @return int
      */
-    public static function getDocumentTypeCode(Payable|array $orderOrItems): int
+    public static function getDocumentTypeCode(Payable | array $orderOrItems): int
     {
-        if (self::containsDonation($orderOrItems) && !self::containsNonDonation($orderOrItems)) {
+        if (self::containsDonation($orderOrItems) && ! self::containsNonDonation($orderOrItems)) {
             return 320; // SUMIT document type code for donation receipts
         }
 
@@ -139,13 +124,12 @@ class DonationService
     /**
      * Split items into donations and regular products
      *
-     * @param Payable|array $orderOrItems
      * @return array ['donations' => [...], 'regular' => [...]]
      */
-    public static function splitItems(Payable|array $orderOrItems): array
+    public static function splitItems(Payable | array $orderOrItems): array
     {
-        $items = $orderOrItems instanceof Payable 
-            ? $orderOrItems->getLineItems() 
+        $items = $orderOrItems instanceof Payable
+            ? $orderOrItems->getLineItems()
             : $orderOrItems;
 
         $donations = [];
@@ -167,14 +151,11 @@ class DonationService
 
     /**
      * Calculate total amount for donation items only
-     *
-     * @param Payable|array $orderOrItems
-     * @return float
      */
-    public static function getDonationTotal(Payable|array $orderOrItems): float
+    public static function getDonationTotal(Payable | array $orderOrItems): float
     {
-        $items = $orderOrItems instanceof Payable 
-            ? $orderOrItems->getLineItems() 
+        $items = $orderOrItems instanceof Payable
+            ? $orderOrItems->getLineItems()
             : $orderOrItems;
 
         $total = 0;
@@ -190,20 +171,17 @@ class DonationService
 
     /**
      * Calculate total amount for non-donation items
-     *
-     * @param Payable|array $orderOrItems
-     * @return float
      */
-    public static function getRegularTotal(Payable|array $orderOrItems): float
+    public static function getRegularTotal(Payable | array $orderOrItems): float
     {
-        $items = $orderOrItems instanceof Payable 
-            ? $orderOrItems->getLineItems() 
+        $items = $orderOrItems instanceof Payable
+            ? $orderOrItems->getLineItems()
             : $orderOrItems;
 
         $total = 0;
 
         foreach ($items as $item) {
-            if (!self::isDonationItem($item)) {
+            if (! self::isDonationItem($item)) {
                 $total += ($item['unit_price'] ?? 0) * ($item['quantity'] ?? 1);
             }
         }

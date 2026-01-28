@@ -105,9 +105,6 @@ class InfrastructureFulfillmentHandler
 {
     /**
      * Handle infrastructure fulfillment
-     *
-     * @param OfficeGuyTransaction $transaction
-     * @return void
      */
     public function handle(OfficeGuyTransaction $transaction): void
     {
@@ -123,6 +120,7 @@ class InfrastructureFulfillmentHandler
                 "InfrastructureFulfillmentHandler: No payable found for transaction {$transaction->id}",
                 'warning'
             );
+
             return;
         }
 
@@ -153,9 +151,7 @@ class InfrastructureFulfillmentHandler
      * - DNS configuration
      * - Email notifications
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleDomain(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -174,7 +170,7 @@ class InfrastructureFulfillmentHandler
             );
         } else {
             OfficeGuyApi::writeToLog(
-                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob',
                 'warning'
             );
         }
@@ -189,9 +185,7 @@ class InfrastructureFulfillmentHandler
      * - Email setup
      * - Welcome email with credentials
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleHosting(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -210,7 +204,7 @@ class InfrastructureFulfillmentHandler
             );
         } else {
             OfficeGuyApi::writeToLog(
-                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob',
                 'warning'
             );
         }
@@ -225,9 +219,7 @@ class InfrastructureFulfillmentHandler
      * - SSH key setup
      * - Welcome email with credentials
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleVps(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -246,7 +238,7 @@ class InfrastructureFulfillmentHandler
             );
         } else {
             OfficeGuyApi::writeToLog(
-                "InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'InfrastructureFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob',
                 'warning'
             );
         }
@@ -255,9 +247,7 @@ class InfrastructureFulfillmentHandler
     /**
      * Handle SSL certificate generation
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleSsl(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -283,9 +273,7 @@ class InfrastructureFulfillmentHandler
     /**
      * Handle generic infrastructure fulfillment
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleGeneric(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -301,8 +289,7 @@ class InfrastructureFulfillmentHandler
     /**
      * Get service type from payable
      *
-     * @param mixed $payable
-     * @return string
+     * @param  mixed  $payable
      */
     protected function getServiceType($payable): string
     {

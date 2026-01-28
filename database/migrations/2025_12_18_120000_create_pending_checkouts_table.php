@@ -15,8 +15,6 @@ return new class extends Migration
      * - Survives server restarts
      * - Works with webhooks and redirects
      * - Auto-cleanup via scheduled job
-     *
-     * @return void
      */
     public function up(): void
     {
@@ -56,8 +54,6 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
     public function down(): void
     {

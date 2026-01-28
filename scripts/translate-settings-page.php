@@ -5,7 +5,6 @@
  *
  * Usage: php scripts/translate-settings-page.php
  */
-
 $filePath = __DIR__ . '/../src/Filament/Pages/OfficeGuySettings.php';
 $content = file_get_contents($filePath);
 
@@ -120,4 +119,4 @@ foreach ($translations as $old => $new) {
 file_put_contents($filePath, $content);
 
 echo "✅ Translation keys applied to OfficeGuySettings.php\n";
-echo "Total replacements: " . count($translations) . "\n";
+echo 'Total replacements: ' . count($translations) . "\n";

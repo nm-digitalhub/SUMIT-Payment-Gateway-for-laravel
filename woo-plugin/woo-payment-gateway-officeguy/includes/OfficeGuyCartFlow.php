@@ -1,19 +1,22 @@
 <?php
-if (!function_exists('is_plugin_active'))
-    require_once(ABSPATH . '/wp-admin/includes/plugin.php');
+
+if (! function_exists('is_plugin_active')) {
+    require_once ABSPATH . '/wp-admin/includes/plugin.php';
+}
 
 class OfficeGuyCartFlow
 {
     public static function AddPaymentGateway($PaymentGateways)
     {
-        $PaymentGateways['officeguy'] = array(
+        $PaymentGateways['officeguy'] = [
             'path' => dirname(__FILE__) . '/class-cartflows-pro-gateway-officeguy.php',
             'class' => 'Cartflows_Pro_Gateway_OfficeGuy',
-        );
+        ];
+
         return $PaymentGateways;
     }
 
-    public static function PluginIsActive() 
+    public static function PluginIsActive()
     {
         return is_plugin_active('cartflows/cartflows.php') || is_plugin_active('cartflows-pro/cartflows-pro.php');
     }

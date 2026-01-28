@@ -4,28 +4,32 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Tables\Table;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Schemas\TransactionForm;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Tables\TransactionsTable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 
-
-
 class TransactionResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyTransaction::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
-
-    protected static ?string $navigationLabel = 'טרנזאקציות';
-
-    protected static ?int $navigationSort = 1;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {

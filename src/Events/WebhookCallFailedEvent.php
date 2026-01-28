@@ -15,7 +15,8 @@ use Illuminate\Queue\SerializesModels;
  */
 class WebhookCallFailedEvent
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $uuid,
@@ -24,9 +25,8 @@ class WebhookCallFailedEvent
         public readonly array $payload,
         public readonly array $headers,
         public readonly int $attempt,
-        public readonly int|null $statusCode,
+        public readonly ?int $statusCode,
         public readonly string $errorMessage,
         public readonly array $meta = []
-    ) {
-    }
+    ) {}
 }

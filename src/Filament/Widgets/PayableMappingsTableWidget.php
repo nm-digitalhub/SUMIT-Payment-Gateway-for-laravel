@@ -6,13 +6,13 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Widgets;
 
 use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
 use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkPayableMappingActivateJob;
 use OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BulkPayableMappingDeactivateJob;
+use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
 
 /**
  * PayableMappingsTableWidget
@@ -35,9 +35,6 @@ class PayableMappingsTableWidget extends BaseWidget
 
     /**
      * Configure the table.
-     *
-     * @param Table $table
-     * @return Table
      */
     public function table(Table $table): Table
     {
@@ -56,7 +53,7 @@ class PayableMappingsTableWidget extends BaseWidget
                     ->label('מחלקת מודל')
                     ->searchable()
                     ->sortable()
-                    ->formatStateUsing(fn ($state) => class_basename($state))
+                    ->formatStateUsing(fn ($state): string => class_basename($state))
                     ->description(fn ($record) => $record->model_class)
                     ->copyable()
                     ->copyMessage('הועתק!')
@@ -74,7 +71,7 @@ class PayableMappingsTableWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('mapped_fields_count')
                     ->label('שדות ממופים')
-                    ->state(fn ($record) => count(array_filter($record->field_mappings ?? [])))
+                    ->state(fn ($record): int => count(array_filter($record->field_mappings ?? [])))
                     ->badge()
                     ->color('info')
                     ->suffix(' / 16')
@@ -100,9 +97,9 @@ class PayableMappingsTableWidget extends BaseWidget
                     ->label('צפה')
                     ->icon('heroicon-o-eye')
                     ->color('info')
-                    ->modalHeading(fn ($record) => "מיפוי: {$record->label}")
+                    ->modalHeading(fn ($record): string => "מיפוי: {$record->label}")
                     ->modalDescription(fn ($record) => $record->model_class)
-                    ->modalContent(fn ($record) => view('officeguy::components.mapping-details', [
+                    ->modalContent(fn ($record): \Illuminate\Contracts\View\Factory | \Illuminate\Contracts\View\View => view('officeguy::components.mapping-details', [
                         'mapping' => $record,
                     ]))
                     ->modalSubmitAction(false)
@@ -110,18 +107,18 @@ class PayableMappingsTableWidget extends BaseWidget
                     ->modalWidth('5xl'),
 
                 Actions\Action::make('toggle_active')
-                    ->label(fn ($record) => $record->is_active ? 'השבת' : 'הפעל')
-                    ->icon(fn ($record) => $record->is_active ? 'heroicon-o-pause-circle' : 'heroicon-o-play-circle')
-                    ->color(fn ($record) => $record->is_active ? 'warning' : 'success')
+                    ->label(fn ($record): string => $record->is_active ? 'השבת' : 'הפעל')
+                    ->icon(fn ($record): string => $record->is_active ? 'heroicon-o-pause-circle' : 'heroicon-o-play-circle')
+                    ->color(fn ($record): string => $record->is_active ? 'warning' : 'success')
                     ->requiresConfirmation()
-                    ->modalHeading(fn ($record) => $record->is_active ? 'השבתת מיפוי' : 'הפעלת מיפוי')
-                    ->modalDescription(fn ($record) =>
-                        $record->is_active
+                    ->modalHeading(fn ($record): string => $record->is_active ? 'השבתת מיפוי' : 'הפעלת מיפוי')
+                    ->modalDescription(
+                        fn ($record): string => $record->is_active
                             ? 'המיפוי יושבת ולא ישמש עבור יצירת Payable wrappers'
                             : 'המיפוי יופעל וישמש עבור יצירת Payable wrappers'
                     )
-                    ->action(function ($record) {
-                        $record->update(['is_active' => !$record->is_active]);
+                    ->action(function ($record): void {
+                        $record->update(['is_active' => ! $record->is_active]);
 
                         Notification::make()
                             ->title($record->is_active ? 'המיפוי הופעל' : 'המיפוי הושבת')
@@ -160,8 +157,8 @@ class PayableMappingsTableWidget extends BaseWidget
                         ->icon('heroicon-o-check-circle')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
-                        ->action(function ($records) {
+                        ->visible(fn (): bool => ! config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
+                        ->action(function ($records): void {
                             $records->each->update(['is_active' => true]);
 
                             Notification::make()
@@ -188,8 +185,8 @@ class PayableMappingsTableWidget extends BaseWidget
                         ->icon('heroicon-o-pause-circle')
                         ->color('warning')
                         ->requiresConfirmation()
-                        ->visible(fn () => !config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
-                        ->action(function ($records) {
+                        ->visible(fn (): bool => ! config('officeguy.bulk_actions.enabled', false) || config('officeguy.bulk_actions.enable_legacy_actions', false))
+                        ->action(function ($records): void {
                             $records->each->update(['is_active' => false]);
 
                             Notification::make()

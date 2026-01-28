@@ -116,24 +116,12 @@ class BulkDocumentEmailJob extends BaseBulkActionJob
             $result = DocumentService::sendByEmail($record);
 
             if ($result['success'] ?? false) {
-                return ActionResponse::success(
-                    $record,
-                    null,
-                    ['document_id' => $record->id, 'sent_at' => now()->toIso8601String()]
-                );
+                return ActionResponse::success();
             }
 
-            return ActionResponse::failure(
-                $record,
-                $result['error'] ?? 'Unknown error',
-                ['document_id' => $record->id, 'document_number' => $record->document_number]
-            );
-        } catch (\Throwable $e) {
-            return ActionResponse::failure(
-                $record,
-                $e->getMessage(),
-                ['document_id' => $record->id, 'exception' => get_class($e)]
-            );
+            return ActionResponse::failure();
+        } catch (\Throwable) {
+            return ActionResponse::failure();
         }
     }
 

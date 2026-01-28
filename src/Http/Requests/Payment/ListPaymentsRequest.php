@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use Carbon\Carbon;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use Carbon\Carbon;
 
 /**
  * List Payments Request
@@ -95,11 +95,11 @@ class ListPaymentsRequest extends Request implements HasBody
     /**
      * Create new list payments request
      *
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $dateFrom Start date (ISO 8601), default: 1 year ago
-     * @param string|null $dateTo End date (ISO 8601), default: now
-     * @param bool|null $valid Filter valid payments only, null = all
-     * @param int $startIndex Pagination offset, default: 0
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $dateFrom  Start date (ISO 8601), default: 1 year ago
+     * @param  string|null  $dateTo  End date (ISO 8601), default: now
+     * @param  bool|null  $valid  Filter valid payments only, null = all
+     * @param  int  $startIndex  Pagination offset, default: 0
      */
     public function __construct(
         protected readonly CredentialsData $credentials,
@@ -111,8 +111,6 @@ class ListPaymentsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -181,7 +179,6 @@ class ListPaymentsRequest extends Request implements HasBody
      *   "UserErrorMessage": "Invalid date range"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -192,44 +189,43 @@ class ListPaymentsRequest extends Request implements HasBody
     /**
      * Check if operation was successful
      *
-     * @param Response $response
      * @return bool True if payments were retrieved successfully
      */
     public function isSuccessful(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? 1) === 0;
     }
 
     /**
      * Get payments array from response
      *
-     * @param Response $response
      * @return array<int, array<string, mixed>> Array of payment records
      */
     public function getPayments(Response $response): array
     {
         $data = $response->json();
+
         return $data['Data']['Payments'] ?? [];
     }
 
     /**
      * Check if there are more pages available
      *
-     * @param Response $response
      * @return bool True if HasNextPage is true
      */
     public function hasNextPage(Response $response): bool
     {
         $data = $response->json();
+
         return $data['Data']['HasNextPage'] ?? false;
     }
 
     /**
      * Get the next page start index
      *
-     * @param Response $response
-     * @param int $pageSize Number of items per page (default: 50)
+     * @param  int  $pageSize  Number of items per page (default: 50)
      * @return int|null Next StartIndex, or null if no more pages
      */
     public function getNextStartIndex(Response $response, int $pageSize = 50): ?int
@@ -244,7 +240,6 @@ class ListPaymentsRequest extends Request implements HasBody
     /**
      * Get error message from failed request
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

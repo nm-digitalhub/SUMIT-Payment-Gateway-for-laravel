@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Customer;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CustomerData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CustomerData;
 
 /**
  * Create Customer Request
@@ -78,11 +78,11 @@ class CreateCustomerRequest extends Request implements HasBody
     /**
      * Create new customer creation request
      *
-     * @param CustomerData $customer Customer details
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param int|null $folderId Optional CRM folder ID for organization
-     * @param array<string, mixed>|null $properties Optional custom fields
-     * @param string|null $responseLanguage Response language (he/en/fr)
+     * @param  CustomerData  $customer  Customer details
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  int|null  $folderId  Optional CRM folder ID for organization
+     * @param  array<string, mixed>|null  $properties  Optional custom fields
+     * @param  string|null  $responseLanguage  Response language (he/en/fr)
      */
     public function __construct(
         protected readonly CustomerData $customer,
@@ -94,8 +94,6 @@ class CreateCustomerRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -141,7 +139,6 @@ class CreateCustomerRequest extends Request implements HasBody
      *
      * Returns CustomerID and success status
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

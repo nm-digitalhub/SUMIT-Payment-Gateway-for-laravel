@@ -28,15 +28,11 @@ use OfficeGuy\LaravelSumitGateway\Services\PayableMappingService;
  *     }
  * }
  * ```
- *
- * @package OfficeGuy\LaravelSumitGateway\Support\Traits
  */
 trait HasPayableFields
 {
     /**
      * Get the mapping service instance
-     *
-     * @return PayableMappingService
      */
     protected function getPayableMappingService(): PayableMappingService
     {
@@ -46,9 +42,8 @@ trait HasPayableFields
     /**
      * Get a field value using the mapping service
      *
-     * @param string $key Field key (e.g., 'amount', 'customer_email')
-     * @param mixed $default Default value if not found
-     * @return mixed
+     * @param  string  $key  Field key (e.g., 'amount', 'customer_email')
+     * @param  mixed  $default  Default value if not found
      */
     protected function getPayableField(string $key, mixed $default = null): mixed
     {
@@ -56,6 +51,7 @@ trait HasPayableFields
 
         if ($modelMappings && isset($modelMappings[$key])) {
             $fieldName = $modelMappings[$key];
+
             return $this->getAttribute($fieldName) ?? $default;
         }
 
@@ -64,29 +60,24 @@ trait HasPayableFields
 
     /**
      * Get the unique identifier for this payable entity
-     *
-     * @return string|int
      */
-    public function getPayableId(): string|int
+    public function getPayableId(): string | int
     {
         return $this->getKey();
     }
 
     /**
      * Get the total amount to be paid
-     *
-     * @return float
      */
     public function getPayableAmount(): float
     {
         $amount = $this->getPayableField('amount', 0);
+
         return (float) $amount;
     }
 
     /**
      * Get the currency code (e.g., 'ILS', 'USD', 'EUR')
-     *
-     * @return string
      */
     public function getPayableCurrency(): string
     {
@@ -96,8 +87,6 @@ trait HasPayableFields
 
     /**
      * Get the customer's email address
-     *
-     * @return string|null
      */
     public function getCustomerEmail(): ?string
     {
@@ -106,8 +95,6 @@ trait HasPayableFields
 
     /**
      * Get the customer's phone number
-     *
-     * @return string|null
      */
     public function getCustomerPhone(): ?string
     {
@@ -116,8 +103,6 @@ trait HasPayableFields
 
     /**
      * Get the customer's full name
-     *
-     * @return string
      */
     public function getCustomerName(): string
     {
@@ -133,8 +118,6 @@ trait HasPayableFields
      * - state: string|null
      * - country: string (country code)
      * - zip_code: string|null
-     *
-     * @return array|null
      */
     public function getCustomerAddress(): ?array
     {
@@ -172,8 +155,6 @@ trait HasPayableFields
 
     /**
      * Get the customer's company name (if applicable)
-     *
-     * @return string|null
      */
     public function getCustomerCompany(): ?string
     {
@@ -182,10 +163,8 @@ trait HasPayableFields
 
     /**
      * Get the customer ID from the system
-     *
-     * @return string|int|null
      */
-    public function getCustomerId(): string|int|null
+    public function getCustomerId(): string | int | null
     {
         // Try mapped field first
         $customerId = $this->getPayableField('customer_id');
@@ -220,8 +199,6 @@ trait HasPayableFields
      * - unit_price: float
      * - product_id: string|int|null
      * - variation_id: string|int|null
-     *
-     * @return array
      */
     public function getLineItems(): array
     {
@@ -240,29 +217,25 @@ trait HasPayableFields
 
         // Try common relationship patterns
         if (method_exists($this, 'items')) {
-            return $this->items->map(function ($item) {
-                return [
-                    'name' => $item->name ?? $item->product_name ?? 'Item',
-                    'sku' => $item->sku ?? null,
-                    'quantity' => $item->quantity ?? 1,
-                    'unit_price' => (float) ($item->price ?? $item->unit_price ?? 0),
-                    'product_id' => $item->product_id ?? null,
-                    'variation_id' => $item->variation_id ?? null,
-                ];
-            })->toArray();
+            return $this->items->map(fn ($item): array => [
+                'name' => $item->name ?? $item->product_name ?? 'Item',
+                'sku' => $item->sku ?? null,
+                'quantity' => $item->quantity ?? 1,
+                'unit_price' => (float) ($item->price ?? $item->unit_price ?? 0),
+                'product_id' => $item->product_id ?? null,
+                'variation_id' => $item->variation_id ?? null,
+            ])->toArray();
         }
 
         if (method_exists($this, 'orderItems')) {
-            return $this->orderItems->map(function ($item) {
-                return [
-                    'name' => $item->name ?? $item->product_name ?? 'Item',
-                    'sku' => $item->sku ?? null,
-                    'quantity' => $item->quantity ?? 1,
-                    'unit_price' => (float) ($item->price ?? $item->unit_price ?? 0),
-                    'product_id' => $item->product_id ?? null,
-                    'variation_id' => $item->variation_id ?? null,
-                ];
-            })->toArray();
+            return $this->orderItems->map(fn ($item): array => [
+                'name' => $item->name ?? $item->product_name ?? 'Item',
+                'sku' => $item->sku ?? null,
+                'quantity' => $item->quantity ?? 1,
+                'unit_price' => (float) ($item->price ?? $item->unit_price ?? 0),
+                'product_id' => $item->product_id ?? null,
+                'variation_id' => $item->variation_id ?? null,
+            ])->toArray();
         }
 
         // Return single item if no line items exist
@@ -280,19 +253,16 @@ trait HasPayableFields
 
     /**
      * Get shipping amount
-     *
-     * @return float
      */
     public function getShippingAmount(): float
     {
         $shipping = $this->getPayableField('shipping_amount', 0);
+
         return (float) $shipping;
     }
 
     /**
      * Get shipping method name
-     *
-     * @return string|null
      */
     public function getShippingMethod(): ?string
     {
@@ -305,8 +275,6 @@ trait HasPayableFields
      * Returns an array of fees, each with:
      * - name: string
      * - amount: float
-     *
-     * @return array
      */
     public function getFees(): array
     {
@@ -328,19 +296,16 @@ trait HasPayableFields
 
     /**
      * Get VAT/Tax rate percentage
-     *
-     * @return float|null
      */
     public function getVatRate(): ?float
     {
         $rate = $this->getPayableField('vat_rate');
+
         return $rate !== null ? (float) $rate : null;
     }
 
     /**
      * Check if VAT/Tax is enabled
-     *
-     * @return bool
      */
     public function isTaxEnabled(): bool
     {
@@ -356,8 +321,6 @@ trait HasPayableFields
 
     /**
      * Get customer note/description
-     *
-     * @return string|null
      */
     public function getCustomerNote(): ?string
     {
@@ -375,8 +338,6 @@ trait HasPayableFields
      * WooCommerce equivalent: $order->get_order_key()
      *
      * Override this method in your model for custom logic.
-     *
-     * @return string|null
      */
     public function getOrderKey(): ?string
     {
@@ -388,7 +349,7 @@ trait HasPayableFields
         // Option 2: Generate on-the-fly (fallback, less secure)
         // This ensures backward compatibility for models without order_key column
         if (isset($this->id) && isset($this->created_at)) {
-            return hash('sha256', $this->id.$this->created_at->timestamp.config('app.key'));
+            return hash('sha256', $this->id . $this->created_at->timestamp . config('app.key'));
         }
 
         // No order_key and no id/created_at - return null

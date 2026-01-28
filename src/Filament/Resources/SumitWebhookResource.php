@@ -4,30 +4,31 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
-use Filament\Forms;
-use Filament\Forms\Components\ViewField;
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Tables;
-use Filament\Tables\Table;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
-use Filament\Actions\DeleteAction;
-use Filament\Actions\ViewAction;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
-use Filament\Notifications\Notification;
-use Filament\Schemas\Components\Section as InfolistSection;
+use Filament\Actions\ViewAction;
+use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
-use Filament\Infolists\Components\KeyValueEntry;
+use Filament\Notifications\Notification;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section as InfolistSection;
+use Filament\Schemas\Schema;
+use Filament\Tables;
 use Filament\Tables\Enums\FiltersLayout;
+use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\SumitWebhookResource\Pages;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
+use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 
 /**
  * Filament Resource for managing incoming webhooks from SUMIT.
@@ -38,15 +39,19 @@ use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
  */
 class SumitWebhookResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = SumitWebhook::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
-
-    protected static ?string $navigationLabel = 'SUMIT Webhooks';
-
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT Gateway';
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     protected static ?int $navigationSort = 7;
 
@@ -124,7 +129,7 @@ class SumitWebhookResource extends Resource
                         TextEntry::make('client.name')
                             ->label('Client')
                             ->placeholder('—')
-                            ->url(fn ($record) => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
+                            ->url(fn ($record): ?string => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
                             ->color('primary'),
                         TextEntry::make('amount')
                             ->label('Amount')
@@ -156,7 +161,7 @@ class SumitWebhookResource extends Resource
                             ->columnSpanFull()
                             ->copyable(),
                     ])
-                    ->visible(fn ($record) => $record->event_type === 'crm')
+                    ->visible(fn ($record): bool => $record->event_type === 'crm')
                     ->columns(3),
 
                 InfolistSection::make('Connected Resources')
@@ -165,19 +170,19 @@ class SumitWebhookResource extends Resource
                         TextEntry::make('client.name')
                             ->label('Client')
                             ->placeholder('Not linked')
-                            ->url(fn ($record) => $record->client_id ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
+                            ->url(fn ($record): ?string => $record->client_id ? route('filament.admin.resources.clients.edit', $record->client_id) : null)
                             ->color('primary'),
                         TextEntry::make('transaction.payment_id')
                             ->label('Transaction')
                             ->placeholder('Not linked')
-                            ->url(fn ($record) => $record->transaction_id 
+                            ->url(fn ($record): ?string => $record->transaction_id
                                 ? TransactionResource::getUrl('view', ['record' => $record->transaction_id])
                                 : null)
                             ->color('primary'),
                         TextEntry::make('document.document_number')
                             ->label('Document')
                             ->placeholder('Not linked')
-                            ->url(fn ($record) => $record->document_id 
+                            ->url(fn ($record): ?string => $record->document_id
                                 ? DocumentResource::getUrl('view', ['record' => $record->document_id])
                                 : null)
                             ->color('primary'),
@@ -185,14 +190,14 @@ class SumitWebhookResource extends Resource
                             ->label('Token')
                             ->formatStateUsing(fn ($state) => $state ? '****' . $state : null)
                             ->placeholder('Not linked')
-                            ->url(fn ($record) => $record->token_id 
+                            ->url(fn ($record): ?string => $record->token_id
                                 ? TokenResource::getUrl('view', ['record' => $record->token_id])
                                 : null)
                             ->color('primary'),
                         TextEntry::make('subscription.name')
                             ->label('Subscription')
                             ->placeholder('Not linked')
-                            ->url(fn ($record) => $record->subscription_id 
+                            ->url(fn ($record): ?string => $record->subscription_id
                                 ? SubscriptionResource::getUrl('view', ['record' => $record->subscription_id])
                                 : null)
                             ->color('primary'),
@@ -204,7 +209,7 @@ class SumitWebhookResource extends Resource
                             ->label('Notes')
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn ($record) => !empty($record->processing_notes)),
+                    ->visible(fn ($record): bool => ! empty($record->processing_notes)),
 
                 InfolistSection::make('Error Information')
                     ->schema([
@@ -212,7 +217,7 @@ class SumitWebhookResource extends Resource
                             ->label('Error Message')
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn ($record) => !empty($record->error_message)),
+                    ->visible(fn ($record): bool => ! empty($record->error_message)),
 
                 InfolistSection::make('נתוני Payload גולמיים')
                     ->columnSpanFull()
@@ -365,20 +370,18 @@ class SumitWebhookResource extends Resource
                         Forms\Components\DatePicker::make('received_until')
                             ->label('Until'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['received_from'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
-                            )
-                            ->when(
-                                $data['received_until'],
-                                fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
-                            );
-                    }),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['received_from'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '>=', $date),
+                        )
+                        ->when(
+                            $data['received_until'],
+                            fn (Builder $query, $date): Builder => $query->whereDate('created_at', '<=', $date),
+                        )),
                 Tables\Filters\SelectFilter::make('endpoint')
                     ->label('Endpoint')
-                    ->options(fn () => SumitWebhook::getKnownEndpoints())
+                    ->options(fn (): array => SumitWebhook::getKnownEndpoints())
                     ->preload()
                     ->searchable(false)
                     ->placeholder('כל נקודות הקצה'),
@@ -391,10 +394,10 @@ class SumitWebhookResource extends Resource
                     ->color('success')
                     ->visible(fn ($record) => $record->isPending())
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         // Dispatch the event again for processing
                         event(new \OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived($record));
-                        
+
                         Notification::make()
                             ->title('Webhook dispatched for processing')
                             ->success()
@@ -411,9 +414,9 @@ class SumitWebhookResource extends Resource
                             ->label('Processing Notes')
                             ->rows(2),
                     ])
-                    ->action(function ($record, array $data) {
+                    ->action(function ($record, array $data): void {
                         $record->markAsProcessed($data['notes'] ?? null);
-                        
+
                         Notification::make()
                             ->title('Webhook marked as processed')
                             ->success()
@@ -430,9 +433,9 @@ class SumitWebhookResource extends Resource
                             ->label('Reason for ignoring')
                             ->rows(2),
                     ])
-                    ->action(function ($record, array $data) {
+                    ->action(function ($record, array $data): void {
                         $record->markAsIgnored($data['reason'] ?? null);
-                        
+
                         Notification::make()
                             ->title('Webhook marked as ignored')
                             ->success()
@@ -442,7 +445,7 @@ class SumitWebhookResource extends Resource
                     ->label('Copy Payload')
                     ->icon('heroicon-o-clipboard-document')
                     ->color('gray')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         Notification::make()
                             ->title('Payload copied to clipboard')
                             ->success()
@@ -457,7 +460,7 @@ class SumitWebhookResource extends Resource
                         ->icon('heroicon-o-check')
                         ->color('success')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             $count = 0;
                             foreach ($records as $record) {
                                 if ($record->isPending()) {
@@ -465,7 +468,7 @@ class SumitWebhookResource extends Resource
                                     $count++;
                                 }
                             }
-                            
+
                             Notification::make()
                                 ->title("{$count} webhooks marked as processed")
                                 ->success()
@@ -476,7 +479,7 @@ class SumitWebhookResource extends Resource
                         ->icon('heroicon-o-minus-circle')
                         ->color('gray')
                         ->requiresConfirmation()
-                        ->action(function (Collection $records) {
+                        ->action(function (Collection $records): void {
                             $count = 0;
                             foreach ($records as $record) {
                                 if ($record->isPending()) {
@@ -484,7 +487,7 @@ class SumitWebhookResource extends Resource
                                     $count++;
                                 }
                             }
-                            
+
                             Notification::make()
                                 ->title("{$count} webhooks marked as ignored")
                                 ->success()
@@ -525,12 +528,14 @@ class SumitWebhookResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $count = static::getModel()::where('status', 'received')->count();
+
         return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
         $failedCount = static::getModel()::where('status', 'failed')->count();
+
         return $failedCount > 0 ? 'danger' : 'warning';
     }
 
@@ -544,7 +549,7 @@ class SumitWebhookResource extends Resource
         return [
             'Event' => $record->getEventTypeLabel(),
             'Card Type' => $record->getCardTypeLabel(),
-            'Status' => ucfirst($record->status),
+            'Status' => ucfirst((string) $record->status),
         ];
     }
 }

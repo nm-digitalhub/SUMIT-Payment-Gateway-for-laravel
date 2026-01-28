@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Subscription;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * List Subscriptions Request
@@ -88,9 +88,9 @@ class ListSubscriptionsRequest extends Request implements HasBody
     /**
      * Create new list subscriptions request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param bool $includeInactive Include cancelled/expired subscriptions
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  bool  $includeInactive  Include cancelled/expired subscriptions
      */
     public function __construct(
         protected readonly int $customerId,
@@ -100,8 +100,6 @@ class ListSubscriptionsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -129,7 +127,6 @@ class ListSubscriptionsRequest extends Request implements HasBody
      *
      * Returns raw response with RecurringItems array
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

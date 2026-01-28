@@ -25,10 +25,15 @@ use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
  */
 class SendWebhookJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries;
+
     public int $timeout;
+
     public bool $throwExceptionOnFailure = false;
 
     public function __construct(
@@ -133,7 +138,7 @@ class SendWebhookJob implements ShouldQueue
     /**
      * Handle exception during webhook delivery.
      */
-    protected function handleException(\Exception $e): void
+    protected function handleException(\Throwable $e): void
     {
         $errorMessage = $e->getMessage();
 

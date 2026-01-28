@@ -33,7 +33,7 @@ class BitWebhookController extends Controller
      *
      * WooCommerce pattern: "Always return 200 to prevent retry loops"
      *
-     * @param BitWebhookRequest $request Validated webhook request
+     * @param  BitWebhookRequest  $request  Validated webhook request
      * @return JsonResponse Always returns 200 OK with success/error details
      */
     public function handle(BitWebhookRequest $request): JsonResponse
@@ -54,7 +54,7 @@ class BitWebhookController extends Controller
             // Resolve order model (may be null if not found)
             $order = OrderResolver::resolve($orderId);
 
-            if (! $order) {
+            if (! $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
                 OfficeGuyApi::writeToLog(
                     "Bit webhook: Order {$orderId} not found in system, processing webhook anyway",
                     'warning'
@@ -123,7 +123,7 @@ class BitWebhookController extends Controller
         } catch (\Exception $e) {
             // Exception occurred during processing
             OfficeGuyApi::writeToLog(
-                "Bit webhook exception for order {$orderId}: {$e->getMessage()}. ".
+                "Bit webhook exception for order {$orderId}: {$e->getMessage()}. " .
                 "Stack trace: {$e->getTraceAsString()}",
                 'error'
             );
@@ -139,4 +139,3 @@ class BitWebhookController extends Controller
         }
     }
 }
-

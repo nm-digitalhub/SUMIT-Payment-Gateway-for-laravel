@@ -22,7 +22,7 @@ class ClientDashboard extends BaseDashboard
         ];
     }
 
-    public function getColumns(): int|string|array
+    public function getColumns(): int | string | array
     {
         return 4;
     }

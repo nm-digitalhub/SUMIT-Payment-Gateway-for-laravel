@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -21,7 +21,7 @@ return new class extends Migration
 
         Schema::table('officeguy_documents', function (Blueprint $table) {
             // Check if columns don't already exist before adding
-            if (!Schema::hasColumn('officeguy_documents', 'subscription_id')) {
+            if (! Schema::hasColumn('officeguy_documents', 'subscription_id')) {
                 // Add subscription_id foreign key
                 $table->unsignedBigInteger('subscription_id')
                     ->nullable()
@@ -29,7 +29,7 @@ return new class extends Migration
                     ->comment('Link to officeguy_subscriptions table');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'external_reference')) {
+            if (! Schema::hasColumn('officeguy_documents', 'external_reference')) {
                 // Add external_reference from SUMIT (for linking)
                 $table->string('external_reference')
                     ->nullable()
@@ -37,7 +37,7 @@ return new class extends Migration
                     ->comment('External reference from SUMIT (e.g., subscription_123)');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'document_download_url')) {
+            if (! Schema::hasColumn('officeguy_documents', 'document_download_url')) {
                 // Add document URLs from SUMIT
                 $table->string('document_download_url', 500)
                     ->nullable()
@@ -45,14 +45,14 @@ return new class extends Migration
                     ->comment('Direct PDF download URL from SUMIT');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'document_payment_url')) {
+            if (! Schema::hasColumn('officeguy_documents', 'document_payment_url')) {
                 $table->string('document_payment_url', 500)
                     ->nullable()
                     ->after('document_download_url')
                     ->comment('Payment URL from SUMIT for open invoices');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'document_number')) {
+            if (! Schema::hasColumn('officeguy_documents', 'document_number')) {
                 // Add document number and date from SUMIT
                 $table->bigInteger('document_number')
                     ->nullable()
@@ -60,14 +60,14 @@ return new class extends Migration
                     ->comment('Document number from SUMIT');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'document_date')) {
+            if (! Schema::hasColumn('officeguy_documents', 'document_date')) {
                 $table->timestamp('document_date')
                     ->nullable()
                     ->after('document_number')
                     ->comment('Document date from SUMIT');
             }
 
-            if (!Schema::hasColumn('officeguy_documents', 'is_closed')) {
+            if (! Schema::hasColumn('officeguy_documents', 'is_closed')) {
                 $table->boolean('is_closed')
                     ->default(false)
                     ->after('is_draft')
@@ -83,7 +83,7 @@ return new class extends Migration
         ];
 
         foreach ($indexes as $indexName => $columns) {
-            $exists = DB::select("SHOW INDEX FROM officeguy_documents WHERE Key_name = ?", [$indexName]);
+            $exists = DB::select('SHOW INDEX FROM officeguy_documents WHERE Key_name = ?', [$indexName]);
             if (empty($exists)) {
                 DB::statement("ALTER TABLE officeguy_documents ADD INDEX {$indexName} ({$columns})");
             }
@@ -142,8 +142,8 @@ return new class extends Migration
         ];
 
         foreach ($indexes as $indexName) {
-            $exists = DB::select("SHOW INDEX FROM officeguy_documents WHERE Key_name = ?", [$indexName]);
-            if (!empty($exists)) {
+            $exists = DB::select('SHOW INDEX FROM officeguy_documents WHERE Key_name = ?', [$indexName]);
+            if (! empty($exists)) {
                 DB::statement("ALTER TABLE officeguy_documents DROP INDEX {$indexName}");
             }
         }
@@ -167,7 +167,7 @@ return new class extends Migration
                 }
             }
 
-            if (!empty($columnsToDrop)) {
+            if (! empty($columnsToDrop)) {
                 $table->dropColumn($columnsToDrop);
             }
         });

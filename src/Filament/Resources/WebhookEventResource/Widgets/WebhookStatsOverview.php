@@ -6,8 +6,8 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\
 
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 use Illuminate\Support\Facades\DB;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
 class WebhookStatsOverview extends BaseWidget
 {
@@ -23,8 +23,8 @@ class WebhookStatsOverview extends BaseWidget
         $pendingRetry = WebhookEvent::where('status', 'retrying')
             ->where('next_retry_at', '<=', now())
             ->count();
-        $successRate = $totalToday > 0 
-            ? round(($sentToday / $totalToday) * 100, 1) 
+        $successRate = $totalToday > 0
+            ? round(($sentToday / $totalToday) * 100, 1)
             : 100;
 
         // Get event type breakdown for today
@@ -35,7 +35,7 @@ class WebhookStatsOverview extends BaseWidget
             ->toArray();
 
         $breakdownText = collect($eventBreakdown)
-            ->map(fn ($count, $type) => ucfirst(str_replace('_', ' ', $type)) . ": {$count}")
+            ->map(fn ($count, $type): string => ucfirst(str_replace('_', ' ', $type)) . ": {$count}")
             ->take(3)
             ->implode(' | ');
 
@@ -66,9 +66,9 @@ class WebhookStatsOverview extends BaseWidget
     {
         $days = collect(range(6, 0))->map(function ($daysAgo) use ($type) {
             $date = now()->subDays($daysAgo)->toDateString();
-            
+
             $query = WebhookEvent::whereDate('created_at', $date);
-            
+
             return match ($type) {
                 'total' => $query->count(),
                 'success' => $query->where('status', 'sent')->count(),
@@ -82,7 +82,7 @@ class WebhookStatsOverview extends BaseWidget
 
     protected function getAverageResponseTime(): string
     {
-        // This is a placeholder - in a real implementation, 
+        // This is a placeholder - in a real implementation,
         // you would track response times in the webhook_events table
         $sentEvents = WebhookEvent::where('status', 'sent')
             ->whereNotNull('sent_at')
@@ -99,6 +99,7 @@ class WebhookStatsOverview extends BaseWidget
             if ($event->sent_at && $event->created_at) {
                 return $event->sent_at->diffInMilliseconds($event->created_at);
             }
+
             return 0;
         });
 

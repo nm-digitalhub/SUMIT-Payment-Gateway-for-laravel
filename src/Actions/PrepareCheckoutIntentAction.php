@@ -28,7 +28,6 @@ use OfficeGuy\LaravelSumitGateway\Services\TemporaryStorageService;
  * Flow:
  * Controller validates → Action prepares → Storage persists
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.3.0
  */
 class PrepareCheckoutIntentAction
@@ -43,8 +42,8 @@ class PrepareCheckoutIntentAction
      *
      * ⚠️ CRITICAL: Expects CheckoutRequest (validated!) - guarantees data integrity
      *
-     * @param CheckoutRequest $request Validated checkout request
-     * @param Payable $payable The entity being purchased
+     * @param  CheckoutRequest  $request  Validated checkout request
+     * @param  Payable  $payable  The entity being purchased
      * @return CheckoutIntent Immutable checkout context
      */
     public function execute(CheckoutRequest $request, Payable $payable): CheckoutIntent

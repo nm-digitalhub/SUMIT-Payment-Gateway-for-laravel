@@ -2,9 +2,9 @@
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Schemas;
 
+use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Infolists\Components\ViewEntry;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 
@@ -37,7 +37,7 @@ class TransactionInfolist
                     TextEntry::make('currency')
                         ->label('מטבע')
                         ->badge()
-                        ->formatStateUsing(fn ($state) => match (strtoupper((string) $state)) {
+                        ->formatStateUsing(fn ($state): string => match (strtoupper((string) $state)) {
                             '', '0', 'ILS' => '₪ ILS',
                             'USD' => '$ USD',
                             'EUR' => '€ EUR',
@@ -91,6 +91,7 @@ class TransactionInfolist
                                     default => 'לא ידוע',
                                 };
                             }
+
                             // Fallback to payment_method field
                             return match ($record->payment_method) {
                                 'card' => 'כרטיס אשראי',
@@ -98,7 +99,7 @@ class TransactionInfolist
                                 default => $record->payment_method ?: 'לא ידוע',
                             };
                         })
-                        ->color(fn ($state) => match ($state) {
+                        ->color(fn ($state): string => match ($state) {
                             'כרטיס אשראי' => 'success',
                             'הוראת קבע' => 'info',
                             'ביט' => 'warning',
@@ -113,6 +114,7 @@ class TransactionInfolist
                             if ($mask) {
                                 return $mask;
                             }
+
                             // Fallback to last_digits with manual masking
                             return $record->last_digits ? 'XXXXXXXXXXXX' . $record->last_digits : '-';
                         })
@@ -123,12 +125,12 @@ class TransactionInfolist
                         ->label('סוג כרטיס')
                         ->badge()
                         ->icon('heroicon-o-credit-card')
-                        ->visible(fn ($record) => !empty($record->card_type)),
+                        ->visible(fn ($record): bool => ! empty($record->card_type)),
 
                     TextEntry::make('expiration')
                         ->label('תוקף')
                         ->icon('heroicon-o-calendar')
-                        ->state(function ($record) {
+                        ->state(function ($record): string {
                             // Try to get from API response first
                             $month = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_ExpirationMonth')
                                 ?? $record->expiration_month;
@@ -138,25 +140,27 @@ class TransactionInfolist
                             if ($month && $year) {
                                 return sprintf('%02d/%04d', $month, $year);
                             }
+
                             return '-';
                         }),
 
                     TextEntry::make('citizen_id')
                         ->label('ת.ז. מחזיק הכרטיס')
                         ->icon('heroicon-o-identification')
-                        ->state(fn ($record) =>
-                            data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID') ?: '-'
+                        ->state(
+                            fn ($record) => data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID') ?: '-'
                         )
-                        ->visible(function ($record) {
+                        ->visible(function ($record): bool {
                             $citizenId = data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_CitizenID');
-                            return !empty($citizenId);
+
+                            return ! empty($citizenId);
                         }),
                 ])
                 ->columns(3)
                 ->columnSpanFull()
-                ->visible(fn ($record) =>
-                    !empty($record->last_digits) ||
-                    !empty(data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_LastDigits'))
+                ->visible(
+                    fn ($record): bool => ! empty($record->last_digits) ||
+                    ! empty(data_get($record->raw_response, 'Data.Payment.PaymentMethod.CreditCard_LastDigits'))
                 ),
 
             // =========================
@@ -180,7 +184,7 @@ class TransactionInfolist
                 ])
                 ->columns(3)
                 ->columnSpanFull()
-                ->visible(fn ($record) => !empty($record->payments_count) && $record->payments_count > 1),
+                ->visible(fn ($record): bool => ! empty($record->payments_count) && $record->payments_count > 1),
 
             // =========================
             // מידע נוסף
@@ -201,13 +205,13 @@ class TransactionInfolist
                         ->label('מזהה מנוי')
                         ->icon('heroicon-o-arrow-path')
                         ->copyable()
-                        ->visible(fn ($record) => !empty($record->subscription_id)),
+                        ->visible(fn ($record): bool => ! empty($record->subscription_id)),
 
                     TextEntry::make('vendor_id')
                         ->label('מזהה ספק')
                         ->icon('heroicon-o-building-storefront')
                         ->copyable()
-                        ->visible(fn ($record) => !empty($record->vendor_id)),
+                        ->visible(fn ($record): bool => ! empty($record->vendor_id)),
 
                     TextEntry::make('environment')
                         ->label('סביבה')
@@ -234,25 +238,25 @@ class TransactionInfolist
                     IconEntry::make('is_donation')
                         ->label('תרומה')
                         ->boolean()
-                        ->visible(fn ($record) => !empty($record->is_donation)),
+                        ->visible(fn ($record): bool => ! empty($record->is_donation)),
 
                     IconEntry::make('is_upsell')
                         ->label('Upsell')
                         ->boolean()
-                        ->visible(fn ($record) => !empty($record->is_upsell)),
+                        ->visible(fn ($record): bool => ! empty($record->is_upsell)),
 
                     TextEntry::make('status_description')
                         ->label('תיאור סטטוס')
                         ->icon('heroicon-o-information-circle')
                         ->columnSpanFull()
-                        ->visible(fn ($record) => filled($record->status_description)),
+                        ->visible(fn ($record): bool => filled($record->status_description)),
 
                     TextEntry::make('error_message')
                         ->label('הודעת שגיאה')
                         ->icon('heroicon-o-exclamation-triangle')
                         ->color('danger')
                         ->columnSpanFull()
-                        ->visible(fn ($record) => filled($record->error_message)),
+                        ->visible(fn ($record): bool => filled($record->error_message)),
                 ])
                 ->columns(3)
                 ->columnSpanFull(),
@@ -268,8 +272,8 @@ class TransactionInfolist
                 ])
                 ->columnSpanFull()
                 ->icon('heroicon-o-document-text')
-                ->visible(fn ($record) =>
-                    filled(data_get($record->raw_response, 'Data.DocumentDownloadURL'))
+                ->visible(
+                    fn ($record): bool => filled(data_get($record->raw_response, 'Data.DocumentDownloadURL'))
                 ),
 
             // =========================

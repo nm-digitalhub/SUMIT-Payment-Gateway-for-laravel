@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Token;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\TokenData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\TokenResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\TokenData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\TokenResponse;
 
 /**
  * Create Token Request
@@ -46,8 +46,8 @@ class CreateTokenRequest extends Request implements HasBody
     /**
      * Create new token request
      *
-     * @param TokenData $token Token creation data (single-use token or card data)
-     * @param CredentialsData $credentials SUMIT API credentials (uses PUBLIC key!)
+     * @param  TokenData  $token  Token creation data (single-use token or card data)
+     * @param  CredentialsData  $credentials  SUMIT API credentials (uses PUBLIC key!)
      */
     public function __construct(
         protected readonly TokenData $token,
@@ -59,8 +59,6 @@ class CreateTokenRequest extends Request implements HasBody
      *
      * IMPORTANT: Tokens use the SAME endpoint as payments!
      * ParamJ parameter determines token creation vs payment.
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -87,9 +85,6 @@ class CreateTokenRequest extends Request implements HasBody
      * Cast response to TokenResponse DTO
      *
      * This method is called by Saloon when using `$response->dto()`
-     *
-     * @param Response $response
-     * @return TokenResponse
      */
     public function createDtoFromResponse(Response $response): TokenResponse
     {

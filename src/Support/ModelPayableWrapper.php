@@ -16,12 +16,10 @@ use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
  */
 class ModelPayableWrapper implements Payable
 {
-    protected Model $model;
     protected array $fieldMap;
 
-    public function __construct(Model $model, ?array $fieldMap = null)
+    public function __construct(protected Model $model, ?array $fieldMap = null)
     {
-        $this->model = $model;
         $this->fieldMap = $fieldMap ?? $this->getFieldMapFromSettings();
     }
 
@@ -48,13 +46,13 @@ class ModelPayableWrapper implements Payable
     protected function getField(string $mapKey, mixed $default = null): mixed
     {
         $fieldName = $this->fieldMap[$mapKey] ?? null;
-        
-        if (!$fieldName) {
+
+        if (! $fieldName) {
             return $default;
         }
 
         // Support dot notation for nested fields
-        if (str_contains($fieldName, '.')) {
+        if (str_contains((string) $fieldName, '.')) {
             return data_get($this->model, $fieldName, $default);
         }
 
@@ -71,7 +69,7 @@ class ModelPayableWrapper implements Payable
 
     // Payable Interface Implementation
 
-    public function getPayableId(): string|int
+    public function getPayableId(): string | int
     {
         return $this->model->getKey();
     }
@@ -111,7 +109,7 @@ class ModelPayableWrapper implements Payable
         return null;
     }
 
-    public function getCustomerId(): string|int|null
+    public function getCustomerId(): string | int | null
     {
         return null;
     }
@@ -119,8 +117,8 @@ class ModelPayableWrapper implements Payable
     public function getLineItems(): array
     {
         $description = $this->getField('description');
-        
-        if (!$description) {
+
+        if (! $description) {
             return [];
         }
 
@@ -132,7 +130,7 @@ class ModelPayableWrapper implements Payable
                 'unit_price' => $this->getPayableAmount(),
                 'product_id' => $this->getPayableId(),
                 'variation_id' => null,
-            ]
+            ],
         ];
     }
 

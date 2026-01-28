@@ -30,7 +30,7 @@ class CheckoutController extends Controller
         $recurring = (bool) $request->boolean('recurring', false);
 
         $order = OrderResolver::resolve($orderId);
-        if (!$order) {
+        if (! $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             return response(['message' => 'Order not found or not payable'], 404);
         }
 
@@ -58,7 +58,7 @@ class CheckoutController extends Controller
 
         if ($result['success'] === true) {
             // Create document immediately if configured and not redirect
-            if (!$redirectMode && config('officeguy.create_order_document', false)) {
+            if (! $redirectMode && config('officeguy.create_order_document', false)) {
                 $customer = PaymentService::getOrderCustomer($order);
                 DocumentService::createOrderDocument($order, $customer, $result['response']['Data']['DocumentID'] ?? null);
             }

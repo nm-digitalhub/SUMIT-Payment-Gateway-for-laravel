@@ -114,9 +114,6 @@ class SubscriptionFulfillmentHandler
 {
     /**
      * Handle subscription fulfillment
-     *
-     * @param OfficeGuyTransaction $transaction
-     * @return void
      */
     public function handle(OfficeGuyTransaction $transaction): void
     {
@@ -132,6 +129,7 @@ class SubscriptionFulfillmentHandler
                 "SubscriptionFulfillmentHandler: No payable found for transaction {$transaction->id}",
                 'warning'
             );
+
             return;
         }
 
@@ -155,9 +153,7 @@ class SubscriptionFulfillmentHandler
     /**
      * Handle Business Email subscription provisioning
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleBusinessEmail(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -188,9 +184,7 @@ class SubscriptionFulfillmentHandler
     /**
      * Handle SaaS license subscription
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleSaasLicense(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -221,9 +215,7 @@ class SubscriptionFulfillmentHandler
     /**
      * Handle generic recurring service
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleRecurringService(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -252,9 +244,7 @@ class SubscriptionFulfillmentHandler
     /**
      * Handle generic subscription fulfillment
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleGeneric(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -278,8 +268,7 @@ class SubscriptionFulfillmentHandler
     /**
      * Get subscription type from payable
      *
-     * @param mixed $payable
-     * @return string
+     * @param  mixed  $payable
      */
     protected function getSubscriptionType($payable): string
     {

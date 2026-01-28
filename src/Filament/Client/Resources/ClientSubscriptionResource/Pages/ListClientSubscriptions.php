@@ -26,7 +26,7 @@ class ListClientSubscriptions extends ListRecords
 
         $user = auth()->user();
 
-        if (!$user) {
+        if (! $user) {
             return;
         }
 

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Subscription;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
 
 /**
  * Charge Subscription Request
@@ -72,13 +72,13 @@ class ChargeSubscriptionRequest extends Request implements HasBody
     /**
      * Create new charge subscription request
      *
-     * @param string $recurringPaymentId SUMIT subscription ID
-     * @param array<int, array<string, mixed>> $items Order items with VAT
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $documentDescription Order/subscription description
-     * @param string $documentLanguage Document language (he/en/fr)
-     * @param bool $sendDocumentByEmail Send invoice via email
-     * @param string|null $externalReference Your internal reference
+     * @param  string  $recurringPaymentId  SUMIT subscription ID
+     * @param  array<int, array<string, mixed>>  $items  Order items with VAT
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $documentDescription  Order/subscription description
+     * @param  string  $documentLanguage  Document language (he/en/fr)
+     * @param  bool  $sendDocumentByEmail  Send invoice via email
+     * @param  string|null  $externalReference  Your internal reference
      */
     public function __construct(
         protected readonly string $recurringPaymentId,
@@ -92,8 +92,6 @@ class ChargeSubscriptionRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -133,9 +131,6 @@ class ChargeSubscriptionRequest extends Request implements HasBody
      * Cast response to PaymentResponse DTO
      *
      * Returns transaction and document details
-     *
-     * @param Response $response
-     * @return PaymentResponse
      */
     public function createDtoFromResponse(Response $response): PaymentResponse
     {

@@ -30,12 +30,13 @@ class CardCallbackController extends Controller
      */
     public function handle(Request $request)
     {
-        $orderId    = $request->query('OG-OrderID');
-        $paymentId  = $request->query('OG-PaymentID');
+        $orderId = $request->query('OG-OrderID');
+        $paymentId = $request->query('OG-PaymentID');
         $documentId = $request->query('OG-DocumentID');
 
         if (empty($orderId) || empty($paymentId)) {
             OfficeGuyApi::writeToLog('Card callback received without required parameters', 'error');
+
             return $this->redirectFailed(__('Invalid payment callback'));
         }
 
@@ -46,7 +47,7 @@ class CardCallbackController extends Controller
         // CRITICAL: Validate that order exists
         // Without this check, invalid order_id (e.g., 264, 408) can create Transactions
         // with no valid Order, causing SUMIT to create duplicate customers
-        if (!$order) {
+        if (! $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             OfficeGuyApi::writeToLog(
                 'Card callback received for non-existent order #' . $orderId .
                 '. Payment ID: ' . $paymentId .
@@ -67,40 +68,41 @@ class CardCallbackController extends Controller
             ->where('status', 'pending')
             ->first();
 
-        if (!$transaction) {
+        if (! $transaction) {
             $transaction = new OfficeGuyTransaction([
-                'order_id'      => $orderId,
-                'payment_id'    => $paymentId,
-                'status'        => 'pending',
-                'payment_method'=> 'card',
-                'environment'   => config('officeguy.environment', 'www'),
-                'is_test'       => config('officeguy.testing', false),
+                'order_id' => $orderId,
+                'payment_id' => $paymentId,
+                'status' => 'pending',
+                'payment_method' => 'card',
+                'environment' => config('officeguy.environment', 'www'),
+                'is_test' => config('officeguy.testing', false),
             ]);
         }
 
         // Get payment details from SUMIT
         $paymentRequest = [
             'Credentials' => PaymentService::getCredentials(),
-            'PaymentID'   => $paymentId,
+            'PaymentID' => $paymentId,
         ];
 
         $environment = config('officeguy.environment', 'www');
-        $response    = OfficeGuyApi::post($paymentRequest, '/billing/payments/get/', $environment, false);
+        $response = OfficeGuyApi::post($paymentRequest, '/billing/payments/get/', $environment, false);
 
         if ($response === null) {
             OfficeGuyApi::writeToLog('Failed to get payment details for payment #' . $paymentId, 'error');
+
             return $this->redirectFailed(__('Failed to verify payment'));
         }
 
         $payment = $response['Data']['Payment'] ?? null;
 
-        if (!$payment || ($payment['ValidPayment'] ?? false) !== true) {
+        if (! $payment || ($payment['ValidPayment'] ?? false) !== true) {
             $statusDescription = $payment['StatusDescription'] ?? 'Unknown error';
 
-            $transaction->status            = 'failed';
+            $transaction->status = 'failed';
             $transaction->status_description = $statusDescription;
-            $transaction->error_message     = $statusDescription;
-            $transaction->raw_response      = $response;
+            $transaction->error_message = $statusDescription;
+            $transaction->raw_response = $response;
             $transaction->save();
 
             OfficeGuyApi::writeToLog(
@@ -114,21 +116,21 @@ class CardCallbackController extends Controller
         $paymentMethod = $payment['PaymentMethod'] ?? [];
 
         $transaction->fill([
-            'payment_id'             => $payment['ID'] ?? null,
-            'document_id'            => $documentId,
-            'customer_id'            => $payment['CustomerID'] ?? null,
-            'auth_number'            => $payment['AuthNumber'] ?? null,
-            'amount'                 => $payment['Amount'] ?? ($order ? $order->getPayableAmount() : 0),
-            'first_payment_amount'   => $payment['FirstPaymentAmount'] ?? null,
+            'payment_id' => $payment['ID'] ?? null,
+            'document_id' => $documentId,
+            'customer_id' => $payment['CustomerID'] ?? null,
+            'auth_number' => $payment['AuthNumber'] ?? null,
+            'amount' => $payment['Amount'] ?? ($order ? $order->getPayableAmount() : 0),
+            'first_payment_amount' => $payment['FirstPaymentAmount'] ?? null,
             'non_first_payment_amount' => $payment['NonFirstPaymentAmount'] ?? null,
-            'status'                 => 'completed',
-            'is_webhook_confirmed'   => true,
-            'webhook_confirmed_at'   => now(),
-            'last_digits'            => $paymentMethod['CreditCard_LastDigits'] ?? null,
-            'expiration_month'       => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
-            'expiration_year'        => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
-            'status_description'     => $payment['StatusDescription'] ?? null,
-            'raw_response'           => $response,
+            'status' => 'completed',
+            'is_webhook_confirmed' => true,
+            'webhook_confirmed_at' => now(),
+            'last_digits' => $paymentMethod['CreditCard_LastDigits'] ?? null,
+            'expiration_month' => $paymentMethod['CreditCard_ExpirationMonth'] ?? null,
+            'expiration_year' => $paymentMethod['CreditCard_ExpirationYear'] ?? null,
+            'status_description' => $payment['StatusDescription'] ?? null,
+            'raw_response' => $response,
         ]);
         $transaction->save();
 
@@ -178,12 +180,12 @@ class CardCallbackController extends Controller
     /**
      * Redirect to success page using secure URL generation
      *
-     * @param object|null $order The Payable entity (Order, Invoice, etc.)
-     * @param string|int $orderId Fallback order ID if order object is unavailable
-     * @param string $message Success message
+     * @param  object|null  $order  The Payable entity (Order, Invoice, etc.)
+     * @param  string|int  $orderId  Fallback order ID if order object is unavailable
+     * @param  string  $message  Success message
      * @return \Illuminate\Http\RedirectResponse
      */
-    private function redirectSuccess($order, string|int $orderId, string $message)
+    private function redirectSuccess(\OfficeGuy\LaravelSumitGateway\Contracts\Payable $order, string | int $orderId, string $message)
     {
         // If order is a Payable entity and secure success is enabled, generate secure URL
         if ($order && $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {

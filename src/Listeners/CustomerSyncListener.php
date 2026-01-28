@@ -16,12 +16,7 @@ use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
  */
 class CustomerSyncListener
 {
-    protected CustomerMergeService $customerMergeService;
-
-    public function __construct(CustomerMergeService $customerMergeService)
-    {
-        $this->customerMergeService = $customerMergeService;
-    }
+    public function __construct(protected CustomerMergeService $customerMergeService) {}
 
     /**
      * Handle the event.
@@ -31,7 +26,7 @@ class CustomerSyncListener
         $webhook = $event->webhook;
 
         // Only process customer-related webhooks
-        if (!$this->isCustomerWebhook($webhook)) {
+        if (! $this->isCustomerWebhook($webhook)) {
             return;
         }
 
@@ -40,18 +35,19 @@ class CustomerSyncListener
         // Extract customer data from webhook
         $customerData = $this->extractCustomerData($payload);
 
-        if (empty($customerData)) {
+        if ($customerData === []) {
             Log::debug('CustomerSyncListener: No customer data found in webhook', [
                 'webhook_id' => $webhook->id,
                 'card_type' => $webhook->card_type ?? null,
             ]);
+
             return;
         }
 
         // Sync customer
         $localCustomer = $this->customerMergeService->syncFromSumit($customerData);
 
-        if ($localCustomer) {
+        if ($localCustomer instanceof \Illuminate\Database\Eloquent\Model) {
             Log::info('CustomerSyncListener: Customer synced successfully', [
                 'webhook_id' => $webhook->id,
                 'local_customer_id' => $localCustomer->getKey(),
@@ -89,11 +85,7 @@ class CustomerSyncListener
         }
 
         // Check if this is a payment webhook that contains customer info
-        if (isset($payload['Customer']) || isset($payload['customer'])) {
-            return true;
-        }
-
-        return false;
+        return isset($payload['Customer']) || isset($payload['customer']);
     }
 
     /**

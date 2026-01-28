@@ -22,7 +22,7 @@ class SumitClient extends Cluster
     /**
      * Navigation icon in client panel sidebar
      */
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-wallet';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-wallet';
 
     /**
      * Navigation label in Hebrew

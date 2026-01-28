@@ -38,25 +38,25 @@ class CrmActivityInfolist
 
                         Infolists\Components\TextEntry::make('entity.name')
                             ->label('Related Entity')
-                            ->url(fn ($record) => $record->entity
+                            ->url(fn ($record): ?string => $record->entity
                                 ? route('filament.admin.resources.crm-entities.edit', $record->entity)
                                 : null),
 
                         Infolists\Components\TextEntry::make('client.name')
                             ->label('Client')
                             ->visible(fn ($record) => $record->client)
-                            ->url(fn ($record) => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null),
+                            ->url(fn ($record): ?string => $record->client ? route('filament.admin.resources.clients.edit', $record->client_id) : null),
 
                         Infolists\Components\TextEntry::make('createdBy.name')
                             ->label('Created By'),
 
                         Infolists\Components\TextEntry::make('related_ticket_id')
                             ->label('Related Ticket')
-                            ->visible(fn ($record) => $record->related_ticket_id !== null),
+                            ->visible(fn ($record): bool => $record->related_ticket_id !== null),
 
                         Infolists\Components\TextEntry::make('related_document_id')
                             ->label('Related Document')
-                            ->visible(fn ($record) => $record->related_document_id !== null),
+                            ->visible(fn ($record): bool => $record->related_document_id !== null),
                     ])->columns(2),
 
                 Schemas\Components\Section::make('Description')
@@ -66,7 +66,7 @@ class CrmActivityInfolist
                             ->markdown()
                             ->columnSpanFull(),
                     ])
-                    ->visible(fn ($record) => !empty($record->description)),
+                    ->visible(fn ($record): bool => ! empty($record->description)),
 
                 Schemas\Components\Section::make('Metadata')
                     ->schema([
@@ -74,7 +74,7 @@ class CrmActivityInfolist
                             ->label('Additional Data'),
                     ])
                     ->collapsed()
-                    ->visible(fn ($record) => !empty($record->metadata)),
+                    ->visible(fn ($record): bool => ! empty($record->metadata)),
 
                 Schemas\Components\Section::make('Timestamps')
                     ->schema([

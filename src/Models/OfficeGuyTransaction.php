@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class OfficeGuyTransaction extends Model
@@ -105,8 +105,6 @@ class OfficeGuyTransaction extends Model
      *
      * Fallback: If no customer model is configured, defaults to \App\Models\Client
      * for backward compatibility.
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -126,8 +124,6 @@ class OfficeGuyTransaction extends Model
      * Migration:
      * - Replace $transaction->client with $transaction->customer
      * - Replace $transaction->client() with $transaction->customer()
-     *
-     * @return BelongsTo
      */
     public function client(): BelongsTo
     {
@@ -211,7 +207,7 @@ class OfficeGuyTransaction extends Model
      |-----------------------------------------------------------------*/
 
     public static function createFromApiResponse(
-        string|int $orderId,
+        string | int $orderId,
         array $response,
         array $request = [],
         ?string $orderType = null
@@ -225,7 +221,7 @@ class OfficeGuyTransaction extends Model
             ?? ($request['_webhook'] ?? false ? 'webhook' : 'api_polling');
 
         /* ---------- SYNTHETIC REQUEST (API POLLING) ---------- */
-        if (empty($request)) {
+        if ($request === []) {
             $request = [
                 '_synthetic' => true,
                 '_source' => 'api_polling',
@@ -252,7 +248,7 @@ class OfficeGuyTransaction extends Model
             $clientId = (int) $externalId;
         }
 
-        if (!$clientId && $sumitCustomerIdUsed) {
+        if (! $clientId && $sumitCustomerIdUsed) {
             // Use dynamic customer model resolution with fallback to App\Models\Client
             $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
             $client = $customerModel::where('sumit_customer_id', $sumitCustomerIdUsed)->first();

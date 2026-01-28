@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
-use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 
 /**
  * Customer Service
@@ -35,12 +34,9 @@ class CustomerService
                 : '/accounting/customers/create/';
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $payload,
-                $endpoint
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $payload, $endpoint) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -123,11 +119,9 @@ class CustomerService
             );
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $sumitCustomerId
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $sumitCustomerId) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -231,13 +225,13 @@ class CustomerService
         ];
 
         if ($entity->client) {
-            $details['Name'] = $details['Name'] ?? $entity->client->company ?? $entity->client->name ?? $entity->client->client_name;
-            $details['EmailAddress'] = $details['EmailAddress'] ?? $entity->client->email ?? $entity->client->client_email;
-            $details['Phone'] = $details['Phone'] ?? $entity->client->phone ?? $entity->client->client_phone ?? $entity->client->mobile_phone;
-            $details['CompanyNumber'] = $details['CompanyNumber'] ?? $entity->client->vat_number;
-            $details['Address'] = $details['Address'] ?? $entity->client->client_address;
-            $details['City'] = $details['City'] ?? $entity->client->client_city;
-            $details['ZipCode'] = $details['ZipCode'] ?? $entity->client->client_postal_code;
+            $details['Name'] ??= $entity->client->company ?? $entity->client->name ?? $entity->client->client_name;
+            $details['EmailAddress'] ??= $entity->client->email ?? $entity->client->client_email;
+            $details['Phone'] ??= $entity->client->phone ?? $entity->client->client_phone ?? $entity->client->mobile_phone;
+            $details['CompanyNumber'] ??= $entity->client->vat_number;
+            $details['Address'] ??= $entity->client->client_address;
+            $details['City'] ??= $entity->client->client_city;
+            $details['ZipCode'] ??= $entity->client->client_postal_code;
         }
 
         return [

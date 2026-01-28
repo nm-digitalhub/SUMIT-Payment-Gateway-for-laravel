@@ -9,8 +9,8 @@ use Illuminate\Http\Response;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Facades\Log;
 use Illuminate\View\View;
-use OfficeGuy\LaravelSumitGateway\Services\SuccessAccessValidator;
 use OfficeGuy\LaravelSumitGateway\Events\SuccessPageAccessed;
+use OfficeGuy\LaravelSumitGateway\Services\SuccessAccessValidator;
 
 /**
  * Secure Success Controller
@@ -34,8 +34,7 @@ class SecureSuccessController extends Controller
 {
     public function __construct(
         protected SuccessAccessValidator $validator
-    ) {
-    }
+    ) {}
 
     /**
      * Display success page
@@ -43,11 +42,8 @@ class SecureSuccessController extends Controller
      * Validates access using 7-layer security architecture.
      * Dispatches SuccessPageAccessed event for analytics.
      * Returns success view with payable entity.
-     *
-     * @param Request $request
-     * @return View|Response
      */
-    public function show(Request $request): View|Response
+    public function show(Request $request): View | Response
     {
         // Validate access through all 7 security layers
         $result = $this->validator->validate($request);
@@ -73,7 +69,7 @@ class SecureSuccessController extends Controller
         // Log successful access
         Log::info('Success page accessed', [
             'payable_id' => $payable->getKey(),
-            'payable_type' => get_class($payable),
+            'payable_type' => $payable !== null ? $payable::class : self::class,
             'ip' => $request->ip(),
         ]);
 
@@ -97,8 +93,6 @@ class SecureSuccessController extends Controller
      * Health check endpoint
      *
      * For monitoring and testing the success page infrastructure.
-     *
-     * @return Response
      */
     public function health(): Response
     {

@@ -27,7 +27,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $display_order Display order
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read CrmFolder $folder
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntityField> $entityFields
  */
@@ -99,7 +98,7 @@ class CrmFolderField extends Model
     /**
      * Scope a query to only include required fields.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeRequired($query)
@@ -110,7 +109,7 @@ class CrmFolderField extends Model
     /**
      * Scope a query to only include searchable fields.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearchable($query)
@@ -121,7 +120,7 @@ class CrmFolderField extends Model
     /**
      * Scope a query to order by display order.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOrdered($query)

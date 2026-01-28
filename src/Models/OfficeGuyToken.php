@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Carbon\Carbon;
 use RuntimeException;
 
 class OfficeGuyToken extends Model
@@ -33,7 +33,7 @@ class OfficeGuyToken extends Model
 
     protected $casts = [
         'is_default' => 'boolean',
-        'metadata'   => 'array',
+        'metadata' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
@@ -56,12 +56,12 @@ class OfficeGuyToken extends Model
     ): static {
         $data = $response['Data'] ?? null;
 
-        if (!is_array($data) || !isset($data['CardToken'])) {
+        if (! is_array($data) || ! isset($data['CardToken'])) {
             throw new RuntimeException('CardToken missing from SUMIT response');
         }
 
         $cardToken = $data['CardToken'];
-        $ownerType = get_class($owner);
+        $ownerType = $owner::class;
         $ownerId = $owner->getKey();
 
         // Check if token exists for a different owner
@@ -78,21 +78,21 @@ class OfficeGuyToken extends Model
         // Use updateOrCreate for same owner (updates existing or creates new)
         return static::updateOrCreate(
             [
-                'token'      => $cardToken,
+                'token' => $cardToken,
                 'owner_type' => $ownerType,
-                'owner_id'   => $ownerId,
+                'owner_id' => $ownerId,
             ],
             [
-                'gateway_id'   => $gatewayId,
-                'card_type'    => $data['Brand'] ?? 'card',
-                'last_four'    => isset($data['CardPattern'])
+                'gateway_id' => $gatewayId,
+                'card_type' => $data['Brand'] ?? 'card',
+                'last_four' => isset($data['CardPattern'])
                     ? substr($data['CardPattern'], -4)
                     : '',
-                'citizen_id'   => $data['CitizenID'] ?? null,
-                'expiry_month' => str_pad((string)($data['ExpirationMonth'] ?? '01'), 2, '0', STR_PAD_LEFT),
-                'expiry_year'  => (string)($data['ExpirationYear'] ?? date('Y')),
-                'is_default'   => false,
-                'metadata'     => $data,
+                'citizen_id' => $data['CitizenID'] ?? null,
+                'expiry_month' => str_pad((string) ($data['ExpirationMonth'] ?? '01'), 2, '0', STR_PAD_LEFT),
+                'expiry_year' => (string) ($data['ExpirationYear'] ?? date('Y')),
+                'is_default' => false,
+                'metadata' => $data,
             ]
         );
     }
@@ -102,7 +102,7 @@ class OfficeGuyToken extends Model
      */
     public function isExpired(): bool
     {
-        if (!$this->expiry_month || !$this->expiry_year) {
+        if (! $this->expiry_month || ! $this->expiry_year) {
             return false;
         }
 
@@ -120,7 +120,7 @@ class OfficeGuyToken extends Model
      */
     public function isValid(): bool
     {
-        return !$this->isExpired();
+        return ! $this->isExpired();
     }
 
     /**
@@ -164,7 +164,7 @@ class OfficeGuyToken extends Model
     {
         $issuer = $this->metadata['Issuer'] ?? null;
 
-        if (!$issuer) {
+        if (! $issuer) {
             return null;
         }
 
@@ -193,7 +193,7 @@ class OfficeGuyToken extends Model
      */
     public function getFormattedExpiry(): string
     {
-        if (!$this->expiry_month || !$this->expiry_year) {
+        if (! $this->expiry_month || ! $this->expiry_year) {
             return 'לא זמין';
         }
 
@@ -215,7 +215,7 @@ class OfficeGuyToken extends Model
             'card_brand' => $this->getCardTypeName(),
             'last_4_digits' => $this->last_four ?? $this->getMaskedNumber(),
             'expiry_date' => $this->getFormattedExpiry(),
-            'is_active' => !$this->trashed(),
+            'is_active' => ! $this->trashed(),
             'is_expired' => $this->isExpired(),
             'usage_count' => 0, // OfficeGuy doesn't track usage count
             'is_default' => $this->is_default ?? false,
@@ -224,8 +224,6 @@ class OfficeGuyToken extends Model
 
     /**
      * Accessor for formatted_card_mask
-     *
-     * @return string
      */
     public function getFormattedCardMaskAttribute(): string
     {
@@ -234,12 +232,10 @@ class OfficeGuyToken extends Model
 
     /**
      * Accessor for card_expiry
-     *
-     * @return Carbon|null
      */
     public function getCardExpiryAttribute(): ?Carbon
     {
-        if (!$this->expiry_month || !$this->expiry_year) {
+        if (! $this->expiry_month || ! $this->expiry_year) {
             return null;
         }
 

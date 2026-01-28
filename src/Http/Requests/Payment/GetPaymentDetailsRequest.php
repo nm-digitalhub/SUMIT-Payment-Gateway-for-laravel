@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Get Payment Details Request
@@ -98,8 +98,8 @@ class GetPaymentDetailsRequest extends Request implements HasBody
     /**
      * Create new get payment details request
      *
-     * @param int $paymentId SUMIT payment ID
-     * @param CredentialsData $credentials SUMIT API credentials
+     * @param  int  $paymentId  SUMIT payment ID
+     * @param  CredentialsData  $credentials  SUMIT API credentials
      */
     public function __construct(
         protected readonly int $paymentId,
@@ -108,8 +108,6 @@ class GetPaymentDetailsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -160,7 +158,6 @@ class GetPaymentDetailsRequest extends Request implements HasBody
      *   "UserErrorMessage": "Payment not found"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -171,43 +168,42 @@ class GetPaymentDetailsRequest extends Request implements HasBody
     /**
      * Check if operation was successful
      *
-     * @param Response $response
      * @return bool True if payment details were retrieved successfully
      */
     public function isSuccessful(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? 1) === 0;
     }
 
     /**
      * Get payment details from response
      *
-     * @param Response $response
      * @return array<string, mixed>|null Payment details, or null if not found
      */
     public function getPayment(Response $response): ?array
     {
         $data = $response->json();
+
         return $data['Data']['Payment'] ?? null;
     }
 
     /**
      * Get payment status from response
      *
-     * @param Response $response
      * @return string|null Payment status (Approved/Declined/Pending), or null
      */
     public function getPaymentStatus(Response $response): ?string
     {
         $payment = $this->getPayment($response);
+
         return $payment['Status'] ?? null;
     }
 
     /**
      * Check if payment was approved
      *
-     * @param Response $response
      * @return bool True if payment status is "Approved"
      */
     public function isApproved(Response $response): bool
@@ -218,7 +214,6 @@ class GetPaymentDetailsRequest extends Request implements HasBody
     /**
      * Get error message from failed request
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

@@ -40,7 +40,7 @@ class SetPackageLocale
             ?? config('app.locale', 'he');
 
         // Validate that the locale is available
-        if (!in_array($locale, $availableLocales)) {
+        if (! in_array($locale, $availableLocales)) {
             $locale = config('app.locale', 'he');
         }
 
@@ -48,7 +48,7 @@ class SetPackageLocale
         app()->setLocale($locale);
 
         // Persist in session for future requests
-        if (!session()->has('locale')) {
+        if (! session()->has('locale')) {
             session(['locale' => $locale]);
         }
 

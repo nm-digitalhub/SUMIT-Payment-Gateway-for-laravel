@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Auth;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Validate Public Credentials Request
@@ -84,7 +84,7 @@ class ValidatePublicCredentialsRequest extends Request implements HasBody
     /**
      * Create new validate public credentials request
      *
-     * @param CredentialsData $credentials SUMIT public API credentials to validate
+     * @param  CredentialsData  $credentials  SUMIT public API credentials to validate
      */
     public function __construct(
         protected readonly CredentialsData $credentials,
@@ -94,8 +94,6 @@ class ValidatePublicCredentialsRequest extends Request implements HasBody
      * Define the endpoint
      *
      * Uses tokenization endpoint to test public key
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -140,7 +138,6 @@ class ValidatePublicCredentialsRequest extends Request implements HasBody
      *   "UserErrorMessage": "Invalid public key"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -151,19 +148,18 @@ class ValidatePublicCredentialsRequest extends Request implements HasBody
     /**
      * Check if validation was successful
      *
-     * @param Response $response
      * @return bool True if public key is valid
      */
     public function isValid(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? '') === 'Success';
     }
 
     /**
      * Get error message from failed validation
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

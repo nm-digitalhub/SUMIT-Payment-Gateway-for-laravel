@@ -6,7 +6,6 @@ namespace OfficeGuy\LaravelSumitGateway\Services\Stock;
 
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
-use Illuminate\Support\Arr;
 
 class StockService
 {
@@ -14,13 +13,13 @@ class StockService
      * Sync stock from SUMIT and dispatch to update callback.
      * If no update callback is configured, the data is logged and returned.
      *
-     * @param bool $forceIgnoreCooldown ignore 1h cooldown
+     * @param  bool  $forceIgnoreCooldown  ignore 1h cooldown
      * @return array{synced:int,skipped:int,data:array}
      */
     public function sync(bool $forceIgnoreCooldown = false): array
     {
         $last = cache()->get('officeguy.stock.last_sync');
-        if (!$forceIgnoreCooldown && $last && now()->diffInMinutes($last) < 60) {
+        if (! $forceIgnoreCooldown && $last && now()->diffInMinutes($last) < 60) {
             return ['synced' => 0, 'skipped' => 0, 'data' => []];
         }
 
@@ -32,6 +31,7 @@ class StockService
         $body = OfficeGuyApi::post($request, '/stock/stock/list/', $env, false);
         if ($body === null) {
             OfficeGuyApi::writeToLog('Stock sync failed: no response', 'error');
+
             return ['synced' => 0, 'skipped' => 0, 'data' => []];
         }
 

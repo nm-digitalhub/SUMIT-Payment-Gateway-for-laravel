@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
-use OfficeGuy\LaravelSumitGateway\Models\Subscription;
+use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCancelled;
 use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCharged;
 use OfficeGuy\LaravelSumitGateway\Events\SubscriptionChargesFailed;
 use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCreated;
-use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCancelled;
+use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 
 /**
  * Subscription Service
@@ -26,7 +25,7 @@ class SubscriptionService
      */
     protected static function ensureEnabled(): void
     {
-        if (!config('officeguy.subscriptions.enabled', true)) {
+        if (! config('officeguy.subscriptions.enabled', true)) {
             throw new \RuntimeException(__('Subscriptions are disabled'));
         }
     }
@@ -34,15 +33,14 @@ class SubscriptionService
     /**
      * Create a new subscription
      *
-     * @param mixed $subscriber User/Customer model
-     * @param string $name Subscription name
-     * @param float $amount Amount per charge
-     * @param string $currency Currency code
-     * @param int $intervalMonths Interval between charges in months
-     * @param int|null $totalCycles Total number of cycles (null = unlimited)
-     * @param int|null $tokenId Payment method token ID
-     * @param array $metadata Additional metadata
-     * @return Subscription
+     * @param  mixed  $subscriber  User/Customer model
+     * @param  string  $name  Subscription name
+     * @param  float  $amount  Amount per charge
+     * @param  string  $currency  Currency code
+     * @param  int  $intervalMonths  Interval between charges in months
+     * @param  int|null  $totalCycles  Total number of cycles (null = unlimited)
+     * @param  int|null  $tokenId  Payment method token ID
+     * @param  array  $metadata  Additional metadata
      */
     public static function create(
         mixed $subscriber,
@@ -57,7 +55,7 @@ class SubscriptionService
         self::ensureEnabled();
 
         $subscription = Subscription::create([
-            'subscriber_type' => get_class($subscriber),
+            'subscriber_type' => $subscriber::class,
             'subscriber_id' => $subscriber->getKey(),
             'name' => $name,
             'amount' => $amount,
@@ -78,10 +76,9 @@ class SubscriptionService
     /**
      * Create subscription from a product with subscription metadata
      *
-     * @param mixed $subscriber User/Customer model
-     * @param array $product Product data with subscription settings
-     * @param int|null $tokenId Payment token
-     * @return Subscription|null
+     * @param  mixed  $subscriber  User/Customer model
+     * @param  array  $product  Product data with subscription settings
+     * @param  int|null  $tokenId  Payment token
      */
     public static function createFromProduct(
         mixed $subscriber,
@@ -91,7 +88,7 @@ class SubscriptionService
         // Check if product is a subscription product
         $isSubscription = $product['is_subscription'] ?? $product['OfficeGuySubscription'] ?? false;
 
-        if (!$isSubscription) {
+        if (! $isSubscription) {
             return null;
         }
 
@@ -118,9 +115,7 @@ class SubscriptionService
     /**
      * Process initial subscription charge
      *
-     * @param Subscription $subscription
-     * @param int $paymentsCount Number of installments
-     * @return array
+     * @param  int  $paymentsCount  Number of installments
      */
     public static function processInitialCharge(
         Subscription $subscription,
@@ -136,8 +131,8 @@ class SubscriptionService
 
         if ($result['success']) {
             // Store recurring ID and activate
-            $recurringId = $result['response']['Data']['RecurringID'] 
-                ?? $result['response']['Data']['Payment']['RecurringID'] 
+            $recurringId = $result['response']['Data']['RecurringID']
+                ?? $result['response']['Data']['Payment']['RecurringID']
                 ?? null;
 
             $subscription->recurring_id = $recurringId;
@@ -155,22 +150,19 @@ class SubscriptionService
 
     /**
      * Process recurring charge for a subscription
-     *
-     * @param Subscription $subscription
-     * @return array
      */
     public static function processRecurringCharge(Subscription $subscription): array
     {
         self::ensureEnabled();
 
-        if (!$subscription->canBeCharged()) {
+        if (! $subscription->canBeCharged()) {
             return [
                 'success' => false,
                 'message' => __('Subscription cannot be charged'),
             ];
         }
 
-        if (!$subscription->recurring_id) {
+        if (! $subscription->recurring_id) {
             return [
                 'success' => false,
                 'message' => __('No recurring ID found for subscription'),
@@ -192,16 +184,9 @@ class SubscriptionService
             $externalRef = 'subscription_' . $subscription->id . '_recurring_' . $subscription->recurring_id;
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $subscription->recurring_id,
-                $items,
-                $sendEmail,
-                $description,
-                $language,
-                $externalRef
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $subscription->recurring_id, $items, $sendEmail, $description, $language, $externalRef) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -254,8 +239,9 @@ class SubscriptionService
             ];
         }
 
-        if (!$data) {
+        if (! $data) {
             event(new SubscriptionChargesFailed($subscription, 'No response from gateway'));
+
             return [
                 'success' => false,
                 'message' => __('Payment failed') . ' - ' . __('No response'),
@@ -313,10 +299,6 @@ class SubscriptionService
 
     /**
      * Cancel a subscription
-     *
-     * @param Subscription $subscription
-     * @param string|null $reason
-     * @return void
      */
     public static function cancel(Subscription $subscription, ?string $reason = null): void
     {
@@ -330,8 +312,7 @@ class SubscriptionService
      * Check if cart/order contains subscription products
      * Port of: CartContainsOfficeGuySubscription() from OfficeGuySubscriptions.php
      *
-     * @param array $items Line items to check
-     * @return bool
+     * @param  array  $items  Line items to check
      */
     public static function containsSubscriptionProducts(array $items): bool
     {
@@ -340,18 +321,16 @@ class SubscriptionService
                 return true;
             }
         }
+
         return false;
     }
 
     /**
      * Check if item is a subscription product
-     *
-     * @param array $item
-     * @return bool
      */
     public static function isSubscriptionProduct(array $item): bool
     {
-        return ($item['is_subscription'] ?? false) 
+        return ($item['is_subscription'] ?? false)
             || ($item['OfficeGuySubscription'] ?? false) === 'yes'
             || ($item['OfficeGuySubscription'] ?? false) === true;
     }
@@ -359,25 +338,27 @@ class SubscriptionService
     /**
      * Get subscription interval description
      * Port of: GetMonthsString($Months) from OfficeGuySubscriptions.php
-     *
-     * @param int $months
-     * @return string
      */
     public static function getIntervalDescription(int $months): string
     {
         if ($months === 1) {
             return __('Month');
-        } elseif ($months === 2) {
+        }
+        if ($months === 2) {
             return __('2 months');
-        } elseif ($months === 6) {
+        }
+        if ($months === 6) {
             return __('6 months');
-        } elseif ($months % 12 === 0) {
+        }
+        if ($months % 12 === 0) {
             $years = $months / 12;
             if ($years === 1) {
                 return __('Year');
-            } elseif ($years === 2) {
+            }
+            if ($years === 2) {
                 return __('2 Years');
             }
+
             return $years . ' ' . __('Years');
         }
 
@@ -387,8 +368,8 @@ class SubscriptionService
     /**
      * Fetch subscriptions from SUMIT API for a customer
      *
-     * @param int $sumitCustomerId SUMIT customer ID
-     * @param bool $includeInactive Include inactive subscriptions
+     * @param  int  $sumitCustomerId  SUMIT customer ID
+     * @param  bool  $includeInactive  Include inactive subscriptions
      * @return array List of recurring items from SUMIT
      */
     public static function fetchFromSumit(int $sumitCustomerId, bool $includeInactive = false): array
@@ -401,12 +382,9 @@ class SubscriptionService
             );
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $sumitCustomerId,
-                $includeInactive
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $sumitCustomerId, $includeInactive) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -443,7 +421,7 @@ class SubscriptionService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (!$data || ($data['Status'] ?? null) !== 0) {
+            if (! $data || ($data['Status'] ?? null) !== 0) {
                 return [];
             }
 
@@ -462,8 +440,8 @@ class SubscriptionService
     /**
      * Sync subscriptions from SUMIT API to local database
      *
-     * @param mixed $subscriber User/Customer model with sumit_customer_id
-     * @param bool $includeInactive Include inactive subscriptions
+     * @param  mixed  $subscriber  User/Customer model with sumit_customer_id
+     * @param  bool  $includeInactive  Include inactive subscriptions
      * @return int Number of subscriptions synced
      */
     public static function syncFromSumit(mixed $subscriber, bool $includeInactive = false): int
@@ -471,7 +449,7 @@ class SubscriptionService
         // Get SUMIT customer ID from subscriber
         $sumitCustomerId = $subscriber->sumit_customer_id ?? null;
 
-        if (!$sumitCustomerId) {
+        if (! $sumitCustomerId) {
             return 0;
         }
 
@@ -480,8 +458,10 @@ class SubscriptionService
 
         foreach ($sumitItems as $item) {
             $recurringId = (string) ($item['ID'] ?? '');
-
-            if (!$recurringId) {
+            if ($recurringId === '') {
+                continue;
+            }
+            if ($recurringId === '0') {
                 continue;
             }
 
@@ -515,7 +495,7 @@ class SubscriptionService
             // Update or create subscription
             Subscription::updateOrCreate(
                 [
-                    'subscriber_type' => get_class($subscriber),
+                    'subscriber_type' => $subscriber::class,
                     'subscriber_id' => $subscriber->getKey(),
                     'recurring_id' => $recurringId,
                 ],

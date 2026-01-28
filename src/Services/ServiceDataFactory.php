@@ -24,7 +24,6 @@ use OfficeGuy\LaravelSumitGateway\Enums\PayableType;
  * - VPS: Server configuration (OS, RAM, CPU, disk, etc.)
  * - SSL: Certificate request data (domain, CSR, validation method, etc.)
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.2.0
  */
 class ServiceDataFactory
@@ -32,7 +31,7 @@ class ServiceDataFactory
     /**
      * Build service-specific data from checkout intent
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return array<string, mixed> Service-specific data ready for external API
      */
     public function build(CheckoutIntent $intent): array
@@ -58,13 +57,13 @@ class ServiceDataFactory
      * 3. Class name inference (DomainPackage → 'domain')
      * 4. PayableType fallback
      *
-     * @param mixed $payable The payable entity
+     * @param  mixed  $payable  The payable entity
      * @return string Service type identifier ('domain', 'hosting', 'vps', 'ssl', etc.)
      */
     protected function detectServiceType($payable): string
     {
         // Priority 1: service_type property
-        if (property_exists($payable, 'service_type') && !empty($payable->service_type)) {
+        if (property_exists($payable, 'service_type') && ! empty($payable->service_type)) {
             return $payable->service_type;
         }
 
@@ -75,10 +74,18 @@ class ServiceDataFactory
 
         // Priority 3: Infer from class name
         $className = class_basename($payable);
-        if (str_contains($className, 'Domain')) return 'domain';
-        if (str_contains($className, 'Hosting')) return 'hosting';
-        if (str_contains($className, 'Vps') || str_contains($className, 'VPS')) return 'vps';
-        if (str_contains($className, 'Ssl') || str_contains($className, 'SSL')) return 'ssl';
+        if (str_contains($className, 'Domain')) {
+            return 'domain';
+        }
+        if (str_contains($className, 'Hosting')) {
+            return 'hosting';
+        }
+        if (str_contains($className, 'Vps') || str_contains($className, 'VPS')) {
+            return 'vps';
+        }
+        if (str_contains($className, 'Ssl') || str_contains($className, 'SSL')) {
+            return 'ssl';
+        }
 
         // Priority 4: Fallback to PayableType
         // ⚠️ Returns values that have handlers in match() above
@@ -96,7 +103,7 @@ class ServiceDataFactory
      * Prepares WHOIS contact data, nameservers, privacy protection settings
      * for domain registration API calls.
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return array<string, mixed> Domain registration data
      */
     protected function buildDomainData(CheckoutIntent $intent): array
@@ -128,7 +135,7 @@ class ServiceDataFactory
      *
      * Placeholder - to be implemented with actual hosting integration
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return array<string, mixed> Hosting provisioning data
      */
     protected function buildHostingData(CheckoutIntent $intent): array
@@ -142,7 +149,7 @@ class ServiceDataFactory
      *
      * Placeholder - to be implemented with actual VPS integration
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return array<string, mixed> VPS configuration data
      */
     protected function buildVpsData(CheckoutIntent $intent): array
@@ -156,7 +163,7 @@ class ServiceDataFactory
      *
      * Placeholder - to be implemented with actual SSL integration
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return array<string, mixed> SSL certificate data
      */
     protected function buildSslData(CheckoutIntent $intent): array
@@ -170,7 +177,7 @@ class ServiceDataFactory
      *
      * Converts: 0541234567 → +972.541234567
      *
-     * @param string $phone Original phone number
+     * @param  string  $phone  Original phone number
      * @return string Formatted phone for WHOIS
      */
     protected function formatPhoneForWhois(string $phone): string
@@ -179,8 +186,8 @@ class ServiceDataFactory
         $phone = preg_replace('/[^0-9]/', '', $phone);
 
         // Remove leading zero if present
-        if (str_starts_with($phone, '0')) {
-            $phone = substr($phone, 1);
+        if (str_starts_with((string) $phone, '0')) {
+            $phone = substr((string) $phone, 1);
         }
 
         // Format: +972.XXXXXXXXX (ResellerClub requirement)
@@ -190,7 +197,7 @@ class ServiceDataFactory
     /**
      * Check if domain privacy protection should be enabled
      *
-     * @param CheckoutIntent $intent Checkout context
+     * @param  CheckoutIntent  $intent  Checkout context
      * @return bool True if privacy should be enabled
      */
     protected function shouldEnablePrivacy(CheckoutIntent $intent): bool
@@ -215,7 +222,7 @@ class ServiceDataFactory
     /**
      * Get domain registration years
      *
-     * @param mixed $payable The payable entity
+     * @param  mixed  $payable  The payable entity
      * @return int Number of years (default: 1)
      */
     protected function getDomainYears($payable): int
@@ -225,7 +232,7 @@ class ServiceDataFactory
             return max(1, (int) $payable->getYears());
         }
 
-        if (property_exists($payable, 'years') && !empty($payable->years)) {
+        if (property_exists($payable, 'years') && ! empty($payable->years)) {
             return max(1, (int) $payable->years);
         }
 

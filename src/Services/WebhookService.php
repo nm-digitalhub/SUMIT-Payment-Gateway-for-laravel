@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
@@ -17,19 +16,14 @@ use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
  */
 class WebhookService
 {
-    protected SettingsService $settings;
-
-    public function __construct(SettingsService $settings)
-    {
-        $this->settings = $settings;
-    }
+    public function __construct(protected SettingsService $settings) {}
 
     /**
      * Send a webhook notification for the given event.
      *
-     * @param string $event The event name (e.g., 'payment_completed')
-     * @param array $payload The data to send
-     * @param array $options Additional options (transaction_id, document_id, async, etc.)
+     * @param  string  $event  The event name (e.g., 'payment_completed')
+     * @param  array  $payload  The data to send
+     * @param  array  $options  Additional options (transaction_id, document_id, async, etc.)
      * @return bool Whether the webhook was sent successfully (sync) or queued (async)
      */
     public function send(string $event, array $payload, array $options = []): bool
@@ -37,7 +31,8 @@ class WebhookService
         $url = $this->settings->get("webhook_{$event}");
 
         if (empty($url)) {
-            $this->log('info', "No webhook URL configured for event", ['event' => $event]);
+            $this->log('info', 'No webhook URL configured for event', ['event' => $event]);
+
             return false;
         }
 
@@ -57,11 +52,6 @@ class WebhookService
 
     /**
      * Send webhook asynchronously via queue (recommended).
-     *
-     * @param string $event
-     * @param array $payload
-     * @param array $meta
-     * @return bool
      */
     protected function sendAsync(string $event, array $payload, array $meta): bool
     {
@@ -72,7 +62,7 @@ class WebhookService
                 ->meta($meta)
                 ->dispatch();
 
-            $this->log('info', "Webhook queued successfully", [
+            $this->log('info', 'Webhook queued successfully', [
                 'event' => $event,
             ]);
 
@@ -89,11 +79,6 @@ class WebhookService
 
     /**
      * Send webhook synchronously (legacy, immediate execution).
-     *
-     * @param string $event
-     * @param array $payload
-     * @param array $meta
-     * @return bool
      */
     protected function sendSync(string $event, array $payload, array $meta): bool
     {
@@ -115,9 +100,6 @@ class WebhookService
 
     /**
      * Generate HMAC signature for webhook payload.
-     *
-     * @param array $payload
-     * @return string
      */
     protected function generateSignature(array $payload): string
     {
@@ -127,23 +109,23 @@ class WebhookService
             return '';
         }
 
-        return hash_hmac('sha256', json_encode($payload), $secret);
+        return hash_hmac('sha256', json_encode($payload), (string) $secret);
     }
 
     /**
      * Verify a webhook signature.
      *
-     * @param string $signature The signature from the request header
-     * @param array $payload The payload to verify
-     * @return bool
+     * @param  string  $signature  The signature from the request header
+     * @param  array  $payload  The payload to verify
      */
     public static function verifySignature(string $signature, array $payload, string $secret): bool
     {
-        if (empty($secret) || empty($signature)) {
+        if ($secret === '' || $secret === '0' || ($signature === '' || $signature === '0')) {
             return false;
         }
 
         $expectedSignature = hash_hmac('sha256', json_encode($payload), $secret);
+
         return hash_equals($expectedSignature, $signature);
     }
 
@@ -206,7 +188,7 @@ class WebhookService
     /**
      * Retry failed webhook events.
      *
-     * @param int $limit Maximum number of events to retry
+     * @param  int  $limit  Maximum number of events to retry
      * @return int Number of events processed
      */
     public function retryFailedEvents(int $limit = 100): int
@@ -219,13 +201,13 @@ class WebhookService
 
         foreach ($events as $event) {
             $success = $this->send($event->event_type, $event->payload ?? []);
-            
+
             if ($success) {
                 $event->markAsSent(200);
             } else {
                 $event->scheduleRetry();
             }
-            
+
             $processed++;
         }
 

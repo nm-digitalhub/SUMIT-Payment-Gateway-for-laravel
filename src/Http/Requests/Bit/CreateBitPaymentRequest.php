@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Bit;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Create Bit Payment Request
@@ -74,19 +74,19 @@ class CreateBitPaymentRequest extends Request implements HasBody
     /**
      * Create new Bit payment request
      *
-     * @param array<int, array<string, mixed>> $items Order items with VAT
-     * @param array<string, mixed> $customer Customer data
-     * @param string $redirectUrl Success redirect URL
-     * @param string $cancelRedirectUrl Cancel redirect URL
-     * @param string $ipnUrl Webhook/IPN URL for payment confirmation
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $documentDescription Optional order description
-     * @param int $paymentsCount Number of payments (default: 1)
-     * @param int $maximumPayments Maximum payments allowed (default: 1)
-     * @param string $documentLanguage Document language (he/en/fr)
-     * @param bool $authorizeOnly Test mode (default: false)
-     * @param bool $draftDocument Draft document mode (default: false)
-     * @param bool $sendDocumentByEmail Send document via email (default: true)
+     * @param  array<int, array<string, mixed>>  $items  Order items with VAT
+     * @param  array<string, mixed>  $customer  Customer data
+     * @param  string  $redirectUrl  Success redirect URL
+     * @param  string  $cancelRedirectUrl  Cancel redirect URL
+     * @param  string  $ipnUrl  Webhook/IPN URL for payment confirmation
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $documentDescription  Optional order description
+     * @param  int  $paymentsCount  Number of payments (default: 1)
+     * @param  int  $maximumPayments  Maximum payments allowed (default: 1)
+     * @param  string  $documentLanguage  Document language (he/en/fr)
+     * @param  bool  $authorizeOnly  Test mode (default: false)
+     * @param  bool  $draftDocument  Draft document mode (default: false)
+     * @param  bool  $sendDocumentByEmail  Send document via email (default: true)
      */
     public function __construct(
         protected readonly array $items,
@@ -106,8 +106,6 @@ class CreateBitPaymentRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -158,7 +156,6 @@ class CreateBitPaymentRequest extends Request implements HasBody
      *
      * Returns RedirectURL for customer redirect
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

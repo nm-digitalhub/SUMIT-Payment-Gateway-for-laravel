@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * WebhookEvent Model
@@ -58,19 +58,28 @@ class WebhookEvent extends Model
      * Event type constants
      */
     const TYPE_PAYMENT_COMPLETED = 'payment_completed';
+
     const TYPE_PAYMENT_FAILED = 'payment_failed';
+
     const TYPE_DOCUMENT_CREATED = 'document_created';
+
     const TYPE_SUBSCRIPTION_CREATED = 'subscription_created';
+
     const TYPE_SUBSCRIPTION_CHARGED = 'subscription_charged';
+
     const TYPE_BIT_PAYMENT_COMPLETED = 'bit_payment_completed';
+
     const TYPE_STOCK_SYNCED = 'stock_synced';
 
     /**
      * Status constants
      */
     const STATUS_PENDING = 'pending';
+
     const STATUS_SENT = 'sent';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_RETRYING = 'retrying';
 
     /**
@@ -197,7 +206,7 @@ class WebhookEvent extends Model
     /**
      * Mark the event as sent.
      */
-    public function markAsSent(int $httpStatusCode = 200, array $response = null): void
+    public function markAsSent(int $httpStatusCode = 200, ?array $response = null): void
     {
         $this->update([
             'status' => self::STATUS_SENT,
@@ -210,7 +219,7 @@ class WebhookEvent extends Model
     /**
      * Mark the event as failed.
      */
-    public function markAsFailed(string $errorMessage, int $httpStatusCode = null): void
+    public function markAsFailed(string $errorMessage, ?int $httpStatusCode = null): void
     {
         $this->update([
             'status' => self::STATUS_FAILED,

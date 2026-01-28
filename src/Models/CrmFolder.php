@@ -23,7 +23,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array|null $settings Folder settings
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmFolderField> $fields
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntity> $entities
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmView> $views
@@ -99,7 +98,7 @@ class CrmFolder extends Model
     /**
      * Scope a query to only include active folders.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -110,7 +109,7 @@ class CrmFolder extends Model
     /**
      * Scope a query to only include system folders.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSystem($query)
@@ -121,8 +120,7 @@ class CrmFolder extends Model
     /**
      * Scope a query to filter by entity type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)

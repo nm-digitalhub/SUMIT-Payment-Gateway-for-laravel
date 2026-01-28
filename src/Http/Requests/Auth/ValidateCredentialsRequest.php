@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Auth;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Validate Credentials Request
@@ -73,7 +73,7 @@ class ValidateCredentialsRequest extends Request implements HasBody
     /**
      * Create new validate credentials request
      *
-     * @param CredentialsData $credentials SUMIT API credentials to validate
+     * @param  CredentialsData  $credentials  SUMIT API credentials to validate
      */
     public function __construct(
         protected readonly CredentialsData $credentials,
@@ -81,8 +81,6 @@ class ValidateCredentialsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -123,7 +121,6 @@ class ValidateCredentialsRequest extends Request implements HasBody
      *   "UserErrorMessage": "Invalid credentials"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -134,19 +131,18 @@ class ValidateCredentialsRequest extends Request implements HasBody
     /**
      * Check if validation was successful
      *
-     * @param Response $response
      * @return bool True if credentials are valid
      */
     public function isValid(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? '') === 'Success';
     }
 
     /**
      * Get error message from failed validation
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

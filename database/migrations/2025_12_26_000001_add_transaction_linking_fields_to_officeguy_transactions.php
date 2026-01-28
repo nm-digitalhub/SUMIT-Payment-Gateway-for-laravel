@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
@@ -20,7 +20,7 @@ return new class extends Migration
         Schema::table('officeguy_transactions', function (Blueprint $table) {
             // Add refund_transaction_id (reverse link: charge -> refund)
             // Other fields (parent_transaction_id, transaction_type, payment_token) already exist
-            if (!Schema::hasColumn('officeguy_transactions', 'refund_transaction_id')) {
+            if (! Schema::hasColumn('officeguy_transactions', 'refund_transaction_id')) {
                 $table->foreignId('refund_transaction_id')
                     ->nullable()
                     ->after('parent_transaction_id')

@@ -26,7 +26,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $related_ticket_id Link to tickets
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read CrmEntity $entity
  * @property-read OfficeGuyDocument|null $document
  */
@@ -96,8 +95,6 @@ class CrmActivity extends Model
      *
      * Fallback: If no customer model is configured, defaults to \App\Models\Client
      * for backward compatibility.
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -117,8 +114,6 @@ class CrmActivity extends Model
      * Migration:
      * - Replace $activity->client with $activity->customer
      * - Replace $activity->client() with $activity->customer()
-     *
-     * @return BelongsTo
      */
     public function client(): BelongsTo
     {
@@ -158,8 +153,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to filter by activity type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -170,8 +164,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to filter by status.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $status
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeWithStatus($query, string $status)
@@ -182,7 +175,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to only include completed activities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeCompleted($query)
@@ -193,7 +186,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to only include planned activities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePlanned($query)
@@ -204,8 +197,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to filter by user.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
@@ -216,7 +208,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to filter by upcoming activities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeUpcoming($query)
@@ -229,7 +221,7 @@ class CrmActivity extends Model
     /**
      * Scope a query to filter by overdue activities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOverdue($query)
@@ -241,8 +233,6 @@ class CrmActivity extends Model
 
     /**
      * Check if activity is overdue.
-     *
-     * @return bool
      */
     public function isOverdue(): bool
     {
@@ -253,8 +243,6 @@ class CrmActivity extends Model
 
     /**
      * Check if activity is upcoming.
-     *
-     * @return bool
      */
     public function isUpcoming(): bool
     {

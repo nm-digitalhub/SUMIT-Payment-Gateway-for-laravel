@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\PaymentData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\PaymentData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
 
 /**
  * Authorize Payment Request
@@ -57,8 +57,8 @@ class AuthorizePaymentRequest extends Request implements HasBody
     /**
      * Create new authorization request
      *
-     * @param PaymentData $payment Payment transaction data
-     * @param CredentialsData $credentials SUMIT API credentials
+     * @param  PaymentData  $payment  Payment transaction data
+     * @param  CredentialsData  $credentials  SUMIT API credentials
      */
     public function __construct(
         protected readonly PaymentData $payment,
@@ -70,8 +70,6 @@ class AuthorizePaymentRequest extends Request implements HasBody
      *
      * IMPORTANT: Same endpoint as regular payments!
      * TransactionType=2 parameter determines authorization behavior
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -103,9 +101,6 @@ class AuthorizePaymentRequest extends Request implements HasBody
      * Cast response to PaymentResponse DTO
      *
      * Response contains TransactionID needed for future capture
-     *
-     * @param Response $response
-     * @return PaymentResponse
      */
     public function createDtoFromResponse(Response $response): PaymentResponse
     {

@@ -114,7 +114,7 @@ class VendorCredential extends Model
      */
     public static function forVendor(mixed $vendor): ?static
     {
-        return static::where('vendor_type', get_class($vendor))
+        return static::where('vendor_type', $vendor::class)
             ->where('vendor_id', $vendor->getKey())
             ->active()
             ->first();

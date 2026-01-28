@@ -10,13 +10,14 @@
  * Text Domain: officeguy
  * Domain Path: /languages
 
- * @package WordPress
+ *
  * @author SUMIT
+ *
  * @since 1.0.1
  */
-
-if (!defined('ABSPATH'))
+if (! defined('ABSPATH')) {
     exit;
+}
 
 define('PLUGIN_DIR', plugin_dir_url(__FILE__));
 
@@ -29,8 +30,7 @@ function officeguy_load_textdomain()
 }
 add_action('init', 'officeguy_load_textdomain');
 
-if (!function_exists('is_woocommerce_activated'))
-{
+if (! function_exists('is_woocommerce_activated')) {
     require_once dirname(__FILE__) . '/includes/OfficeGuyAPI.php';
     require_once dirname(__FILE__) . '/includes/OfficeGuyStock.php';
     require_once dirname(__FILE__) . '/includes/OfficeGuyTokens.php';
@@ -52,7 +52,7 @@ if (!function_exists('is_woocommerce_activated'))
     OfficeGuyPluginSetup::Init(__FILE__);
 }
 
-add_action('before_woocommerce_init', function() {
+add_action('before_woocommerce_init', function () {
     if (class_exists('\Automattic\WooCommerce\Utilities\FeaturesUtil')) {
         \Automattic\WooCommerce\Utilities\FeaturesUtil::declare_compatibility('cart_checkout_blocks', __FILE__, false);
     }

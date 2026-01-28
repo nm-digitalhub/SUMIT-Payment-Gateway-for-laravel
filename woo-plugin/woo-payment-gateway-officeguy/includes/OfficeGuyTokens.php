@@ -1,30 +1,31 @@
 <?php
+
 class OfficeGuyTokens
 {
     public static function GetTokenRequest($Gateway)
     {
-        $Request = array(
+        $Request = [
             'ParamJ' => $Gateway->settings['tokenparam'],
             'Amount' => 1,
-            'Credentials' => OfficeGuyPayment::GetCredentials($Gateway)
-        );
-        if ($Gateway->settings['pci'] == 'yes')
-        {
-            $Request["CardNumber"] = OfficeGuyRequestHelpers::Post('og-ccnum');
-            $Request["CVV"] = OfficeGuyRequestHelpers::Post('og-cvv');
-            $Request["CitizenID"] = OfficeGuyRequestHelpers::Post('og-citizenid');
-            $Request["ExpirationMonth"] = (OfficeGuyRequestHelpers::Post('og-expmonth') < 10) ? '0' . OfficeGuyRequestHelpers::Post('og-expmonth') : OfficeGuyRequestHelpers::Post('og-expmonth');
-            $Request["ExpirationYear"] = OfficeGuyRequestHelpers::Post('og-expyear');
+            'Credentials' => OfficeGuyPayment::GetCredentials($Gateway),
+        ];
+        if ($Gateway->settings['pci'] == 'yes') {
+            $Request['CardNumber'] = OfficeGuyRequestHelpers::Post('og-ccnum');
+            $Request['CVV'] = OfficeGuyRequestHelpers::Post('og-cvv');
+            $Request['CitizenID'] = OfficeGuyRequestHelpers::Post('og-citizenid');
+            $Request['ExpirationMonth'] = (OfficeGuyRequestHelpers::Post('og-expmonth') < 10) ? '0' . OfficeGuyRequestHelpers::Post('og-expmonth') : OfficeGuyRequestHelpers::Post('og-expmonth');
+            $Request['ExpirationYear'] = OfficeGuyRequestHelpers::Post('og-expyear');
+        } else {
+            $Request['SingleUseToken'] = OfficeGuyRequestHelpers::Post('og-token');
         }
-        else
-            $Request["SingleUseToken"] = OfficeGuyRequestHelpers::Post('og-token');
+
         return $Request;
     }
 
     public static function GetTokenFromResponse($Gateway, $Response)
     {
         $ResponseData = $Response['Data'];
-        $Token = new WC_Payment_Token_CC();
+        $Token = new WC_Payment_Token_CC;
         $Token->set_token($ResponseData['CardToken']);
         $Token->set_gateway_id($Gateway->id);
         $Token->set_card_type('card'); // $Token->set_card_type(OfficeGuyTokens::GetCardBrand($ResponseData['Brand']));
@@ -33,6 +34,7 @@ class OfficeGuyTokens
         $Token->set_expiry_month($ResponseData['ExpirationMonth']);
         $Token->set_expiry_year($ResponseData['ExpirationYear']);
         $Token->set_user_id(get_current_user_id());
+
         return $Token;
     }
 
@@ -42,27 +44,21 @@ class OfficeGuyTokens
         $Response = OfficeGuyAPI::Post($Request, '/creditguy/gateway/transaction/', $Gateway->settings['environment'], false);
 
         // Check response
-        if ($Response['Status'] == 0 && $Response['Data']['Success'] == true)
-        {
+        if ($Response['Status'] == 0 && $Response['Data']['Success'] == true) {
             $Token = OfficeGuyTokens::GetTokenFromResponse($Gateway, $Response);
-            if ($Token->save())
-            {
+            if ($Token->save()) {
                 // Return thank you redirect
-                return array(
+                return [
                     'result' => 'success',
-                    'redirect' => wc_get_account_endpoint_url('payment-methods')
-                );
-            }
-            else
+                    'redirect' => wc_get_account_endpoint_url('payment-methods'),
+                ];
+            } else {
                 wc_add_notice(__('Update payment method failed', 'officeguy') . ' - ' . $Response['UserErrorMessage'], $notice_type = 'error');
-        }
-        else if ($Response['Status'] != 0)
-        {
+            }
+        } elseif ($Response['Status'] != 0) {
             // No response or unexpected response
             wc_add_notice(__('Update payment method failed', 'officeguy') . ' - ' . serialize($Gateway->settings['pci']) . ' ' . $Response['UserErrorMessage'], $notice_type = 'error');
-        }
-        else
-        {
+        } else {
             // Decline
             wc_add_notice(__('Update payment method failed', 'officeguy') . ' - ' . $Response['Data']['ResultDescription'], $notice_type = 'error');
         }
@@ -74,14 +70,12 @@ class OfficeGuyTokens
         $Order->save();
         OfficeGuyAPI::WriteToLog('Order #' . $Order->get_id() . ' added payment token #' . $Token->get_id(), 'debug');
 
-        if (function_exists('wcs_get_subscriptions_for_renewal_order') && function_exists('wcs_get_subscriptions_for_order'))
-        {
+        if (function_exists('wcs_get_subscriptions_for_renewal_order') && function_exists('wcs_get_subscriptions_for_order')) {
             $Subscriptions = array_merge(
                 wcs_get_subscriptions_for_renewal_order($Order->get_id()),
                 wcs_get_subscriptions_for_order($Order->get_id())
             );
-            foreach ($Subscriptions as $Subscription)
-            {
+            foreach ($Subscriptions as $Subscription) {
                 $Subscription->add_payment_token($Token);
                 $Subscription->save();
                 OfficeGuyAPI::WriteToLog('Order #' . $Order->get_id() . ' added payment token to subscription #' . $Subscription->get_id(), 'debug');
@@ -92,6 +86,7 @@ class OfficeGuyTokens
     public static function AddCreditCardTypeLabel($Array)
     {
         $Array['card'] = __('Credit card', 'officeguy');
+
         return $Array;
     }
 }

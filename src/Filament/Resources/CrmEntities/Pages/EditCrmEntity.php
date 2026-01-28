@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Pages;
 
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\CrmEntityResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\CrmEntityResource;
 
 class EditCrmEntity extends EditRecord
 {
@@ -55,11 +55,11 @@ class EditCrmEntity extends EditRecord
         $this->customFields = $customFields;
 
         // If client_id not provided, try to match based on SUMIT ID and known fields
-        if (empty($standardData['client_id']) && !empty($standardData['sumit_entity_id'])) {
+        if (empty($standardData['client_id']) && ! empty($standardData['sumit_entity_id'])) {
             $entityData = [
-                'Customers_CompanyNumber' => [ $standardData['vat_number'] ?? null ],
-                'Customers_EmailAddress' => [ $standardData['email'] ?? $standardData['client_email'] ?? null ],
-                'Customers_Phone' => [ $standardData['phone'] ?? $standardData['client_phone'] ?? $standardData['mobile_phone'] ?? null ],
+                'Customers_CompanyNumber' => [$standardData['vat_number'] ?? null],
+                'Customers_EmailAddress' => [$standardData['email'] ?? $standardData['client_email'] ?? null],
+                'Customers_Phone' => [$standardData['phone'] ?? $standardData['client_phone'] ?? $standardData['mobile_phone'] ?? null],
             ];
 
             $standardData['client_id'] = \OfficeGuy\LaravelSumitGateway\Services\CrmDataService::matchClientId(
@@ -77,24 +77,22 @@ class EditCrmEntity extends EditRecord
     protected function afterSave(): void
     {
         // Update custom fields using the model's setCustomField method
-        if (!empty($this->customFields)) {
-            foreach ($this->customFields as $key => $value) {
-                // Extract field ID from key: custom_field_123 -> 123
-                $fieldId = (int) str_replace('custom_field_', '', $key);
+        foreach ($this->customFields as $key => $value) {
+            // Extract field ID from key: custom_field_123 -> 123
+            $fieldId = (int) str_replace('custom_field_', '', $key);
 
-                // Get the field to find its name
-                $field = \OfficeGuy\LaravelSumitGateway\Models\CrmFolderField::find($fieldId);
+            // Get the field to find its name
+            $field = \OfficeGuy\LaravelSumitGateway\Models\CrmFolderField::find($fieldId);
 
-                if ($field) {
-                    $this->record->setCustomField($field->field_name, $value);
-                }
+            if ($field) {
+                $this->record->setCustomField($field->field_name, $value);
             }
         }
 
         // Auto-push to SUMIT on save (create/update)
         try {
             $this->record->syncToSumit();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Swallow errors to avoid blocking UI; sync action is available manually.
         }
     }

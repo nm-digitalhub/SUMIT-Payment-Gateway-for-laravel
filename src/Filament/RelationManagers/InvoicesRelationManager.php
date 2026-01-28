@@ -54,7 +54,7 @@ class InvoicesRelationManager extends RelationManager
                     ->searchable()
                     ->sortable()
                     ->weight('bold')
-                    ->formatStateUsing(fn ($state) => '#'.$state),
+                    ->formatStateUsing(fn ($state): string => '#' . $state),
 
                 TextColumn::make('sumit_document_type')
                     ->label('Type')
@@ -85,16 +85,16 @@ class InvoicesRelationManager extends RelationManager
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn (Invoiceable $record): string =>
-                        $record->isCreditNote()
+                    ->formatStateUsing(
+                        fn (Invoiceable $record): string => $record->isCreditNote()
                             ? 'Credit Note'
                             : match ($record->isClosed()) {
                                 true => 'Paid',
                                 false => 'Pending Payment',
                             }
                     )
-                    ->color(fn (Invoiceable $record): string =>
-                        $record->isCreditNote()
+                    ->color(
+                        fn (Invoiceable $record): string => $record->isCreditNote()
                             ? 'info'
                             : match ($record->isClosed()) {
                                 true => 'success',
@@ -107,7 +107,7 @@ class InvoicesRelationManager extends RelationManager
                     ->label('View PDF')
                     ->icon('heroicon-o-document-text')
                     ->color('primary')
-                    ->visible(fn (Invoiceable $record): bool => ! empty($record->getSumitDownloadUrl()))
+                    ->visible(fn (Invoiceable $record): bool => ! in_array($record->getSumitDownloadUrl(), [null, '', '0'], true))
                     ->url(fn (Invoiceable $record): ?string => $record->getSumitDownloadUrl())
                     ->openUrlInNewTab(),
 
@@ -115,7 +115,8 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Pay')
                     ->icon('heroicon-o-credit-card')
                     ->color('success')
-                    ->visible(fn (Invoiceable $record): bool => ! empty($record->getSumitPaymentUrl()) &&
+                    ->visible(
+                        fn (Invoiceable $record): bool => ! in_array($record->getSumitPaymentUrl(), [null, '', '0'], true) &&
                         ! $record->isClosed() &&
                         ! $record->isCreditNote()
                     )
@@ -157,9 +158,10 @@ class InvoicesRelationManager extends RelationManager
                     ->label('Credit/Refund')
                     ->icon('heroicon-o-receipt-refund')
                     ->color('warning')
-                    ->visible(fn (Invoiceable $record): bool => ! $record->isCreditNote() &&
+                    ->visible(
+                        fn (Invoiceable $record): bool => ! $record->isCreditNote() &&
                         $record->getTotalAmount() > 0 &&
-                        ! empty($record->getSumitDocumentId())
+                        ! in_array($record->getSumitDocumentId(), [null, 0], true)
                     )
                     ->form([
                         Forms\Components\Radio::make('refund_type')
@@ -187,7 +189,7 @@ class InvoicesRelationManager extends RelationManager
                         Forms\Components\Textarea::make('description')
                             ->label('Description')
                             ->required()
-                            ->default(fn (Invoiceable $record): string => 'Credit for invoice #'.$record->getInvoiceNumber())
+                            ->default(fn (Invoiceable $record): string => 'Credit for invoice #' . $record->getInvoiceNumber())
                             ->rows(3),
                         Forms\Components\TextInput::make('transaction_id')
                             ->label('Original Transaction ID')
@@ -220,9 +222,9 @@ class InvoicesRelationManager extends RelationManager
                                     Notification::make()
                                         ->title('Refund processed successfully')
                                         ->body(
-                                            'Transaction ID: '.($result['transaction_id'] ?? 'N/A')."\n".
-                                            'Auth Number: '.($result['auth_number'] ?? 'N/A')."\n".
-                                            'Updated Balance: '.($updatedBalance['formatted'] ?? 'Not available')
+                                            'Transaction ID: ' . ($result['transaction_id'] ?? 'N/A') . "\n" .
+                                            'Auth Number: ' . ($result['auth_number'] ?? 'N/A') . "\n" .
+                                            'Updated Balance: ' . ($updatedBalance['formatted'] ?? 'Not available')
                                         )
                                         ->success()
                                         ->send();
@@ -249,9 +251,9 @@ class InvoicesRelationManager extends RelationManager
                                     Notification::make()
                                         ->title('Credit note created successfully')
                                         ->body(
-                                            'Document Number: '.($result['document_number'] ?? 'N/A')."\n".
-                                            'Linked to Invoice: #'.$record->getInvoiceNumber()."\n".
-                                            'Updated Balance: '.($updatedDebt['formatted'] ?? 'Not available')
+                                            'Document Number: ' . ($result['document_number'] ?? 'N/A') . "\n" .
+                                            'Linked to Invoice: #' . $record->getInvoiceNumber() . "\n" .
+                                            'Updated Balance: ' . ($updatedDebt['formatted'] ?? 'Not available')
                                         )
                                         ->success()
                                         ->send();
@@ -303,7 +305,7 @@ class InvoicesRelationManager extends RelationManager
 
         } catch (\Throwable $e) {
             Log::error('Failed to fetch SUMIT documents', [
-                'owner_class' => get_class($owner),
+                'owner_class' => $owner::class,
                 'owner_id' => $owner->id,
                 'error' => $e->getMessage(),
             ]);
@@ -317,15 +319,11 @@ class InvoicesRelationManager extends RelationManager
      *
      * This method should be overridden in your application to use your
      * specific Invoice model's syncFromSumit() method.
-     *
-     * @param HasSumitCustomer $owner
-     * @param array $documents
-     * @return void
      */
     protected function syncDocuments(HasSumitCustomer $owner, array $documents): void
     {
         // Get the Invoice model class from the relationship
-        $relationshipClass = get_class($this->getRelationship()->getRelated());
+        $relationshipClass = $this->getRelationship()->getRelated()::class;
 
         // Check if model has syncFromSumit method
         if (! method_exists($relationshipClass, 'syncFromSumit')) {
@@ -337,7 +335,7 @@ class InvoicesRelationManager extends RelationManager
         }
 
         // Sync each document
-        collect($documents)->each(function ($doc) use ($owner, $relationshipClass) {
+        collect($documents)->each(function (array $doc) use ($owner, $relationshipClass): void {
             try {
                 $relationshipClass::syncFromSumit($owner, $doc);
             } catch (\Throwable $e) {
@@ -353,9 +351,6 @@ class InvoicesRelationManager extends RelationManager
      * Get invoices from database.
      *
      * Override this method to customize query.
-     *
-     * @param HasSumitCustomer $owner
-     * @return Collection
      */
     protected function getInvoicesFromDatabase(HasSumitCustomer $owner): Collection
     {
@@ -367,9 +362,6 @@ class InvoicesRelationManager extends RelationManager
 
     /**
      * Refresh documents from SUMIT for a customer.
-     *
-     * @param HasSumitCustomer $client
-     * @return void
      */
     protected function refreshDocuments(HasSumitCustomer $client): void
     {

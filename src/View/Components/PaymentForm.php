@@ -16,15 +16,25 @@ use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 class PaymentForm extends Component
 {
     public bool $showSavedMethods;
+
     public mixed $savedTokens;
+
     public string $pciMode;
+
     public string $cvvMode;
+
     public string $citizenIdMode;
+
     public bool $fourDigitsYear;
+
     public bool $singleColumn;
+
     public int $maxPayments;
+
     public bool $supportTokens;
+
     public bool $isUserLoggedIn;
+
     public float $orderAmount;
 
     /**
@@ -46,7 +56,7 @@ class PaymentForm extends Component
         // Calculate max payments based on order amount
         $this->maxPayments = $this->orderAmount > 0
             ? PaymentService::getMaximumPayments($this->orderAmount)
-            : (int)config('officeguy.max_payments', 1);
+            : (int) config('officeguy.max_payments', 1);
 
         // Get saved tokens if user is logged in and tokens are supported
         $this->showSavedMethods = $this->isUserLoggedIn && $this->supportTokens;

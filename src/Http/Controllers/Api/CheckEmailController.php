@@ -15,7 +15,6 @@ use Illuminate\Support\Facades\Log;
  * API controller for checking if a user exists by email during checkout.
  * Used to enforce login requirement for existing customers.
  *
- * @package OfficeGuy\LaravelSumitGateway\Http\Controllers\Api
  * @since v1.15.0
  */
 class CheckEmailController extends Controller
@@ -27,7 +26,6 @@ class CheckEmailController extends Controller
      * account already exists. If found, returns a login URL with return_url
      * parameter to redirect back to checkout after authentication.
      *
-     * @param Request $request
      * @return JsonResponse
      *
      * Response format:
@@ -44,7 +42,7 @@ class CheckEmailController extends Controller
         ]);
 
         // Normalize email (lowercase, trim whitespace)
-        $email = strtolower(trim($validated['email']));
+        $email = strtolower(trim((string) $validated['email']));
 
         // Resolve user model from container binding
         $userModel = app('officeguy.customer_model') ?? \App\Models\Client::class;

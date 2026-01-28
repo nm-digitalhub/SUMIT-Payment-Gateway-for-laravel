@@ -348,7 +348,7 @@ return [
         'ILS', 'USD', 'EUR', 'CAD', 'GBP', 'CHF', 'AUD', 'JPY', 'SEK', 'NOK',
         'DKK', 'ZAR', 'JOD', 'LBP', 'EGP', 'BGN', 'CZK', 'HUF', 'PLN', 'RON',
         'ISK', 'HRK', 'RUB', 'TRY', 'BRL', 'CNY', 'HKD', 'IDR', 'INR', 'KRW',
-        'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB'
+        'MXN', 'MYR', 'NZD', 'PHP', 'SGD', 'THB',
     ],
 
     /*

@@ -21,12 +21,10 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  */
 class ProcessRecurringPaymentsJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
-
-    /**
-     * Specific subscription ID to process (null = all due subscriptions)
-     */
-    public ?int $subscriptionId;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * Number of times the job may be attempted.
@@ -38,23 +36,27 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
      */
     public int $backoff = 60;
 
-    public function __construct(?int $subscriptionId = null)
-    {
-        $this->subscriptionId = $subscriptionId;
-    }
+    public function __construct(
+        /**
+         * Specific subscription ID to process (null = all due subscriptions)
+         */
+        public ?int $subscriptionId = null
+    ) {}
 
     public function handle(): void
     {
         if ($this->subscriptionId) {
             $subscription = Subscription::find($this->subscriptionId);
 
-            if (!$subscription) {
+            if (! $subscription) {
                 Log::warning("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} not found");
+
                 return;
             }
 
-            if (!$subscription->canBeCharged()) {
+            if (! $subscription->canBeCharged()) {
                 Log::info("ProcessRecurringPaymentsJob: Subscription #{$this->subscriptionId} cannot be charged");
+
                 return;
             }
 
@@ -69,7 +71,7 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
             $results = SubscriptionService::processDueSubscriptions();
 
             $total = count($results);
-            $successful = count(array_filter($results, fn($r) => $r['success']));
+            $successful = count(array_filter($results, fn (array $r) => $r['success']));
             $failed = $total - $successful;
 
             Log::info("ProcessRecurringPaymentsJob: Processed {$total} subscriptions: {$successful} successful, {$failed} failed");
@@ -81,7 +83,7 @@ class ProcessRecurringPaymentsJob implements ShouldQueue
      */
     public function failed(\Throwable $exception): void
     {
-        Log::error("ProcessRecurringPaymentsJob failed: " . $exception->getMessage(), [
+        Log::error('ProcessRecurringPaymentsJob failed: ' . $exception->getMessage(), [
             'subscription_id' => $this->subscriptionId,
             'exception' => $exception,
         ]);

@@ -24,9 +24,9 @@ class SumitGateway extends Cluster
 {
     /**
      * Navigation icon in main admin sidebar
-     * Uses custom SUMIT payment gateway SVG icon
+     * Uses Heroicon banknotes icon (payment gateway theme)
      */
-    protected static string|\BackedEnum|null $navigationIcon = 'icon-sumit-icon';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
 
     /**
      * Navigation label in Hebrew

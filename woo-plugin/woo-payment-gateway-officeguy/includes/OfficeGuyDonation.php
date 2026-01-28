@@ -1,34 +1,39 @@
 <?php
+
 class OfficeGuyDonation
 {
     public static function CartContainsDonation()
     {
         $ProductIDs = OfficeGuySubscriptions::GetCartProductIDs();
-        foreach ($ProductIDs as $ProductID)
-        {
-            if (get_post_meta($ProductID, 'OfficeGuyDonation', true) === 'yes')
+        foreach ($ProductIDs as $ProductID) {
+            if (get_post_meta($ProductID, 'OfficeGuyDonation', true) === 'yes') {
                 return true;
+            }
         }
+
         return false;
     }
 
     public static function OrderContainsDonation($Order)
     {
-        foreach ($Order->get_items() as $OrderItem)
-        {
-            if (get_post_meta($OrderItem['product_id'], 'OfficeGuyDonation', true) === 'yes')
+        foreach ($Order->get_items() as $OrderItem) {
+            if (get_post_meta($OrderItem['product_id'], 'OfficeGuyDonation', true) === 'yes') {
                 return true;
+            }
         }
+
         return false;
     }
+
     public static function CartContainsNonDonation()
-    {       
-        $ProductIDs = OfficeGuySubscriptions::GetCartProductIDs();      
-        foreach ($ProductIDs as $ProductID)
-        {
-            if (get_post_meta($ProductID, 'OfficeGuyDonation', true) != 'yes')
+    {
+        $ProductIDs = OfficeGuySubscriptions::GetCartProductIDs();
+        foreach ($ProductIDs as $ProductID) {
+            if (get_post_meta($ProductID, 'OfficeGuyDonation', true) != 'yes') {
                 return true;
+            }
         }
+
         return false;
     }
 
@@ -39,13 +44,13 @@ class OfficeGuyDonation
 
         echo '<div>';
         woocommerce_wp_checkbox(
-            array(
+            [
                 'id' => 'OfficeGuyDonation',
                 'label' => __('SUMIT Donation', 'officeguy'),
                 'description' => __('Only available for non-profit organizations.', 'officeguy'),
-                'value'         => $Value,
-                'desc_tip'    => 'true'
-            )
+                'value' => $Value,
+                'desc_tip' => 'true',
+            ]
         );
         echo '</div>';
 
@@ -59,16 +64,17 @@ class OfficeGuyDonation
 
     public static function UpdateAvailableGateways($AvailableGateways)
     {
-        if (empty($AvailableGateways) || !isset($AvailableGateways['officeguy']) || is_admin() || count(OfficeGuySubscriptions::GetCartProductIDs()) == 0)
+        if (empty($AvailableGateways) || ! isset($AvailableGateways['officeguy']) || is_admin() || count(OfficeGuySubscriptions::GetCartProductIDs()) == 0) {
             return $AvailableGateways;
-
-        if (OfficeGuyDonation::CartContainsDonation() && OfficeGuyDonation::CartContainsNonDonation())
-        {
-            unset($AvailableGateways['officeguy']);
-            if (isset($AvailableGateways['officeguybit']))
-                unset($AvailableGateways['officeguybit']);
         }
-        
+
+        if (OfficeGuyDonation::CartContainsDonation() && OfficeGuyDonation::CartContainsNonDonation()) {
+            unset($AvailableGateways['officeguy']);
+            if (isset($AvailableGateways['officeguybit'])) {
+                unset($AvailableGateways['officeguybit']);
+            }
+        }
+
         return $AvailableGateways;
     }
 }

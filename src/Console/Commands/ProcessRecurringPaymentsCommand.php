@@ -28,8 +28,9 @@ class ProcessRecurringPaymentsCommand extends Command
 
     public function handle(): int
     {
-        if (!config('officeguy.subscriptions.enabled', true)) {
+        if (! config('officeguy.subscriptions.enabled', true)) {
             $this->error('Subscriptions are disabled in settings');
+
             return Command::FAILURE;
         }
 
@@ -41,7 +42,7 @@ class ProcessRecurringPaymentsCommand extends Command
             $results = SubscriptionService::processDueSubscriptions();
 
             $total = count($results);
-            $successful = count(array_filter($results, fn($r) => $r['success']));
+            $successful = count(array_filter($results, fn (array $r) => $r['success']));
             $failed = $total - $successful;
 
             $this->info("Processed {$total} subscriptions: {$successful} successful, {$failed} failed");
@@ -62,7 +63,7 @@ class ProcessRecurringPaymentsCommand extends Command
             dispatch(new ProcessRecurringPaymentsJob((int) $subscriptionId));
             $this->info("SUMIT recurring payment job dispatched for subscription #{$subscriptionId}");
         } else {
-            dispatch(new ProcessRecurringPaymentsJob());
+            dispatch(new ProcessRecurringPaymentsJob);
             $this->info('SUMIT recurring payments job dispatched');
         }
 

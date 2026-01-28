@@ -18,9 +18,6 @@ class LoggingMiddleware
 {
     /**
      * Handle request and response logging
-     *
-     * @param PendingRequest $pendingRequest
-     * @return void
      */
     public function __invoke(PendingRequest $pendingRequest): void
     {
@@ -36,7 +33,7 @@ class LoggingMiddleware
 
         // Hook into response to log it
         $pendingRequest->middleware()->onResponse(
-            function (Response $response) use ($channel, $pendingRequest) {
+            function (Response $response) use ($channel, $pendingRequest): void {
                 Log::channel($channel)->debug('SUMIT Response', [
                     'url' => $pendingRequest->getUrl(),
                     'status' => $response->status(),
@@ -49,7 +46,7 @@ class LoggingMiddleware
 
         // Log errors if they occur
         $pendingRequest->middleware()->onFailure(
-            function (\Exception $exception, Response $response = null) use ($channel, $pendingRequest) {
+            function (\Exception $exception, ?Response $response = null) use ($channel, $pendingRequest): void {
                 Log::channel($channel)->error('SUMIT Request Failed', [
                     'url' => $pendingRequest->getUrl(),
                     'exception' => $exception->getMessage(),

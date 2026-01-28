@@ -6,9 +6,9 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscrip
 
 use Filament\Actions;
 use Filament\Infolists;
+use Filament\Resources\Pages\ViewRecord;
 use Filament\Schemas;
 use Filament\Schemas\Schema;
-use Filament\Resources\Pages\ViewRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource;
 use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 
@@ -23,7 +23,7 @@ class ViewClientSubscription extends ViewRecord
                 ->label('סנכרן חשבוניות')
                 ->icon('heroicon-o-arrow-path')
                 ->color('primary')
-                ->action(function () {
+                ->action(function (): void {
                     try {
                         $synced = DocumentService::syncForSubscription($this->record);
 
@@ -167,9 +167,7 @@ class ViewClientSubscription extends ViewRecord
                                     ->money(fn ($record) => $record->currency ?? 'ILS')
                                     ->badge()
                                     ->color('warning')
-                                    ->formatStateUsing(function ($state, $record) {
-                                        return $record->documentsMany()->get()->sum('pivot.amount');
-                                    }),
+                                    ->formatStateUsing(fn ($state, $record) => $record->documentsMany()->get()->sum('pivot.amount')),
 
                                 Infolists\Components\TextEntry::make('total_paid')
                                     ->label('סה"כ שולם')
@@ -177,12 +175,10 @@ class ViewClientSubscription extends ViewRecord
                                     ->money(fn ($record) => $record->currency ?? 'ILS')
                                     ->badge()
                                     ->color('success')
-                                    ->formatStateUsing(function ($state, $record) {
-                                        return $record->documentsMany()
-                                            ->wherePivot('amount', '>', 0)
-                                            ->get()
-                                            ->sum('pivot.amount');
-                                    }),
+                                    ->formatStateUsing(fn ($state, $record) => $record->documentsMany()
+                                        ->wherePivot('amount', '>', 0)
+                                        ->get()
+                                        ->sum('pivot.amount')),
                             ]),
 
                         Infolists\Components\RepeatableEntry::make('documentsMany')
@@ -242,10 +238,10 @@ class ViewClientSubscription extends ViewRecord
 
                                         Infolists\Components\TextEntry::make('document_download_url')
                                             ->label('פעולות')
-                                            ->formatStateUsing(function ($state, $record) {
+                                            ->formatStateUsing(function ($state, $record): string {
                                                 $buttons = [];
 
-                                                if (!empty($record->document_download_url)) {
+                                                if (! empty($record->document_download_url)) {
                                                     $buttons[] = sprintf(
                                                         '<a href="%s" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-primary-600 hover:bg-primary-700 rounded-lg transition">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -257,7 +253,7 @@ class ViewClientSubscription extends ViewRecord
                                                     );
                                                 }
 
-                                                if (!empty($record->document_payment_url) && !$record->is_closed) {
+                                                if (! empty($record->document_payment_url) && ! $record->is_closed) {
                                                     $buttons[] = sprintf(
                                                         '<a href="%s" target="_blank" class="inline-flex items-center gap-1 px-3 py-1.5 text-sm font-medium text-white bg-success-600 hover:bg-success-700 rounded-lg transition">
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -269,20 +265,20 @@ class ViewClientSubscription extends ViewRecord
                                                     );
                                                 }
 
-                                                return !empty($buttons) ? implode(' ', $buttons) : '<span class="text-gray-500 dark:text-gray-400">אין פעולות</span>';
+                                                return empty($buttons) ? '<span class="text-gray-500 dark:text-gray-400">אין פעולות</span>' : implode(' ', $buttons);
                                             })
                                             ->html(),
                                     ]),
                             ])
                             ->columnSpanFull()
-                            ->visible(fn ($record) => $record->documentsMany()->count() > 0),
+                            ->visible(fn ($record): bool => $record->documentsMany()->count() > 0),
 
                         Infolists\Components\TextEntry::make('no_documents')
                             ->label('')
                             ->default('אין חשבוניות עבור מנוי זה')
                             ->icon('heroicon-o-information-circle')
                             ->color('secondary')
-                            ->visible(fn ($record) => $record->documentsMany()->count() === 0),
+                            ->visible(fn ($record): bool => $record->documentsMany()->count() === 0),
                     ])
                     ->columnSpanFull()
                     ->collapsible(),

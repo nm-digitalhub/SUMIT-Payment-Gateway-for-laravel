@@ -4,38 +4,44 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use App\Models\Client;
+use App\Models\Order;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
-use Filament\Actions\ViewAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
+use Illuminate\Support\Facades\Cache;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\DocumentResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
-use App\Models\Client;
-use App\Models\Order;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Services\DebtService;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Mail;
 
 class DocumentResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyDocument::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
-
-    protected static ?string $navigationLabel = 'מסמכים';
-
-    protected static ?int $navigationSort = 3;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -69,7 +75,7 @@ class DocumentResource extends Resource
                             ->disabled(),
                         Forms\Components\TextInput::make('currency')
                             ->label('מטבע')
-                            ->formatStateUsing(fn ($state) => match (strtoupper((string) $state)) {
+                            ->formatStateUsing(fn ($state): string => match (strtoupper((string) $state)) {
                                 '', '0', 'ILS' => '₪ ILS',
                                 'USD' => '$ USD',
                                 'EUR' => '€ EUR',
@@ -99,15 +105,17 @@ class DocumentResource extends Resource
 
                                 // Try to resolve local Order model
                                 $order = Order::find($orderId);
+
                                 return $order?->order_number ?? $orderId;
                             })
                             ->disabled(),
                         Forms\Components\TextInput::make('order_type')
                             ->label('סוג הזמנה')
-                            ->formatStateUsing(function ($state) {
+                            ->formatStateUsing(function ($state): string {
                                 if (empty($state) || $state === '0') {
                                     return 'לא זמין';
                                 }
+
                                 return class_basename($state);
                             })
                             ->disabled(),
@@ -119,6 +127,7 @@ class DocumentResource extends Resource
                                 }
 
                                 $sub = Subscription::find($record->subscription_id);
+
                                 return $sub?->name ?? $record->subscription_id;
                             })
                             ->disabled(),
@@ -157,7 +166,7 @@ class DocumentResource extends Resource
                     ->label('סוג מסמך')
                     ->formatStateUsing(fn ($record) => $record->getDocumentTypeName())
                     ->badge()
-                    ->color(fn ($record) => match (true) {
+                    ->color(fn ($record): string => match (true) {
                         $record->isInvoice() => 'success',
                         $record->isOrder() => 'info',
                         $record->isDonationReceipt() => 'warning',
@@ -166,7 +175,7 @@ class DocumentResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('amount')
                     ->label('סכום')
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): string {
                         $currency = $record->currency ?: 'ILS';
                         $symbol = match (strtoupper($currency)) {
                             'ILS' => '₪',
@@ -218,9 +227,10 @@ class DocumentResource extends Resource
                             300,
                             fn () => app(DebtService::class)->getCustomerBalanceById((int) $record->customer_id)
                         );
+
                         return $balance['formatted'] ?? null;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         $client = Client::query()
                             ->where('sumit_customer_id', $record->customer_id)
                             ->first();
@@ -240,13 +250,15 @@ class DocumentResource extends Resource
                             return null;
                         }
                         $order = Order::find($record->order_id);
+
                         return $order?->order_number ?? $record->order_id;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         if (! $record->order_id) {
                             return null;
                         }
                         $order = Order::find($record->order_id);
+
                         return $order ? route('filament.admin.resources.orders.view', ['record' => $order->id]) : null;
                     })
                     ->openUrlInNewTab()
@@ -258,13 +270,15 @@ class DocumentResource extends Resource
                             return null;
                         }
                         $sub = Subscription::find($record->subscription_id);
+
                         return $sub?->name ?? $record->subscription_id;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         if (! $record->subscription_id) {
                             return null;
                         }
                         $sub = Subscription::find($record->subscription_id);
+
                         return $sub ? route('filament.admin.resources.subscriptions.view', ['record' => $sub->id]) : null;
                     })
                     ->openUrlInNewTab()
@@ -303,24 +317,24 @@ class DocumentResource extends Resource
                     ->label('הורדת PDF')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->color('gray')
-                    ->visible(fn ($record) => !empty($record->document_download_url))
+                    ->visible(fn ($record): bool => ! empty($record->document_download_url))
                     ->url(fn ($record) => $record->document_download_url)
                     ->openUrlInNewTab(),
                 Action::make('resend_email')
                     ->label('שליחה חוזרת במייל')
                     ->icon('heroicon-o-envelope')
                     ->color('primary')
-                    ->visible(fn ($record) => !$record->is_draft && !empty($record->customer_id))
+                    ->visible(fn ($record): bool => ! $record->is_draft && ! empty($record->customer_id))
                     ->form([
                         Forms\Components\TextInput::make('email')
                             ->label('אימייל (אופציונלי)')
                             ->email()
                             ->helperText('השאר ריק כדי לשלוח לאימייל הרשום ב‑SUMIT'),
                     ])
-                    ->action(function ($record, array $data) {
+                    ->action(function (int | \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument $record, array $data): void {
                         try {
                             // If no email provided, send null to use customer's SUMIT email
-                            $email = !empty($data['email']) ? $data['email'] : null;
+                            $email = empty($data['email']) ? null : $data['email'];
 
                             // Pass the full document model (required for DocumentType + DocumentNumber)
                             $result = \OfficeGuy\LaravelSumitGateway\Services\DocumentService::sendByEmail(

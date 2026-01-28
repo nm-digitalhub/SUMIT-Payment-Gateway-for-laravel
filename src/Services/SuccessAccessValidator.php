@@ -6,9 +6,9 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\RateLimiter;
-use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
-use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessAccessLog;
 use OfficeGuy\LaravelSumitGateway\DTOs\ValidationResult;
+use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessAccessLog;
+use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
 
 /**
  * Success Access Validator
@@ -36,7 +36,7 @@ class SuccessAccessValidator
      * Logs all access attempts (valid and invalid).
      * Returns ValidationResult DTO with detailed information.
      *
-     * @param Request $request The HTTP request
+     * @param  Request  $request  The HTTP request
      * @return ValidationResult Validation result with token and payable
      */
     public function validate(Request $request): ValidationResult
@@ -47,7 +47,7 @@ class SuccessAccessValidator
         $referer = $request->header('referer');
 
         // Layer 1: Rate Limiting
-        if (!$this->validateRateLimit($request)) {
+        if (! $this->validateRateLimit($request)) {
             $failures[] = 'rate_limit';
             $this->logFailedAccess(null, null, $failures, $ip, $userAgent, $referer);
 
@@ -58,7 +58,7 @@ class SuccessAccessValidator
         }
 
         // Layer 2: Signed URL Validation
-        if (!$request->hasValidSignature()) {
+        if (! $request->hasValidSignature()) {
             $failures[] = 'signature';
             $this->logFailedAccess(null, null, $failures, $ip, $userAgent, $referer, signatureValid: false);
 
@@ -72,7 +72,7 @@ class SuccessAccessValidator
         $rawToken = $request->query('token');
         $requestNonce = $request->query('nonce');
 
-        if (!$rawToken || !$requestNonce) {
+        if (! $rawToken || ! $requestNonce) {
             $failures[] = 'missing_parameters';
             $this->logFailedAccess(null, null, $failures, $ip, $userAgent, $referer, signatureValid: true);
 
@@ -85,7 +85,7 @@ class SuccessAccessValidator
         // Layer 3: Token Existence
         $token = OrderSuccessToken::findByToken($rawToken);
 
-        if (!$token) {
+        if (! $token instanceof \OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken) {
             $failures[] = 'token';
             $tokenHash = hash('sha256', $rawToken);
             $this->logFailedAccess(null, null, $failures, $ip, $userAgent, $referer, $tokenHash, $requestNonce, true);
@@ -162,7 +162,7 @@ class SuccessAccessValidator
         // Load payable entity
         $payable = $token->payable;
 
-        if (!$payable) {
+        if (! $payable) {
             $failures[] = 'payable_not_found';
             $this->logFailedAccess(
                 $token->payable_id,
@@ -183,7 +183,7 @@ class SuccessAccessValidator
         }
 
         // Layer 7: Identity Proof (Guest-Safe)
-        if (!$this->validateIdentity($payable, $request)) {
+        if (! $this->validateIdentity($payable, $request)) {
             $failures[] = 'identity';
             $this->logFailedAccess(
                 $token->payable_id,
@@ -220,7 +220,6 @@ class SuccessAccessValidator
      * Prevents brute force attacks by limiting requests per IP.
      * Uses Laravel's RateLimiter with sliding window.
      *
-     * @param Request $request
      * @return bool True if within rate limit
      */
     protected function validateRateLimit(Request $request): bool
@@ -247,8 +246,8 @@ class SuccessAccessValidator
      * For authenticated users: Checks if payable belongs to user
      * For guests: Cryptographic proof via Signed URL + Token + Nonce is sufficient
      *
-     * @param object $payable The Payable entity
-     * @param Request $request The HTTP request
+     * @param  object  $payable  The Payable entity
+     * @param  Request  $request  The HTTP request
      * @return bool True if identity is valid
      */
     protected function validateIdentity(object $payable, Request $request): bool
@@ -274,13 +273,6 @@ class SuccessAccessValidator
 
     /**
      * Log successful access
-     *
-     * @param object $payable
-     * @param string $tokenHash
-     * @param string $nonce
-     * @param string $ip
-     * @param string|null $userAgent
-     * @param string|null $referer
      */
     protected function logSuccessfulAccess(
         object $payable,
@@ -302,16 +294,6 @@ class SuccessAccessValidator
 
     /**
      * Log failed access
-     *
-     * @param int|null $payableId
-     * @param string|null $payableType
-     * @param array $failures
-     * @param string $ip
-     * @param string|null $userAgent
-     * @param string|null $referer
-     * @param string|null $tokenHash
-     * @param string|null $nonce
-     * @param bool $signatureValid
      */
     protected function logFailedAccess(
         ?int $payableId,
@@ -339,9 +321,6 @@ class SuccessAccessValidator
 
     /**
      * Get remaining rate limit attempts
-     *
-     * @param string $ip
-     * @return int
      */
     public function getRemainingAttempts(string $ip): int
     {
@@ -353,8 +332,6 @@ class SuccessAccessValidator
 
     /**
      * Clear rate limit for IP (admin use)
-     *
-     * @param string $ip
      */
     public function clearRateLimit(string $ip): void
     {

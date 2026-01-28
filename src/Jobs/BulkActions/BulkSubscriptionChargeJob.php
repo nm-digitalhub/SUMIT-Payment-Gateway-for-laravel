@@ -124,21 +124,13 @@ class BulkSubscriptionChargeJob extends BaseBulkActionJob
     protected function handleRecord($record): ActionResponse
     {
         // בדיקה אם המנוי יכול להיות מחויב
-        if (!$record->canBeCharged()) {
-            return ActionResponse::failure(
-                $record,
-                __('officeguy::messages.subscription_cannot_be_charged'),
-                ['subscription_id' => $record->id, 'reason' => 'cannot_be_charged']
-            );
+        if (! $record->canBeCharged()) {
+            return ActionResponse::failure();
         }
 
         // בדיקה שיש recurring_id
-        if (!$record->recurring_id) {
-            return ActionResponse::failure(
-                $record,
-                __('No recurring ID found for subscription'),
-                ['subscription_id' => $record->id, 'reason' => 'no_recurring_id']
-            );
+        if (! $record->recurring_id) {
+            return ActionResponse::failure();
         }
 
         try {
@@ -146,24 +138,12 @@ class BulkSubscriptionChargeJob extends BaseBulkActionJob
             $result = SubscriptionService::processRecurringCharge($record);
 
             if ($result['success'] ?? false) {
-                return ActionResponse::success(
-                    $record,
-                    null,
-                    ['subscription_id' => $record->id, 'charged_at' => now()->toIso8601String()]
-                );
+                return ActionResponse::success();
             }
 
-            return ActionResponse::failure(
-                $record,
-                $result['message'] ?? 'Unknown error',
-                ['subscription_id' => $record->id, 'error_code' => $result['code'] ?? 'unknown']
-            );
-        } catch (\Throwable $e) {
-            return ActionResponse::failure(
-                $record,
-                $e->getMessage(),
-                ['subscription_id' => $record->id, 'exception' => get_class($e)]
-            );
+            return ActionResponse::failure();
+        } catch (\Throwable) {
+            return ActionResponse::failure();
         }
     }
 

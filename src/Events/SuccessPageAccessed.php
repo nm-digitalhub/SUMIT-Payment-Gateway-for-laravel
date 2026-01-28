@@ -31,25 +31,22 @@ use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
 class SuccessPageAccessed
 {
     /**
-     * @param object $payable The payable entity (Order, Invoice, etc.)
-     * @param OrderSuccessToken $token The consumed success token
+     * @param  object  $payable  The payable entity (Order, Invoice, etc.)
+     * @param  OrderSuccessToken  $token  The consumed success token
      */
     public function __construct(
         public object $payable,
         public OrderSuccessToken $token
-    ) {
-    }
+    ) {}
 
     /**
      * Get analytics data for tracking
-     *
-     * @return array
      */
     public function getAnalyticsData(): array
     {
         return [
             'payable_id' => $this->payable->getKey(),
-            'payable_type' => get_class($this->payable),
+            'payable_type' => $this->payable::class,
             'token_consumed_at' => $this->token->consumed_at?->toIso8601String(),
             'token_created_at' => $this->token->created_at->toIso8601String(),
             'time_to_access_seconds' => $this->token->consumed_at?->diffInSeconds($this->token->created_at),

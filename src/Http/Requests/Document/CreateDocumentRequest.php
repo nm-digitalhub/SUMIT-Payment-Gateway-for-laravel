@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Document;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\DocumentData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\DocumentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\DocumentData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\DocumentResponse;
 
 /**
  * Create Document Request
@@ -62,8 +62,8 @@ class CreateDocumentRequest extends Request implements HasBody
     /**
      * Create new document request
      *
-     * @param DocumentData $document Document details
-     * @param CredentialsData $credentials SUMIT API credentials
+     * @param  DocumentData  $document  Document details
+     * @param  CredentialsData  $credentials  SUMIT API credentials
      */
     public function __construct(
         protected readonly DocumentData $document,
@@ -72,8 +72,6 @@ class CreateDocumentRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -95,9 +93,6 @@ class CreateDocumentRequest extends Request implements HasBody
 
     /**
      * Cast response to DocumentResponse DTO
-     *
-     * @param Response $response
-     * @return DocumentResponse
      */
     public function createDtoFromResponse(Response $response): DocumentResponse
     {

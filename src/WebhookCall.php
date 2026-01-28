@@ -27,17 +27,29 @@ use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 class WebhookCall
 {
     protected string $uuid;
+
     protected string $event = '';
+
     protected string $url = '';
+
     protected array $payload = [];
+
     protected array $headers = [];
+
     protected string $secret = '';
+
     protected int $tries = 3;
+
     protected int $timeout = 30;
+
     protected string $backoffStrategy = ExponentialBackoffStrategy::class;
+
     protected array $meta = [];
+
     protected bool $signWebhook = true;
+
     protected bool $throwExceptionOnFailure = false;
+
     protected ?int $webhookEventId = null;
 
     public function __construct()
@@ -54,7 +66,7 @@ class WebhookCall
      */
     public static function create(): static
     {
-        return new static();
+        return new static;
     }
 
     /**
@@ -292,7 +304,7 @@ class WebhookCall
             'X-Webhook-UUID' => $this->uuid,
         ], $this->headers);
 
-        if ($this->signWebhook && !empty($this->secret)) {
+        if ($this->signWebhook && ($this->secret !== '' && $this->secret !== '0')) {
             $headers['X-Webhook-Signature'] = $this->generateSignature();
         }
 
@@ -312,11 +324,11 @@ class WebhookCall
      */
     protected function prepareForDispatch(): void
     {
-        if (empty($this->url)) {
+        if ($this->url === '' || $this->url === '0') {
             throw new \InvalidArgumentException('Webhook URL is required');
         }
 
-        if (empty($this->event)) {
+        if ($this->event === '' || $this->event === '0') {
             throw new \InvalidArgumentException('Event name is required');
         }
 

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
 
 /**
  * Capture Payment Request
@@ -47,10 +47,10 @@ class CapturePaymentRequest extends Request implements HasBody
     /**
      * Create new capture request
      *
-     * @param string $authorizationId Transaction ID from previous authorization
-     * @param float $amount Amount to capture (must be <= authorized amount)
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $orderId Optional order reference
+     * @param  string  $authorizationId  Transaction ID from previous authorization
+     * @param  float  $amount  Amount to capture (must be <= authorized amount)
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $orderId  Optional order reference
      */
     public function __construct(
         protected readonly string $authorizationId,
@@ -64,8 +64,6 @@ class CapturePaymentRequest extends Request implements HasBody
      *
      * SUMIT uses the standard transaction endpoint for captures
      * with special parameters to indicate capture operation
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -94,9 +92,6 @@ class CapturePaymentRequest extends Request implements HasBody
 
     /**
      * Cast response to PaymentResponse DTO
-     *
-     * @param Response $response
-     * @return PaymentResponse
      */
     public function createDtoFromResponse(Response $response): PaymentResponse
     {

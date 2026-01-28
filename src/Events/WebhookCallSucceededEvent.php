@@ -14,7 +14,8 @@ use Illuminate\Queue\SerializesModels;
  */
 class WebhookCallSucceededEvent
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $uuid,
@@ -26,6 +27,5 @@ class WebhookCallSucceededEvent
         public readonly int $statusCode,
         public readonly string $responseBody,
         public readonly array $meta = []
-    ) {
-    }
+    ) {}
 }

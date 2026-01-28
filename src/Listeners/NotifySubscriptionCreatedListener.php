@@ -22,7 +22,7 @@ class NotifySubscriptionCreatedListener
         // Determine who should receive the notification
         $notifiable = $this->getNotifiable($event);
 
-        if (! $notifiable) {
+        if (! $notifiable instanceof \Illuminate\Contracts\Auth\Authenticatable) {
             return;
         }
 
@@ -35,9 +35,6 @@ class NotifySubscriptionCreatedListener
 
     /**
      * Determine who should be notified.
-     *
-     * @param SubscriptionCreated $event
-     * @return \Illuminate\Contracts\Auth\Authenticatable|null
      */
     protected function getNotifiable(SubscriptionCreated $event): ?\Illuminate\Contracts\Auth\Authenticatable
     {

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting;
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Schema;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuySetting;
 
 /**
  * Settings Service - Hybrid config + database approach.
@@ -21,8 +21,6 @@ class SettingsService
 {
     /**
      * Cached result of table existence check.
-     *
-     * @var bool|null
      */
     protected static ?bool $tableExistsCache = null;
 
@@ -30,8 +28,6 @@ class SettingsService
      * Check if settings table exists.
      *
      * Cached to prevent N+1 queries when loading 74 settings.
-     *
-     * @return bool
      */
     protected function tableExists(): bool
     {
@@ -41,19 +37,17 @@ class SettingsService
 
         try {
             self::$tableExistsCache = Schema::hasTable('officeguy_settings');
+
             return self::$tableExistsCache;
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             self::$tableExistsCache = false;
+
             return false;
         }
     }
 
     /**
      * Get a setting value (DB override or config fallback).
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
      */
     public function get(string $key, mixed $default = null): mixed
     {
@@ -63,7 +57,7 @@ class SettingsService
                 if (OfficeGuySetting::has($key)) {
                     return OfficeGuySetting::get($key);
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Table exists but query failed - continue to config
             }
         }
@@ -74,14 +68,10 @@ class SettingsService
 
     /**
      * Set a setting value (saves to database).
-     *
-     * @param string $key
-     * @param mixed $value
-     * @return void
      */
     public function set(string $key, mixed $value): void
     {
-        if (!$this->tableExists()) {
+        if (! $this->tableExists()) {
             throw new \RuntimeException('Settings table does not exist. Run migrations first.');
         }
 
@@ -91,8 +81,7 @@ class SettingsService
     /**
      * Set multiple settings at once.
      *
-     * @param array<string,mixed> $settings
-     * @return void
+     * @param  array<string,mixed>  $settings
      */
     public function setMany(array $settings): void
     {
@@ -106,28 +95,22 @@ class SettingsService
 
     /**
      * Check if a setting exists in database.
-     *
-     * @param string $key
-     * @return bool
      */
     public function has(string $key): bool
     {
-        if (!$this->tableExists()) {
+        if (! $this->tableExists()) {
             return false;
         }
 
         try {
             return OfficeGuySetting::has($key);
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return false;
         }
     }
 
     /**
      * Remove a setting from database (reverts to config default).
-     *
-     * @param string $key
-     * @return void
      */
     public function remove(string $key): void
     {
@@ -151,7 +134,7 @@ class SettingsService
             try {
                 $dbSettings = OfficeGuySetting::getAllSettings();
                 $settings = array_merge($settings, $dbSettings);
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Failed to query - return config only
             }
         }
@@ -307,7 +290,7 @@ class SettingsService
                         Arr::set($settings, $key, $dbSettings[$key]);
                     }
                 }
-            } catch (\Exception $e) {
+            } catch (\Exception) {
                 // Failed to query - return config only
             }
         }
@@ -317,9 +300,6 @@ class SettingsService
 
     /**
      * Reset a setting to config default (removes from DB).
-     *
-     * @param string $key
-     * @return void
      */
     public function resetToDefault(string $key): void
     {
@@ -328,8 +308,6 @@ class SettingsService
 
     /**
      * Reset all settings to config defaults (clears DB).
-     *
-     * @return void
      */
     public function resetAllToDefaults(): void
     {

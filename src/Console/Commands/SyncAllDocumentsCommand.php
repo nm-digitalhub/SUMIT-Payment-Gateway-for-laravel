@@ -77,8 +77,8 @@ class SyncAllDocumentsCommand extends Command
     /**
      * Sync all subscriptions including inactive ones
      *
-     * @param int|null $userId Specific user ID or null for all users
-     * @param bool $dryRun Dry run mode
+     * @param  int|null  $userId  Specific user ID or null for all users
+     * @param  bool  $dryRun  Dry run mode
      * @return int Number of subscriptions synced
      */
     protected function syncAllSubscriptions(?int $userId, bool $dryRun): int
@@ -96,6 +96,7 @@ class SyncAllDocumentsCommand extends Command
 
         if ($users->isEmpty()) {
             $this->warn('   ⚠️  No users with SUMIT customer ID found');
+
             return 0;
         }
 
@@ -106,6 +107,7 @@ class SyncAllDocumentsCommand extends Command
 
             if ($dryRun) {
                 $this->line('     [DRY RUN] Would sync subscriptions');
+
                 continue;
             }
 
@@ -132,10 +134,10 @@ class SyncAllDocumentsCommand extends Command
      * This syncs ALL documents from SUMIT, not just subscription-related ones.
      * Includes invoices, credit notes, eSIM purchases, and any other document type.
      *
-     * @param int|null $userId Specific user ID or null for all users
-     * @param int $days Number of days to look back
-     * @param bool $force Force sync even if recently synced
-     * @param bool $dryRun Dry run mode
+     * @param  int|null  $userId  Specific user ID or null for all users
+     * @param  int  $days  Number of days to look back
+     * @param  bool  $force  Force sync even if recently synced
+     * @param  bool  $dryRun  Dry run mode
      * @return int Number of documents synced
      */
     protected function syncDocumentsForSubscriptions(?int $userId, int $days, bool $force, bool $dryRun): int
@@ -153,6 +155,7 @@ class SyncAllDocumentsCommand extends Command
 
         if ($users->isEmpty()) {
             $this->warn('   ⚠️  No users with SUMIT customer ID found');
+
             return 0;
         }
 
@@ -197,15 +200,15 @@ class SyncAllDocumentsCommand extends Command
     /**
      * Generate and display summary report
      *
-     * @param int $documentsCount Number of documents synced
-     * @param bool $dryRun Dry run mode
-     * @return void
+     * @param  int  $documentsCount  Number of documents synced
+     * @param  bool  $dryRun  Dry run mode
      */
     protected function generateSummary(int $documentsCount, bool $dryRun): void
     {
         if ($dryRun) {
             $this->warn('📊 Dry run completed - no changes were saved');
             $this->newLine();
+
             return;
         }
 

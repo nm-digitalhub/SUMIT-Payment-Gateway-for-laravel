@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs\BulkActions;
 
-use Bytexr\QueueableBulkActions\Jobs\BulkActionJob;
 use Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse;
+use Bytexr\QueueableBulkActions\Jobs\BulkActionJob;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -107,6 +107,7 @@ abstract class BaseBulkActionJob extends BulkActionJob
      * Queue configuration from config (not hardcoded).
      */
     public string $queue;
+
     public string $connection;
 
     /**
@@ -152,11 +153,11 @@ abstract class BaseBulkActionJob extends BulkActionJob
         $result = $this->handleRecord($record);
 
         // Log only failures (reduce log volume)
-        if (!$result->isSuccess()) {
+        if (! $result->isSuccess()) {
             Log::warning('Bulk action record failed', [
                 'job' => class_basename($this),
                 'record_id' => $record->id,
-                'record_type' => get_class($record),
+                'record_type' => $record::class,
                 'error' => $result->getMessage(),
             ]);
         }

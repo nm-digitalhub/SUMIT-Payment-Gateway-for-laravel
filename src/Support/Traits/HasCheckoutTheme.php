@@ -18,7 +18,6 @@ namespace OfficeGuy\LaravelSumitGateway\Support\Traits;
  * }
  * ```
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @version 1.16.0
  */
 trait HasCheckoutTheme
@@ -45,6 +44,7 @@ trait HasCheckoutTheme
     public function getSecondaryColor(): string
     {
         $primary = $this->getPrimaryColor();
+
         return $this->lightenColor($primary, 40);
     }
 
@@ -56,6 +56,7 @@ trait HasCheckoutTheme
     public function getHoverColor(): string
     {
         $primary = $this->getPrimaryColor();
+
         return $this->darkenColor($primary, 10);
     }
 
@@ -91,8 +92,8 @@ trait HasCheckoutTheme
 
         // Merge with custom checkout_theme if it exists
         $customTheme = $this->getCustomThemeData();
-        if (!empty($customTheme)) {
-            $theme = array_replace_recursive($theme, $customTheme);
+        if (! empty($customTheme)) {
+            return array_replace_recursive($theme, $customTheme);
         }
 
         return $theme;
@@ -132,6 +133,7 @@ trait HasCheckoutTheme
 
         if (is_string($theme)) {
             $decoded = json_decode($theme, true);
+
             return is_array($decoded) ? $decoded : [];
         }
 
@@ -174,8 +176,8 @@ trait HasCheckoutTheme
     /**
      * Lighten a hex color by a percentage.
      *
-     * @param string $hex Hex color code (#RRGGBB or RRGGBB)
-     * @param int $percent Percentage to lighten (0-100)
+     * @param  string  $hex  Hex color code (#RRGGBB or RRGGBB)
+     * @param  int  $percent  Percentage to lighten (0-100)
      * @return string Lightened hex color
      */
     protected function lightenColor(string $hex, int $percent): string
@@ -204,8 +206,8 @@ trait HasCheckoutTheme
     /**
      * Darken a hex color by a percentage.
      *
-     * @param string $hex Hex color code (#RRGGBB or RRGGBB)
-     * @param int $percent Percentage to darken (0-100)
+     * @param  string  $hex  Hex color code (#RRGGBB or RRGGBB)
+     * @param  int  $percent  Percentage to darken (0-100)
      * @return string Darkened hex color
      */
     protected function darkenColor(string $hex, int $percent): string
@@ -234,7 +236,7 @@ trait HasCheckoutTheme
     /**
      * Check if a color is valid hex.
      *
-     * @param string $color Color to validate
+     * @param  string  $color  Color to validate
      * @return bool True if valid hex color
      */
     protected function isValidHexColor(string $color): bool
@@ -245,7 +247,7 @@ trait HasCheckoutTheme
     /**
      * Get color contrast (for determining text color).
      *
-     * @param string $hex Background color
+     * @param  string  $hex  Background color
      * @return string 'light' or 'dark'
      */
     protected function getColorContrast(string $hex): string

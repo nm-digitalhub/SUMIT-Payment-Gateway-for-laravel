@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('officeguy_documents', function (Blueprint $table) {
-            if (!Schema::hasColumn('officeguy_documents', 'items')) {
+            if (! Schema::hasColumn('officeguy_documents', 'items')) {
                 $table->json('items')
                     ->nullable()
                     ->after('raw_response')

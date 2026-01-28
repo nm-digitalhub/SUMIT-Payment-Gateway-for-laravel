@@ -25,11 +25,6 @@ use OfficeGuy\LaravelSumitGateway\Services\PayableMappingService;
 class DynamicPayableWrapper implements Payable
 {
     /**
-     * The wrapped model instance.
-     */
-    protected Model $model;
-
-    /**
      * Field mappings loaded from database or defaults.
      *
      * @var array<string, string|null>
@@ -44,15 +39,14 @@ class DynamicPayableWrapper implements Payable
     /**
      * Create a new DynamicPayableWrapper instance.
      *
-     * @param Model $model The model to wrap
+     * @param  Model  $model  The model to wrap
      */
-    public function __construct(Model $model)
+    public function __construct(protected Model $model)
     {
-        $this->model = $model;
         $this->mappingService = app(PayableMappingService::class);
 
         // Load mapping from database or use defaults
-        $this->fieldMap = $this->mappingService->getMappingForModel($model)
+        $this->fieldMap = $this->mappingService->getMappingForModel($this->model)
             ?? $this->getDefaultFieldMap();
     }
 
@@ -67,8 +61,8 @@ class DynamicPayableWrapper implements Payable
      * - Direct field: "final_price_ils" → model field
      * - null: field not mapped
      *
-     * @param string $mapKey The Payable field key
-     * @param mixed $default Default value if field is not mapped or null
+     * @param  string  $mapKey  The Payable field key
+     * @param  mixed  $default  Default value if field is not mapped or null
      * @return mixed The resolved field value
      */
     protected function getField(string $mapKey, mixed $default = null): mixed
@@ -96,6 +90,7 @@ class DynamicPayableWrapper implements Payable
         // JSON array literal (starts with '[')
         if (str_starts_with($mapping, '[')) {
             $decoded = json_decode($mapping, true);
+
             return is_array($decoded) ? $decoded : [];
         }
 
@@ -149,18 +144,14 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get unique identifier of the payable item.
-     *
-     * @return string|int
      */
-    public function getPayableId(): string|int
+    public function getPayableId(): string | int
     {
         return $this->getField('payable_id') ?? $this->model->id;
     }
 
     /**
      * Get the total amount to be charged (including tax if enabled).
-     *
-     * @return float
      */
     public function getPayableAmount(): float
     {
@@ -169,8 +160,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get currency code (ISO 4217: ILS, USD, EUR, etc.).
-     *
-     * @return string
      */
     public function getPayableCurrency(): string
     {
@@ -179,8 +168,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get customer's full name.
-     *
-     * @return string
      */
     public function getCustomerName(): string
     {
@@ -189,8 +176,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get customer's email address.
-     *
-     * @return string|null
      */
     public function getCustomerEmail(): ?string
     {
@@ -199,8 +184,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get customer's phone number.
-     *
-     * @return string|null
      */
     public function getCustomerPhone(): ?string
     {
@@ -209,10 +192,8 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get customer ID in your system (not SUMIT customer ID).
-     *
-     * @return string|int|null
      */
-    public function getCustomerId(): string|int|null
+    public function getCustomerId(): string | int | null
     {
         return $this->getField('customer_id');
     }
@@ -221,19 +202,16 @@ class DynamicPayableWrapper implements Payable
      * Get customer's address as an array.
      *
      * Expected format: ['street' => '...', 'city' => '...', 'postal_code' => '...', 'country' => '...']
-     *
-     * @return array|null
      */
     public function getCustomerAddress(): ?array
     {
         $address = $this->getField('customer_address');
+
         return is_array($address) ? $address : null;
     }
 
     /**
      * Get customer's company name (for business invoices).
-     *
-     * @return string|null
      */
     public function getCustomerCompany(): ?string
     {
@@ -242,8 +220,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get customer note or description.
-     *
-     * @return string|null
      */
     public function getCustomerNote(): ?string
     {
@@ -254,19 +230,16 @@ class DynamicPayableWrapper implements Payable
      * Get line items for detailed invoice.
      *
      * Expected format: [['name' => '...', 'quantity' => 1, 'price' => 100], ...]
-     *
-     * @return array
      */
     public function getLineItems(): array
     {
         $items = $this->getField('line_items', []);
+
         return is_array($items) ? $items : [];
     }
 
     /**
      * Get shipping cost (0 if no shipping).
-     *
-     * @return float
      */
     public function getShippingAmount(): float
     {
@@ -275,8 +248,6 @@ class DynamicPayableWrapper implements Payable
 
     /**
      * Get shipping method name.
-     *
-     * @return string|null
      */
     public function getShippingMethod(): ?string
     {
@@ -287,30 +258,26 @@ class DynamicPayableWrapper implements Payable
      * Get additional fees.
      *
      * Expected format: [['type' => 'processing', 'amount' => 5], ...]
-     *
-     * @return array
      */
     public function getFees(): array
     {
         $fees = $this->getField('fees', []);
+
         return is_array($fees) ? $fees : [];
     }
 
     /**
      * Get VAT rate as decimal (0.17 for 17%).
-     *
-     * @return float|null
      */
     public function getVatRate(): ?float
     {
         $rate = $this->getField('vat_rate');
+
         return $rate !== null ? (float) $rate : null;
     }
 
     /**
      * Check if tax calculation is enabled.
-     *
-     * @return bool
      */
     public function isTaxEnabled(): bool
     {

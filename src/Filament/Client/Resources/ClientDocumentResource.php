@@ -4,41 +4,42 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientDocumentResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 
 class ClientDocumentResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyDocument::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
-
-    protected static ?string $navigationLabel = 'My Documents';
-
-    protected static ?int $navigationSort = 3;
-
-    protected static ?string $modelLabel = 'Document';
-
-    protected static ?string $pluralModelLabel = 'Documents';
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     public static function getEloquentQuery(): Builder
     {
         // Filter to only show documents for the authenticated client's SUMIT customer ID
         $client = auth()->user()?->client;
 
-        if (!$client) {
+        if (! $client) {
             // No client found - return empty query
             return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
@@ -78,13 +79,13 @@ class ClientDocumentResource extends Resource
                             ->rows(3),
                         Forms\Components\Placeholder::make('status')
                             ->label('Status')
-                            ->content(fn ($record) => 
-                                $record?->is_draft ? '📝 Draft' : '✅ Final'
+                            ->content(
+                                fn ($record): string => $record?->is_draft ? '📝 Draft' : '✅ Final'
                             ),
                         Forms\Components\Placeholder::make('email_status')
                             ->label('Email Status')
-                            ->content(fn ($record) => 
-                                $record?->emailed ? '✉️ Sent' : '📧 Not Sent'
+                            ->content(
+                                fn ($record): string => $record?->emailed ? '✉️ Sent' : '📧 Not Sent'
                             ),
                     ])->columns(3),
             ]);
@@ -105,7 +106,7 @@ class ClientDocumentResource extends Resource
                     ->label('Type')
                     ->formatStateUsing(fn ($record) => $record->getDocumentTypeName())
                     ->badge()
-                    ->color(fn ($record) => match (true) {
+                    ->color(fn ($record): string => match (true) {
                         $record->isInvoice() => 'success',
                         $record->isOrder() => 'info',
                         $record->isDonationReceipt() => 'warning',
@@ -141,8 +142,8 @@ class ClientDocumentResource extends Resource
                 Action::make('download')
                     ->label('Download')
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->visible(fn ($record) => $record->document_id && !$record->is_draft)
-                    ->url(fn ($record) => route('officeguy.document.download', ['document' => $record->document_id]), true),
+                    ->visible(fn ($record): bool => $record->document_id && ! $record->is_draft)
+                    ->url(fn ($record): string => route('officeguy.document.download', ['document' => $record->document_id]), true),
             ])
             ->emptyStateHeading('No documents found')
             ->emptyStateDescription('You don\'t have any invoices or receipts yet. Documents will appear here after you make a purchase.')
@@ -185,8 +186,8 @@ class ClientDocumentResource extends Resource
         $draftCount = static::getEloquentQuery()
             ->where('is_draft', true)
             ->count();
-        
-        return $draftCount > 0 ? (string)$draftCount : null;
+
+        return $draftCount > 0 ? (string) $draftCount : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

@@ -22,12 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Services\WebhookService;
  */
 class WebhookEventListener
 {
-    protected WebhookService $webhookService;
-
-    public function __construct(WebhookService $webhookService)
-    {
-        $this->webhookService = $webhookService;
-    }
+    public function __construct(protected WebhookService $webhookService) {}
 
     /**
      * Handle PaymentCompleted event.
@@ -180,7 +175,7 @@ class WebhookEventListener
     /**
      * Subscribe to multiple events.
      *
-     * @param \Illuminate\Events\Dispatcher $events
+     * @param  \Illuminate\Events\Dispatcher  $events
      */
     public function subscribe($events): void
     {

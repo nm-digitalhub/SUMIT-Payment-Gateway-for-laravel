@@ -94,29 +94,17 @@ class BulkSubscriptionCancelJob extends BaseBulkActionJob
     protected function handleRecord($record): ActionResponse
     {
         // בדיקה אם המנוי יכול להיות מבוטל
-        if (!$record->canBeCancelled()) {
-            return ActionResponse::failure(
-                $record,
-                __('officeguy::messages.subscription_cannot_be_cancelled'),
-                ['subscription_id' => $record->id, 'reason' => 'invalid_status']
-            );
+        if (! $record->canBeCancelled()) {
+            return ActionResponse::failure();
         }
 
         try {
             // קריאה ל-Service לביטול המנוי
             SubscriptionService::cancel($record, 'Bulk cancellation');
 
-            return ActionResponse::success(
-                $record,
-                null,
-                ['subscription_id' => $record->id, 'cancelled_at' => now()->toIso8601String()]
-            );
-        } catch (\Throwable $e) {
-            return ActionResponse::failure(
-                $record,
-                $e->getMessage(),
-                ['subscription_id' => $record->id, 'exception' => get_class($e)]
-            );
+            return ActionResponse::success();
+        } catch (\Throwable) {
+            return ActionResponse::failure();
         }
     }
 

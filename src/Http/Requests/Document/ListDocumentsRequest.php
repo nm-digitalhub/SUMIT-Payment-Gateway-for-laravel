@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Document;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * List Documents Request
@@ -83,15 +83,15 @@ class ListDocumentsRequest extends Request implements HasBody
     /**
      * Create new list documents request
      *
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param int $page Current page number (1-based)
-     * @param int $perPage Items per page (max: 100)
-     * @param string|null $dateFrom Start date (YYYY-MM-DD)
-     * @param string|null $dateTo End date (YYYY-MM-DD)
-     * @param int|null $documentType Filter by document type (1/2/3/320)
-     * @param string|null $customerId Filter by customer ID
-     * @param bool|null $isClosed Filter by payment status (true=paid, false=unpaid)
-     * @param string|null $orderId Filter by order reference
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  int  $page  Current page number (1-based)
+     * @param  int  $perPage  Items per page (max: 100)
+     * @param  string|null  $dateFrom  Start date (YYYY-MM-DD)
+     * @param  string|null  $dateTo  End date (YYYY-MM-DD)
+     * @param  int|null  $documentType  Filter by document type (1/2/3/320)
+     * @param  string|null  $customerId  Filter by customer ID
+     * @param  bool|null  $isClosed  Filter by payment status (true=paid, false=unpaid)
+     * @param  string|null  $orderId  Filter by order reference
      */
     public function __construct(
         protected readonly CredentialsData $credentials,
@@ -107,8 +107,6 @@ class ListDocumentsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -164,7 +162,6 @@ class ListDocumentsRequest extends Request implements HasBody
      *
      * List response doesn't use DocumentResponse DTO (different structure)
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

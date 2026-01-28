@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
-use OfficeGuy\LaravelSumitGateway\Models\CrmFolderField;
 
 /**
  * CRM Schema Service
@@ -73,7 +72,7 @@ class CrmSchemaService
      *
      * Endpoint: POST /crm/schema/getfolder/
      *
-     * @param int $folderId SUMIT folder ID
+     * @param  int  $folderId  SUMIT folder ID
      * @return array{success: bool, folder?: array, fields?: array, error?: string}
      */
     public static function getFolder(int $folderId): array
@@ -131,8 +130,8 @@ class CrmSchemaService
      * Note: SUMIT API does not provide /crm/schema/getfolder/ endpoint,
      * so we work with limited data (ID and Name only).
      *
-     * @param int $sumitFolderId SUMIT folder ID
-     * @param string|null $folderName Folder name from listFolders
+     * @param  int  $sumitFolderId  SUMIT folder ID
+     * @param  string|null  $folderName  Folder name from listFolders
      * @return array{success: bool, folder?: CrmFolder, fields_synced?: int, error?: string}
      */
     public static function syncFolderSchema(int $sumitFolderId, ?string $folderName = null): array
@@ -141,11 +140,11 @@ class CrmSchemaService
             // SUMIT API limitation: Only ID and Name are available from listFolders
             // The getFolder() endpoint returns null, so we work with what we have
 
-            if (!$folderName) {
+            if (! $folderName) {
                 // Try to pull existing name from the local DB (previous sync)
                 $folderName = CrmFolder::where('sumit_folder_id', $sumitFolderId)->value('name');
 
-                if (!$folderName) {
+                if (! $folderName) {
                     return [
                         'success' => false,
                         'error' => 'Folder name is required',
@@ -206,7 +205,7 @@ class CrmSchemaService
             // Get all folders from SUMIT
             $result = self::listFolders();
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 return [
                     'success' => false,
                     'error' => $result['error'],
@@ -219,7 +218,7 @@ class CrmSchemaService
             foreach ($result['folders'] as $folderData) {
                 $sumitFolderId = $folderData['FolderID'] ?? null;
 
-                if (!$sumitFolderId) {
+                if (! $sumitFolderId) {
                     continue;
                 }
 
@@ -254,42 +253,5 @@ class CrmSchemaService
                 'error' => $e->getMessage(),
             ];
         }
-    }
-
-    /**
-     * Sanitize field name to snake_case
-     *
-     * @param string $name Field name
-     * @return string Sanitized field name
-     */
-    private static function sanitizeFieldName(string $name): string
-    {
-        // Convert to snake_case
-        $name = preg_replace('/[^a-zA-Z0-9]+/', '_', $name);
-        $name = strtolower(trim($name, '_'));
-
-        return $name ?: 'unknown_field';
-    }
-
-    /**
-     * Map SUMIT field type to local field type
-     *
-     * @param string $sumitType SUMIT field type
-     * @return string Local field type
-     */
-    private static function mapFieldType(string $sumitType): string
-    {
-        return match (strtolower($sumitType)) {
-            'text', 'string' => 'text',
-            'number', 'integer', 'decimal' => 'number',
-            'email' => 'email',
-            'phone', 'tel' => 'phone',
-            'date', 'datetime' => 'date',
-            'select', 'dropdown' => 'select',
-            'multiselect' => 'multiselect',
-            'boolean', 'checkbox' => 'boolean',
-            'textarea' => 'text',
-            default => 'text',
-        };
     }
 }

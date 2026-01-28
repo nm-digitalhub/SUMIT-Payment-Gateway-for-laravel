@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Carbon\Carbon;
 
 /**
  * Order Success Token Model
@@ -89,7 +89,7 @@ class OrderSuccessToken extends Model
      */
     public function isConsumed(): bool
     {
-        return !is_null($this->consumed_at);
+        return ! is_null($this->consumed_at);
     }
 
     /**
@@ -98,8 +98,8 @@ class OrderSuccessToken extends Model
      * Once consumed, the token cannot be used again.
      * Records IP and User-Agent for security auditing.
      *
-     * @param string $ip Client IP address
-     * @param string $userAgent Client User-Agent
+     * @param  string  $ip  Client IP address
+     * @param  string  $userAgent  Client User-Agent
      */
     public function consume(string $ip, string $userAgent): void
     {
@@ -116,8 +116,7 @@ class OrderSuccessToken extends Model
      * Hashes the token and searches for matching hash.
      * Only returns unconsumed tokens.
      *
-     * @param string $rawToken The plain text token from URL
-     * @return static|null
+     * @param  string  $rawToken  The plain text token from URL
      */
     public static function findByToken(string $rawToken): ?static
     {
@@ -169,8 +168,6 @@ class OrderSuccessToken extends Model
 
     /**
      * Get human-readable expiration status
-     *
-     * @return string
      */
     public function getExpirationStatus(): string
     {

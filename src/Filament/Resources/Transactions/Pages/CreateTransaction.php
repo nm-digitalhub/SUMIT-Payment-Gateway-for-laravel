@@ -2,8 +2,8 @@
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Pages;
 
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 use Filament\Resources\Pages\CreateRecord;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 
 class CreateTransaction extends CreateRecord
 {

@@ -16,7 +16,7 @@ class PaymentCompletedNotification extends Notification
      * Create a new notification instance.
      */
     public function __construct(
-        public readonly string|int $orderId,
+        public readonly string | int $orderId,
         public readonly array $payment,
         public readonly array $response,
         public readonly ?OfficeGuyTransaction $transaction = null,
@@ -58,7 +58,7 @@ class PaymentCompletedNotification extends Notification
             'actions' => [
                 [
                     'label' => __('officeguy::notifications.payment_completed.view_transaction'),
-                    'url' => $this->transaction
+                    'url' => $this->transaction instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction
                         ? route('filament.admin.resources.office-guy-transactions.view', $this->transaction)
                         : null,
                 ],

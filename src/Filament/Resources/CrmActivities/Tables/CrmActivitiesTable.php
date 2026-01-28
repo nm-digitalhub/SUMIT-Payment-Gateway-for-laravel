@@ -151,11 +151,9 @@ class CrmActivitiesTable
                         Forms\Components\DatePicker::make('from')->label(__('crm_activities.filters.from')),
                         Forms\Components\DatePicker::make('to')->label(__('crm_activities.filters.to')),
                     ])
-                    ->query(function ($query, array $data) {
-                        return $query
-                            ->when($data['from'] ?? null, fn ($q, $date) => $q->whereDate('start_at', '>=', $date))
-                            ->when($data['to'] ?? null, fn ($q, $date) => $q->whereDate('start_at', '<=', $date));
-                    }),
+                    ->query(fn ($query, array $data) => $query
+                        ->when($data['from'] ?? null, fn ($q, $date) => $q->whereDate('start_at', '>=', $date))
+                        ->when($data['to'] ?? null, fn ($q, $date) => $q->whereDate('start_at', '<=', $date))),
             ])
             ->recordActions([
                 ViewAction::make(),
@@ -168,7 +166,7 @@ class CrmActivitiesTable
                     ->color('warning')
                     ->requiresConfirmation()
                     ->iconButton()
-                    ->visible(fn ($record) => $record->status !== 'in_progress')
+                    ->visible(fn ($record): bool => $record->status !== 'in_progress')
                     ->action(fn ($record) => $record->update(['status' => 'in_progress'])),
 
                 Action::make('mark_completed')
@@ -177,8 +175,8 @@ class CrmActivitiesTable
                     ->color('success')
                     ->requiresConfirmation()
                     ->iconButton()
-                    ->visible(fn ($record) => $record->status !== 'completed')
-                    ->action(function ($record) {
+                    ->visible(fn ($record): bool => $record->status !== 'completed')
+                    ->action(function ($record): void {
                         $record->update([
                             'status' => 'completed',
                             'end_at' => $record->end_at ?? now(),
@@ -191,7 +189,7 @@ class CrmActivitiesTable
                     ->color('danger')
                     ->requiresConfirmation()
                     ->iconButton()
-                    ->visible(fn ($record) => $record->status !== 'cancelled')
+                    ->visible(fn ($record): bool => $record->status !== 'cancelled')
                     ->action(fn ($record) => $record->update(['status' => 'cancelled'])),
             ])
             ->bulkActions([

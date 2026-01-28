@@ -34,16 +34,16 @@ class MockNewCustomerForActivity extends Model
 }
 
 // Create class aliases for App\Models namespace
-if (!class_exists('App\Models\Client')) {
+if (! class_exists('App\Models\Client')) {
     class_alias(MockClientForActivity::class, 'App\Models\Client');
 }
-if (!class_exists('App\Models\CustomCustomer')) {
+if (! class_exists('App\Models\CustomCustomer')) {
     class_alias(MockCustomerForActivity::class, 'App\Models\CustomCustomer');
 }
-if (!class_exists('App\Models\LegacyClient')) {
+if (! class_exists('App\Models\LegacyClient')) {
     class_alias(MockLegacyClientForActivity::class, 'App\Models\LegacyClient');
 }
-if (!class_exists('App\Models\NewCustomer')) {
+if (! class_exists('App\Models\NewCustomer')) {
     class_alias(MockNewCustomerForActivity::class, 'App\Models\NewCustomer');
 }
 
@@ -81,7 +81,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock activity (not persisted)
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();
@@ -92,7 +92,7 @@ class CrmActivityCustomerModelTest extends TestCase
         // Assert: Relationship resolves to a model (functional test)
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches what we expect
         $this->assertEquals('customers', $relatedModel->getTable());
     }
@@ -107,7 +107,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();
@@ -118,7 +118,7 @@ class CrmActivityCustomerModelTest extends TestCase
         // Assert: Relationship falls back to a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches Client model
         $this->assertEquals('clients', $relatedModel->getTable());
     }
@@ -133,7 +133,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();
@@ -144,7 +144,7 @@ class CrmActivityCustomerModelTest extends TestCase
         // Assert: Relationship uses a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches legacy model
         $this->assertEquals('legacy_clients', $relatedModel->getTable());
     }
@@ -158,7 +158,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get both relationships
         $customerRelationship = $activity->customer();
@@ -188,7 +188,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the client relationship (old method)
         $relationship = $activity->client();
@@ -209,7 +209,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();
@@ -227,7 +227,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => null]);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the client relationship
         $relationship = $activity->client();
@@ -246,7 +246,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();
@@ -264,7 +264,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get both relationships
         $customerRel = $activity->customer();
@@ -303,7 +303,7 @@ class CrmActivityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => '']);
 
         // Create a mock activity
-        $activity = new CrmActivity();
+        $activity = new CrmActivity;
 
         // Act: Get the customer relationship
         $relationship = $activity->customer();

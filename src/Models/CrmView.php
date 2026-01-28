@@ -24,7 +24,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array|null $columns Visible columns
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read CrmFolder $folder
  */
 class CrmView extends Model
@@ -82,7 +81,7 @@ class CrmView extends Model
     /**
      * Scope a query to only include public views.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopePublic($query)
@@ -93,7 +92,7 @@ class CrmView extends Model
     /**
      * Scope a query to only include default views.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeDefault($query)
@@ -104,13 +103,12 @@ class CrmView extends Model
     /**
      * Scope a query to filter by user.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeForUser($query, int $userId)
     {
-        return $query->where(function ($q) use ($userId) {
+        return $query->where(function ($q) use ($userId): void {
             $q->where('is_public', true)
                 ->orWhere('user_id', $userId);
         });
@@ -119,7 +117,7 @@ class CrmView extends Model
     /**
      * Apply this view's filters to a query.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function applyToQuery($query)

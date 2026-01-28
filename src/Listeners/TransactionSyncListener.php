@@ -36,9 +36,6 @@ class TransactionSyncListener
      * 3. Type = 'CreateOrUpdate'
      * 4. Status = 'מאושר' (approved)
      * 5. Transaction not already webhook-confirmed (idempotency)
-     *
-     * @param SumitWebhookReceived $event
-     * @return void
      */
     public function handle(SumitWebhookReceived $event): void
     {
@@ -59,11 +56,12 @@ class TransactionSyncListener
 
         // Guard: Create or CreateOrUpdate only (not Delete)
         $type = $payload['Type'] ?? null;
-        if (!in_array($type, ['Create', 'CreateOrUpdate'], true)) {
+        if (! in_array($type, ['Create', 'CreateOrUpdate'], true)) {
             Log::debug('TransactionSyncListener: Ignoring non-Create/CreateOrUpdate webhook', [
                 'webhook_id' => $webhook->id,
                 'type' => $type,
             ]);
+
             return;
         }
 
@@ -86,6 +84,7 @@ class TransactionSyncListener
                 'entity_id' => $entityId,
                 'status' => $status,
             ]);
+
             return;
         }
 
@@ -101,26 +100,28 @@ class TransactionSyncListener
 
         // Guard: Card payments only (not Bit, not refunds, not accounting operations)
         // This is critical to prevent calling Order::onPaymentConfirmed() for non-card payments
-        if (!$paymentMethodName || !str_contains($paymentMethodName, 'כרטיס')) {
+        if (! $paymentMethodName || ! str_contains((string) $paymentMethodName, 'כרטיס')) {
             Log::debug('TransactionSyncListener: Ignoring non-card payment', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
                 'payment_method_obj' => $paymentMethodObj,
                 'payment_method_name' => $paymentMethodName,
             ]);
+
             return;
         }
 
         // Guard: Non-zero amount
         // CRITICAL: Amount can be object (document) in old structure, or float in new structure
-        $amountValue = is_array($amount) ? null : (float)($amount ?? 0);
-        if (!$amountValue || $amountValue === 0.0) {
+        $amountValue = is_array($amount) ? null : (float) ($amount ?? 0);
+        if (! $amountValue || $amountValue === 0.0) {
             Log::debug('TransactionSyncListener: Ignoring zero-amount transaction', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
                 'amount' => $amount,
                 'amount_value' => $amountValue,
             ]);
+
             return;
         }
 
@@ -129,11 +130,12 @@ class TransactionSyncListener
         // For now, we'll try to find by amount + timestamp proximity
         $transaction = $this->findOrCreateTransaction($payload, $entityId);
 
-        if (!$transaction) {
+        if (! $transaction instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction) {
             Log::warning('TransactionSyncListener: Could not find/create transaction', [
                 'webhook_id' => $webhook->id,
                 'entity_id' => $entityId,
             ]);
+
             return;
         }
 
@@ -143,6 +145,7 @@ class TransactionSyncListener
                 'webhook_id' => $webhook->id,
                 'transaction_id' => $transaction->id,
             ]);
+
             return;
         }
 
@@ -170,7 +173,7 @@ class TransactionSyncListener
                 Log::info('TransactionSyncListener: Order payment confirmed', [
                     'webhook_id' => $webhook->id,
                     'transaction_id' => $transaction->id,
-                    'payable_type' => get_class($payable),
+                    'payable_type' => $payable::class,
                     'payable_id' => $payable->getKey(),
                 ]);
             } catch (\Exception $e) {
@@ -185,8 +188,8 @@ class TransactionSyncListener
             Log::warning('TransactionSyncListener: No payable or onPaymentConfirmed method', [
                 'webhook_id' => $webhook->id,
                 'transaction_id' => $transaction->id,
-                'has_payable' => (bool)$payable,
-                'payable_type' => $payable ? get_class($payable) : null,
+                'has_payable' => (bool) $payable,
+                'payable_type' => $payable ? $payable::class : null,
             ]);
         }
 
@@ -210,15 +213,14 @@ class TransactionSyncListener
      * to local OfficeGuyTransaction records. Matching by amount+timestamp
      * is unsafe due to duplicate amounts, retries, recurring payments, etc.
      *
-     * @param array $payload Webhook payload
-     * @param int|null $entityId SUMIT CRM Entity ID
-     * @return OfficeGuyTransaction|null
+     * @param  array  $payload  Webhook payload
+     * @param  int|null  $entityId  SUMIT CRM Entity ID
      *
      * @see ADR-004: Handling Card Payments via SUMIT CRM Webhooks
      */
     private function findOrCreateTransaction(array $payload, ?int $entityId): ?OfficeGuyTransaction
     {
-        if (!$entityId) {
+        if (! $entityId) {
             return null;
         }
 

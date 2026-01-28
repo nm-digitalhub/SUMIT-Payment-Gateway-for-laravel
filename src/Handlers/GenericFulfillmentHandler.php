@@ -22,9 +22,6 @@ class GenericFulfillmentHandler
 {
     /**
      * Handle generic fulfillment
-     *
-     * @param OfficeGuyTransaction $transaction
-     * @return void
      */
     public function handle(OfficeGuyTransaction $transaction): void
     {
@@ -40,6 +37,7 @@ class GenericFulfillmentHandler
                 "GenericFulfillmentHandler: No payable found for transaction {$transaction->id}",
                 'error'
             );
+
             return;
         }
 
@@ -59,7 +57,7 @@ class GenericFulfillmentHandler
             );
         } else {
             OfficeGuyApi::writeToLog(
-                "GenericFulfillmentHandler: Payable is not an Order instance (type: " . get_class($payable) . ")",
+                'GenericFulfillmentHandler: Payable is not an Order instance (type: ' . $payable::class . ')',
                 'warning'
             );
         }

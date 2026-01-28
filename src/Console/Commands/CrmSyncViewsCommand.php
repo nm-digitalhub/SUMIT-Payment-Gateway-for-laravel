@@ -61,20 +61,24 @@ class CrmSyncViewsCommand extends Command
         // If specific folder ID is provided, sync only that folder's views
         if ($folderId) {
             $folder = CrmFolder::find($folderId);
-            if (!$folder || !$folder->sumit_folder_id) {
+            if (! $folder || ! $folder->sumit_folder_id) {
                 $this->error('✗ Folder not found or not synced with SUMIT');
+
                 return Command::FAILURE;
             }
+
             return $this->syncFolderViews($folder, $dryRun);
         }
 
         // If SUMIT folder ID is provided, sync only that folder's views
         if ($sumitFolderId) {
             $folder = CrmFolder::where('sumit_folder_id', $sumitFolderId)->first();
-            if (!$folder) {
+            if (! $folder) {
                 $this->error('✗ Folder with SUMIT ID ' . $sumitFolderId . ' not found locally');
+
                 return Command::FAILURE;
             }
+
             return $this->syncFolderViews($folder, $dryRun);
         }
 
@@ -85,8 +89,8 @@ class CrmSyncViewsCommand extends Command
     /**
      * Sync views for a single folder
      *
-     * @param CrmFolder $folder Folder to sync views for
-     * @param bool $dryRun Dry run mode
+     * @param  CrmFolder  $folder  Folder to sync views for
+     * @param  bool  $dryRun  Dry run mode
      * @return int Command exit code
      */
     protected function syncFolderViews(CrmFolder $folder, bool $dryRun): int
@@ -99,6 +103,7 @@ class CrmSyncViewsCommand extends Command
             $this->line('   [DRY RUN] Would create/update views in database');
             $this->newLine();
             $this->info('✅ Dry run completed');
+
             return Command::SUCCESS;
         }
 
@@ -106,8 +111,9 @@ class CrmSyncViewsCommand extends Command
             // Get views from SUMIT
             $result = CrmViewService::listViews($folder->sumit_folder_id);
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $this->error('✗ Failed to list views: ' . $result['error']);
+
                 return Command::FAILURE;
             }
 
@@ -116,6 +122,7 @@ class CrmSyncViewsCommand extends Command
 
             if ($viewsCount === 0) {
                 $this->warn("⚠️  No views found for folder: {$folder->name}");
+
                 return Command::SUCCESS;
             }
 
@@ -130,8 +137,9 @@ class CrmSyncViewsCommand extends Command
                 $viewId = $viewData['ID'] ?? null;
                 $viewName = $viewData['Name'] ?? 'Unknown View';
 
-                if (!$viewId) {
+                if (! $viewId) {
                     $errors[] = "View '{$viewName}' has no ID";
+
                     continue;
                 }
 
@@ -169,7 +177,7 @@ class CrmSyncViewsCommand extends Command
                 ]
             );
 
-            if (!empty($errors)) {
+            if ($errors !== []) {
                 $this->newLine();
                 $this->error('⚠️  Errors encountered:');
                 foreach ($errors as $error) {
@@ -179,16 +187,18 @@ class CrmSyncViewsCommand extends Command
 
             $this->newLine();
 
-            if (empty($errors)) {
+            if ($errors === []) {
                 $this->info('✅ All views synced successfully!');
+
                 return Command::SUCCESS;
-            } else {
-                $this->warn('⚠️  Sync completed with ' . count($errors) . ' error(s)');
-                return Command::FAILURE;
             }
+            $this->warn('⚠️  Sync completed with ' . count($errors) . ' error(s)');
+
+            return Command::FAILURE;
 
         } catch (\Throwable $e) {
             $this->error('✗ Exception: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -196,8 +206,8 @@ class CrmSyncViewsCommand extends Command
     /**
      * Sync views for all folders from SUMIT
      *
-     * @param bool $dryRun Dry run mode
-     * @param bool $force Force sync even if recently synced
+     * @param  bool  $dryRun  Dry run mode
+     * @param  bool  $force  Force sync even if recently synced
      * @return int Command exit code
      */
     protected function syncAllFoldersViews(bool $dryRun, bool $force): int
@@ -211,6 +221,7 @@ class CrmSyncViewsCommand extends Command
 
             if ($folders->isEmpty()) {
                 $this->warn('⚠️  No synced folders found. Please run crm:sync-folders first.');
+
                 return Command::FAILURE;
             }
 
@@ -221,7 +232,7 @@ class CrmSyncViewsCommand extends Command
             if ($dryRun) {
                 $this->table(
                     ['Folder ID', 'SUMIT ID', 'Name', 'Entity Type'],
-                    $folders->map(fn($f) => [
+                    $folders->map(fn ($f): array => [
                         $f->id,
                         $f->sumit_folder_id,
                         $f->name,
@@ -231,6 +242,7 @@ class CrmSyncViewsCommand extends Command
 
                 $this->newLine();
                 $this->info('✅ Dry run completed - no changes were saved');
+
                 return Command::SUCCESS;
             }
 
@@ -267,10 +279,11 @@ class CrmSyncViewsCommand extends Command
             // Display summary
             $this->generateSummary($foldersProcessed, $totalViews, $errors);
 
-            return empty($errors) ? Command::SUCCESS : Command::FAILURE;
+            return $errors === [] ? Command::SUCCESS : Command::FAILURE;
 
         } catch (\Throwable $e) {
             $this->error('✗ Exception: ' . $e->getMessage());
+
             return Command::FAILURE;
         }
     }
@@ -278,10 +291,9 @@ class CrmSyncViewsCommand extends Command
     /**
      * Generate and display summary report
      *
-     * @param int $foldersProcessed Number of folders processed
-     * @param int $totalViews Total views synced across all folders
-     * @param array $errors Array of error messages
-     * @return void
+     * @param  int  $foldersProcessed  Number of folders processed
+     * @param  int  $totalViews  Total views synced across all folders
+     * @param  array  $errors  Array of error messages
      */
     protected function generateSummary(int $foldersProcessed, int $totalViews, array $errors): void
     {
@@ -302,7 +314,7 @@ class CrmSyncViewsCommand extends Command
             ]
         );
 
-        if (!empty($errors)) {
+        if ($errors !== []) {
             $this->newLine();
             $this->error('⚠️  Errors encountered:');
             foreach ($errors as $error) {
@@ -312,7 +324,7 @@ class CrmSyncViewsCommand extends Command
 
         $this->newLine();
 
-        if (empty($errors)) {
+        if ($errors === []) {
             $this->info('✅ All views synced successfully!');
         } else {
             $this->warn('⚠️  Sync completed with ' . count($errors) . ' error(s)');

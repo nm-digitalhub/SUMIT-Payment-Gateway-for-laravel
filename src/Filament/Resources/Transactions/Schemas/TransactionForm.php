@@ -25,7 +25,7 @@ class TransactionForm
                             ->disabled(),
                         TextInput::make('amount')
                             ->label('סכום')
-                            ->formatStateUsing(function ($record) {
+                            ->formatStateUsing(function ($record): string {
                                 $currency = $record?->currency ?: 'ILS';
                                 $symbol = match (strtoupper($currency)) {
                                     'ILS' => '₪',
@@ -34,12 +34,13 @@ class TransactionForm
                                     'GBP' => '£',
                                     default => $currency,
                                 };
+
                                 return $symbol . ' ' . number_format((float) $record?->amount, 2);
                             })
                             ->disabled(),
                         TextInput::make('currency')
                             ->label('מטבע')
-                            ->formatStateUsing(fn ($state) => match (strtoupper((string) $state)) {
+                            ->formatStateUsing(fn ($state): string => match (strtoupper((string) $state)) {
                                 '', '0', 'ILS' => '₪ ILS',
                                 'USD' => '$ USD',
                                 'EUR' => '€ EUR',

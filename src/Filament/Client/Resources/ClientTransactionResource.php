@@ -4,37 +4,42 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientTransactionResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 
 class ClientTransactionResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = OfficeGuyTransaction::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-credit-card';
-
-    protected static ?string $navigationLabel = 'My Transactions';
-
-    protected static ?int $navigationSort = 1;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     public static function getEloquentQuery(): Builder
     {
         // Filter to only show transactions for the authenticated client's SUMIT customer ID
         $client = auth()->user()?->client;
 
-        if (!$client) {
+        if (! $client) {
             // No client found - return empty query
             return parent::getEloquentQuery()->whereRaw('1 = 0');
         }
@@ -73,12 +78,12 @@ class ClientTransactionResource extends Resource
                             ->disabled(),
                         Forms\Components\TextInput::make('last_digits')
                             ->label('Card Number')
-                            ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-')
+                            ->formatStateUsing(fn ($state): string => $state ? '****' . $state : '-')
                             ->disabled(),
                     ])->columns(2),
 
                 Schemas\Components\Section::make('Installments')
-                    ->visible(fn ($record) => $record?->payments_count > 1)
+                    ->visible(fn ($record): bool => $record?->payments_count > 1)
                     ->schema([
                         Forms\Components\TextInput::make('payments_count')
                             ->label('Number of Payments')
@@ -115,7 +120,7 @@ class ClientTransactionResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('last_digits')
                     ->label('Card')
-                    ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-'),
+                    ->formatStateUsing(fn ($state): string => $state ? '****' . $state : '-'),
                 Tables\Columns\TextColumn::make('payments_count')
                     ->label('Installments')
                     ->badge()
@@ -141,7 +146,7 @@ class ClientTransactionResource extends Resource
                     ->label('Download Document')
                     ->icon('heroicon-o-arrow-down-tray')
                     ->visible(fn ($record) => $record->document_id)
-                    ->url(fn ($record) => route('officeguy.document.download', ['document' => $record->document_id]), true),
+                    ->url(fn ($record): string => route('officeguy.document.download', ['document' => $record->document_id]), true),
             ])
             ->defaultSort('created_at', 'desc');
     }

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
 
 use Filament\Actions;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource;
-use Filament\Notifications\Notification;
 use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 class ViewToken extends ViewRecord
@@ -20,9 +20,9 @@ class ViewToken extends ViewRecord
             Actions\Action::make('set_default')
                 ->label('Set as Default')
                 ->icon('heroicon-o-star')
-                ->visible(fn ($record) => !$record->is_default)
+                ->visible(fn ($record): bool => ! $record->is_default)
                 ->requiresConfirmation()
-                ->action(function ($record) {
+                ->action(function ($record): void {
                     // Get owner's SUMIT customer ID
                     $owner = $record->owner;
                     $client = $owner?->client ?? $owner;
@@ -36,12 +36,13 @@ class ViewToken extends ViewRecord
                             $record->metadata ?? []
                         );
 
-                        if (!$result['success']) {
+                        if (! $result['success']) {
                             Notification::make()
                                 ->title('Failed to update SUMIT')
                                 ->body($result['error'] ?? 'Unknown error')
                                 ->danger()
                                 ->send();
+
                             return;
                         }
                     }

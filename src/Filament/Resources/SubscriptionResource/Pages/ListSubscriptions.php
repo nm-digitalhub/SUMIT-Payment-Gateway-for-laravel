@@ -22,9 +22,9 @@ class ListSubscriptions extends ListRecords
                 ->requiresConfirmation()
                 ->modalHeading('Process Due Subscriptions')
                 ->modalDescription('This will process all subscriptions that are due for charging. Continue?')
-                ->action(function () {
-                    dispatch(new ProcessRecurringPaymentsJob());
-                    
+                ->action(function (): void {
+                    dispatch(new ProcessRecurringPaymentsJob);
+
                     \Filament\Notifications\Notification::make()
                         ->title('Processing started')
                         ->body('Due subscriptions are being processed in the background.')

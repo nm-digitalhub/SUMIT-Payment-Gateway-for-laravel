@@ -20,7 +20,10 @@ use Illuminate\Support\Facades\Log;
  */
 class SyncDocumentsJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     /**
      * The number of times the job may be attempted.
@@ -41,42 +44,16 @@ class SyncDocumentsJob implements ShouldQueue
      *
      * @var int
      */
-    public $timeout = 600; // 10 minutes
-
-    /**
-     * User ID to sync (null = all users)
-     *
-     * @var int|null
-     */
-    protected ?int $userId;
-
-    /**
-     * Number of days to look back
-     *
-     * @var int
-     */
-    protected int $days;
-
-    /**
-     * Force full sync
-     *
-     * @var bool
-     */
-    protected bool $force;
+    public $timeout = 600;
 
     /**
      * Create a new job instance.
      *
-     * @param int|null $userId User ID to sync (null = all users)
-     * @param int $days Number of days to look back
-     * @param bool $force Force full sync
+     * @param  int|null  $userId  User ID to sync (null = all users)
+     * @param  int  $days  Number of days to look back
+     * @param  bool  $force  Force full sync
      */
-    public function __construct(?int $userId = null, int $days = 30, bool $force = false)
-    {
-        $this->userId = $userId;
-        $this->days = $days;
-        $this->force = $force;
-    }
+    public function __construct(protected ?int $userId = null, protected int $days = 30, protected bool $force = false) {}
 
     /**
      * Execute the job.

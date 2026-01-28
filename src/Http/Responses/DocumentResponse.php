@@ -34,9 +34,6 @@ class DocumentResponse
 
     /**
      * Create from Saloon response
-     *
-     * @param SaloonResponse $response
-     * @return self
      */
     public static function fromSaloonResponse(SaloonResponse $response): self
     {
@@ -65,8 +62,6 @@ class DocumentResponse
 
     /**
      * Check if document was created successfully
-     *
-     * @return bool
      */
     public function isSuccessful(): bool
     {
@@ -75,8 +70,6 @@ class DocumentResponse
 
     /**
      * Check if API call failed
-     *
-     * @return bool
      */
     public function isApiError(): bool
     {
@@ -85,8 +78,6 @@ class DocumentResponse
 
     /**
      * Get error message
-     *
-     * @return string|null
      */
     public function getErrorMessage(): ?string
     {
@@ -113,8 +104,6 @@ class DocumentResponse
 
     /**
      * Check if response has document ID
-     *
-     * @return bool
      */
     public function hasDocumentId(): bool
     {
@@ -123,8 +112,6 @@ class DocumentResponse
 
     /**
      * Check if response has download URL
-     *
-     * @return bool
      */
     public function hasDownloadUrl(): bool
     {
@@ -133,10 +120,6 @@ class DocumentResponse
 
     /**
      * Get specific data field
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
      */
     public function getData(string $key, mixed $default = null): mixed
     {

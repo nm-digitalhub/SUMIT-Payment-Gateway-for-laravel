@@ -17,9 +17,8 @@ class RequestHelpers
      *
      * Port of: Get($Name)
      *
-     * @param string $name Parameter name
-     * @param mixed $default Default value if not found
-     * @return mixed
+     * @param  string  $name  Parameter name
+     * @param  mixed  $default  Default value if not found
      */
     public static function get(string $name, mixed $default = null): mixed
     {
@@ -31,9 +30,8 @@ class RequestHelpers
      *
      * Port of: Post($Name)
      *
-     * @param string $name Parameter name
-     * @param mixed $default Default value if not found
-     * @return mixed
+     * @param  string  $name  Parameter name
+     * @param  mixed  $default  Default value if not found
      */
     public static function post(string $name, mixed $default = null): mixed
     {
@@ -43,9 +41,8 @@ class RequestHelpers
     /**
      * Get a value from either POST or GET data
      *
-     * @param string $name Parameter name
-     * @param mixed $default Default value if not found
-     * @return mixed
+     * @param  string  $name  Parameter name
+     * @param  mixed  $default  Default value if not found
      */
     public static function input(string $name, mixed $default = null): mixed
     {
@@ -55,8 +52,7 @@ class RequestHelpers
     /**
      * Check if a parameter exists in the request
      *
-     * @param string $name Parameter name
-     * @return bool
+     * @param  string  $name  Parameter name
      */
     public static function has(string $name): bool
     {
@@ -65,8 +61,6 @@ class RequestHelpers
 
     /**
      * Get all request data
-     *
-     * @return array
      */
     public static function all(): array
     {

@@ -19,8 +19,6 @@ use Symfony\Component\HttpFoundation\Response;
  *
  * Use Case: Checkout pages where logged-in users get auto-filled forms,
  * but guests can still complete the purchase after registering/logging in.
- *
- * @package OfficeGuy\LaravelSumitGateway
  */
 class OptionalAuth
 {

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Tables;
 
-use Filament\Actions;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -12,8 +11,8 @@ use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Tables;
 use Filament\Tables\Table;
-use OfficeGuy\LaravelSumitGateway\Services\CrmSchemaService;
 use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
+use OfficeGuy\LaravelSumitGateway\Services\CrmSchemaService;
 
 class CrmFoldersTable
 {
@@ -90,7 +89,7 @@ class CrmFoldersTable
                     ->requiresConfirmation()
                     ->modalHeading('Sync Folder Schema')
                     ->modalDescription('This will sync field definitions from SUMIT CRM. Existing fields will be updated.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             $result = CrmSchemaService::syncFolderSchema((int) $record->sumit_folder_id);
 
@@ -115,7 +114,7 @@ class CrmFoldersTable
                     ->requiresConfirmation()
                     ->modalHeading('Sync All Entities')
                     ->modalDescription('This will fetch and sync all entities from this folder. This may take several minutes.')
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         try {
                             $result = CrmDataService::syncAllEntities((int) $record->id);
 

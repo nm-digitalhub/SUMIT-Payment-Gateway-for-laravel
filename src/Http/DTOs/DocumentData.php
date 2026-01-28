@@ -95,7 +95,7 @@ class DocumentData
         }
 
         // Document items
-        if (!empty($this->items)) {
+        if ($this->items !== []) {
             $data['Items'] = $this->items;
         }
 
@@ -153,8 +153,7 @@ class DocumentData
     /**
      * Create from array
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {

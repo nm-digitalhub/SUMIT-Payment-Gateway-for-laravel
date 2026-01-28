@@ -41,8 +41,6 @@ class CreatePayableMappingAction
 {
     /**
      * Create the wizard action instance.
-     *
-     * @return Action
      */
     public static function make(): Action
     {
@@ -67,8 +65,6 @@ class CreatePayableMappingAction
      * Step 1: Model Selection
      *
      * User selects a model class and the system validates it exists.
-     *
-     * @return Step
      */
     protected static function getModelSelectionStep(): Step
     {
@@ -85,12 +81,13 @@ class CreatePayableMappingAction
                             ->helperText('הזן את השם המלא של המודל כולל namespace')
                             ->required()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(function ($state, Set $set, Get $get) {
+                            ->afterStateUpdated(function ($state, Set $set, Get $get): void {
                                 // Validate model exists
-                                if (!$state) {
+                                if (! $state) {
                                     $set('model_valid', false);
                                     $set('model_error', null);
                                     $set('available_fields', []);
+
                                     return;
                                 }
 
@@ -107,13 +104,13 @@ class CreatePayableMappingAction
                                     $set('available_fields', []);
                                 }
                             })
-                            ->suffixIcon(fn (Get $get) =>
-                                $get('model_valid')
+                            ->suffixIcon(
+                                fn (Get $get): string => $get('model_valid')
                                     ? 'heroicon-o-check-circle'
                                     : 'heroicon-o-x-circle'
                             )
-                            ->suffixIconColor(fn (Get $get) =>
-                                $get('model_valid') ? 'success' : 'danger'
+                            ->suffixIconColor(
+                                fn (Get $get): string => $get('model_valid') ? 'success' : 'danger'
                             ),
 
                         Hidden::make('model_valid')
@@ -123,15 +120,15 @@ class CreatePayableMappingAction
                             ->default([]),
 
                         TextEntry::make('model_error')
-                            ->state(fn (Get $get) => $get('model_error'))
-                            ->visible(fn (Get $get) => !$get('model_valid') && $get('model_class'))
+                            ->state(fn (Get $get): mixed => $get('model_error'))
+                            ->visible(fn (Get $get): bool => ! $get('model_valid') && $get('model_class'))
                             ->extraAttributes(['class' => 'text-danger-600 dark:text-danger-400']),
 
                         TextEntry::make('model_info')
                             ->label('מידע על המודל')
-                            ->state(function (Get $get) {
+                            ->state(function (Get $get): null | \Illuminate\Contracts\View\Factory | \Illuminate\Contracts\View\View | string {
                                 $modelClass = $get('model_class');
-                                if (!$modelClass || !class_exists($modelClass)) {
+                                if (! $modelClass || ! class_exists($modelClass)) {
                                     return null;
                                 }
 
@@ -151,18 +148,18 @@ class CreatePayableMappingAction
                                     return 'שגיאה בטעינת מידע המודל: ' . $e->getMessage();
                                 }
                             })
-                            ->visible(fn (Get $get) => $get('model_valid')),
+                            ->visible(fn (Get $get): mixed => $get('model_valid')),
 
                         TextInput::make('mapping_label')
                             ->label('תווית למיפוי (אופציונלי)')
                             ->placeholder('מיפוי eSIM Product')
                             ->helperText('תווית תיאורית שתעזור לזהות את המיפוי בעתיד')
-                            ->visible(fn (Get $get) => $get('model_valid')),
+                            ->visible(fn (Get $get): mixed => $get('model_valid')),
                     ])
                     ->columnSpanFull(),
             ])
-            ->afterValidation(function (Get $get) {
-                if (!$get('model_valid')) {
+            ->afterValidation(function (Get $get): void {
+                if (! $get('model_valid')) {
                     throw new \Exception('יש לבחור מודל תקין לפני המשך');
                 }
             });
@@ -172,8 +169,6 @@ class CreatePayableMappingAction
      * Step 2: Field Mapping
      *
      * User maps each of the 16 Payable fields to their model's actual fields.
-     *
-     * @return Step
      */
     protected static function getFieldMappingStep(): Step
     {
@@ -211,8 +206,6 @@ class CreatePayableMappingAction
      * Step 3: Review
      *
      * User reviews the complete mapping before saving.
-     *
-     * @return Step
      */
     protected static function getReviewStep(): Step
     {
@@ -225,7 +218,7 @@ class CreatePayableMappingAction
                     ->schema([
                         TextEntry::make('review_summary')
                             ->label('')
-                            ->state(function (Get $get) {
+                            ->state(function (Get $get): \Illuminate\Contracts\View\Factory | \Illuminate\Contracts\View\View {
                                 $modelClass = $get('model_class');
                                 $label = $get('mapping_label');
                                 $mappings = static::collectMappings($get);
@@ -244,9 +237,8 @@ class CreatePayableMappingAction
     /**
      * Build mapping fields for a specific category (required/optional).
      *
-     * @param string $category 'required' or 'optional'
-     * @param array $fields Payable fields to generate inputs for
-     * @return array
+     * @param  string  $category  'required' or 'optional'
+     * @param  array  $fields  Payable fields to generate inputs for
      */
     protected static function buildMappingFieldsForCategory(string $category, array $fields): array
     {
@@ -279,7 +271,7 @@ class CreatePayableMappingAction
                     Select::make("mapping_{$field['key']}")
                         ->label('ממופה לשדה במודל')
                         ->placeholder('בחר שדה או הזן ערך מותאם אישית')
-                        ->options(fn (Get $get) => $get('available_fields') ?? [])
+                        ->options(fn (Get $get): mixed => $get('available_fields') ?? [])
                         ->searchable()
                         ->allowHtml()
                         ->suffixIcon('heroicon-o-arrow-left')
@@ -293,13 +285,12 @@ class CreatePayableMappingAction
                                 ->helperText('ניתן להזין: נתיב מקונן (dot notation), ערך קבוע במרכאות, מספר, מערך JSON, או null')
                                 ->required(),
                         ])
-                        ->createOptionUsing(function ($data, Get $get) {
+                        ->createOptionUsing(function (array $data, Get $get) {
                             // Add the custom value to available fields
                             $available = $get('available_fields') ?? [];
-                            $value = $data['custom_value'];
 
                             // Don't add HTML markup for custom values
-                            return $value;
+                            return $data['custom_value'];
                         }),
                 ])
                 ->columnSpanFull();
@@ -311,12 +302,11 @@ class CreatePayableMappingAction
     /**
      * Get model fields with proper formatting.
      *
-     * @param string $modelClass
      * @return array<string, string>
      */
     protected static function getModelFields(string $modelClass): array
     {
-        if (!class_exists($modelClass)) {
+        if (! class_exists($modelClass)) {
             return [];
         }
 
@@ -353,7 +343,7 @@ class CreatePayableMappingAction
             $fields['_constant_null'] = "<span class='font-mono text-gray-500'>null</span> <span class='text-xs text-gray-400'>(ללא ערך)</span>";
 
             return $fields;
-        } catch (\Exception $e) {
+        } catch (\Exception) {
             return [];
         }
     }
@@ -361,7 +351,6 @@ class CreatePayableMappingAction
     /**
      * Collect all mappings from form data.
      *
-     * @param Get $get
      * @return array<string, string|null>
      */
     protected static function collectMappings(Get $get): array
@@ -394,8 +383,6 @@ class CreatePayableMappingAction
 
     /**
      * Handle form submission - save the mapping.
-     *
-     * @param array $data
      */
     protected static function handleSubmit(array $data): void
     {
@@ -403,7 +390,7 @@ class CreatePayableMappingAction
 
         $fieldMappings = [];
         foreach ($data as $key => $value) {
-            if (str_starts_with($key, 'mapping_')) {
+            if (str_starts_with((string) $key, 'mapping_')) {
                 $fieldKey = Str::after($key, 'mapping_');
 
                 // Handle constant values

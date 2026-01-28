@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\PaymentData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\PaymentData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\PaymentResponse;
 
 /**
  * Create Payment Request
@@ -42,8 +42,8 @@ class CreatePaymentRequest extends Request implements HasBody
     /**
      * Create new payment request
      *
-     * @param PaymentData $payment Payment transaction data
-     * @param CredentialsData $credentials SUMIT API credentials
+     * @param  PaymentData  $payment  Payment transaction data
+     * @param  CredentialsData  $credentials  SUMIT API credentials
      */
     public function __construct(
         protected readonly PaymentData $payment,
@@ -52,8 +52,6 @@ class CreatePaymentRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -80,9 +78,6 @@ class CreatePaymentRequest extends Request implements HasBody
      * Cast response to PaymentResponse DTO
      *
      * This method is called by Saloon when using `$response->dto()`
-     *
-     * @param Response $response
-     * @return PaymentResponse
      */
     public function createDtoFromResponse(Response $response): PaymentResponse
     {

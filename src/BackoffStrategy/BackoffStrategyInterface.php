@@ -14,7 +14,7 @@ interface BackoffStrategyInterface
     /**
      * Calculate wait time in seconds after a failed attempt.
      *
-     * @param int $attempt The attempt number (1-based)
+     * @param  int  $attempt  The attempt number (1-based)
      * @return int Seconds to wait before next retry
      */
     public function waitInSecondsAfterAttempt(int $attempt): int;

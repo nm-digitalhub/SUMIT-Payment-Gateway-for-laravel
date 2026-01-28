@@ -113,24 +113,12 @@ class BulkTokenSyncJob extends BaseBulkActionJob
             $result = TokenService::syncTokenFromSumit($record);
 
             if ($result['success'] ?? false) {
-                return ActionResponse::success(
-                    $record,
-                    null,
-                    ['token_id' => $record->id, 'synced_at' => now()->toIso8601String()]
-                );
+                return ActionResponse::success();
             }
 
-            return ActionResponse::failure(
-                $record,
-                $result['message'] ?? 'Unknown error',
-                ['token_id' => $record->id, 'error_code' => $result['code'] ?? 'unknown']
-            );
-        } catch (\Throwable $e) {
-            return ActionResponse::failure(
-                $record,
-                $e->getMessage(),
-                ['token_id' => $record->id, 'exception' => get_class($e)]
-            );
+            return ActionResponse::failure();
+        } catch (\Throwable) {
+            return ActionResponse::failure();
         }
     }
 

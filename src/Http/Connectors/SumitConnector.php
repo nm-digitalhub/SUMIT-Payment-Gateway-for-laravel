@@ -25,6 +25,7 @@ class SumitConnector extends Connector
      * Retry configuration
      */
     public ?int $tries = 3;
+
     public ?bool $throwOnMaxTries = true;
 
     /**
@@ -76,21 +77,20 @@ class SumitConnector extends Connector
     /**
      * Boot middleware pipeline
      *
-     * @param PendingRequest $pendingRequest The pending request instance
-     * @return void
+     * @param  PendingRequest  $pendingRequest  The pending request instance
      */
     public function boot(PendingRequest $pendingRequest): void
     {
         // Add logging middleware if enabled in config
         if (config('officeguy.logging', false)) {
             $this->middleware()->onRequest(
-                new LoggingMiddleware()
+                new LoggingMiddleware
             );
         }
 
         // Always add sensitive data redaction (security)
         $this->middleware()->onRequest(
-            new SensitiveDataRedactor()
+            new SensitiveDataRedactor
         );
     }
 
@@ -99,8 +99,6 @@ class SumitConnector extends Connector
      *
      * SUMIT uses credentials in request body (not headers),
      * so we don't use header-based authentication.
-     *
-     * @return Authenticator|null
      */
     protected function defaultAuth(): ?Authenticator
     {
@@ -110,7 +108,7 @@ class SumitConnector extends Connector
     /**
      * Add client IP header conditionally
      *
-     * @param bool $sendClientIp Whether to send client IP
+     * @param  bool  $sendClientIp  Whether to send client IP
      * @return $this
      */
     public function withClientIp(bool $sendClientIp = true): static

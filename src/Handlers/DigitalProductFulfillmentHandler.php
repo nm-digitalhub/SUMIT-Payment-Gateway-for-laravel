@@ -95,9 +95,6 @@ class DigitalProductFulfillmentHandler
 {
     /**
      * Handle digital product fulfillment
-     *
-     * @param OfficeGuyTransaction $transaction
-     * @return void
      */
     public function handle(OfficeGuyTransaction $transaction): void
     {
@@ -113,6 +110,7 @@ class DigitalProductFulfillmentHandler
                 "DigitalProductFulfillmentHandler: No payable found for transaction {$transaction->id}",
                 'warning'
             );
+
             return;
         }
 
@@ -142,9 +140,7 @@ class DigitalProductFulfillmentHandler
      * - Email delivery
      * - Order status updates
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleEsim(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -163,7 +159,7 @@ class DigitalProductFulfillmentHandler
             );
         } else {
             OfficeGuyApi::writeToLog(
-                "DigitalProductFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob",
+                'DigitalProductFulfillmentHandler: Payable is not an Order instance, skipping ProcessPaidOrderJob',
                 'warning'
             );
         }
@@ -172,9 +168,7 @@ class DigitalProductFulfillmentHandler
     /**
      * Handle software license generation
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleSoftwareLicense(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -201,9 +195,7 @@ class DigitalProductFulfillmentHandler
     /**
      * Handle generic digital download
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleDigitalDownload(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -229,9 +221,7 @@ class DigitalProductFulfillmentHandler
     /**
      * Handle generic digital product fulfillment
      *
-     * @param OfficeGuyTransaction $transaction
-     * @param mixed $payable
-     * @return void
+     * @param  mixed  $payable
      */
     protected function handleGeneric(OfficeGuyTransaction $transaction, $payable): void
     {
@@ -247,8 +237,7 @@ class DigitalProductFulfillmentHandler
     /**
      * Get product type from payable
      *
-     * @param mixed $payable
-     * @return string
+     * @param  mixed  $payable
      */
     protected function getProductType($payable): string
     {

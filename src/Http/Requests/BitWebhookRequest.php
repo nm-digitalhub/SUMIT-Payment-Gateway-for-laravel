@@ -7,7 +7,6 @@ namespace OfficeGuy\LaravelSumitGateway\Http\Requests;
 use Illuminate\Contracts\Validation\Validator;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Http\Exceptions\HttpResponseException;
-use Illuminate\Http\JsonResponse;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
 /**
@@ -29,8 +28,6 @@ class BitWebhookRequest extends FormRequest
 {
     /**
      * Determine if the user is authorized to make this request.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -44,8 +41,6 @@ class BitWebhookRequest extends FormRequest
      *
      * This merges query parameters into request data for uniform access.
      * SUMIT sends webhook parameters as query params (GET-style).
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -107,8 +102,6 @@ class BitWebhookRequest extends FormRequest
      * This prevents SUMIT from retrying invalid webhook requests (up to 5 times).
      * WooCommerce pattern: Log the error but return success to prevent retry loops.
      *
-     * @param Validator $validator
-     * @return void
      *
      * @throws HttpResponseException
      */
@@ -118,9 +111,9 @@ class BitWebhookRequest extends FormRequest
         $errorMessage = implode(', ', $errors);
 
         OfficeGuyApi::writeToLog(
-            "Bit webhook validation failed: {$errorMessage}. ".
-            'Returning 200 OK to prevent SUMIT retries. '.
-            'Request data: '.json_encode($this->all()),
+            "Bit webhook validation failed: {$errorMessage}. " .
+            'Returning 200 OK to prevent SUMIT retries. ' .
+            'Request data: ' . json_encode($this->all()),
             'warning'
         );
 
@@ -136,8 +129,6 @@ class BitWebhookRequest extends FormRequest
 
     /**
      * Get validated order ID.
-     *
-     * @return string
      */
     public function getOrderId(): string
     {
@@ -146,8 +137,6 @@ class BitWebhookRequest extends FormRequest
 
     /**
      * Get validated order key.
-     *
-     * @return string
      */
     public function getOrderKey(): string
     {
@@ -156,8 +145,6 @@ class BitWebhookRequest extends FormRequest
 
     /**
      * Get validated SUMIT document ID.
-     *
-     * @return string
      */
     public function getDocumentId(): string
     {
@@ -166,8 +153,6 @@ class BitWebhookRequest extends FormRequest
 
     /**
      * Get validated SUMIT customer ID.
-     *
-     * @return string
      */
     public function getCustomerId(): string
     {

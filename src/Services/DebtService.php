@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
-use OfficeGuy\LaravelSumitGateway\Support\Traits\HasSumitCustomerTrait;
+use App\Models\SmsMessage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
+use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
+use OfficeGuy\LaravelSumitGateway\Support\Traits\HasSumitCustomerTrait;
 use Throwable;
-use App\Models\SmsMessage;
-use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
-use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 /**
  * Service for managing customer debt and credit balance in SUMIT
@@ -34,10 +32,6 @@ use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
  */
 class DebtService
 {
-    public function __construct(
-        private SettingsService $settings
-    ) {}
-
     /**
      * Get customer debt/credit balance from SUMIT
      *
@@ -50,9 +44,9 @@ class DebtService
      * - Negative value = Customer has credit balance (זכות)
      * - Zero = Balanced (מאוזן)
      *
-     * @param HasSumitCustomer $customer The customer to check balance for
+     * @param  HasSumitCustomer  $customer  The customer to check balance for
      * @return array{debt: float, currency: string, last_updated: string, formatted: string}|null
-     *         Returns null if customer has no SUMIT ID or if API call fails
+     *                                                                                            Returns null if customer has no SUMIT ID or if API call fails
      */
     public function getCustomerBalance(HasSumitCustomer $customer): ?array
     {
@@ -76,14 +70,9 @@ class DebtService
             $includeDraftDocuments = false;
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $customerId,
-                $debitSource,
-                $creditSource,
-                $includeDraftDocuments
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $customerId, $debitSource, $creditSource, $includeDraftDocuments) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -155,12 +144,13 @@ class DebtService
      */
     public function getCustomerBalanceById(int $sumitCustomerId): ?array
     {
-        $stub = new class($sumitCustomerId) implements HasSumitCustomer {
+        $stub = new class($sumitCustomerId) implements HasSumitCustomer
+        {
             use HasSumitCustomerTrait;
 
             public function __construct(private int $id) {}
 
-            public function getSumitCustomerId(): ?int
+            public function getSumitCustomerId(): int
             {
                 return $this->id;
             }
@@ -206,13 +196,9 @@ class DebtService
             $vatIncluded = 'true';
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $items,
-                $details,
-                $vatIncluded
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $items, $details, $vatIncluded) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -297,7 +283,7 @@ class DebtService
         $smsEnabled = config('officeguy.collection.sms', false);
 
         if ($email && $emailEnabled) {
-            Mail::raw("שלום,\nמצורף לינק לתשלום החוב בסך ₪{$amount}:\n{$paymentUrl}", function ($message) use ($email) {
+            Mail::raw("שלום,\nמצורף לינק לתשלום החוב בסך ₪{$amount}:\n{$paymentUrl}", function ($message) use ($email): void {
                 $message->to($email)->subject('לינק לתשלום חוב');
             });
         }
@@ -321,15 +307,16 @@ class DebtService
     /**
      * Format balance amount for display
      *
-     * @param float $balance The balance amount (positive = debt, negative = credit)
+     * @param  float  $balance  The balance amount (positive = debt, negative = credit)
      * @return string Formatted balance string in Hebrew
      */
     private function formatBalance(float $balance): string
     {
         if ($balance > 0) {
-            return '₪'.number_format($balance, 2).' (חוב)';
-        } elseif ($balance < 0) {
-            return '₪'.number_format(abs($balance), 2).' (זכות)';
+            return '₪' . number_format($balance, 2) . ' (חוב)';
+        }
+        if ($balance < 0) {
+            return '₪' . number_format(abs($balance), 2) . ' (זכות)';
         }
 
         return '₪0.00 (מאוזן)';
@@ -340,7 +327,7 @@ class DebtService
      *
      * Useful for batch operations, such as displaying balances in a customer list
      *
-     * @param \Illuminate\Support\Collection<HasSumitCustomer> $customers
+     * @param  \Illuminate\Support\Collection<HasSumitCustomer>  $customers
      * @return array<int, array> Array keyed by customer ID with balance data
      */
     public function getBalancesForCustomers($customers): array
@@ -372,7 +359,7 @@ class DebtService
      * - Payment history
      * - Totals breakdown
      *
-     * @param HasSumitCustomer $customer The customer to get report for
+     * @param  HasSumitCustomer  $customer  The customer to get report for
      * @return array{
      *     documents: array,
      *     payments: array,
@@ -462,9 +449,9 @@ class DebtService
      *
      * Retrieves payments from the last 6 months by default
      *
-     * @param HasSumitCustomer $customer The customer to get payments for
-     * @param \Carbon\Carbon|null $dateFrom Start date (default: 6 months ago)
-     * @param \Carbon\Carbon|null $dateTo End date (default: now)
+     * @param  HasSumitCustomer  $customer  The customer to get payments for
+     * @param  \Carbon\Carbon|null  $dateFrom  Start date (default: 6 months ago)
+     * @param  \Carbon\Carbon|null  $dateTo  End date (default: now)
      * @return array List of payment records from SUMIT
      */
     public function getPaymentHistory(
@@ -480,11 +467,11 @@ class DebtService
 
         try {
             // Default to last 6 months
-            if (! $dateFrom) {
+            if (! $dateFrom instanceof \Carbon\Carbon) {
                 $dateFrom = now()->subMonths(6)->startOfDay();
             }
 
-            if (! $dateTo) {
+            if (! $dateTo instanceof \Carbon\Carbon) {
                 $dateTo = now()->endOfDay();
             }
 
@@ -501,14 +488,9 @@ class DebtService
             $startIndex = 0;
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentials,
-                $dateFromStr,
-                $dateToStr,
-                $valid,
-                $startIndex
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentials, $dateFromStr, $dateToStr, $valid, $startIndex) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -554,9 +536,7 @@ class DebtService
             $allPayments = $response['Data']['Payments'] ?? [];
 
             // Filter only this customer's payments
-            $customerPayments = array_filter($allPayments, function ($payment) use ($sumitCustomerId) {
-                return ((int) ($payment['CustomerID'] ?? 0)) === $sumitCustomerId;
-            });
+            $customerPayments = array_filter($allPayments, fn (array $payment): bool => ((int) ($payment['CustomerID'] ?? 0)) === $sumitCustomerId);
 
             return array_values($customerPayments);
 

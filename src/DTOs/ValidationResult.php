@@ -27,11 +27,11 @@ use OfficeGuy\LaravelSumitGateway\Models\OrderSuccessToken;
 class ValidationResult
 {
     /**
-     * @param bool $isValid Whether validation passed all layers
-     * @param OrderSuccessToken|null $token The validated token (if valid)
-     * @param object|null $payable The validated payable entity (if valid)
-     * @param string|null $errorMessage User-friendly error message (if invalid)
-     * @param array $failures Failed validation layers (if invalid)
+     * @param  bool  $isValid  Whether validation passed all layers
+     * @param  OrderSuccessToken|null  $token  The validated token (if valid)
+     * @param  object|null  $payable  The validated payable entity (if valid)
+     * @param  string|null  $errorMessage  User-friendly error message (if invalid)
+     * @param  array  $failures  Failed validation layers (if invalid)
      */
     public function __construct(
         public readonly bool $isValid,
@@ -39,15 +39,13 @@ class ValidationResult
         public readonly ?object $payable = null,
         public readonly ?string $errorMessage = null,
         public readonly array $failures = []
-    ) {
-    }
+    ) {}
 
     /**
      * Create successful validation result
      *
-     * @param OrderSuccessToken $token The validated token
-     * @param object $payable The validated payable entity
-     * @return static
+     * @param  OrderSuccessToken  $token  The validated token
+     * @param  object  $payable  The validated payable entity
      */
     public static function success(OrderSuccessToken $token, object $payable): static
     {
@@ -63,9 +61,8 @@ class ValidationResult
     /**
      * Create failed validation result
      *
-     * @param string $errorMessage User-friendly error message
-     * @param array $failures Failed validation layers
-     * @return static
+     * @param  string  $errorMessage  User-friendly error message
+     * @param  array  $failures  Failed validation layers
      */
     public static function failed(string $errorMessage, array $failures = []): static
     {
@@ -80,8 +77,6 @@ class ValidationResult
 
     /**
      * Check if validation passed
-     *
-     * @return bool
      */
     public function isValid(): bool
     {
@@ -90,18 +85,15 @@ class ValidationResult
 
     /**
      * Check if validation failed
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {
-        return !$this->isValid;
+        return ! $this->isValid;
     }
 
     /**
      * Get the validated payable entity
      *
-     * @return object|null
      * @throws \RuntimeException if validation failed
      */
     public function getPayable(): ?object
@@ -116,7 +108,6 @@ class ValidationResult
     /**
      * Get the validated token
      *
-     * @return OrderSuccessToken|null
      * @throws \RuntimeException if validation failed
      */
     public function getToken(): ?OrderSuccessToken
@@ -130,8 +121,6 @@ class ValidationResult
 
     /**
      * Get error message
-     *
-     * @return string|null
      */
     public function getErrorMessage(): ?string
     {
@@ -140,8 +129,6 @@ class ValidationResult
 
     /**
      * Get failed validation layers
-     *
-     * @return array
      */
     public function getFailures(): array
     {
@@ -151,8 +138,7 @@ class ValidationResult
     /**
      * Check if specific layer failed
      *
-     * @param string $layer Layer name (e.g., 'signature', 'token', 'nonce')
-     * @return bool
+     * @param  string  $layer  Layer name (e.g., 'signature', 'token', 'nonce')
      */
     public function hasFailure(string $layer): bool
     {
@@ -161,8 +147,6 @@ class ValidationResult
 
     /**
      * Get failed layers as comma-separated string
-     *
-     * @return string
      */
     public function getFailuresAsString(): string
     {
@@ -171,8 +155,6 @@ class ValidationResult
 
     /**
      * Convert to array for JSON response
-     *
-     * @return array
      */
     public function toArray(): array
     {
@@ -181,14 +163,12 @@ class ValidationResult
             'error_message' => $this->errorMessage,
             'failures' => $this->failures,
             'payable_id' => $this->payable?->getKey(),
-            'payable_type' => $this->payable ? get_class($this->payable) : null,
+            'payable_type' => $this->payable ? $this->payable::class : null,
         ];
     }
 
     /**
      * Convert to JSON
-     *
-     * @return string
      */
     public function toJson(): string
     {

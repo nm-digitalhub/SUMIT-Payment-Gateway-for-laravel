@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Remove Payment Method from Customer Request
@@ -69,8 +69,8 @@ class RemovePaymentMethodRequest extends Request implements HasBody
     /**
      * Create new remove payment method request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param CredentialsData $credentials SUMIT API credentials
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  CredentialsData  $credentials  SUMIT API credentials
      */
     public function __construct(
         protected readonly int $customerId,
@@ -79,8 +79,6 @@ class RemovePaymentMethodRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -127,7 +125,6 @@ class RemovePaymentMethodRequest extends Request implements HasBody
      *   "UserErrorMessage": "Customer not found"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -138,19 +135,18 @@ class RemovePaymentMethodRequest extends Request implements HasBody
     /**
      * Check if operation was successful
      *
-     * @param Response $response
      * @return bool True if payment method was removed successfully
      */
     public function isSuccessful(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? 1) === 0;
     }
 
     /**
      * Get error message from failed request
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

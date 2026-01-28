@@ -57,7 +57,7 @@ class TransactionsTable
                     ->sortable(),
                 TextColumn::make('amount')
                     ->label('סכום')
-                    ->formatStateUsing(function ($record) {
+                    ->formatStateUsing(function ($record): string {
                         $currency = $record?->currency ?: 'ILS';
                         $symbol = match (strtoupper($currency)) {
                             'ILS' => '₪',
@@ -66,6 +66,7 @@ class TransactionsTable
                             'GBP' => '£',
                             default => $currency,
                         };
+
                         return $symbol . ' ' . number_format((float) $record?->amount, 2);
                     })
                     ->sortable(),
@@ -75,7 +76,7 @@ class TransactionsTable
                     ->sortable(),
                 TextColumn::make('last_digits')
                     ->label('כרטיס')
-                    ->formatStateUsing(fn ($state) => $state ? '****' . $state : '-'),
+                    ->formatStateUsing(fn ($state): string => $state ? '****' . $state : '-'),
                 TextColumn::make('vendor_id')
                     ->label('ספק')
                     ->toggleable()
@@ -87,13 +88,15 @@ class TransactionsTable
                             return null;
                         }
                         $sub = Subscription::find($record->subscription_id);
+
                         return $sub?->name ?? $record->subscription_id;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         if (! $record->subscription_id) {
                             return null;
                         }
                         $sub = Subscription::find($record->subscription_id);
+
                         return $sub ? SubscriptionResource::getUrl('view', ['record' => $sub->id]) : null;
                     })
                     ->openUrlInNewTab()
@@ -106,13 +109,15 @@ class TransactionsTable
                             return null;
                         }
                         $client = Client::query()->where('sumit_customer_id', $record->customer_id)->first();
+
                         return $client?->name ?? $record->customer_id;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         if (! $record->customer_id) {
                             return null;
                         }
                         $client = Client::query()->where('sumit_customer_id', $record->customer_id)->first();
+
                         return $client ? route('filament.admin.resources.clients.view', ['record' => $client->id]) : null;
                     })
                     ->openUrlInNewTab()
@@ -126,15 +131,17 @@ class TransactionsTable
                         $docId = OfficeGuyDocument::query()
                             ->where('document_id', $record->document_id)
                             ->value('id');
+
                         return $docId ? $record->document_id : $record->document_id;
                     })
-                    ->url(function ($record) {
+                    ->url(function ($record): ?string {
                         if (! $record->document_id) {
                             return null;
                         }
                         $docId = OfficeGuyDocument::query()
                             ->where('document_id', $record->document_id)
                             ->value('id');
+
                         return $docId ? DocumentResource::getUrl('view', ['record' => $docId]) : null;
                     })
                     ->openUrlInNewTab()
@@ -171,22 +178,18 @@ class TransactionsTable
                 TextColumn::make('parent_transaction_id')
                     ->label('חיוב מקורי')
                     ->formatStateUsing(fn ($state) => $state ? "#$state" : null)
-                    ->url(function ($record) {
-                        return $record->parent_transaction_id
-                            ? route('filament.admin.resources.transactions.view', ['record' => $record->parent_transaction_id])
-                            : null;
-                    })
+                    ->url(fn ($record): ?string => $record->parent_transaction_id
+                        ? route('filament.admin.resources.transactions.view', ['record' => $record->parent_transaction_id])
+                        : null)
                     ->openUrlInNewTab()
                     ->toggleable(isToggledHiddenByDefault: false)
                     ->visible(fn ($record) => $record?->isRefund()),
                 TextColumn::make('refund_transaction_id')
                     ->label('עסקת זיכוי')
                     ->formatStateUsing(fn ($state) => $state ? "#$state" : null)
-                    ->url(function ($record) {
-                        return $record->refund_transaction_id
-                            ? route('filament.admin.resources.transactions.view', ['record' => $record->refund_transaction_id])
-                            : null;
-                    })
+                    ->url(fn ($record): ?string => $record->refund_transaction_id
+                        ? route('filament.admin.resources.transactions.view', ['record' => $record->refund_transaction_id])
+                        : null)
                     ->openUrlInNewTab()
                     ->toggleable(isToggledHiddenByDefault: false)
                     ->visible(fn ($record) => $record?->hasBeenRefunded()),
@@ -251,17 +254,15 @@ class TransactionsTable
                             ->numeric()
                             ->label('סכום מקסימלי'),
                     ])
-                    ->query(function (Builder $query, array $data): Builder {
-                        return $query
-                            ->when(
-                                $data['amount_from'],
-                                fn (Builder $query, $amount): Builder => $query->where('amount', '>=', $amount),
-                            )
-                            ->when(
-                                $data['amount_to'],
-                                fn (Builder $query, $amount): Builder => $query->where('amount', '<=', $amount),
-                            );
-                    }),
+                    ->query(fn (Builder $query, array $data): Builder => $query
+                        ->when(
+                            $data['amount_from'],
+                            fn (Builder $query, $amount): Builder => $query->where('amount', '>=', $amount),
+                        )
+                        ->when(
+                            $data['amount_to'],
+                            fn (Builder $query, $amount): Builder => $query->where('amount', '<=', $amount),
+                        )),
                 TernaryFilter::make('is_test')
                     ->label('עסקאות בדיקה'),
             ])
@@ -272,9 +273,9 @@ class TransactionsTable
                     ->label('צור קבלת תרומה')
                     ->icon('heroicon-o-document-plus')
                     ->color('success')
-                    ->visible(fn ($record) => $record->is_donation && $record->status === 'completed')
+                    ->visible(fn ($record): bool => $record->is_donation && $record->status === 'completed')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         // Trigger donation receipt creation
                         Notification::make()
                             ->title('Donation receipt requested')
@@ -286,9 +287,9 @@ class TransactionsTable
                     ->label('שליחה מחדש של קבלה')
                     ->icon('heroicon-o-envelope')
                     ->color('gray')
-                    ->visible(fn ($record) => $record->status === 'completed' && $record->document_id)
+                    ->visible(fn ($record): bool => $record->status === 'completed' && $record->document_id)
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         Notification::make()
                             ->title('Receipt resend requested')
                             ->body('The receipt will be sent to the customer.')
@@ -304,9 +305,7 @@ class TransactionsTable
                         TextInput::make('email')
                             ->label('אימייל יעד')
                             ->email()
-                            ->default(function ($record) {
-                                return $record->client?->email;
-                            })
+                            ->default(fn ($record) => $record->client?->email)
                             ->required(false),
                         TextInput::make('phone')
                             ->label('מספר נייד (ל‑SMS)')
@@ -315,7 +314,7 @@ class TransactionsTable
                             ->required(false),
                     ])
                     ->requiresConfirmation()
-                    ->action(function ($record, array $data) {
+                    ->action(function ($record, array $data): void {
                         $result = app(DebtService::class)->sendPaymentLink(
                             (int) $record->customer_id,
                             $data['email'] ?? null,
@@ -339,8 +338,8 @@ class TransactionsTable
                     ->icon('heroicon-o-scale')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => !empty($record->customer_id))
-                    ->action(function ($record) {
+                    ->visible(fn ($record): bool => ! empty($record->customer_id))
+                    ->action(function ($record): void {
                         try {
                             $balance = app(DebtService::class)
                                 ->getCustomerBalanceById((int) $record->customer_id);

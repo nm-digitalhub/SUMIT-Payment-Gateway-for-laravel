@@ -4,29 +4,35 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Pages\CreateCrmFolder;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Pages\EditCrmFolder;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Pages\ListCrmFolders;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Schemas\CrmFolderForm;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmFolders\Tables\CrmFoldersTable;
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
-use BackedEnum;
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Table;
 
 class CrmFolderResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = CrmFolder::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
-
-    protected static \UnitEnum|string|null $navigationGroup = 'SUMIT CRM';
-
-    protected static ?string $navigationLabel = 'CRM Folders';
-
-    protected static ?int $navigationSort = 1;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {

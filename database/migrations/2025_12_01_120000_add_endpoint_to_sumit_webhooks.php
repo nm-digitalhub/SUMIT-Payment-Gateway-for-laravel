@@ -11,7 +11,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('officeguy_sumit_webhooks', function (Blueprint $table) {
-            if (!Schema::hasColumn('officeguy_sumit_webhooks', 'endpoint')) {
+            if (! Schema::hasColumn('officeguy_sumit_webhooks', 'endpoint')) {
                 $table->string('endpoint', 190)->nullable()->after('card_type')->index();
             }
         });

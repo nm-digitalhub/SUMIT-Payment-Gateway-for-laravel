@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Customer;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CustomerData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CustomerData;
 
 /**
  * Update Customer Request
@@ -83,12 +83,12 @@ class UpdateCustomerRequest extends Request implements HasBody
     /**
      * Create new customer update request
      *
-     * @param int $customerId SUMIT customer ID (required)
-     * @param CustomerData $customer Updated customer details
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param int|null $folderId Optional CRM folder ID for organization
-     * @param array<string, mixed>|null $properties Optional custom fields
-     * @param string|null $responseLanguage Response language (he/en/fr)
+     * @param  int  $customerId  SUMIT customer ID (required)
+     * @param  CustomerData  $customer  Updated customer details
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  int|null  $folderId  Optional CRM folder ID for organization
+     * @param  array<string, mixed>|null  $properties  Optional custom fields
+     * @param  string|null  $responseLanguage  Response language (he/en/fr)
      */
     public function __construct(
         protected readonly int $customerId,
@@ -101,8 +101,6 @@ class UpdateCustomerRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -149,7 +147,6 @@ class UpdateCustomerRequest extends Request implements HasBody
      *
      * Returns success status and updated customer details
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array

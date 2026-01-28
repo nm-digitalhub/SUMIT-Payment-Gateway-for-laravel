@@ -7,12 +7,13 @@
  */
 function officeguy_woocommerce_gateway()
 {
-    if (!class_exists("WC_Payment_Gateway_CC"))
+    if (! class_exists('WC_Payment_Gateway_CC')) {
         return;
+    }
 
     class WC_OfficeGuy extends WC_Payment_Gateway_CC
     {
-        function __construct()
+        public function __construct()
         {
             $this->id = 'officeguy';
             $this->init_settings();
@@ -20,30 +21,33 @@ function officeguy_woocommerce_gateway()
             $this->method_description = __('Receive payment using SUMIT credit card processing.', 'officeguy');
             $this->icon = PLUGIN_DIR . 'includes/images/cards.png';
             $this->has_fields = true;
-            if (!empty($this->settings['title']))
+            if (! empty($this->settings['title'])) {
                 $this->title = $this->settings['title'];
+            }
             OfficeGuySettings::InitFormFields($this);
             OfficeGuySettings::InitDefaultSettings($this);
 
-            if ($this->settings['support_tokens'] == 'yes')
-                $this->supports = array('products', 'refunds', 'add_payment_method', 'tokenization', 'subscriptions', 'subscription_cancellation', 'subscription_suspension', 'subscription_reactivation', 'subscription_amount_changes', 'subscription_date_changes', 'subscription_payment_method_change', 'subscription_payment_method_change_customer', 'subscription_payment_method_change_admin', 'multiple_subscriptions');
-            else
-                $this->supports = array('products', 'refunds');
+            if ($this->settings['support_tokens'] == 'yes') {
+                $this->supports = ['products', 'refunds', 'add_payment_method', 'tokenization', 'subscriptions', 'subscription_cancellation', 'subscription_suspension', 'subscription_reactivation', 'subscription_amount_changes', 'subscription_date_changes', 'subscription_payment_method_change', 'subscription_payment_method_change_customer', 'subscription_payment_method_change_admin', 'multiple_subscriptions'];
+            } else {
+                $this->supports = ['products', 'refunds'];
+            }
 
-            add_action('woocommerce_receipt_officeguy', array($this, 'ReceiptPage'));
-            add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-            add_action('wp_enqueue_scripts', array($this, 'AddScripts'));
+            add_action('woocommerce_receipt_officeguy', [$this, 'ReceiptPage']);
+            add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
+            add_action('wp_enqueue_scripts', [$this, 'AddScripts']);
             add_action('woocommerce_payment_complete', 'OfficeGuyPayment::CreateDocumentOnPaymentComplete', 10, 1);
-            add_action('woocommerce_scheduled_subscription_payment_' . $this->id, array($this, 'ProcessSubscriptionPayment'), 10, 2);
-            add_action('woocommerce_subscription_failing_payment_method_updated_' . $this->id, array($this, 'ProcessSubscriptionPaymentMethodUpdate'));
-            add_action('woocommerce_api_wc_officeguy', array($this, 'ProcessRedirectResponse'));
-            
-            if (!OfficeGuyPayment::IsCurrencySupported())
+            add_action('woocommerce_scheduled_subscription_payment_' . $this->id, [$this, 'ProcessSubscriptionPayment'], 10, 2);
+            add_action('woocommerce_subscription_failing_payment_method_updated_' . $this->id, [$this, 'ProcessSubscriptionPaymentMethodUpdate']);
+            add_action('woocommerce_api_wc_officeguy', [$this, 'ProcessRedirectResponse']);
+
+            if (! OfficeGuyPayment::IsCurrencySupported()) {
                 $this->enabled = 'no';
+            }
             OfficeGuyStock::CreateSchedules($this);
         }
 
-        function admin_options()
+        public function admin_options()
         { ?>
             <h3><?php echo __('SUMIT Payments', 'officeguy') ?></h3>
             <p>
@@ -55,39 +59,34 @@ function officeguy_woocommerce_gateway()
             <?php
         }
 
-        function payment_fields()
+        public function payment_fields()
         {
-            if ($this->settings['description'])
-            { ?>
+            if ($this->settings['description']) { ?>
                 <p><?php echo $this->settings['description']; ?></p>
             <?php
             }
 
-            if (is_checkout() && $this->settings['support_tokens'] == 'yes' && is_user_logged_in())
-            {
+            if (is_checkout() && $this->settings['support_tokens'] == 'yes' && is_user_logged_in()) {
                 $this->tokenization_script();
                 $this->saved_payment_methods();
             }
 
             $OrderValue = 0;
-            if (is_checkout())
-            {
-                if (is_wc_endpoint_url('order-pay'))
-                {
+            if (is_checkout()) {
+                if (is_wc_endpoint_url('order-pay')) {
                     $OrderID = get_query_var('order-pay');
                     $Order = wc_get_order($OrderID);
                     $OrderValue = round($Order->get_total());
-                }
-                else
+                } else {
                     $OrderValue = round(WC()->cart->cart_contents_total + WC()->cart->tax_total + WC()->cart->shipping_total + WC()->cart->fee_total);
+                }
             }
 
             /**
              * Implement SUMIT JS payment
              * (check weather the PCI option set to 'no' which means no-pci & no redirect)
              */
-            if ($this->settings['pci'] == "no")
-            { ?>
+            if ($this->settings['pci'] == 'no') { ?>
                 <script>
                     var OG_Settings = {
                         CompanyID: <?php echo $this->settings['companyid'] == '' ? 0 : $this->settings['companyid'] ?>,
@@ -102,15 +101,12 @@ function officeguy_woocommerce_gateway()
             <?php
             }
 
-            if (empty($this->settings['companyid']) || (empty($this->settings['publickey']) && $this->settings['pci'] == "no") || empty($this->settings['privatekey']))
-            { ?>
+            if (empty($this->settings['companyid']) || (empty($this->settings['publickey']) && $this->settings['pci'] == 'no') || empty($this->settings['privatekey'])) { ?>
                 <div class="woocommerce-error">
                     <?php echo __('Warning! SUMIT plugin setup isn\'t complete. Please configure the required API keys.', 'officeguy') ?>
                 </div>
             <?php
-            }
-            else if ($this->settings['testing'] == 'yes')
-            { ?>
+            } elseif ($this->settings['testing'] == 'yes') { ?>
                 <div class="woocommerce-error">
                     <?php echo __('Warning! SUMIT plugin is set to Testing mode. Testing mode doesn\'t process credit card transactions and doesn\'t issue invoices/receipts.', 'officeguy') ?>
                 </div>
@@ -121,8 +117,7 @@ function officeguy_woocommerce_gateway()
              * Remove payments count option
              * (if there's subscription products & the payment input method doesn't set to 'redirect')
              */
-            if ($this->settings['pci'] != "redirect")
-            { ?>
+            if ($this->settings['pci'] != 'redirect') { ?>
                 <script>
                     jQuery(function() {
                         OfficeGuy.Payments.InitEditors();
@@ -132,30 +127,28 @@ function officeguy_woocommerce_gateway()
             }
 
             $MaximumPayments = OfficeGuyPayment::GetMaximumPayments($this, $OrderValue);
-            if ($MaximumPayments != '1' && (OfficeGuySubscriptions::CartContainsOfficeGuySubscription() || OfficeGuySubscriptions::CartContainsWooCommerceSubscriptionWithoutTrial()))
+            if ($MaximumPayments != '1' && (OfficeGuySubscriptions::CartContainsOfficeGuySubscription() || OfficeGuySubscriptions::CartContainsWooCommerceSubscriptionWithoutTrial())) {
                 $MaximumPayments = '1';
+            }
 
-            if ($this->settings['pci'] == "yes" || $this->settings['pci'] == "no")
-            { ?>
+            if ($this->settings['pci'] == 'yes' || $this->settings['pci'] == 'no') { ?>
                 <fieldset id="wc-officeguy-cc-form" class="wc-credit-card-form wc-payment-form og-payment-form">
                     <!-- Show input boxes for new data -->
                     <div class="woocommerce-error og-errors"></div>
 
                     <!-- Credit card number -->
-                    <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first') ?>">
+                    <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first' ?>">
                         <label for="og-ccnum" class="og-label-tel">
                             <?php echo __('Credit Card number', 'officeguy') ?> <span class="required">*</span>
                         </label>
                         <input type="tel" class="input-text og-cc-cardnumber" id="og-ccnum" name="og-ccnum" data-og="cardnumber" maxlength="20" autocomplete="off" required="required" data-og-message="<?php echo __('Card number is required.', 'officeguy') ?>" aria-label="<?php _e('Credit Card number', 'officeguy') ?>" />
                     </p>
                     <?php
-                    if ($this->settings['citizenid'] != 'no')
-                    { ?>
-                        <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last') ?>">
+                    if ($this->settings['citizenid'] != 'no') { ?>
+                        <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last' ?>">
                             <label for="og-citizenid" title="<?php _e('Citizen ID or Passport number for tourists', 'officeguy') ?>" class="og-label-tel">
                                 <?php _e('Israeli Citizen ID', 'officeguy') ?> [?]
-                                <?php if ($this->settings['citizenid'] == 'required')
-                                { ?>
+                                <?php if ($this->settings['citizenid'] == 'required') { ?>
                                     <span class="required">*</span>
                                 <?php } ?>
                             </label>
@@ -167,7 +160,7 @@ function officeguy_woocommerce_gateway()
                     <div class="og-clear"></div>
 
                     <!-- Credit card expiration -->
-                    <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first') ?>">
+                    <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first' ?>">
                         <label for="og-expmonth">
                             <?php echo __('Expiration date', 'officeguy') ?> <span class="required">*</span>
                         </label>
@@ -175,32 +168,28 @@ function officeguy_woocommerce_gateway()
                             <select name="og-expmonth" id="og-expmonth" class="woocommerce-select og-cc-month" data-og="expirationmonth" required="required" aria-label="<?php echo __('Expiration date', 'officeguy') . ' (' . __('Month', 'officeguy') . ')' ?>">
                                 <option value=""><?php _e('Month', 'officeguy') ?></option>
                                 <?php
-                                for ($i = 1; $i <= 12; $i++)
-                                {
+                                for ($i = 1; $i <= 12; $i++) {
                                     printf('<option value="%u">%s</option>', $i, $i);
                                 }
-                                ?>
+                ?>
                             </select>
                             <select name="og-expyear" id="og-expyear" class="woocommerce-select og-cc-year" data-og="expirationyear" required="required" data-og-message="<?php echo __('Card expiration date is required.', 'officeguy') ?>" aria-label="<?php echo __('Expiration date', 'officeguy') . ' (' . __('Year', 'officeguy') . ')' ?>">
                                 <option value=""><?php _e('Year', 'officeguy') ?></option>
-                                <?php for ($i = date('y'); $i <= date('y') + 15; $i++)
-                                {
+                                <?php for ($i = date('y'); $i <= date('y') + 15; $i++) {
                                     printf('<option value="20%u">' . ($this->settings['fourdigitsyear'] == 'yes' ? '20' : '') . '%u</option>', $i, $i);
                                 }
-                                ?>
+                ?>
                             </select>
                         </span>
                     </p>
 
                     <?php
                     // CVV
-                    if ($this->settings['cvv'] != 'no')
-                    { ?>
-                        <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last') ?>">
+                    if ($this->settings['cvv'] != 'no') { ?>
+                        <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last' ?>">
                             <label for="og-cvv" title="<?php _e('3 or 4 digits usually found on the signature strip', 'officeguy') ?>" class="og-label-tel">
                                 <?php _e('Security code (CVV)', 'officeguy') ?> [?]
-                                <?php if ($this->settings['cvv'] == 'required')
-                                { ?>
+                                <?php if ($this->settings['cvv'] == 'required') { ?>
                                     <span class="required">*</span>
                                 <?php } ?>
                             </label>
@@ -208,82 +197,74 @@ function officeguy_woocommerce_gateway()
                         </p>
                     <?php
                     }
-                    ?>
+                ?>
 
                     <?php
-                    if ($MaximumPayments > 1)
-                    { ?>
-                        <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first') ?>">
+                if ($MaximumPayments > 1) { ?>
+                        <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first' ?>">
                             <label for="og-paymentscount" title="<?php _e('Credit card payments count', 'officeguy') ?>">
                                 <?php _e('Payments', 'officeguy') ?> [?]
                             </label>
                             <select class="woocommerce-select" id="og-paymentscount" name="og-paymentscount">
                                 <?php
-                                for ($i = 1; $i <= $MaximumPayments; $i++)
-                                {
-                                    printf('<option value="%u">%u</option>', $i, $i);
-                                }
-                                ?>
+                            for ($i = 1; $i <= $MaximumPayments; $i++) {
+                                printf('<option value="%u">%u</option>', $i, $i);
+                            }
+                    ?>
                             </select>
                         </p>
                     <?php
-                    }
+                }
 
-                    if ($this->settings['support_tokens'] == 'yes' && is_checkout() && is_user_logged_in() && !OfficeGuyPayment::ForceTokenStorage($this))
-                    { ?>
+                if ($this->settings['support_tokens'] == 'yes' && is_checkout() && is_user_logged_in() && ! OfficeGuyPayment::ForceTokenStorage($this)) { ?>
                         <div class="og-clear"></div>
                         <p class="form-row">
                             <?php
-                            echo $this->payment_fields_save_payment_method_checkbox();
-                            ?>
+                        echo $this->payment_fields_save_payment_method_checkbox();
+                    ?>
                         </p>
                         <div class="og-clear"></div>
                     <?php
-                    }
-                    ?>
+                }
+                ?>
                 </fieldset>
 
                 <?php
-                if ($this->settings['support_tokens'] == 'yes' && is_checkout() && is_user_logged_in())
-                { ?>
+                if ($this->settings['support_tokens'] == 'yes' && is_checkout() && is_user_logged_in()) { ?>
                     <fieldset class="og-token-form">
-                        <?php if ($this->settings['cvv'] != 'no')
-                        { ?>
-                            <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first') ?>">
+                        <?php if ($this->settings['cvv'] != 'no') { ?>
+                            <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-first' ?>">
                                 <label for="og-cvv" title="<?php _e('3 or 4 digits usually found on the signature strip', 'officeguy') ?>">
                                     <?php _e('Security code (CVV)', 'officeguy') ?> [?]
-                                    <?php if ($this->settings['cvv'] == 'required')
-                                    { ?>
+                                    <?php if ($this->settings['cvv'] == 'required') { ?>
                                         <span class="required">*</span>
                                     <?php } ?>
                                 </label>
                                 <input type="tel" class="input-text og-cc-cvv" id="og-cvv" name="og-cvv" maxlength="4" autocomplete="off" <?php echo $this->settings['cvv'] == 'required' ? 'required="required" data-og-message="' . __('Card security code is required.', 'officeguy') . '" ' : '' ?> />
                             </p>
-                        <?php 
-			}
+                        <?php
+                        }
 
-                        if ($MaximumPayments > 1)
-                        { ?>
-                            <p class="form-row<?php echo ($this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last') ?>">
+                    if ($MaximumPayments > 1) { ?>
+                            <p class="form-row<?php echo $this->settings['singlecolumnlayout'] == 'yes' ? '' : ' form-row-last' ?>">
                                 <label for="og-paymentscount" title="<?php _e('Credit card payments count', 'officeguy') ?>">
                                     <?php _e('Payments', 'officeguy') ?> [?]
                                 </label>
                                 <select class="woocommerce-select" id="og-paymentscount" name="og-paymentscount">
-                                    <?php for ($i = 1; $i <= $MaximumPayments; $i++)
-                                    {
+                                    <?php for ($i = 1; $i <= $MaximumPayments; $i++) {
                                         printf('<option value="%u">%u</option>', $i, $i);
                                     } ?>
                                 </select>
                             </p>
                         <?php
-                        } ?>
+                    } ?>
                     </fieldset>
             <?php
                 }
             }
         }
 
-        function payment_fields_save_payment_method_checkbox()
+        public function payment_fields_save_payment_method_checkbox()
         { ?>
             <p class="form-row woocommerce-SavedPaymentMethods-saveNew">
                 <input id="wc-<?php echo $this->id ?>-new-payment-method" name="wc-<?php echo $this->id ?>-new-payment-method" type="checkbox" checked="checked" style="width:auto;" />
@@ -292,46 +273,49 @@ function officeguy_woocommerce_gateway()
 <?php
         }
 
-        function process_payment($OrderID)
+        public function process_payment($OrderID)
         {
             $Order = wc_get_order($OrderID);
+
             return OfficeGuyPayment::ProcessOrder($this, $Order, false);
         }
 
-        function process_refund($OrderID, $Amount = null, $Reason = '')
+        public function process_refund($OrderID, $Amount = null, $Reason = '')
         {
             $Order = wc_get_order($OrderID);
+
             return OfficeGuyPayment::ProcessOrderRefund($this, $Order, $Amount, $Reason);
         }
 
-        function ProcessSubscriptionPayment($Amount, $Order)
+        public function ProcessSubscriptionPayment($Amount, $Order)
         {
-            if ($Amount == 0)
-            {
+            if ($Amount == 0) {
                 $Order->payment_complete();
+
                 return;
             }
 
             OfficeGuyPayment::ProcessOrder($this, $Order, true);
         }
 
-        function ProcessSubscriptionPaymentMethodUpdate()
+        public function ProcessSubscriptionPaymentMethodUpdate()
         {
             OfficeGuyAPI::WriteToLog('ProcessSubscriptionPaymentMethodUpdate', 'debug');
         }
 
-        function add_payment_method()
+        public function add_payment_method()
         {
             OfficeGuyAPI::WriteToLog('add_payment_method', 'debug');
+
             return OfficeGuyTokens::ProcessToken($this);
         }
 
-        function validate_fields()
+        public function validate_fields()
         {
             return OfficeGuyPayment::ValidateOrderFields($this);
         }
 
-        function ReceiptPage($Order)
+        public function ReceiptPage($Order)
         {
             echo '<p>' . __('Thank you for your order.', 'officeguy') . '</p>';
         }
@@ -340,16 +324,15 @@ function officeguy_woocommerce_gateway()
         {
             parent::process_admin_options();
             OfficeGuySettings::InitDefaultSettings($this);
-            if (!empty($this->settings['companyid']) && !empty($this->settings['publickey']) && !empty($this->settings['privatekey']))
-            {
+            if (! empty($this->settings['companyid']) && ! empty($this->settings['publickey']) && ! empty($this->settings['privatekey'])) {
                 $CredentialsMessage = OfficeGuyAPI::CheckCredentials($this->settings['companyid'], $this->settings['privatekey']);
-                if ($CredentialsMessage != null)
+                if ($CredentialsMessage != null) {
                     WC_Admin_Settings::add_error('SUMIT - Invalid Private Key: ' . $CredentialsMessage);
-                else 
-                {
+                } else {
                     $CredentialsMessage = OfficeGuyAPI::CheckPublicCredentials($this->settings['companyid'], $this->settings['publickey']);
-                    if ($CredentialsMessage != null)
+                    if ($CredentialsMessage != null) {
                         WC_Admin_Settings::add_error('SUMIT - Invalid Public Key: ' . $CredentialsMessage);
+                    }
                 }
             }
         }
@@ -361,68 +344,69 @@ function officeguy_woocommerce_gateway()
 
             $OrderID = OfficeGuyRequestHelpers::Get('OG-OrderID');
             $Order = wc_get_order($OrderID);
-            if ($Order->get_payment_method() != 'officeguy' && $Order->get_payment_method() != 'officeguybit')
+            if ($Order->get_payment_method() != 'officeguy' && $Order->get_payment_method() != 'officeguybit') {
                 return;
-            if ($Order->get_status() != "pending")
+            }
+            if ($Order->get_status() != 'pending') {
                 return;
-    
+            }
+
             $Gateway = GetOfficeGuyGateway();
-            if ($Gateway->settings['pci'] != 'redirect' && $Order->get_payment_method() != 'officeguybit')
+            if ($Gateway->settings['pci'] != 'redirect' && $Order->get_payment_method() != 'officeguybit') {
                 return;
+            }
             $OGPaymentID = OfficeGuyRequestHelpers::Get('OG-PaymentID');
-            if (empty($OGPaymentID))
+            if (empty($OGPaymentID)) {
                 return;
-    
-            $Request = array();
+            }
+
+            $Request = [];
             $Request['Credentials'] = OfficeGuyPayment::GetCredentials($Gateway);
             $Request['PaymentID'] = $OGPaymentID;
             $Response = OfficeGuyAPI::Post($Request, '/billing/payments/get/', $Gateway->settings['environment'], false);
-            if ($Response == null)
+            if ($Response == null) {
                 return;
-    
+            }
+
             $OGDocumentID = OfficeGuyRequestHelpers::Get('OG-DocumentID');
-    
+
             $ResponsePayment = $Response['Data']['Payment'];
-            if ($ResponsePayment['ValidPayment'] != true)
-            {
+            if ($ResponsePayment['ValidPayment'] != true) {
                 $Order->add_order_note(__('Payment failed', 'officeguy') . ' - ' . $ResponsePayment['StatusDescription']);
                 wc_add_notice(__('Payment failed', 'officeguy') . ' - ' . $ResponsePayment['StatusDescription'], $notice_type = 'error');
                 $Order->update_status('failed');
-            }
-            else
-            {
+            } else {
                 $ResponsePaymentMethod = $ResponsePayment['PaymentMethod'];
                 $Remark = __('SUMIT payment completed. Auth Number: %s. Last digits: %s. Payment ID: %s. Document ID: %s. Customer ID: %s.', 'officeguy');
                 $Remark = sprintf($Remark, $ResponsePayment['AuthNumber'], $ResponsePaymentMethod['CreditCard_LastDigits'], $ResponsePayment['ID'], $OGDocumentID, $ResponsePayment['CustomerID']);
                 $Order->add_order_note($Remark);
                 $Order->payment_complete();
-    
-                if ($Gateway->settings['createorderdocument'] == 'yes')
-                {
-                    $OrderCustomer = array(
-                        'ID' => $Response['Data']['CustomerID']
-                    );
+
+                if ($Gateway->settings['createorderdocument'] == 'yes') {
+                    $OrderCustomer = [
+                        'ID' => $Response['Data']['CustomerID'],
+                    ];
                     OfficeGuyPayment::CreateOrderDocument($Gateway, $Order, $OrderCustomer, $Response['Data']['DocumentID']);
                 }
 
                 wp_redirect($this->get_return_url($order));
             }
         }
-        
-        function AddScripts()
+
+        public function AddScripts()
         {
-            if ($this->settings['pci'] != "redirect")
-            {
+            if ($this->settings['pci'] != 'redirect') {
                 wp_enqueue_script('jquery');
-                wp_enqueue_script('officeguypayments', ($this->settings['environment'] == "dev" ? "http://dev." : "https://app.") . 'sumit.co.il/scripts/payments.js');
+                wp_enqueue_script('officeguypayments', ($this->settings['environment'] == 'dev' ? 'http://dev.' : 'https://app.') . 'sumit.co.il/scripts/payments.js');
             }
             wp_enqueue_style('officeguy-og-css', PLUGIN_DIR . 'includes/css/front.css');
-            wp_enqueue_script('officeguy-front', PLUGIN_DIR . 'includes/js/officeguy.js', array('jquery'));
+            wp_enqueue_script('officeguy-front', PLUGIN_DIR . 'includes/js/officeguy.js', ['jquery']);
         }
 
         public static function AddPaymentGateway($Methods)
         {
             $Methods[] = 'WC_OfficeGuy';
+
             return $Methods;
         }
 
@@ -430,12 +414,15 @@ function officeguy_woocommerce_gateway()
         {
             $Order = new WC_Order($Order->get_id());
             $Tokens = $Order->get_payment_tokens();
-            if (count($Tokens) == 0)
+            if (count($Tokens) == 0) {
                 return $Text;
+            }
 
             $Token = WC_Payment_Tokens::get($Tokens[count($Tokens) - 1]);
-            if (!empty($Token))
+            if (! empty($Token)) {
                 $Text .= ' (' . $Token->get_last4() . ')';
+            }
+
             return $Text;
         }
     }
@@ -445,12 +432,13 @@ add_action('plugins_loaded', 'officeguy_woocommerce_gateway', 0);
 function GetOfficeGuyGateway()
 {
     $Gateway = WC()->payment_gateways->payment_gateways()['officeguy'];
-    if (!isset($Gateway))
-    {
-        if (!class_exists('WC_OfficeGuy'))
+    if (! isset($Gateway)) {
+        if (! class_exists('WC_OfficeGuy')) {
             return null;
-        $Gateway = new WC_OfficeGuy();
+        }
+        $Gateway = new WC_OfficeGuy;
     }
+
     return $Gateway;
 }
 

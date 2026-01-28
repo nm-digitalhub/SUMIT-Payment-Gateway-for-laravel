@@ -7,7 +7,6 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
-use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
 /**
  * SUMIT Exchange Rate Service
@@ -28,17 +27,20 @@ class ExchangeRateService
      * Bank of Israel typically updates rates once daily around 4:00 PM Israel time
      */
     private const CACHE_TTL_HISTORICAL = 86400;  // 24 hours
+
     private const CACHE_TTL_TODAY_BEFORE_UPDATE = 7200;  // 2 hours
+
     private const CACHE_TTL_TODAY_AFTER_UPDATE = 28800;  // 8 hours
+
     private const BANK_UPDATE_HOUR = 16;  // 4:00 PM Israel time
 
     /**
      * Get exchange rate from SUMIT API
      *
-     * @param string|null $currencyFrom Source currency (e.g., 'USD')
-     * @param string|null $currencyTo Target currency (e.g., 'ILS')
-     * @param Carbon|null $date Date for historical rates (null = today)
-     * @param bool $useCache Whether to use cached rates
+     * @param  string|null  $currencyFrom  Source currency (e.g., 'USD')
+     * @param  string|null  $currencyTo  Target currency (e.g., 'ILS')
+     * @param  Carbon|null  $date  Date for historical rates (null = today)
+     * @param  bool  $useCache  Whether to use cached rates
      * @return array{rate: float, source: string, date: string, cached: bool, age_seconds: int}|null
      */
     public function getExchangeRate(
@@ -48,7 +50,7 @@ class ExchangeRateService
         bool $useCache = true
     ): ?array {
         // Default to today if no date provided
-        if ($date === null) {
+        if (! $date instanceof \Carbon\Carbon) {
             $date = Carbon::now();
         }
 
@@ -107,8 +109,8 @@ class ExchangeRateService
     /**
      * Get USD to ILS exchange rate (most common use case)
      *
-     * @param Carbon|null $date Date for rate (null = today)
-     * @param bool $useCache Whether to use cached rates
+     * @param  Carbon|null  $date  Date for rate (null = today)
+     * @param  bool  $useCache  Whether to use cached rates
      * @return float|null Exchange rate or null on error
      */
     public function getUsdToIls(?Carbon $date = null, bool $useCache = true): ?float
@@ -150,9 +152,9 @@ class ExchangeRateService
     /**
      * Fetch exchange rate from SUMIT API
      *
-     * @param string|null $currencyFrom Source currency
-     * @param string|null $currencyTo Target currency
-     * @param Carbon $date Date for rate
+     * @param  string|null  $currencyFrom  Source currency
+     * @param  string|null  $currencyTo  Target currency
+     * @param  Carbon  $date  Date for rate
      * @return float|null Exchange rate or null on error
      */
     private function fetchFromApi(?string $currencyFrom, ?string $currencyTo, Carbon $date): ?float
@@ -161,8 +163,9 @@ class ExchangeRateService
         $companyId = (int) config('officeguy.company_id');
         $apiKey = config('officeguy.private_key');
 
-        if (empty($companyId) || empty($apiKey)) {
+        if ($companyId === 0 || empty($apiKey)) {
             Log::error('SUMIT credentials not configured for exchange rate API');
+
             return null;
         }
 
@@ -191,27 +194,30 @@ class ExchangeRateService
         // Handle response
         if ($response === null) {
             Log::error('SUMIT exchange rate API returned null response');
+
             return null;
         }
 
         // Check status (SUMIT returns integer 0 for success, not string "Success (0)")
         $status = $response['Status'] ?? null;
-        if ($status !== 0 && $status !== '0' && $status !== 'Success (0)' && $status !== 'Success') {
+        if (! in_array($status, [0, '0', 'Success (0)', 'Success'], true)) {
             Log::error('SUMIT exchange rate API error', [
                 'status' => $status ?? 'unknown',
                 'error_message' => $response['UserErrorMessage'] ?? 'No error message',
                 'technical_details' => $response['TechnicalErrorDetails'] ?? 'No technical details',
             ]);
+
             return null;
         }
 
         // Extract rate from response (nested in Data object)
         $rate = $response['Data']['Rate'] ?? null;
 
-        if ($rate === null || !is_numeric($rate)) {
+        if ($rate === null || ! is_numeric($rate)) {
             Log::error('SUMIT exchange rate API returned invalid data', [
                 'data' => $response['Data'] ?? 'null',
             ]);
+
             return null;
         }
 
@@ -221,9 +227,9 @@ class ExchangeRateService
     /**
      * Generate cache key for exchange rate
      *
-     * @param string|null $currencyFrom Source currency
-     * @param string|null $currencyTo Target currency
-     * @param Carbon $date Date for rate
+     * @param  string|null  $currencyFrom  Source currency
+     * @param  string|null  $currencyTo  Target currency
+     * @param  Carbon  $date  Date for rate
      * @return string Cache key
      */
     private function generateCacheKey(?string $currencyFrom, ?string $currencyTo, Carbon $date): string
@@ -239,14 +245,13 @@ class ExchangeRateService
     /**
      * Clear exchange rate cache
      *
-     * @param string|null $currencyFrom Source currency (null = all)
-     * @param string|null $currencyTo Target currency (null = all)
-     * @param Carbon|null $date Date (null = all dates)
-     * @return void
+     * @param  string|null  $currencyFrom  Source currency (null = all)
+     * @param  string|null  $currencyTo  Target currency (null = all)
+     * @param  Carbon|null  $date  Date (null = all dates)
      */
     public function clearCache(?string $currencyFrom = null, ?string $currencyTo = null, ?Carbon $date = null): void
     {
-        if ($currencyFrom !== null && $currencyTo !== null && $date !== null) {
+        if ($currencyFrom !== null && $currencyTo !== null && $date instanceof \Carbon\Carbon) {
             // Clear specific rate
             $cacheKey = $this->generateCacheKey($currencyFrom, $currencyTo, $date);
             Cache::forget($cacheKey);
@@ -267,10 +272,10 @@ class ExchangeRateService
     /**
      * Convert amount using exchange rate
      *
-     * @param float $amount Amount to convert
-     * @param string|null $currencyFrom Source currency
-     * @param string|null $currencyTo Target currency
-     * @param Carbon|null $date Date for rate
+     * @param  float  $amount  Amount to convert
+     * @param  string|null  $currencyFrom  Source currency
+     * @param  string|null  $currencyTo  Target currency
+     * @param  Carbon|null  $date  Date for rate
      * @return float|null Converted amount or null on error
      */
     public function convertAmount(
@@ -294,7 +299,7 @@ class ExchangeRateService
      * Exchange rates are updated once daily by Bank of Israel around 4:00 PM.
      * This method returns appropriate TTL to minimize API calls while staying current.
      *
-     * @param Carbon $date Date for the exchange rate
+     * @param  Carbon  $date  Date for the exchange rate
      * @return int Cache TTL in seconds
      */
     private function calculateCacheTtl(Carbon $date): int

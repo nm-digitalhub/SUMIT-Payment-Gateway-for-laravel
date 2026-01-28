@@ -26,7 +26,7 @@ class CrmEntityForm
                             ->afterStateUpdated(fn ($state, callable $set) => $set('folder_changed', true))
                             ->helperText('Select the folder type for this entity'),
                     ])
-                    ->visible(fn ($record) => $record === null), // Only show on create
+                    ->visible(fn ($record): bool => $record === null), // Only show on create
 
                 Schemas\Components\Section::make('Standard Fields')
                     ->schema([
@@ -104,10 +104,10 @@ class CrmEntityForm
 
                 // Dynamic fields based on folder
                 Schemas\Components\Section::make('Custom Fields')
-                    ->schema(function ($record, $get) {
+                    ->schema(function ($record, $get): array {
                         $folderId = $record?->crm_folder_id ?? $get('crm_folder_id');
 
-                        if (!$folderId) {
+                        if (! $folderId) {
                             return [
                                 Forms\Components\Placeholder::make('no_folder')
                                     ->label('')
@@ -138,7 +138,7 @@ class CrmEntityForm
                         return $components;
                     })
                     ->columns(2)
-                    ->collapsed(fn ($record) => $record !== null),
+                    ->collapsed(fn ($record): bool => $record !== null),
 
                 Schemas\Components\Section::make('Metadata')
                     ->schema([
@@ -147,7 +147,7 @@ class CrmEntityForm
                             ->disabled(),
                     ])
                     ->collapsed()
-                    ->visible(fn ($record) => $record !== null),
+                    ->visible(fn ($record): bool => $record !== null),
             ]);
     }
 
@@ -220,7 +220,7 @@ class CrmEntityForm
 
             'multiselect' => Forms\Components\Select::make($fieldKey)
                 ->label($field->label)
-                ->default($defaultValue ? json_decode($defaultValue, true) : [])
+                ->default($defaultValue ? json_decode((string) $defaultValue, true) : [])
                 ->required((bool) $field->is_required)
                 ->options(self::parseOptions($field->options))
                 ->multiple()
@@ -266,6 +266,7 @@ class CrmEntityForm
     {
         if (is_string($options)) {
             $decoded = json_decode($options, true);
+
             return is_array($decoded) ? $decoded : [];
         }
 

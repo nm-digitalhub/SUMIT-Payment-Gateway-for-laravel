@@ -6,8 +6,8 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages;
 
 use Filament\Resources\Pages\CreateRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\CrmActivityResource;
-use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
+use OfficeGuy\LaravelSumitGateway\Services\PaymentService;
 
 class CreateCrmActivity extends CreateRecord
 {
@@ -57,7 +57,7 @@ class CreateCrmActivity extends CreateRecord
 
         $sumitCustomerId = $entity?->sumit_entity_id;
 
-        if (!$sumitCustomerId) {
+        if (! $sumitCustomerId) {
             return;
         }
 
@@ -77,7 +77,7 @@ class CreateCrmActivity extends CreateRecord
                 config('officeguy.environment', 'www'),
                 false
             );
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Swallow error to avoid blocking UI; could log if needed.
         }
     }

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
-use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
-use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
 use OfficeGuy\LaravelSumitGateway\Events\MultiVendorPaymentCompleted;
 use OfficeGuy\LaravelSumitGateway\Events\MultiVendorPaymentFailed;
+use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
+use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
 
 /**
  * Multi-Vendor Payment Service
@@ -26,12 +26,12 @@ class MultiVendorPaymentService
      *
      * @var callable|null
      */
-    protected static $vendorResolver = null;
+    protected static $vendorResolver;
 
     /**
      * Set the vendor resolver callback
      *
-     * @param callable $resolver fn(array $item): mixed - Returns vendor for the item
+     * @param  callable  $resolver  fn(array $item): mixed - Returns vendor for the item
      */
     public static function setVendorResolver(callable $resolver): void
     {
@@ -41,7 +41,7 @@ class MultiVendorPaymentService
     /**
      * Get the vendor for an item
      *
-     * @param array $item Line item data
+     * @param  array  $item  Line item data
      * @return mixed Vendor model or ID, or null if no vendor
      */
     public static function getVendorForItem(array $item): mixed
@@ -57,14 +57,13 @@ class MultiVendorPaymentService
     /**
      * Get vendor credentials for an item
      *
-     * @param array $item Line item data
-     * @return VendorCredential|null
+     * @param  array  $item  Line item data
      */
     public static function getCredentialsForItem(array $item): ?VendorCredential
     {
         $vendor = self::getVendorForItem($item);
 
-        if (!$vendor) {
+        if (! $vendor) {
             return null;
         }
 
@@ -84,7 +83,6 @@ class MultiVendorPaymentService
     /**
      * Group order items by vendor
      *
-     * @param Payable $order
      * @return array Array of vendor_id => items
      */
     public static function groupItemsByVendor(Payable $order): array
@@ -97,9 +95,9 @@ class MultiVendorPaymentService
             $vendor = self::getVendorForItem($item);
 
             if ($vendor) {
-                $vendorKey = is_object($vendor) ? get_class($vendor) . '_' . $vendor->getKey() : (string) $vendor;
+                $vendorKey = is_object($vendor) ? $vendor::class . '_' . $vendor->getKey() : (string) $vendor;
 
-                if (!isset($grouped[$vendorKey])) {
+                if (! isset($grouped[$vendorKey])) {
                     $grouped[$vendorKey] = [
                         'vendor' => $vendor,
                         'items' => [],
@@ -122,22 +120,17 @@ class MultiVendorPaymentService
     /**
      * Check if cart/order has items from multiple vendors
      * Port of: HasMultipleVendorsInCart() from OfficeGuyMultiVendor.php
-     *
-     * @param Payable $order
-     * @return bool
      */
     public static function hasMultipleVendors(Payable $order): bool
     {
         $groups = self::groupItemsByVendor($order);
+
         return count($groups) > 1;
     }
 
     /**
      * Check if cart/order has any vendor items
      * Port of: HasVendorInCart() from OfficeGuyMultiVendor.php
-     *
-     * @param Payable $order
-     * @return bool
      */
     public static function hasVendorItems(Payable $order): bool
     {
@@ -146,26 +139,24 @@ class MultiVendorPaymentService
                 return true;
             }
         }
+
         return false;
     }
 
     /**
      * Count unique vendors in cart/order
      * Port of: VendorsInCartCount() from marketplace classes
-     *
-     * @param Payable $order
-     * @return int
      */
     public static function countVendors(Payable $order): int
     {
         $groups = self::groupItemsByVendor($order);
+
         return count($groups) - (isset($groups['default']) ? 1 : 0);
     }
 
     /**
      * Get all vendor credentials for items in the order
      *
-     * @param Payable $order
      * @return array Array of product_id => VendorCredential
      */
     public static function getProductVendorCredentials(Payable $order): array
@@ -174,12 +165,12 @@ class MultiVendorPaymentService
 
         foreach ($order->getLineItems() as $item) {
             $productId = $item['product_id'] ?? $item['id'] ?? null;
-            if (!$productId) {
+            if (! $productId) {
                 continue;
             }
 
             $credential = self::getCredentialsForItem($item);
-            if ($credential) {
+            if ($credential instanceof \OfficeGuy\LaravelSumitGateway\Models\VendorCredential) {
                 $credentials[$productId] = $credential;
             }
         }
@@ -190,10 +181,7 @@ class MultiVendorPaymentService
     /**
      * Process a multi-vendor charge, splitting by vendor
      *
-     * @param Payable $order
-     * @param int $paymentsCount
-     * @param bool $redirectMode
-     * @param array $extra Additional request overrides
+     * @param  array  $extra  Additional request overrides
      * @return array Results for each vendor charge
      */
     public static function processMultiVendorCharge(
@@ -221,7 +209,7 @@ class MultiVendorPaymentService
 
             $results[$vendorKey] = $result;
 
-            if (!$result['success']) {
+            if (! $result['success']) {
                 $allSuccess = false;
             }
         }
@@ -242,13 +230,9 @@ class MultiVendorPaymentService
     /**
      * Charge items for a specific vendor
      *
-     * @param Payable $order Original order for customer data
-     * @param array $items Items to charge
-     * @param VendorCredential|null $credentials Vendor credentials (null = use store credentials)
-     * @param int $paymentsCount
-     * @param bool $redirectMode
-     * @param array $extra
-     * @return array
+     * @param  Payable  $order  Original order for customer data
+     * @param  array  $items  Items to charge
+     * @param  VendorCredential|null  $credentials  Vendor credentials (null = use store credentials)
      */
     protected static function chargeVendorItems(
         Payable $order,
@@ -282,7 +266,7 @@ class MultiVendorPaymentService
 
         try {
             // Create credentials DTO - use vendor credentials or default
-            $requestCredentials = $credentials
+            $requestCredentials = $credentials instanceof \OfficeGuy\LaravelSumitGateway\Models\VendorCredential
                 ? $credentials->getCredentials()
                 : PaymentService::getCredentials();
 
@@ -307,7 +291,7 @@ class MultiVendorPaymentService
 
             // Build payment method (for non-redirect mode only)
             $paymentMethod = null;
-            if (!$redirectMode) {
+            if (! $redirectMode) {
                 $pciMode = config('officeguy.pci', 'no');
                 if ($pciMode === 'yes') {
                     $paymentMethod = TokenService::getPaymentMethodPCI();
@@ -320,25 +304,9 @@ class MultiVendorPaymentService
             }
 
             // Instantiate connector and inline request
-            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector();
-            $request = new class(
-                $credentialsDto,
-                $apiItems,
-                $vatIncluded,
-                $vatRate,
-                $customer,
-                $authoriseOnly,
-                $draftDocument,
-                $sendDocumentByEmail,
-                $documentDescription,
-                $paymentsCount,
-                $maximumPayments,
-                $documentLanguage,
-                $merchantNumber,
-                $paymentMethod,
-                $extra,
-                $endpoint
-            ) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody {
+            $connector = new \OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
+            $request = new class($credentialsDto, $apiItems, $vatIncluded, $vatRate, $customer, $authoriseOnly, $draftDocument, $sendDocumentByEmail, $documentDescription, $paymentsCount, $maximumPayments, $documentLanguage, $merchantNumber, $paymentMethod, $extra, $endpoint) extends \Saloon\Http\Request implements \Saloon\Contracts\Body\HasBody
+            {
                 use \Saloon\Traits\Body\HasJsonBody;
 
                 protected \Saloon\Enums\Method $method = \Saloon\Enums\Method::POST;
@@ -447,6 +415,7 @@ class MultiVendorPaymentService
                     'response' => $response,
                 ];
             }
+
             return [
                 'success' => false,
                 'message' => __('Something went wrong.'),
@@ -455,7 +424,7 @@ class MultiVendorPaymentService
         }
 
         // Handle charge response
-        if (!$response) {
+        if (! $response) {
             return [
                 'success' => false,
                 'message' => __('Payment failed') . ' - ' . __('No response'),
@@ -469,7 +438,7 @@ class MultiVendorPaymentService
             // Create transaction record
             OfficeGuyTransaction::create([
                 'order_id' => $order->getPayableId(),
-                'order_type' => get_class($order),
+                'order_type' => $order::class,
                 'payment_id' => $payment['ID'] ?? null,
                 'document_id' => $response['Data']['DocumentID'] ?? null,
                 'customer_id' => $response['Data']['CustomerID'] ?? null,
@@ -487,7 +456,7 @@ class MultiVendorPaymentService
                 'raw_response' => $response,
                 'environment' => $environment,
                 'is_test' => config('officeguy.testing', false),
-                'vendor_id' => $credentials ? ($credentials->vendor_id ?? null) : null,
+                'vendor_id' => $credentials instanceof \OfficeGuy\LaravelSumitGateway\Models\VendorCredential ? ($credentials->vendor_id ?? null) : null,
             ]);
 
             return [

@@ -23,9 +23,7 @@ class ProcessSumitWebhookJob implements ShouldQueue
     use Queueable;
     use SerializesModels;
 
-    public function __construct(public readonly int $webhookId)
-    {
-    }
+    public function __construct(public readonly int $webhookId) {}
 
     public function handle(): void
     {

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Token;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\TokenResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\TokenResponse;
 
 /**
  * Validate Token Request
@@ -59,10 +59,10 @@ class ValidateTokenRequest extends Request implements HasBody
     /**
      * Create new token validation request
      *
-     * @param string $token Permanent token to validate (J2/J5 format)
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $cvv CVV code (required for J5 tokens)
-     * @param string|null $citizenId Israeli ID (if token was created with ID)
+     * @param  string  $token  Permanent token to validate (J2/J5 format)
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $cvv  CVV code (required for J5 tokens)
+     * @param  string|null  $citizenId  Israeli ID (if token was created with ID)
      */
     public function __construct(
         protected readonly string $token,
@@ -75,8 +75,6 @@ class ValidateTokenRequest extends Request implements HasBody
      * Define the endpoint
      *
      * Uses standard transaction endpoint with test amount
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -117,9 +115,6 @@ class ValidateTokenRequest extends Request implements HasBody
      * Cast response to TokenResponse DTO
      *
      * Success indicates token is valid and usable
-     *
-     * @param Response $response
-     * @return TokenResponse
      */
     public function createDtoFromResponse(Response $response): TokenResponse
     {

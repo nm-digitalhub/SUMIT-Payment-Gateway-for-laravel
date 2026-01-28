@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
@@ -12,27 +15,31 @@ use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms;
-use Filament\Schemas;
+use Filament\Notifications\Notification;
 use Filament\Resources\Resource;
+use Filament\Schemas;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
-use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\VendorCredentialResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
+use OfficeGuy\LaravelSumitGateway\Models\VendorCredential;
 
 class VendorCredentialResource extends Resource
 {
+    use HasGlobalSearch;
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = VendorCredential::class;
 
-    protected static ?string $cluster = SumitGateway::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-building-storefront';
-
-    protected static ?string $navigationLabel = 'Vendor Credentials';
-
-    protected static ?int $navigationSort = 5;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyPlugin
+    {
+        return OfficeGuyPlugin::get();
+    }
 
     public static function form(Schema $schema): Schema
     {
@@ -101,7 +108,7 @@ class VendorCredentialResource extends Resource
                     ->sortable(),
                 Tables\Columns\TextColumn::make('vendor_type')
                     ->label('Vendor Type')
-                    ->formatStateUsing(fn ($state) => class_basename($state))
+                    ->formatStateUsing(fn ($state): string => class_basename($state))
                     ->sortable(),
                 Tables\Columns\TextColumn::make('vendor_id')
                     ->label('Vendor ID')
@@ -151,9 +158,9 @@ class VendorCredentialResource extends Resource
                     ->icon('heroicon-o-check-badge')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->action(function ($record) {
+                    ->action(function ($record): void {
                         $isValid = $record->validateCredentials();
-                        
+
                         if ($isValid) {
                             Notification::make()
                                 ->title('Credentials valid')
@@ -168,11 +175,11 @@ class VendorCredentialResource extends Resource
                         }
                     }),
                 Action::make('toggle_active')
-                    ->label(fn ($record) => $record->is_active ? 'Deactivate' : 'Activate')
-                    ->icon(fn ($record) => $record->is_active ? 'heroicon-o-x-mark' : 'heroicon-o-check')
-                    ->color(fn ($record) => $record->is_active ? 'danger' : 'success')
-                    ->action(function ($record) {
-                        $record->update(['is_active' => !$record->is_active]);
+                    ->label(fn ($record): string => $record->is_active ? 'Deactivate' : 'Activate')
+                    ->icon(fn ($record): string => $record->is_active ? 'heroicon-o-x-mark' : 'heroicon-o-check')
+                    ->color(fn ($record): string => $record->is_active ? 'danger' : 'success')
+                    ->action(function ($record): void {
+                        $record->update(['is_active' => ! $record->is_active]);
                         Notification::make()
                             ->title($record->is_active ? 'Vendor activated' : 'Vendor deactivated')
                             ->success()
@@ -185,10 +192,10 @@ class VendorCredentialResource extends Resource
                     BulkAction::make('validate_all')
                         ->label('Validate Selected')
                         ->icon('heroicon-o-check-badge')
-                        ->action(function ($records) {
+                        ->action(function ($records): void {
                             $valid = 0;
                             $invalid = 0;
-                            
+
                             foreach ($records as $record) {
                                 if ($record->validateCredentials()) {
                                     $valid++;
@@ -196,7 +203,7 @@ class VendorCredentialResource extends Resource
                                     $invalid++;
                                 }
                             }
-                            
+
                             Notification::make()
                                 ->title('Validation complete')
                                 ->body("Valid: {$valid}, Invalid: {$invalid}")
@@ -229,6 +236,7 @@ class VendorCredentialResource extends Resource
     public static function getNavigationBadge(): ?string
     {
         $invalidCount = static::getModel()::where('validation_status', 'invalid')->count();
+
         return $invalidCount > 0 ? (string) $invalidCount : null;
     }
 

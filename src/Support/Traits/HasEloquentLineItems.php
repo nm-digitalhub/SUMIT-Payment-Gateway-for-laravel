@@ -54,7 +54,6 @@ use Illuminate\Support\Collection;
  * - ✅ Falls back to HasPayableFields default if no Eloquent items exist
  *
  * @since 1.19.0
- * @package OfficeGuy\LaravelSumitGateway
  */
 trait HasEloquentLineItems
 {
@@ -91,22 +90,20 @@ trait HasEloquentLineItems
         }
 
         // Map Eloquent models to SUMIT API format (adaptive field mapping)
-        return $items->map(function ($line) {
-            return [
-                'name' => $line->name,
-                // Adaptive SKU: Check metadata first, then direct field, then generate from package_id
-                'sku' => data_get($line, 'metadata.sku')
-                    ?? $line->sku
-                    ?? ($line->package_id ? "PKG-{$line->package_id}" : null),
-                // Quantity (cast to float for API)
-                'quantity' => (float) $line->quantity,
-                // Adaptive unit_price: Support both price_unit and unit_price field names
-                'unit_price' => (float) ($line->price_unit ?? $line->unit_price ?? 0),
-                // Adaptive product_id: Support both package_id and product_id
-                'product_id' => $line->package_id ?? $line->product_id ?? null,
-                // Variation ID from metadata
-                'variation_id' => data_get($line, 'metadata.variation_id'),
-            ];
-        })->toArray();
+        return $items->map(fn ($line): array => [
+            'name' => $line->name,
+            // Adaptive SKU: Check metadata first, then direct field, then generate from package_id
+            'sku' => data_get($line, 'metadata.sku')
+                ?? $line->sku
+                ?? ($line->package_id ? "PKG-{$line->package_id}" : null),
+            // Quantity (cast to float for API)
+            'quantity' => (float) $line->quantity,
+            // Adaptive unit_price: Support both price_unit and unit_price field names
+            'unit_price' => (float) ($line->price_unit ?? $line->unit_price ?? 0),
+            // Adaptive product_id: Support both package_id and product_id
+            'product_id' => $line->package_id ?? $line->product_id ?? null,
+            // Variation ID from metadata
+            'variation_id' => data_get($line, 'metadata.variation_id'),
+        ])->toArray();
     }
 }

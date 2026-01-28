@@ -15,7 +15,8 @@ use Illuminate\Queue\SerializesModels;
  */
 class FinalWebhookCallFailedEvent
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly string $uuid,
@@ -26,6 +27,5 @@ class FinalWebhookCallFailedEvent
         public readonly int $totalAttempts,
         public readonly string $errorMessage,
         public readonly array $meta = []
-    ) {
-    }
+    ) {}
 }

@@ -31,9 +31,6 @@ class DocumentSyncListener implements ShouldQueue
 
     /**
      * Handle SUMIT webhook received event
-     *
-     * @param SumitWebhookReceived $event
-     * @return void
      */
     public function handleWebhook(SumitWebhookReceived $event): void
     {
@@ -49,7 +46,7 @@ class DocumentSyncListener implements ShouldQueue
             'InvoiceCreated',       // Invoice created (might contain multiple subscriptions)
         ];
 
-        if (!in_array($type, $subscriptionTypes)) {
+        if (! in_array($type, $subscriptionTypes)) {
             return;
         }
 
@@ -75,9 +72,6 @@ class DocumentSyncListener implements ShouldQueue
 
     /**
      * Handle document created event
-     *
-     * @param DocumentCreated $event
-     * @return void
      */
     public function handleDocumentCreated(DocumentCreated $event): void
     {
@@ -98,12 +92,11 @@ class DocumentSyncListener implements ShouldQueue
     /**
      * Find user ID by SUMIT customer ID
      *
-     * @param string|int|null $customerId
-     * @return int|null
+     * @param  string|int|null  $customerId
      */
     protected function findUserByCustomerId($customerId): ?int
     {
-        if (!$customerId) {
+        if (! $customerId) {
             return null;
         }
 
@@ -115,8 +108,7 @@ class DocumentSyncListener implements ShouldQueue
     /**
      * Subscribe to events
      *
-     * @param \Illuminate\Events\Dispatcher $events
-     * @return array
+     * @param  \Illuminate\Events\Dispatcher  $events
      */
     public function subscribe($events): array
     {

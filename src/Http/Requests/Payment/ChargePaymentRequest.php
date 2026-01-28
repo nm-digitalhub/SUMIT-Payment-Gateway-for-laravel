@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Charge Payment Request
@@ -112,16 +112,16 @@ class ChargePaymentRequest extends Request implements HasBody
     /**
      * Create new charge payment request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param float $amount Charge amount (positive) or refund (negative with items)
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $token Payment token (UUID), or null to use customer's default method
-     * @param string|null $description Payment description
-     * @param bool $cancelable Allow future cancellation (useful for test charges)
-     * @param bool $supportCredit Enable refund support (required for refunds)
-     * @param array<string, mixed> $items Itemized list (required for refunds)
-     * @param string|null $originalTransactionId Original transaction for refunds
-     * @param bool $vatIncluded VAT included in amount (default: false for refunds)
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  float  $amount  Charge amount (positive) or refund (negative with items)
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $token  Payment token (UUID), or null to use customer's default method
+     * @param  string|null  $description  Payment description
+     * @param  bool  $cancelable  Allow future cancellation (useful for test charges)
+     * @param  bool  $supportCredit  Enable refund support (required for refunds)
+     * @param  array<string, mixed>  $items  Itemized list (required for refunds)
+     * @param  string|null  $originalTransactionId  Original transaction for refunds
+     * @param  bool  $vatIncluded  VAT included in amount (default: false for refunds)
      */
     public function __construct(
         protected readonly int $customerId,
@@ -138,8 +138,6 @@ class ChargePaymentRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -163,7 +161,7 @@ class ChargePaymentRequest extends Request implements HasBody
         ];
 
         // Refund mode (items with negative amounts)
-        if (! empty($this->items)) {
+        if ($this->items !== []) {
             $body['Items'] = $this->items;
 
             if ($this->originalTransactionId) {
@@ -231,7 +229,6 @@ class ChargePaymentRequest extends Request implements HasBody
      *   "UserErrorMessage": "Payment declined"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -242,19 +239,18 @@ class ChargePaymentRequest extends Request implements HasBody
     /**
      * Check if operation was successful
      *
-     * @param Response $response
      * @return bool True if payment was charged successfully
      */
     public function isSuccessful(Response $response): bool
     {
         $data = $response->json();
+
         return ($data['Status'] ?? 1) === 0;
     }
 
     /**
      * Check if payment is valid
      *
-     * @param Response $response
      * @return bool True if ValidPayment flag is true
      */
     public function isValidPayment(Response $response): bool
@@ -268,43 +264,42 @@ class ChargePaymentRequest extends Request implements HasBody
     /**
      * Get transaction ID from response
      *
-     * @param Response $response
      * @return int|null Transaction ID (Payment.ID), or null if not found
      */
     public function getTransactionId(Response $response): ?int
     {
         $data = $response->json();
+
         return $data['Data']['Payment']['ID'] ?? null;
     }
 
     /**
      * Get authorization number from response
      *
-     * @param Response $response
      * @return string|null Authorization number, or null if not found
      */
     public function getAuthNumber(Response $response): ?string
     {
         $data = $response->json();
+
         return $data['Data']['Payment']['AuthNumber'] ?? null;
     }
 
     /**
      * Get payment method details from response
      *
-     * @param Response $response
      * @return array<string, mixed>|null Payment method details, or null
      */
     public function getPaymentMethod(Response $response): ?array
     {
         $data = $response->json();
+
         return $data['Data']['Payment']['PaymentMethod'] ?? null;
     }
 
     /**
      * Get error message from failed request
      *
-     * @param Response $response
      * @return string|null Error message, or null if successful
      */
     public function getErrorMessage(Response $response): ?string

@@ -21,7 +21,6 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
  *
  * CRITICAL: All properties are readonly - cannot be modified after creation.
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.18.0
  */
 final readonly class ResolvedPaymentIntent
@@ -60,7 +59,7 @@ final readonly class ResolvedPaymentIntent
      */
     public function isUsingSavedToken(): bool
     {
-        return !empty($this->token);
+        return ! in_array($this->token, [null, '', '0'], true);
     }
 
     /**
@@ -68,7 +67,7 @@ final readonly class ResolvedPaymentIntent
      */
     public function isUsingSingleUseToken(): bool
     {
-        return !empty($this->singleUseToken);
+        return ! in_array($this->singleUseToken, [null, '', '0'], true);
     }
 
     /**

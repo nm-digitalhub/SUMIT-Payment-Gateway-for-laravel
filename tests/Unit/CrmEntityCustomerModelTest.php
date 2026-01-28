@@ -34,16 +34,16 @@ class MockNewCustomerForEntity extends Model
 }
 
 // Create class aliases for App\Models namespace
-if (!class_exists('App\Models\Client')) {
+if (! class_exists('App\Models\Client')) {
     class_alias(MockClientForEntity::class, 'App\Models\Client');
 }
-if (!class_exists('App\Models\CustomCustomer')) {
+if (! class_exists('App\Models\CustomCustomer')) {
     class_alias(MockCustomerForEntity::class, 'App\Models\CustomCustomer');
 }
-if (!class_exists('App\Models\LegacyClient')) {
+if (! class_exists('App\Models\LegacyClient')) {
     class_alias(MockLegacyClientForEntity::class, 'App\Models\LegacyClient');
 }
-if (!class_exists('App\Models\NewCustomer')) {
+if (! class_exists('App\Models\NewCustomer')) {
     class_alias(MockNewCustomerForEntity::class, 'App\Models\NewCustomer');
 }
 
@@ -81,7 +81,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock entity (not persisted)
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();
@@ -92,7 +92,7 @@ class CrmEntityCustomerModelTest extends TestCase
         // Assert: Relationship resolves to a model (functional test)
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches what we expect
         $this->assertEquals('customers', $relatedModel->getTable());
     }
@@ -107,7 +107,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();
@@ -118,7 +118,7 @@ class CrmEntityCustomerModelTest extends TestCase
         // Assert: Relationship falls back to a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches Client model
         $this->assertEquals('clients', $relatedModel->getTable());
     }
@@ -133,7 +133,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();
@@ -144,7 +144,7 @@ class CrmEntityCustomerModelTest extends TestCase
         // Assert: Relationship uses a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches legacy model
         $this->assertEquals('legacy_clients', $relatedModel->getTable());
     }
@@ -158,7 +158,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get both relationships
         $customerRelationship = $entity->customer();
@@ -188,7 +188,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the client relationship (old method)
         $relationship = $entity->client();
@@ -209,7 +209,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();
@@ -227,7 +227,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => null]);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the client relationship
         $relationship = $entity->client();
@@ -246,7 +246,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();
@@ -264,7 +264,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get both relationships
         $customerRel = $entity->customer();
@@ -303,7 +303,7 @@ class CrmEntityCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => '']);
 
         // Create a mock entity
-        $entity = new CrmEntity();
+        $entity = new CrmEntity;
 
         // Act: Get the customer relationship
         $relationship = $entity->customer();

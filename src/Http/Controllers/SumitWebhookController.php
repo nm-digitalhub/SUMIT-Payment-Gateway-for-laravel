@@ -33,35 +33,33 @@ class SumitWebhookController extends Controller
      * SUMIT sends webhooks in JSON or FORM format when triggers fire.
      * The system waits 10 seconds for a response, then retries up to 5 times.
      *
-     * @param Request $request
-     * @param string|null $eventType Optional event type from URL
-     * @return JsonResponse
+     * @param  string|null  $eventType  Optional event type from URL
      */
     public function handle(Request $request, ?string $eventType = null): JsonResponse
     {
         // Immediately return 200 to acknowledge receipt (SUMIT requires quick response)
         // Process asynchronously if heavy processing is needed
-        
+
         try {
             // Get event type from URL parameter or try to detect from payload
-            $eventType = $eventType ?? $this->detectEventType($request);
-            
+            $eventType ??= $this->detectEventType($request);
+
             // Get payload (supports both JSON and form data)
             $payload = $this->getPayload($request);
-            
+
             // Get headers for logging
             $headers = $request->headers->all();
-            
+
             // Get source IP
             $sourceIp = $request->ip();
             $endpoint = $request->path();
-            
+
             // Log the incoming webhook
             OfficeGuyApi::writeToLog(
                 "SUMIT webhook received: {$eventType} from {$sourceIp}",
                 'info'
             );
-            
+
             // Create webhook record
             $webhook = SumitWebhook::createFromRequest(
                 $eventType,
@@ -70,10 +68,10 @@ class SumitWebhookController extends Controller
                 $sourceIp,
                 $endpoint
             );
-            
+
             // Dispatch job for async processing (no heavy work in request)
             ProcessSumitWebhookJob::dispatch($webhook->id);
-            
+
             // Return success immediately
             // Note: SUMIT expects HTTP 200 within 10 seconds
             return response()->json([
@@ -82,18 +80,18 @@ class SumitWebhookController extends Controller
                 'message' => 'Webhook received',
                 'webhook_id' => $webhook->id,
             ], 200);
-            
+
         } catch (\Exception $e) {
             OfficeGuyApi::writeToLog(
                 'SUMIT webhook error: ' . $e->getMessage(),
                 'error'
             );
-            
+
             Log::error('SUMIT webhook processing error', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
             ]);
-            
+
             // Still return 200 to prevent SUMIT from retrying if we captured the data
             return response()->json([
                 'success' => false,
@@ -215,6 +213,7 @@ class SumitWebhookController extends Controller
         foreach ($headers as $key => $values) {
             $flattened[$key] = is_array($values) ? ($values[0] ?? null) : $values;
         }
+
         return $flattened;
     }
 }

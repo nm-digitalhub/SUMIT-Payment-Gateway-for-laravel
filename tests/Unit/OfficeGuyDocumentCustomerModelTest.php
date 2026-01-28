@@ -34,16 +34,16 @@ class MockDocumentNewCustomer extends Model
 }
 
 // Create class aliases for App\Models namespace (only if not already defined)
-if (!class_exists('App\Models\Client')) {
+if (! class_exists('App\Models\Client')) {
     class_alias(MockDocumentClient::class, 'App\Models\Client');
 }
-if (!class_exists('App\Models\CustomCustomer')) {
+if (! class_exists('App\Models\CustomCustomer')) {
     class_alias(MockDocumentCustomer::class, 'App\Models\CustomCustomer');
 }
-if (!class_exists('App\Models\LegacyClient')) {
+if (! class_exists('App\Models\LegacyClient')) {
     class_alias(MockDocumentLegacyClient::class, 'App\Models\LegacyClient');
 }
-if (!class_exists('App\Models\NewCustomer')) {
+if (! class_exists('App\Models\NewCustomer')) {
     class_alias(MockDocumentNewCustomer::class, 'App\Models\NewCustomer');
 }
 
@@ -81,7 +81,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock document (not persisted)
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -92,7 +92,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         // Assert: Relationship resolves to a model (functional test)
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches what we expect
         $this->assertEquals('customers', $relatedModel->getTable());
     }
@@ -107,7 +107,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -118,7 +118,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         // Assert: Relationship falls back to a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches Client model
         $this->assertEquals('clients', $relatedModel->getTable());
     }
@@ -133,7 +133,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -144,7 +144,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         // Assert: Relationship uses a model
         $relatedModel = $relationship->getRelated();
         $this->assertInstanceOf(Model::class, $relatedModel);
-        
+
         // Assert: The relationship table matches legacy model
         $this->assertEquals('legacy_clients', $relatedModel->getTable());
     }
@@ -158,7 +158,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get both relationships
         $customerRelationship = $document->customer();
@@ -188,7 +188,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => null]);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the client relationship (old method)
         $relationship = $document->client();
@@ -209,7 +209,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -227,7 +227,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -245,7 +245,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => null]);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the client relationship
         $relationship = $document->client();
@@ -264,7 +264,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => 'App\\Models\\LegacyClient']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();
@@ -282,7 +282,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.models.customer' => 'App\\Models\\CustomCustomer']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get both relationships
         $customerRel = $document->customer();
@@ -321,7 +321,7 @@ class OfficeGuyDocumentCustomerModelTest extends TestCase
         config(['officeguy.customer_model_class' => '']);
 
         // Create a mock document
-        $document = new OfficeGuyDocument();
+        $document = new OfficeGuyDocument;
 
         // Act: Get the customer relationship
         $relationship = $document->customer();

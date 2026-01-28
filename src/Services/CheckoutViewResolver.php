@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use Illuminate\Support\Facades\View;
+use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 
 /**
  * CheckoutViewResolver
@@ -17,7 +17,6 @@ use Illuminate\Support\Facades\View;
  * 3. Custom overrides
  * 4. Generic fallback (checkout.blade.php)
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.10.0
  */
 class CheckoutViewResolver
@@ -32,7 +31,6 @@ class CheckoutViewResolver
      * 2. Type-specific (e.g., digital.blade.php for DIGITAL_PRODUCT)
      * 3. Generic fallback (checkout.blade.php)
      *
-     * @param Payable $payable
      * @return string Full view path (e.g., "officeguy::pages.checkout.digital")
      */
     public function resolve(Payable $payable): string
@@ -66,7 +64,6 @@ class CheckoutViewResolver
      *
      * Allows applications to override the default view path namespace.
      *
-     * @param string $path
      * @return $this
      */
     public function setBaseViewPath(string $path): self
@@ -78,8 +75,6 @@ class CheckoutViewResolver
 
     /**
      * Get current base view path
-     *
-     * @return string
      */
     public function getBaseViewPath(): string
     {
@@ -89,8 +84,7 @@ class CheckoutViewResolver
     /**
      * Check if a specific template exists
      *
-     * @param string $template Template name without extension (e.g., 'digital', 'infrastructure')
-     * @return bool
+     * @param  string  $template  Template name without extension (e.g., 'digital', 'infrastructure')
      */
     public function templateExists(string $template): bool
     {
@@ -114,6 +108,6 @@ class CheckoutViewResolver
             'service',         // SERVICE
         ];
 
-        return array_filter($templates, fn ($template) => $this->templateExists($template));
+        return array_filter($templates, $this->templateExists(...));
     }
 }

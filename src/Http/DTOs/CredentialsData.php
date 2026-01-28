@@ -46,13 +46,10 @@ class CredentialsData
 
     /**
      * Create from configuration (private key)
-     *
-     * @param SettingsService|null $settings
-     * @return self
      */
     public static function fromConfig(?SettingsService $settings = null): self
     {
-        $settings = $settings ?? app(SettingsService::class);
+        $settings ??= app(SettingsService::class);
 
         return new self(
             companyId: (int) $settings->get('company_id'),
@@ -62,13 +59,10 @@ class CredentialsData
 
     /**
      * Create with public key (client-side operations)
-     *
-     * @param SettingsService|null $settings
-     * @return self
      */
     public static function fromConfigPublic(?SettingsService $settings = null): self
     {
-        $settings = $settings ?? app(SettingsService::class);
+        $settings ??= app(SettingsService::class);
 
         return new self(
             companyId: (int) $settings->get('company_id'),
@@ -79,8 +73,7 @@ class CredentialsData
     /**
      * Create from array (for backward compatibility)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -93,10 +86,6 @@ class CredentialsData
 
     /**
      * Create from vendor credentials (multi-vendor support)
-     *
-     * @param int $companyId
-     * @param string $apiKey
-     * @return self
      */
     public static function fromVendor(int $companyId, string $apiKey): self
     {

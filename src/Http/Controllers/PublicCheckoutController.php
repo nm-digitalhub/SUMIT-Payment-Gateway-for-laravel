@@ -52,20 +52,18 @@ class PublicCheckoutController extends Controller
     /**
      * Display the public checkout page for a given payable model.
      *
-     * @param Request $request
-     * @param string|int $id The payable model ID
-     * @return View
+     * @param  string|int  $id  The payable model ID
      */
-    public function show(Request $request, string|int $id): View
+    public function show(Request $request, string | int $id): View
     {
         // Check if feature is enabled
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             abort(404, __('Public checkout is not enabled'));
         }
 
         $payable = $this->resolvePayable($request, $id);
 
-        if (!$payable) {
+        if (! $payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             abort(404, __('Order not found'));
         }
 
@@ -74,7 +72,7 @@ class PublicCheckoutController extends Controller
 
         // Prefill from query params -> payable -> client -> authenticated user
         $user = auth()->user();
-        if (!$user && class_exists(\Filament\Facades\Filament::class)) {
+        if (! $user && class_exists(\Filament\Facades\Filament::class)) {
             $user = \Filament\Facades\Filament::auth()->user();
         }
         $client = $user?->client;
@@ -142,17 +140,15 @@ class PublicCheckoutController extends Controller
     /**
      * Process the checkout form submission.
      *
-     * @param CheckoutRequest $request
-     * @param string|int $id
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
-    public function process(CheckoutRequest $request, string|int $id)
+    public function process(CheckoutRequest $request, string | int $id)
     {
         // DEBUG: Log checkout attempt
         Log::info('🛒 Checkout process started', [
             'payable_id' => $id,
             'has_og_token' => $request->has('og-token'),
-            'og_token_value' => $request->input('og-token') ? '***' . substr($request->input('og-token'), -4) : null,
+            'og_token_value' => $request->input('og-token') ? '***' . substr((string) $request->input('og-token'), -4) : null,
             'payment_token' => $request->input('payment_token'),
             'payment_method' => $request->input('payment_method'),
             'accept_terms' => $request->input('accept_terms'),
@@ -160,13 +156,13 @@ class PublicCheckoutController extends Controller
         ]);
 
         // Check if feature is enabled
-        if (!$this->isEnabled()) {
+        if (! $this->isEnabled()) {
             abort(404, __('Public checkout is not enabled'));
         }
 
         $payable = $this->resolvePayable($request, $id);
 
-        if (!$payable) {
+        if (! $payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             abort(404, __('Order not found'));
         }
 
@@ -181,7 +177,7 @@ class PublicCheckoutController extends Controller
 
         // Handle guest registration (unchanged - Phase 3)
         $validated = $request->validated();
-        if (!$user && !empty($validated['password'])) {
+        if (! $user && ! empty($validated['password'])) {
             // Check if terms were accepted
             if (empty($validated['accept_terms'])) {
                 return back()->withErrors(['accept_terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
@@ -196,7 +192,7 @@ class PublicCheckoutController extends Controller
             }
 
             // Parse name into first_name and last_name
-            $nameParts = explode(' ', trim($validated['customer_name']), 2);
+            $nameParts = explode(' ', trim((string) $validated['customer_name']), 2);
             $firstName = $nameParts[0] ?? '';
             $lastName = $nameParts[1] ?? '';
 
@@ -245,23 +241,23 @@ class PublicCheckoutController extends Controller
         $paymentsCount = max(1, (int) ($validated['payments_count'] ?? 1));
         $paymentMethod = $validated['payment_method'];
 
-$pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
+        $pciMode = config('officeguy.pci', config('officeguy.pci_mode', 'no'));
 
-// Extract payment_token for validation (handle empty string as "new")
-$paymentToken = $validated['payment_token'] ?? null;
+        // Extract payment_token for validation (handle empty string as "new")
+        $paymentToken = $validated['payment_token'] ?? null;
 
-if (
-    $paymentMethod === 'card'
-    && (empty($paymentToken) || $paymentToken === 'new')
-    && $pciMode !== 'redirect'
-    && !$request->filled('og-token')
-) {
-    return back()
-        ->withInput()
-        ->withErrors([
-            'payment' => __('Card token was not generated. Please try again.')
-        ]);
-}
+        if (
+            $paymentMethod === 'card'
+            && (empty($paymentToken) || $paymentToken === 'new')
+            && $pciMode !== 'redirect'
+            && ! $request->filled('og-token')
+        ) {
+            return back()
+                ->withInput()
+                ->withErrors([
+                    'payment' => __('Card token was not generated. Please try again.'),
+                ]);
+        }
 
         // Handle Bit payment
         if ($paymentMethod === 'bit') {
@@ -271,51 +267,51 @@ if (
         // Persist profile data if missing
         $dirty = false;
         if ($client) {
-            if (empty($client->client_name) && !empty($validated['customer_name'])) {
+            if (empty($client->client_name) && ! empty($validated['customer_name'])) {
                 $client->client_name = $validated['customer_name'];
                 $dirty = true;
             }
-            if (empty($client->client_email) && !empty($validated['customer_email'])) {
+            if (empty($client->client_email) && ! empty($validated['customer_email'])) {
                 $client->client_email = $validated['customer_email'];
                 $dirty = true;
             }
-            if (empty($client->client_phone) && !empty($validated['customer_phone'])) {
+            if (empty($client->client_phone) && ! empty($validated['customer_phone'])) {
                 $client->client_phone = $validated['customer_phone'];
                 $dirty = true;
             }
-            if (empty($client->id_number) && !empty($validated['citizen_id'] ?? null)) {
+            if (empty($client->id_number) && ! empty($validated['citizen_id'] ?? null)) {
                 $client->id_number = $validated['citizen_id'];
                 $dirty = true;
             }
-            if (empty($client->company) && !empty($validated['customer_company'] ?? null)) {
+            if (empty($client->company) && ! empty($validated['customer_company'] ?? null)) {
                 $client->company = $validated['customer_company'];
                 $dirty = true;
             }
-            if (empty($client->vat_number) && !empty($validated['customer_vat'] ?? null)) {
+            if (empty($client->vat_number) && ! empty($validated['customer_vat'] ?? null)) {
                 $client->vat_number = $validated['customer_vat'];
                 $dirty = true;
             }
-            if (empty($client->client_address) && !empty($validated['customer_address'] ?? null)) {
+            if (empty($client->client_address) && ! empty($validated['customer_address'] ?? null)) {
                 $client->client_address = $validated['customer_address'];
                 $dirty = true;
             }
-            if (empty($client->client_address2) && !empty($validated['customer_address2'] ?? null)) {
+            if (empty($client->client_address2) && ! empty($validated['customer_address2'] ?? null)) {
                 $client->client_address2 = $validated['customer_address2'];
                 $dirty = true;
             }
-            if (empty($client->client_city) && !empty($validated['customer_city'] ?? null)) {
+            if (empty($client->client_city) && ! empty($validated['customer_city'] ?? null)) {
                 $client->client_city = $validated['customer_city'];
                 $dirty = true;
             }
-            if (empty($client->client_state) && !empty($validated['customer_state'] ?? null)) {
+            if (empty($client->client_state) && ! empty($validated['customer_state'] ?? null)) {
                 $client->client_state = $validated['customer_state'];
                 $dirty = true;
             }
-            if (empty($client->client_country) && !empty($validated['customer_country'] ?? null)) {
+            if (empty($client->client_country) && ! empty($validated['customer_country'] ?? null)) {
                 $client->client_country = $validated['customer_country'];
                 $dirty = true;
             }
-            if (empty($client->client_postal_code) && !empty($validated['customer_postal'] ?? null)) {
+            if (empty($client->client_postal_code) && ! empty($validated['customer_postal'] ?? null)) {
                 $client->client_postal_code = $validated['customer_postal'];
                 $dirty = true;
             }
@@ -335,12 +331,8 @@ if (
 
     /**
      * Resolve the payable model from the request.
-     *
-     * @param Request $request
-     * @param string|int $id
-     * @return Payable|null
      */
-    protected function resolvePayable(Request $request, string|int $id): ?Payable
+    protected function resolvePayable(Request $request, string | int $id): ?Payable
     {
         // Check for custom resolver in the request (allows per-route customization)
         $customResolver = $request->route('resolver');
@@ -364,6 +356,7 @@ if (
                 if ($model instanceof Payable) {
                     return $model;
                 }
+
                 // Otherwise, wrap it with field mapping from Admin Panel
                 return ModelPayableWrapper::wrap($model);
             }
@@ -380,13 +373,13 @@ if (
      */
     protected function getSavedTokens()
     {
-        if (!auth()->check() || !$this->settings()->get('support_tokens', false)) {
+        if (! auth()->check() || ! $this->settings()->get('support_tokens', false)) {
             return collect();
         }
 
         $client = auth()->user()->client;
 
-        if (!$client) {
+        if (! $client) {
             return collect();
         }
 
@@ -399,8 +392,6 @@ if (
 
     /**
      * Get the settings array for the view.
-     *
-     * @return array
      */
     protected function getSettings(): array
     {
@@ -417,9 +408,6 @@ if (
 
     /**
      * Get the currency symbol for a given currency code.
-     *
-     * @param string $currency
-     * @return string
      */
     protected function getCurrencySymbol(string $currency): string
     {
@@ -440,10 +428,6 @@ if (
     /**
      * Process a card payment.
      *
-     * @param Payable $payable
-     * @param array $validated
-     * @param int $paymentsCount
-     * @param Request $request
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     protected function processCardPayment(
@@ -452,8 +436,7 @@ if (
         int $paymentsCount,
         Request $request,
         \OfficeGuy\LaravelSumitGateway\DataTransferObjects\ResolvedPaymentIntent $resolvedIntent
-    )
-    {
+    ) {
         // 🛡️ IDEMPOTENCY PROTECTION: Prevent double-charging on page refresh
         $existingTransaction = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction::where('order_id', $payable->getPayableId())
             ->where('status', 'completed')
@@ -517,18 +500,16 @@ if (
     /**
      * Process a Bit payment.
      *
-     * @param Payable $payable
-     * @param array $validated
      * @return \Illuminate\Http\RedirectResponse|\Illuminate\Http\JsonResponse
      */
     protected function processBitPayment(Payable $payable, array $validated)
     {
         // Bit payments are handled via redirect using BitPaymentService::processOrder
         $successUrl = route(config('officeguy.routes.success', 'checkout.success'), [
-            'order' => $payable->getPayableId()
+            'order' => $payable->getPayableId(),
         ]);
         $cancelUrl = route(config('officeguy.routes.failed', 'checkout.failed'), [
-            'order' => $payable->getPayableId()
+            'order' => $payable->getPayableId(),
         ]);
         $webhookUrl = route('officeguy.webhook.bit');
 
@@ -551,9 +532,7 @@ if (
     /**
      * Save a card token for future use.
      *
-     * @param array $data
-     * @param mixed $client
-     * @return void
+     * @param  mixed  $client
      */
     protected function saveCardToken(array $data, $client): void
     {
@@ -561,15 +540,16 @@ if (
         if (isset($data['CardToken'])) {
             try {
                 OfficeGuyToken::createFromApiResponse($client, ['Data' => $data]);
+
                 return;
-            } catch (\RuntimeException $e) {
+            } catch (\RuntimeException) {
                 // Fall through to manual creation
             }
         }
 
         // Fallback to manual creation for other token formats
         $token = $data['Token'] ?? $data['CardToken'] ?? null;
-        if (!$token) {
+        if (! $token) {
             return;
         }
 
@@ -592,18 +572,17 @@ if (
     /**
      * Display checkout page for Package model (hosting/domain/SSL).
      *
-     * @param Request $request
-     * @param string|int $id Package ID
-     * @return View
+     * @param  string|int  $id  Package ID
      */
-    public function showPackage(Request $request, string|int $id): View
+    public function showPackage(Request $request, string | int $id): View
     {
         // Set resolver for Package model
-        $request->route()->setParameter('resolver', function($id) {
+        $request->route()->setParameter('resolver', function ($id) {
             $modelClass = 'App\\Models\\Package';
             if (class_exists($modelClass)) {
                 return $modelClass::find($id);
             }
+
             return null;
         });
 
@@ -613,18 +592,18 @@ if (
     /**
      * Process payment for Package model.
      *
-     * @param Request $request
-     * @param string|int $id Package ID
+     * @param  string|int  $id  Package ID
      * @return mixed
      */
-    public function processPackage(Request $request, string|int $id)
+    public function processPackage(Request $request, string | int $id)
     {
         // Set resolver for Package model
-        $request->route()->setParameter('resolver', function($id) {
+        $request->route()->setParameter('resolver', function ($id) {
             $modelClass = 'App\\Models\\Package';
             if (class_exists($modelClass)) {
                 return $modelClass::find($id);
             }
+
             return null;
         });
 
@@ -634,18 +613,17 @@ if (
     /**
      * Display checkout page for MayaNetEsimProduct model.
      *
-     * @param Request $request
-     * @param string|int $id eSIM Product ID
-     * @return View
+     * @param  string|int  $id  eSIM Product ID
      */
-    public function showEsim(Request $request, string|int $id): View
+    public function showEsim(Request $request, string | int $id): View
     {
         // Set resolver for eSIM model
-        $request->route()->setParameter('resolver', function($id) {
+        $request->route()->setParameter('resolver', function ($id) {
             $modelClass = 'App\\Models\\MayaNetEsimProduct';
             if (class_exists($modelClass)) {
                 return $modelClass::find($id);
             }
+
             return null;
         });
 
@@ -655,18 +633,18 @@ if (
     /**
      * Process payment for MayaNetEsimProduct model.
      *
-     * @param Request $request
-     * @param string|int $id eSIM Product ID
+     * @param  string|int  $id  eSIM Product ID
      * @return mixed
      */
-    public function processEsim(Request $request, string|int $id)
+    public function processEsim(Request $request, string | int $id)
     {
         // Set resolver for eSIM model
-        $request->route()->setParameter('resolver', function($id) {
+        $request->route()->setParameter('resolver', function ($id) {
             $modelClass = 'App\\Models\\MayaNetEsimProduct';
             if (class_exists($modelClass)) {
                 return $modelClass::find($id);
             }
+
             return null;
         });
 
@@ -676,14 +654,14 @@ if (
     /**
      * Redirect to success page using secure URL generation
      *
-     * @param Payable|null $payable The Payable entity (Order, Invoice, etc.)
-     * @param string $message Success message
+     * @param  Payable|null  $payable  The Payable entity (Order, Invoice, etc.)
+     * @param  string  $message  Success message
      * @return \Illuminate\Http\RedirectResponse
      */
     protected function redirectSuccess(?Payable $payable, string $message = 'Payment completed successfully')
     {
         // If payable entity is available and secure success is enabled, generate secure URL
-        if ($payable) {
+        if ($payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
             $generator = app(SecureSuccessUrlGenerator::class);
 
             if ($generator->isEnabled()) {
@@ -700,14 +678,14 @@ if (
 
         // Fallback: Legacy redirect (if secure URL is disabled or payable unavailable)
         OfficeGuyApi::writeToLog(
-            'Using legacy success redirect for payable #' . ($payable ? $payable->getPayableId() : 'unknown'),
+            'Using legacy success redirect for payable #' . ($payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable ? $payable->getPayableId() : 'unknown'),
             'debug'
         );
 
         $route = config('officeguy.routes.success', 'checkout.success');
 
         if ($route && Route::getRoutes()->getByName($route)) {
-            return redirect()->route($route, ['order' => $payable ? $payable->getPayableId() : null])
+            return redirect()->route($route, ['order' => $payable instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable ? $payable->getPayableId() : null])
                 ->with('success', $message);
         }
 

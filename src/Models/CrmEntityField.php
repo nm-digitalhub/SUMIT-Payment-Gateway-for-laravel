@@ -20,7 +20,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool|null $value_boolean Boolean value
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read CrmEntity $entity
  * @property-read CrmFolderField $folderField
  */

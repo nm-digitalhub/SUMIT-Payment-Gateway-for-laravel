@@ -12,7 +12,6 @@ use OfficeGuy\LaravelSumitGateway\Enums\PayableType;
  * Provides default implementation for Payable::getPayableType()
  * and helper methods for type-based logic.
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.10.0
  */
 trait HasPayableType
@@ -42,8 +41,6 @@ trait HasPayableType
      * Returns the template name without path/extension:
      * - 'digital' → resources/views/pages/checkout/digital.blade.php
      * - 'infrastructure' → resources/views/pages/checkout/infrastructure.blade.php
-     *
-     * @return string
      */
     public function getCheckoutTemplate(): string
     {
@@ -68,7 +65,7 @@ trait HasPayableType
         }
 
         if ($type->requiresAddress()) {
-            $base = array_merge($base, [
+            return array_merge($base, [
                 'address',
                 'city',
                 'postal_code',
@@ -111,12 +108,10 @@ trait HasPayableType
 
     /**
      * Get success message based on payable type
-     *
-     * @return string
      */
     public function getSuccessMessage(): string
     {
-        return match($this->getPayableType()) {
+        return match ($this->getPayableType()) {
             PayableType::INFRASTRUCTURE => __('Your service has been provisioned successfully! Setup may take up to 60 minutes.'),
             PayableType::DIGITAL_PRODUCT => __('Your purchase has been completed! Check your email for delivery.'),
             PayableType::SUBSCRIPTION => __('Your subscription is now active! You will be charged automatically.'),
@@ -127,8 +122,6 @@ trait HasPayableType
 
     /**
      * Check if this payable requires address information
-     *
-     * @return bool
      */
     public function requiresAddress(): bool
     {
@@ -137,8 +130,6 @@ trait HasPayableType
 
     /**
      * Check if this payable requires phone number
-     *
-     * @return bool
      */
     public function requiresPhone(): bool
     {
@@ -147,8 +138,6 @@ trait HasPayableType
 
     /**
      * Check if this payable supports instant delivery
-     *
-     * @return bool
      */
     public function isInstantDelivery(): bool
     {
@@ -157,8 +146,6 @@ trait HasPayableType
 
     /**
      * Get estimated fulfillment time in minutes
-     *
-     * @return int
      */
     public function getEstimatedFulfillmentMinutes(): int
     {
@@ -167,8 +154,6 @@ trait HasPayableType
 
     /**
      * Get human-readable type label
-     *
-     * @return string
      */
     public function getTypeLabel(): string
     {
@@ -177,8 +162,6 @@ trait HasPayableType
 
     /**
      * Get icon name for this payable type
-     *
-     * @return string
      */
     public function getTypeIcon(): string
     {
@@ -187,8 +170,6 @@ trait HasPayableType
 
     /**
      * Get color for this payable type (Filament color name)
-     *
-     * @return string
      */
     public function getTypeColor(): string
     {

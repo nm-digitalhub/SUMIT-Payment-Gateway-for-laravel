@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array|null $metadata Additional relation metadata
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
- *
  * @property-read CrmEntity $fromEntity
  * @property-read CrmEntity $toEntity
  */
@@ -77,8 +76,7 @@ class CrmEntityRelation extends Model
     /**
      * Scope a query to filter by relation type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)

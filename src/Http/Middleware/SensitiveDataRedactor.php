@@ -46,9 +46,6 @@ class SensitiveDataRedactor
 
     /**
      * Handle request body redaction
-     *
-     * @param PendingRequest $pendingRequest
-     * @return void
      */
     public function __invoke(PendingRequest $pendingRequest): void
     {
@@ -79,12 +76,12 @@ class SensitiveDataRedactor
     /**
      * Redact sensitive data from array (helper method)
      *
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public static function redact(array $data): array
     {
-        $instance = new self();
+        $instance = new self;
 
         // Redact top-level
         foreach ($instance->sensitiveFields as $field) {

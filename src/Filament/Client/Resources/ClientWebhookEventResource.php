@@ -4,29 +4,34 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
+use Filament\Actions;
 use Filament\Forms;
+use Filament\Resources\Resource;
 use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Actions;
-use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
-use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientWebhookEventResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use Illuminate\Database\Eloquent\Builder;
+use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientWebhookEventResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
+use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
 class ClientWebhookEventResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = WebhookEvent::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-up-tray';
-
-    protected static ?string $navigationLabel = 'Webhook Logs (יוצאים)';
-
-    protected static ?int $navigationSort = 5;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -36,12 +41,12 @@ class ClientWebhookEventResource extends Resource
         if (auth()->check()) {
             $client = auth()->user()->client;
 
-            if (!$client) {
+            if (! $client) {
                 // No client found - return empty query
                 return parent::getEloquentQuery()->whereRaw('1 = 0');
             }
 
-            $query->whereHas('transaction', function ($q) use ($client) {
+            $query->whereHas('transaction', function ($q) use ($client): void {
                 $q->where('customer_id', $client->getSumitCustomerId());
             });
         }

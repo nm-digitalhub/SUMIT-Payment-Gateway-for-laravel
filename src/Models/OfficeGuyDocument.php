@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * OfficeGuy Document Model
@@ -87,8 +87,6 @@ class OfficeGuyDocument extends Model
      *
      * The relationship matches SUMIT customer ID stored in the customer_id field
      * with the sumit_customer_id field in the customer model.
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -108,8 +106,6 @@ class OfficeGuyDocument extends Model
      * Migration:
      * - Replace $document->client with $document->customer
      * - Replace $document->client() with $document->customer()
-     *
-     * @return BelongsTo
      */
     public function client(): BelongsTo
     {
@@ -136,17 +132,15 @@ class OfficeGuyDocument extends Model
     /**
      * Create a document from SUMIT API response
      *
-     * @param string|int $orderId
-     * @param array $response SUMIT API response
-     * @param array $request Original request data
-     * @param string $orderType Optional morph type
-     * @return static
+     * @param  array  $response  SUMIT API response
+     * @param  array  $request  Original request data
+     * @param  string  $orderType  Optional morph type
      */
     public static function createFromApiResponse(
-        string|int $orderId,
+        string | int $orderId,
         array $response,
         array $request = [],
-        string $orderType = null
+        ?string $orderType = null
     ): static {
         $data = $response['Data'] ?? [];
 
@@ -206,9 +200,8 @@ class OfficeGuyDocument extends Model
     /**
      * Create document from SUMIT API List response
      *
-     * @param array $doc Document data from SUMIT /accounting/documents/list/ response
-     * @param int|null $subscriptionId Optional subscription ID to link
-     * @return static
+     * @param  array  $doc  Document data from SUMIT /accounting/documents/list/ response
+     * @param  int|null  $subscriptionId  Optional subscription ID to link
      */
     public static function createFromListResponse(
         array $doc,

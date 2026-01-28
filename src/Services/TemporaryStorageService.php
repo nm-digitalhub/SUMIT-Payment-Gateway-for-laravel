@@ -25,7 +25,6 @@ use OfficeGuy\LaravelSumitGateway\Models\PendingCheckout;
  * 2. Payment redirect/webhook → retrieve(payableId)
  * 3. Auto-cleanup expired records (scheduled job)
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.2.0
  */
 class TemporaryStorageService
@@ -38,10 +37,9 @@ class TemporaryStorageService
     /**
      * Store checkout intent + service data temporarily
      *
-     * @param CheckoutIntent $intent Checkout context
-     * @param array<string, mixed> $serviceData Service-specific data (WHOIS, cPanel, etc.)
-     * @param Request|null $request HTTP request (for session/IP tracking)
-     * @return PendingCheckout
+     * @param  CheckoutIntent  $intent  Checkout context
+     * @param  array<string, mixed>  $serviceData  Service-specific data (WHOIS, cPanel, etc.)
+     * @param  Request|null  $request  HTTP request (for session/IP tracking)
      */
     public function store(
         CheckoutIntent $intent,
@@ -53,22 +51,22 @@ class TemporaryStorageService
         // Create or update pending checkout
         $pending = PendingCheckout::updateOrCreate(
             [
-                'payable_type' => get_class($intent->payable),
+                'payable_type' => $intent->payable::class,
                 'payable_id' => $intent->payable->getPayableId(),
             ],
             [
                 'customer_data' => $intent->customer->toArray(),
                 'payment_preferences' => $intent->payment->toArray(),
                 'service_data' => $serviceData,
-                'session_id' => $request ? $request->session()->getId() : null,
-                'ip_address' => $request ? $request->ip() : null,
-                'user_agent' => $request ? $request->userAgent() : null,
+                'session_id' => $request instanceof \Illuminate\Http\Request ? $request->session()->getId() : null,
+                'ip_address' => $request instanceof \Illuminate\Http\Request ? $request->ip() : null,
+                'user_agent' => $request instanceof \Illuminate\Http\Request ? $request->userAgent() : null,
                 'expires_at' => $expiresAt,
             ]
         );
 
         // Optional: Also store in session as fallback
-        if ($request) {
+        if ($request instanceof \Illuminate\Http\Request) {
             $this->storeInSession($request, $intent, $serviceData);
         }
 
@@ -78,14 +76,14 @@ class TemporaryStorageService
     /**
      * Retrieve checkout intent + service data for a payable
      *
-     * @param Payable $payable The payable entity
-     * @param Request|null $request HTTP request (for session fallback)
+     * @param  Payable  $payable  The payable entity
+     * @param  Request|null  $request  HTTP request (for session fallback)
      * @return array{intent: CheckoutIntent, serviceData: array}|null
      */
     public function retrieve(Payable $payable, ?Request $request = null): ?array
     {
         // Try database first (primary)
-        $pending = PendingCheckout::forPayable(get_class($payable), $payable->getPayableId())
+        $pending = PendingCheckout::forPayable($payable::class, $payable->getPayableId())
             ->active()
             ->latest()
             ->first();
@@ -98,7 +96,7 @@ class TemporaryStorageService
         }
 
         // Fallback: Try session (edge cases)
-        if ($request) {
+        if ($request instanceof \Illuminate\Http\Request) {
             return $this->retrieveFromSession($request, $payable);
         }
 
@@ -120,33 +118,28 @@ class TemporaryStorageService
     /**
      * Delete pending checkout for a payable (after payment success)
      *
-     * @param Payable $payable The payable entity
-     * @return bool
+     * @param  Payable  $payable  The payable entity
      */
     public function delete(Payable $payable): bool
     {
-        return PendingCheckout::forPayable(get_class($payable), $payable->getPayableId())
+        return PendingCheckout::forPayable($payable::class, $payable->getPayableId())
             ->delete() > 0;
     }
 
     /**
      * Get expiration time
-     *
-     * @return Carbon
      */
     protected function getExpirationTime(): Carbon
     {
         $hours = config('officeguy.pending_checkout_expiration_hours', $this->defaultExpirationHours);
+
         return now()->addHours($hours);
     }
 
     /**
      * Store in session as fallback (for redirect scenarios)
      *
-     * @param Request $request
-     * @param CheckoutIntent $intent
-     * @param array<string, mixed> $serviceData
-     * @return void
+     * @param  array<string, mixed>  $serviceData
      */
     protected function storeInSession(Request $request, CheckoutIntent $intent, array $serviceData): void
     {
@@ -163,8 +156,6 @@ class TemporaryStorageService
     /**
      * Retrieve from session (fallback)
      *
-     * @param Request $request
-     * @param Payable $payable
      * @return array{intent: CheckoutIntent, serviceData: array}|null
      */
     protected function retrieveFromSession(Request $request, Payable $payable): ?array
@@ -172,13 +163,14 @@ class TemporaryStorageService
         $key = 'pending_checkout_' . $payable->getPayableId();
         $data = $request->session()->get($key);
 
-        if (!$data) {
+        if (! $data) {
             return null;
         }
 
         // Check expiration
         if (isset($data['expires_at']) && Carbon::parse($data['expires_at'])->isPast()) {
             $request->session()->forget($key);
+
             return null;
         }
 

@@ -6,33 +6,33 @@ class Cartflows_Pro_Gateway_OfficeGuy
 
     public static function get_instance()
     {
-        if (!isset(self::$instance))
-            self::$instance = new self();
+        if (! isset(self::$instance)) {
+            self::$instance = new self;
+        }
+
         return self::$instance;
     }
 
-    public function __construct()
-    {
-    }
+    public function __construct() {}
 
     public function process_offer_payment($Order, $Product)
     {
         $Gateway = GetOfficeGuyGateway();
-        add_action('cartflows_offer_child_order_created_' . $Gateway->id, array($this, 'ChildOrderCreated'), 10, 3);
+        add_action('cartflows_offer_child_order_created_' . $Gateway->id, [$this, 'ChildOrderCreated'], 10, 3);
 
         $OrderItem = $Order->get_items()[0];
 
         $Request = $this->GetOfferPaymentRequest($Order, $OrderItem, $Product);
         $IsOfficeGuySubscription = get_post_meta($Product['id'], 'OfficeGuySubscription', true) === 'yes';
-        if ($IsOfficeGuySubscription)
+        if ($IsOfficeGuySubscription) {
             $Response = OfficeGuyAPI::Post($Request, '/billing/recurring/charge/', $Gateway->settings['environment'], false);
-        else
+        } else {
             $Response = OfficeGuyAPI::Post($Request, '/billing/payments/charge/', $Gateway->settings['environment'], false);
+        }
 
         // Check response
-        if ($Response['Status'] == 0 && $Response['Data']['Payment']['ValidPayment'] == true)
-        {
-            // Success    
+        if ($Response['Status'] == 0 && $Response['Data']['Payment']['ValidPayment'] == true) {
+            // Success
             $ResponsePayment = $Response['Data']['Payment'];
             $ResponsePaymentMethod = $ResponsePayment['PaymentMethod'];
             $Remark = __('SUMIT payment completed. Auth Number: %s. Last digits: %s. Payment ID: %s. Document ID: %s. Customer ID: %s.', 'officeguy');
@@ -50,61 +50,59 @@ class Cartflows_Pro_Gateway_OfficeGuy
             $Order->payment_complete();
             $Order->save();
 
-            if ($Gateway->settings['createorderdocument'] == 'yes')
-            {
-                $OrderCustomer = array(
-                    'ID' => $Response['Data']['CustomerID']
-                );
+            if ($Gateway->settings['createorderdocument'] == 'yes') {
+                $OrderCustomer = [
+                    'ID' => $Response['Data']['CustomerID'],
+                ];
                 OfficeGuyPayment::CreateOrderDocument($Gateway, $Order, $OrderCustomer, $Response['Data']['DocumentID']);
             }
 
             return true;
-        }
-        else if ($Response['Status'] != 0)
-        {
+        } elseif ($Response['Status'] != 0) {
             // No response or unexpected response
             $Order->add_order_note(__('Payment failed', 'officeguy') . ' - ' . $Response['UserErrorMessage']);
             wc_add_notice(__('Payment failed', 'officeguy') . ' - ' . $Response['UserErrorMessage'], $notice_type = 'error');
+
             return false;
-        }
-        else
-        { // if ($Response['Data']['Payment']['ValidPayment'] == false)
+        } else { // if ($Response['Data']['Payment']['ValidPayment'] == false)
             // Decline
             $Order->add_order_note(__('Payment failed', 'officeguy') . ' - ' . $Response['Data']['Payment']['StatusDescription']);
             wc_add_notice(__('Payment failed', 'officeguy') . ' - ' . $Response['Data']['Payment']['StatusDescription'], $notice_type = 'error');
+
             return false;
         }
     }
 
-	public function is_api_refund() 
+    public function is_api_refund()
     {
-		return false;
-	}
+        return false;
+    }
 
-    public function ChildOrderCreated($ParentOrder, $Order, $TransactionID) 
+    public function ChildOrderCreated($ParentOrder, $Order, $TransactionID)
     {
         $Tokens = $ParentOrder->get_payment_tokens();
         $Token = WC_Payment_Tokens::get($Tokens[count($Tokens) - 1]);
-        if ($Token == null) 
-        {
+        if ($Token == null) {
             OfficeGuyAPI::WriteToLog('Order #' . $Order->get_id() . ' no Token found for parent order #' . $ParentOrder->get_id(), 'debug');
+
             return;
         }
 
         OfficeGuyTokens::SaveTokenToOrder($Order, $Token);
     }
+
     private function GetOfferPaymentRequest($Order, $OrderItem, $Product)
     {
         $Gateway = GetOfficeGuyGateway();
-        $Request = array();
+        $Request = [];
         $Request['Credentials'] = OfficeGuyPayment::GetCredentials($Gateway);
-        $Request['Items'] = array();
+        $Request['Items'] = [];
         $Item = OfficeGuyPayment::GetPaymentOrderItem(null, $Product['id'], round($Product['price'], 2), 1, $Order->get_currency(), null, $OrderItem, $Order);
         array_push($Request['Items'], $Item);
         $Request['VATIncluded'] = 'true';
         $Request['VATRate'] = OfficeGuyPayment::GetOrderVatRate($Order);
-        $Request['Customer'] = array();
-        $Request['Customer']['ID'] = $Order->get_meta("OfficeGuyCustomerID");
+        $Request['Customer'] = [];
+        $Request['Customer']['ID'] = $Order->get_meta('OfficeGuyCustomerID');
         $Request['AuthoriseOnly'] = $Gateway->settings['testing'] != 'no' ? 'true' : 'false';
         $Request['DraftDocument'] = $Gateway->settings['draftdocument'] != 'no' ? 'true' : 'false';
         $Request['SendDocumentByEmail'] = $Gateway->settings['emaildocument'] == 'yes' ? 'true' : 'false';
@@ -115,7 +113,8 @@ class Cartflows_Pro_Gateway_OfficeGuy
 
         $Tokens = $Order->get_payment_tokens();
         $Token = WC_Payment_Tokens::get($Tokens[count($Tokens) - 1]);
-        $Request["PaymentMethod"] = OfficeGuyPayment::GetOrderPaymentMethodFromToken($Token);
+        $Request['PaymentMethod'] = OfficeGuyPayment::GetOrderPaymentMethodFromToken($Token);
+
         return $Request;
     }
 }
@@ -125,4 +124,3 @@ class Cartflows_Pro_Gateway_OfficeGuy
  *  Kicking this off by calling 'get_instance()' method
  */
 Cartflows_Pro_Gateway_OfficeGuy::get_instance();
-

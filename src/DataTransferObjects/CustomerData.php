@@ -58,8 +58,7 @@ final readonly class CustomerData
     /**
      * Create from array (for deserialization from DB/session)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -102,7 +101,7 @@ final readonly class CustomerData
      */
     public function hasAddress(): bool
     {
-        return $this->address !== null && $this->address->isComplete();
+        return $this->address instanceof \OfficeGuy\LaravelSumitGateway\DataTransferObjects\AddressData && $this->address->isComplete();
     }
 
     /**
@@ -110,7 +109,7 @@ final readonly class CustomerData
      */
     public function isBusiness(): bool
     {
-        return !empty($this->company) || !empty($this->vatNumber);
+        return ! in_array($this->company, [null, '', '0'], true) || ! in_array($this->vatNumber, [null, '', '0'], true);
     }
 
     /**
@@ -119,6 +118,7 @@ final readonly class CustomerData
     public function getFirstName(): string
     {
         $parts = explode(' ', $this->name, 2);
+
         return $parts[0] ?? '';
     }
 
@@ -128,6 +128,7 @@ final readonly class CustomerData
     public function getLastName(): string
     {
         $parts = explode(' ', $this->name, 2);
+
         return $parts[1] ?? '';
     }
 }

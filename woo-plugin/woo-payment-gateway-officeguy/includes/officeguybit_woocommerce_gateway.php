@@ -7,12 +7,13 @@
  */
 function officeguybit_woocommerce_gateway()
 {
-    if (!class_exists("WC_Payment_Gateway"))
+    if (! class_exists('WC_Payment_Gateway')) {
         return;
+    }
 
     class WC_OfficeGuyBit extends WC_Payment_Gateway
     {
-        function __construct()
+        public function __construct()
         {
             $this->id = 'officeguybit';
             $this->init_settings();
@@ -20,24 +21,26 @@ function officeguybit_woocommerce_gateway()
             $this->method_description = __('Receive bit payments using SUMIT.', 'officeguy');
             $this->icon = PLUGIN_DIR . 'includes/images/bit.png';
             $this->has_fields = true;
-            if (!empty($this->settings['title']))
+            if (! empty($this->settings['title'])) {
                 $this->title = $this->settings['title'];
+            }
             OfficeGuySettings::InitBitFormFields($this);
 
-            $this->supports = array('products');
+            $this->supports = ['products'];
 
-            add_action('woocommerce_receipt_officeguy', array($this, 'ReceiptPage'));
-            add_action('woocommerce_update_options_payment_gateways', array($this, 'process_admin_options'));
-            add_action('woocommerce_update_options_payment_gateways_' . $this->id, array($this, 'process_admin_options'));
-            //add_action('woocommerce_payment_complete', 'OfficeGuyPayment::CreateDocumentOnPaymentComplete', 10, 1);
-            add_action('woocommerce_scheduled_subscription_payment_' . $this->id, array($this, 'ProcessSubscriptionPayment'), 10, 2);
+            add_action('woocommerce_receipt_officeguy', [$this, 'ReceiptPage']);
+            add_action('woocommerce_update_options_payment_gateways', [$this, 'process_admin_options']);
+            add_action('woocommerce_update_options_payment_gateways_' . $this->id, [$this, 'process_admin_options']);
+            // add_action('woocommerce_payment_complete', 'OfficeGuyPayment::CreateDocumentOnPaymentComplete', 10, 1);
+            add_action('woocommerce_scheduled_subscription_payment_' . $this->id, [$this, 'ProcessSubscriptionPayment'], 10, 2);
 
-            if (!OfficeGuyPayment::IsCurrencySupported())
+            if (! OfficeGuyPayment::IsCurrencySupported()) {
                 $this->enabled = 'no';
+            }
             OfficeGuyStock::CreateSchedules($this);
         }
-   
-        function admin_options()
+
+        public function admin_options()
         { ?>
             <h3><?php echo __('SUMIT Payments - bit', 'officeguy') ?></h3>
             <p>
@@ -49,22 +52,22 @@ function officeguybit_woocommerce_gateway()
             <?php
         }
 
-        function payment_fields()
+        public function payment_fields()
         {
-            if ($this->settings['description'])
-            { ?>
+            if ($this->settings['description']) { ?>
                 <p><?php echo $this->settings['description']; ?></p>
 <?php
             }
         }
 
-        function process_payment($OrderID)
+        public function process_payment($OrderID)
         {
             $Order = wc_get_order($OrderID);
+
             return OfficeGuyPayment::ProcessBitOrder($this, $Order);
         }
 
-        function ReceiptPage($Order)
+        public function ReceiptPage($Order)
         {
             echo '<p>' . __('Thank you for your order.', 'officeguy') . '</p>';
         }
@@ -72,29 +75,30 @@ function officeguybit_woocommerce_gateway()
         public static function AddPaymentGateway($Methods)
         {
             $Methods[] = 'WC_OfficeGuyBit';
+
             return $Methods;
         }
 
         public static function ProcessIPN()
         {
-            $OrderID = OfficeGuyRequestHelpers::Get("orderid");
-            $OrderKey = OfficeGuyRequestHelpers::Get("orderkey");
-            $DocumentID = OfficeGuyRequestHelpers::Post("documentid");
-            $CustomerID = OfficeGuyRequestHelpers::Post("customerid");
+            $OrderID = OfficeGuyRequestHelpers::Get('orderid');
+            $OrderKey = OfficeGuyRequestHelpers::Get('orderkey');
+            $DocumentID = OfficeGuyRequestHelpers::Post('documentid');
+            $CustomerID = OfficeGuyRequestHelpers::Post('customerid');
 
             $Order = wc_get_order($OrderID);
-            if ($Order->get_order_key() != $OrderKey)
-            {
-                OfficeGuyAPI::WriteToLog("Received IPN with incorrect key " . $OrderID, "debug");
+            if ($Order->get_order_key() != $OrderKey) {
+                OfficeGuyAPI::WriteToLog('Received IPN with incorrect key ' . $OrderID, 'debug');
+
                 return;
             }
-            if ($Order->get_status() != "pending")
-            {
-                OfficeGuyAPI::WriteToLog("Received IPN for non-pending order " . $OrderID, "debug");
+            if ($Order->get_status() != 'pending') {
+                OfficeGuyAPI::WriteToLog('Received IPN for non-pending order ' . $OrderID, 'debug');
+
                 return;
             }
 
-            OfficeGuyAPI::WriteToLog("Processing IPN for order " . $OrderID, "debug");
+            OfficeGuyAPI::WriteToLog('Processing IPN for order ' . $OrderID, 'debug');
             $Remark = __('SUMIT order completed. Document ID: %s.', 'officeguy');
             $Remark = sprintf($Remark, $DocumentID);
 

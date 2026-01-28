@@ -25,7 +25,7 @@ use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
  *     public function handle(SumitWebhookReceived $event)
  *     {
  *         $webhook = $event->webhook;
- *         
+ *
  *         switch ($webhook->event_type) {
  *             case 'card_created':
  *                 // Handle new card
@@ -40,20 +40,19 @@ use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
  */
 class SumitWebhookReceived
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
-
-    /**
-     * The webhook that was received.
-     */
-    public SumitWebhook $webhook;
+    use Dispatchable;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new event instance.
      */
-    public function __construct(SumitWebhook $webhook)
-    {
-        $this->webhook = $webhook;
-    }
+    public function __construct(
+        /**
+         * The webhook that was received.
+         */
+        public SumitWebhook $webhook
+    ) {}
 
     /**
      * Get the event type.

@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Payment;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 
 /**
  * Get Payment Methods for Customer Request
@@ -85,9 +85,9 @@ class GetPaymentMethodsRequest extends Request implements HasBody
     /**
      * Create new get payment methods request
      *
-     * @param int $customerId SUMIT customer ID
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param bool $includeInactive Include inactive/expired payment methods (default: false)
+     * @param  int  $customerId  SUMIT customer ID
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  bool  $includeInactive  Include inactive/expired payment methods (default: false)
      */
     public function __construct(
         protected readonly int $customerId,
@@ -97,8 +97,6 @@ class GetPaymentMethodsRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -161,7 +159,6 @@ class GetPaymentMethodsRequest extends Request implements HasBody
      *   "UserErrorMessage": "Customer not found"
      * }
      *
-     * @param Response $response
      * @return array<string, mixed>
      */
     public function createDtoFromResponse(Response $response): array
@@ -172,19 +169,18 @@ class GetPaymentMethodsRequest extends Request implements HasBody
     /**
      * Get payment methods array from response
      *
-     * @param Response $response
      * @return array<int, array<string, mixed>> Array of payment methods
      */
     public function getPaymentMethods(Response $response): array
     {
         $data = $response->json();
+
         return $data['Data']['PaymentMethods'] ?? [];
     }
 
     /**
      * Check if customer has any payment methods
      *
-     * @param Response $response
      * @return bool True if customer has at least one payment method
      */
     public function hasPaymentMethods(Response $response): bool
@@ -195,7 +191,6 @@ class GetPaymentMethodsRequest extends Request implements HasBody
     /**
      * Get default payment method from response
      *
-     * @param Response $response
      * @return array<string, mixed>|null Default payment method, or null if none
      */
     public function getDefaultPaymentMethod(Response $response): ?array

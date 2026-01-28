@@ -22,14 +22,14 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 class PaymentCompleted
 {
     /**
-     * @param string|int $orderId Order ID (for backward compatibility)
-     * @param array $payment Payment data array
-     * @param array $response SUMIT API response
-     * @param OfficeGuyTransaction|null $transaction Transaction object (v2.0+)
-     * @param object|null $payable Payable entity (Order, Invoice, etc.) (v2.0+)
+     * @param  string|int  $orderId  Order ID (for backward compatibility)
+     * @param  array  $payment  Payment data array
+     * @param  array  $response  SUMIT API response
+     * @param  OfficeGuyTransaction|null  $transaction  Transaction object (v2.0+)
+     * @param  object|null  $payable  Payable entity (Order, Invoice, etc.) (v2.0+)
      */
     public function __construct(
-        public string|int $orderId,
+        public string | int $orderId,
         public array $payment,
         public array $response,
         public ?OfficeGuyTransaction $transaction = null,
@@ -38,8 +38,6 @@ class PaymentCompleted
 
     /**
      * Check if transaction is webhook-confirmed
-     *
-     * @return bool
      */
     public function isWebhookConfirmed(): bool
     {

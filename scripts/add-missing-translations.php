@@ -5,7 +5,6 @@
  *
  * This script adds ->label() and ->helperText() to fields that don't have them
  */
-
 $filePath = __DIR__ . '/../src/Filament/Pages/OfficeGuySettings.php';
 $content = file_get_contents($filePath);
 
@@ -26,52 +25,38 @@ foreach ($sectionReplacements as $old => $new) {
 // Pattern 2: Add labels and helper texts to fields without them
 $fieldReplacements = [
     // Payment Settings
-    "TextInput::make('max_payments')\n                        ->numeric()" =>
-    "TextInput::make('max_payments')\n                        ->label(__('officeguy::officeguy.settings.max_payments'))\n                        ->helperText(__('officeguy::officeguy.settings.max_payments_help'))\n                        ->numeric()",
+    "TextInput::make('max_payments')\n                        ->numeric()" => "TextInput::make('max_payments')\n                        ->label(__('officeguy::officeguy.settings.max_payments'))\n                        ->helperText(__('officeguy::officeguy.settings.max_payments_help'))\n                        ->numeric()",
 
-    "Toggle::make('authorize_only')" =>
-    "Toggle::make('authorize_only')\n                        ->label(__('officeguy::officeguy.settings.authorize_only'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_only_help'))",
+    "Toggle::make('authorize_only')" => "Toggle::make('authorize_only')\n                        ->label(__('officeguy::officeguy.settings.authorize_only'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_only_help'))",
 
-    "TextInput::make('authorize_added_percent')\n                        ->numeric()" =>
-    "TextInput::make('authorize_added_percent')\n                        ->label(__('officeguy::officeguy.settings.authorize_added_percent'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_added_percent_help'))\n                        ->numeric()",
+    "TextInput::make('authorize_added_percent')\n                        ->numeric()" => "TextInput::make('authorize_added_percent')\n                        ->label(__('officeguy::officeguy.settings.authorize_added_percent'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_added_percent_help'))\n                        ->numeric()",
 
-    "TextInput::make('authorize_minimum_addition')\n                        ->numeric()" =>
-    "TextInput::make('authorize_minimum_addition')\n                        ->label(__('officeguy::officeguy.settings.authorize_minimum_addition'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_minimum_addition_help'))\n                        ->numeric()",
+    "TextInput::make('authorize_minimum_addition')\n                        ->numeric()" => "TextInput::make('authorize_minimum_addition')\n                        ->label(__('officeguy::officeguy.settings.authorize_minimum_addition'))\n                        ->helperText(__('officeguy::officeguy.settings.authorize_minimum_addition_help'))\n                        ->numeric()",
 
     // Document Settings
-    "Toggle::make('draft_document')" =>
-    "Toggle::make('draft_document')\n                        ->label(__('officeguy::officeguy.settings.draft_document'))\n                        ->helperText(__('officeguy::officeguy.settings.draft_document_help'))",
+    "Toggle::make('draft_document')" => "Toggle::make('draft_document')\n                        ->label(__('officeguy::officeguy.settings.draft_document'))\n                        ->helperText(__('officeguy::officeguy.settings.draft_document_help'))",
 
-    "Toggle::make('email_document')" =>
-    "Toggle::make('email_document')\n                        ->label(__('officeguy::officeguy.settings.email_document'))\n                        ->helperText(__('officeguy::officeguy.settings.email_document_help'))",
+    "Toggle::make('email_document')" => "Toggle::make('email_document')\n                        ->label(__('officeguy::officeguy.settings.email_document'))\n                        ->helperText(__('officeguy::officeguy.settings.email_document_help'))",
 
-    "Toggle::make('create_order_document')" =>
-    "Toggle::make('create_order_document')\n                        ->label(__('officeguy::officeguy.settings.create_order_document'))\n                        ->helperText(__('officeguy::officeguy.settings.create_order_document_help'))",
+    "Toggle::make('create_order_document')" => "Toggle::make('create_order_document')\n                        ->label(__('officeguy::officeguy.settings.create_order_document'))\n                        ->helperText(__('officeguy::officeguy.settings.create_order_document_help'))",
 
     // Tokenization
-    "Toggle::make('support_tokens')" =>
-    "Toggle::make('support_tokens')\n                        ->label(__('officeguy::officeguy.settings.support_tokens'))\n                        ->helperText(__('officeguy::officeguy.settings.support_tokens_help'))",
+    "Toggle::make('support_tokens')" => "Toggle::make('support_tokens')\n                        ->label(__('officeguy::officeguy.settings.support_tokens'))\n                        ->helperText(__('officeguy::officeguy.settings.support_tokens_help'))",
 
-    "Select::make('token_param')\n                        ->options([\n                            '2' => 'J2 Method',\n                            '5' => 'J5 Method (Recommended)',\n                        ])" =>
-    "Select::make('token_param')\n                        ->label(__('officeguy::officeguy.settings.token_param'))\n                        ->helperText(__('officeguy::officeguy.settings.token_param_help'))\n                        ->options([\n                            '2' => 'J2 (חד פעמי)',\n                            '5' => 'J5 (רב פעמי - מומלץ)',\n                        ])",
+    "Select::make('token_param')\n                        ->options([\n                            '2' => 'J2 Method',\n                            '5' => 'J5 Method (Recommended)',\n                        ])" => "Select::make('token_param')\n                        ->label(__('officeguy::officeguy.settings.token_param'))\n                        ->helperText(__('officeguy::officeguy.settings.token_param_help'))\n                        ->options([\n                            '2' => 'J2 (חד פעמי)',\n                            '5' => 'J5 (רב פעמי - מומלץ)',\n                        ])",
 
     // Bit Payment
-    "Toggle::make('bit_enabled')" =>
-    "Toggle::make('bit_enabled')\n                        ->label(__('officeguy::officeguy.settings.bit_enabled'))\n                        ->helperText(__('officeguy::officeguy.settings.bit_enabled_help'))",
+    "Toggle::make('bit_enabled')" => "Toggle::make('bit_enabled')\n                        ->label(__('officeguy::officeguy.settings.bit_enabled'))\n                        ->helperText(__('officeguy::officeguy.settings.bit_enabled_help'))",
 
     // Logging
-    "Toggle::make('logging')" =>
-    "Toggle::make('logging')\n                        ->label(__('officeguy::officeguy.settings.logging_enabled'))\n                        ->helperText(__('officeguy::officeguy.settings.logging_enabled_help'))",
+    "Toggle::make('logging')" => "Toggle::make('logging')\n                        ->label(__('officeguy::officeguy.settings.logging_enabled'))\n                        ->helperText(__('officeguy::officeguy.settings.logging_enabled_help'))",
 
-    "TextInput::make('log_channel')" =>
-    "TextInput::make('log_channel')\n                        ->label(__('officeguy::officeguy.settings.log_channel'))\n                        ->helperText(__('officeguy::officeguy.settings.log_channel_help'))\n                        ->placeholder('stack')",
+    "TextInput::make('log_channel')" => "TextInput::make('log_channel')\n                        ->label(__('officeguy::officeguy.settings.log_channel'))\n                        ->helperText(__('officeguy::officeguy.settings.log_channel_help'))\n                        ->placeholder('stack')",
 
     // Merchant Numbers
-    "TextInput::make('merchant_number')" =>
-    "TextInput::make('merchant_number')\n                        ->label(__('officeguy::officeguy.settings.merchant_number'))\n                        ->helperText(__('officeguy::officeguy.settings.merchant_number_help'))",
+    "TextInput::make('merchant_number')" => "TextInput::make('merchant_number')\n                        ->label(__('officeguy::officeguy.settings.merchant_number'))\n                        ->helperText(__('officeguy::officeguy.settings.merchant_number_help'))",
 
-    "TextInput::make('subscriptions_merchant_number')" =>
-    "TextInput::make('subscriptions_merchant_number')\n                        ->label(__('officeguy::officeguy.settings.subscriptions_merchant_number'))\n                        ->helperText(__('officeguy::officeguy.settings.subscriptions_merchant_number_help'))",
+    "TextInput::make('subscriptions_merchant_number')" => "TextInput::make('subscriptions_merchant_number')\n                        ->label(__('officeguy::officeguy.settings.subscriptions_merchant_number'))\n                        ->helperText(__('officeguy::officeguy.settings.subscriptions_merchant_number_help'))",
 
     // Subscriptions labels
     "'Enable Subscriptions'" => "__('officeguy::officeguy.settings.subscriptions_enabled')",
@@ -171,4 +156,4 @@ foreach ($fieldReplacements as $old => $new) {
 file_put_contents($filePath, $content);
 
 echo "✅ Missing translations added to OfficeGuySettings.php\n";
-echo "Total replacements: " . (count($sectionReplacements) + count($fieldReplacements)) . "\n";
+echo 'Total replacements: ' . (count($sectionReplacements) + count($fieldReplacements)) . "\n";

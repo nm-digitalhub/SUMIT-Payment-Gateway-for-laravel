@@ -79,6 +79,7 @@ class RefundWebhookListener
                 "Refund webhook #{$webhook->id} missing Billing_PaymentSource.Name",
                 'warning'
             );
+
             return;
         }
 
@@ -92,6 +93,7 @@ class RefundWebhookListener
                 "Refund webhook #{$webhook->id}: No transaction found with status_description='{$paymentSourceName}'",
                 'info'
             );
+
             return;
         }
 

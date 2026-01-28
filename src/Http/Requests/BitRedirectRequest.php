@@ -48,8 +48,6 @@ class BitRedirectRequest extends FormRequest
      * Determine if the user is authorized to make this request.
      *
      * Authorization is handled by orderkey validation in rules.
-     *
-     * @return bool
      */
     public function authorize(): bool
     {
@@ -61,8 +59,6 @@ class BitRedirectRequest extends FormRequest
      *
      * Merges query parameters into request data for uniform access.
      * Bit sends redirect parameters as query params (GET request).
-     *
-     * @return void
      */
     protected function prepareForValidation(): void
     {
@@ -83,14 +79,14 @@ class BitRedirectRequest extends FormRequest
     {
         return [
             'orderid' => ['required', 'string', 'max:255'],
-            'orderkey' => ['required', 'string', 'max:255', function ($attribute, $value, $fail) {
+            'orderkey' => ['required', 'string', 'max:255', function ($attribute, $value, $fail): void {
                 // ✅ FIX #13: Validate orderkey matches order
                 $orderId = $this->input('orderid');
 
                 try {
                     $order = OrderResolver::resolve($orderId);
 
-                    if (! $order) {
+                    if (! $order instanceof \OfficeGuy\LaravelSumitGateway\Contracts\Payable) {
                         OfficeGuyApi::writeToLog(
                             "Bit redirect validation failed: Order {$orderId} not found",
                             'warning'
@@ -105,7 +101,7 @@ class BitRedirectRequest extends FormRequest
                     $expectedOrderKey = null;
                     if (method_exists($order, 'getOrderKey')) {
                         $expectedOrderKey = $order->getOrderKey();
-                    } elseif (isset($order->order_key)) {
+                    } elseif (property_exists($order, 'order_key') && $order->order_key !== null) {
                         $expectedOrderKey = $order->order_key;
                     }
 
@@ -123,7 +119,7 @@ class BitRedirectRequest extends FormRequest
                     // Validate orderkey matches
                     if ($value !== $expectedOrderKey) {
                         OfficeGuyApi::writeToLog(
-                            "Bit redirect validation failed: Invalid order_key for order {$orderId}. ".
+                            "Bit redirect validation failed: Invalid order_key for order {$orderId}. " .
                             "Expected: {$expectedOrderKey}, Got: {$value}",
                             'error'
                         );
@@ -179,8 +175,6 @@ class BitRedirectRequest extends FormRequest
      * Unlike BitWebhookRequest, this throws a regular ValidationException
      * because this is a browser request (not a SUMIT webhook).
      *
-     * @param Validator $validator
-     * @return void
      *
      * @throws ValidationException
      */
@@ -190,9 +184,9 @@ class BitRedirectRequest extends FormRequest
         $errorMessage = implode(', ', $errors);
 
         OfficeGuyApi::writeToLog(
-            "Bit redirect validation failed: {$errorMessage}. ".
-            'User will see error page. '.
-            'Request data: '.json_encode($this->all()),
+            "Bit redirect validation failed: {$errorMessage}. " .
+            'User will see error page. ' .
+            'Request data: ' . json_encode($this->all()),
             'warning'
         );
 
@@ -202,8 +196,6 @@ class BitRedirectRequest extends FormRequest
 
     /**
      * Get validated order ID.
-     *
-     * @return string
      */
     public function getOrderId(): string
     {
@@ -212,8 +204,6 @@ class BitRedirectRequest extends FormRequest
 
     /**
      * Get validated order key.
-     *
-     * @return string
      */
     public function getOrderKey(): string
     {
@@ -222,8 +212,6 @@ class BitRedirectRequest extends FormRequest
 
     /**
      * Get payment status (if provided).
-     *
-     * @return string|null
      */
     public function getStatus(): ?string
     {
@@ -237,6 +225,7 @@ class BitRedirectRequest extends FormRequest
      * Use this to avoid re-querying the database.
      *
      * @return mixed Order model instance (implements Payable)
+     *
      * @throws \RuntimeException If order was not validated (should never happen)
      */
     public function getValidatedOrder(): mixed
@@ -256,8 +245,6 @@ class BitRedirectRequest extends FormRequest
      *
      * Note: This is indicative only! Always verify payment status via webhook (IPN)
      * or by checking the Order model's payment_status field.
-     *
-     * @return bool
      */
     public function isSuccessStatus(): bool
     {
@@ -269,8 +256,6 @@ class BitRedirectRequest extends FormRequest
      *
      * Note: This is indicative only! Always verify payment status via webhook (IPN)
      * or by checking the Order model's payment_status field.
-     *
-     * @return bool
      */
     public function isFailedStatus(): bool
     {

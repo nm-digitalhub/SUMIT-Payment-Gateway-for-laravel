@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Http\Requests\Document;
 
+use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
+use OfficeGuy\LaravelSumitGateway\Http\Responses\DocumentResponse;
+use Saloon\Contracts\Body\HasBody;
 use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
-use Saloon\Contracts\Body\HasBody;
 use Saloon\Traits\Body\HasJsonBody;
-use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
-use OfficeGuy\LaravelSumitGateway\Http\Responses\DocumentResponse;
 
 /**
  * Send Document Email Request
@@ -55,11 +55,11 @@ class SendDocumentEmailRequest extends Request implements HasBody
     /**
      * Create new send email request
      *
-     * @param int $documentType SUMIT document type (1/2/3/320)
-     * @param string $documentNumber Sequential document number
-     * @param CredentialsData $credentials SUMIT API credentials
-     * @param string|null $email Optional recipient email (uses document customer if null)
-     * @param string|null $personalMessage Optional personal message in email body
+     * @param  int  $documentType  SUMIT document type (1/2/3/320)
+     * @param  string  $documentNumber  Sequential document number
+     * @param  CredentialsData  $credentials  SUMIT API credentials
+     * @param  string|null  $email  Optional recipient email (uses document customer if null)
+     * @param  string|null  $personalMessage  Optional personal message in email body
      */
     public function __construct(
         protected readonly int $documentType,
@@ -71,8 +71,6 @@ class SendDocumentEmailRequest extends Request implements HasBody
 
     /**
      * Define the endpoint
-     *
-     * @return string
      */
     public function resolveEndpoint(): string
     {
@@ -109,9 +107,6 @@ class SendDocumentEmailRequest extends Request implements HasBody
 
     /**
      * Cast response to DocumentResponse DTO
-     *
-     * @param Response $response
-     * @return DocumentResponse
      */
     public function createDtoFromResponse(Response $response): DocumentResponse
     {

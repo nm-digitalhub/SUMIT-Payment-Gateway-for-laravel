@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * PayableFieldMapping Model
@@ -61,7 +61,7 @@ class PayableFieldMapping extends Model
     /**
      * Get the mapping for a specific Payable field.
      *
-     * @param string $payableField The Payable interface field name (e.g., 'amount', 'customer_name')
+     * @param  string  $payableField  The Payable interface field name (e.g., 'amount', 'customer_name')
      * @return string|null The mapped model field name or null if not mapped
      */
     public function getMapping(string $payableField): ?string
@@ -72,8 +72,8 @@ class PayableFieldMapping extends Model
     /**
      * Update the mapping for a specific Payable field.
      *
-     * @param string $payableField The Payable interface field name
-     * @param string|null $modelField The model field name to map to (null to remove mapping)
+     * @param  string  $payableField  The Payable interface field name
+     * @param  string|null  $modelField  The model field name to map to (null to remove mapping)
      */
     public function updateMapping(string $payableField, ?string $modelField): void
     {
@@ -88,7 +88,7 @@ class PayableFieldMapping extends Model
     public function mappedFieldsCount(): Attribute
     {
         return Attribute::make(
-            get: fn () => count(array_filter($this->field_mappings ?? []))
+            get: fn (): int => count(array_filter($this->field_mappings ?? []))
         );
     }
 
@@ -98,7 +98,7 @@ class PayableFieldMapping extends Model
     public function shortModelName(): Attribute
     {
         return Attribute::make(
-            get: fn () => class_basename($this->model_class)
+            get: fn (): string => class_basename($this->model_class)
         );
     }
 

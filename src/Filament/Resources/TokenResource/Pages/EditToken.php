@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource\Pages;
 
 use Filament\Actions;
-use Filament\Resources\Pages\EditRecord;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\EditRecord;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\TokenResource;
 
 class EditToken extends EditRecord
@@ -21,7 +21,7 @@ class EditToken extends EditRecord
                 ->icon('heroicon-o-arrow-path')
                 ->color('info')
                 ->requiresConfirmation()
-                ->action(function ($record) {
+                ->action(function (\OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken $record) {
                     $result = \OfficeGuy\LaravelSumitGateway\Services\TokenService::syncTokenFromSumit($record);
 
                     if ($result['success']) {
@@ -33,13 +33,12 @@ class EditToken extends EditRecord
 
                         // Reload the page to show updated data
                         return redirect()->to(static::getResource()::getUrl('edit', ['record' => $record]));
-                    } else {
-                        Notification::make()
-                            ->title('Sync failed')
-                            ->body($result['error'] ?? 'Unknown error')
-                            ->danger()
-                            ->send();
                     }
+                    Notification::make()
+                        ->title('Sync failed')
+                        ->body($result['error'] ?? 'Unknown error')
+                        ->danger()
+                        ->send();
                 }),
             Actions\ViewAction::make(),
             Actions\DeleteAction::make(),

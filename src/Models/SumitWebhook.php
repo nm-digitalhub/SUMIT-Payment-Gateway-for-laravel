@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Builder;
 
 /**
  * SumitWebhook Model
@@ -67,8 +67,6 @@ class SumitWebhook extends Model
      *
      * Fallback: If no customer model is configured, defaults to \App\Models\Client
      * for backward compatibility.
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -88,8 +86,6 @@ class SumitWebhook extends Model
      * Migration:
      * - Replace $webhook->client with $webhook->customer
      * - Replace $webhook->client() with $webhook->customer()
-     *
-     * @return BelongsTo
      */
     public function client(): BelongsTo
     {
@@ -100,25 +96,35 @@ class SumitWebhook extends Model
      * Event type constants - based on SUMIT trigger actions
      */
     const TYPE_CARD_CREATED = 'card_created';
+
     const TYPE_CARD_UPDATED = 'card_updated';
+
     const TYPE_CARD_DELETED = 'card_deleted';
+
     const TYPE_CARD_ARCHIVED = 'card_archived';
 
     /**
      * Card type constants - types of cards in SUMIT
      */
     const CARD_TYPE_CUSTOMER = 'customer';
+
     const CARD_TYPE_DOCUMENT = 'document';
+
     const CARD_TYPE_TRANSACTION = 'transaction';
+
     const CARD_TYPE_ITEM = 'item';
+
     const CARD_TYPE_PAYMENT = 'payment';
 
     /**
      * Status constants
      */
     const STATUS_RECEIVED = 'received';
+
     const STATUS_PROCESSED = 'processed';
+
     const STATUS_FAILED = 'failed';
+
     const STATUS_IGNORED = 'ignored';
 
     /**
@@ -306,7 +312,7 @@ class SumitWebhook extends Model
                 ?? $payload['Properties']['Customers_EmailAddress'][0]
                 ?? null;
             if ($email) {
-                $emailNorm = strtolower(trim($email));
+                $emailNorm = strtolower(trim((string) $email));
                 $client = $customerModel::whereRaw('LOWER(email) = ?', [$emailNorm])
                     ->orWhereRaw('LOWER(client_email) = ?', [$emailNorm])
                     ->first();
@@ -333,7 +339,7 @@ class SumitWebhook extends Model
                 ?? $payload['Properties']['Customers_Phone'][0]
                 ?? null;
             if ($phone) {
-                $norm = preg_replace('/\\D+/', '', $phone);
+                $norm = preg_replace('/\\D+/', '', (string) $phone);
                 $client = $customerModel::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
                     ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
                     ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
@@ -342,7 +348,7 @@ class SumitWebhook extends Model
                     return $client->id;
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // swallow matching errors
         }
 
@@ -359,20 +365,20 @@ class SumitWebhook extends Model
             'processed_at' => now(),
             'processing_notes' => $notes,
         ];
-        
-        if (!empty($relations['transaction_id'])) {
+
+        if (! empty($relations['transaction_id'])) {
             $updateData['transaction_id'] = $relations['transaction_id'];
         }
-        if (!empty($relations['document_id'])) {
+        if (! empty($relations['document_id'])) {
             $updateData['document_id'] = $relations['document_id'];
         }
-        if (!empty($relations['token_id'])) {
+        if (! empty($relations['token_id'])) {
             $updateData['token_id'] = $relations['token_id'];
         }
-        if (!empty($relations['subscription_id'])) {
+        if (! empty($relations['subscription_id'])) {
             $updateData['subscription_id'] = $relations['subscription_id'];
         }
-        
+
         $this->update($updateData);
     }
 
@@ -610,7 +616,7 @@ class SumitWebhook extends Model
                 ->selectRaw('COALESCE(endpoint, event_type) as ep')
                 ->distinct()
                 ->pluck('ep')
-                ->filter(fn ($ep) => is_string($ep) && trim($ep) !== '')
+                ->filter(fn ($ep): bool => is_string($ep) && trim($ep) !== '')
                 ->all();
         } catch (\Throwable $e) {
             $dbEndpoints = [];
@@ -618,33 +624,32 @@ class SumitWebhook extends Model
 
         // Discover all registered OfficeGuy routes dynamically
         $routeEndpoints = [];
+
         try {
             $routes = \Illuminate\Support\Facades\Route::getRoutes();
             foreach ($routes as $route) {
                 $routeName = $route->getName();
 
                 // Filter only OfficeGuy webhook/callback routes
-                if ($routeName && str_starts_with($routeName, 'officeguy.')) {
-                    // Include webhook and callback routes only
-                    if (str_contains($routeName, 'webhook') || str_contains($routeName, 'callback')) {
-                        $uri = $route->uri();
-                        if (!empty($uri)) {
-                            $routeEndpoints[] = $uri;
-                        }
+                // Include webhook and callback routes only
+                if ($routeName && str_starts_with($routeName, 'officeguy.') && (str_contains($routeName, 'webhook') || str_contains((string) $routeName, 'callback'))) {
+                    $uri = $route->uri();
+                    if (! empty($uri)) {
+                        $routeEndpoints[] = $uri;
                     }
                 }
             }
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Route discovery failed - continue with DB endpoints only
         }
 
         // Merge and deduplicate
         return collect($dbEndpoints)
             ->merge($routeEndpoints)
-            ->filter(fn ($ep) => is_string($ep) && trim($ep) !== '')
+            ->filter(fn ($ep): bool => is_string($ep) && trim($ep) !== '')
             ->unique()
             ->sort()
-            ->mapWithKeys(fn (string $ep) => [$ep => $ep])
+            ->mapWithKeys(fn (string $ep): array => [$ep => $ep])
             ->toArray();
     }
 }

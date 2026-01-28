@@ -29,18 +29,16 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Pages;
  * ensuring DB values take precedence over static defaults.
  */
 
-use Filament\Schemas\Components\Section;       
-  
-  use Filament\Forms\Components\Select;
-  use Filament\Forms\Components\TextInput;
-  use Filament\Forms\Components\Toggle;
-  use Filament\Notifications\Notification;
-  use Filament\Pages\Page;
-  use Filament\Forms\Concerns\InteractsWithForms;
-  use Filament\Schemas\Schema;
-
-use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Concerns\InteractsWithForms;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway;
+use OfficeGuy\LaravelSumitGateway\Services\SettingsService;
 
 class OfficeGuySettings extends Page
 {
@@ -48,7 +46,8 @@ class OfficeGuySettings extends Page
 
     protected static ?string $cluster = SumitGateway::class;
 
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-cog-6-tooth';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-cog-6-tooth';
+
     protected static ?int $navigationSort = 10;
 
     protected string $view = 'officeguy::filament.pages.officeguy-settings';
@@ -737,7 +736,7 @@ class OfficeGuySettings extends Page
                 ->label('Reset to Defaults')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->action(function () {
+                ->action(function (): void {
                     $this->settingsService->resetAllToDefaults();
                     $this->mount();
 

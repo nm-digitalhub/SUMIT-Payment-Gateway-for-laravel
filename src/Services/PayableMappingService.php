@@ -19,12 +19,12 @@ class PayableMappingService
     /**
      * Get field mapping for a specific model.
      *
-     * @param Model|string $model Model instance or class name
+     * @param  Model|string  $model  Model instance or class name
      * @return array|null Field mappings or null if not found
      */
-    public function getMappingForModel(Model|string $model): ?array
+    public function getMappingForModel(Model | string $model): ?array
     {
-        $modelClass = is_string($model) ? $model : get_class($model);
+        $modelClass = is_string($model) ? $model : $model::class;
 
         $mapping = PayableFieldMapping::forModel($modelClass)
             ->active()
@@ -36,10 +36,9 @@ class PayableMappingService
     /**
      * Create or update a field mapping.
      *
-     * @param string $modelClass Fully qualified model class name
-     * @param array $fieldMappings Mapping of Payable fields to model fields
-     * @param string|null $label Optional user-friendly label
-     * @return PayableFieldMapping
+     * @param  string  $modelClass  Fully qualified model class name
+     * @param  array  $fieldMappings  Mapping of Payable fields to model fields
+     * @param  string|null  $label  Optional user-friendly label
      */
     public function upsertMapping(
         string $modelClass,
@@ -58,7 +57,7 @@ class PayableMappingService
     /**
      * Delete a mapping by model class.
      *
-     * @param string $modelClass Fully qualified model class name
+     * @param  string  $modelClass  Fully qualified model class name
      * @return bool True if deleted, false if not found
      */
     public function deleteMapping(string $modelClass): bool
@@ -79,7 +78,7 @@ class PayableMappingService
     /**
      * Deactivate a mapping without deleting it.
      *
-     * @param string $modelClass Fully qualified model class name
+     * @param  string  $modelClass  Fully qualified model class name
      * @return bool True if deactivated, false if not found
      */
     public function deactivateMapping(string $modelClass): bool
@@ -91,7 +90,7 @@ class PayableMappingService
     /**
      * Activate a previously deactivated mapping.
      *
-     * @param string $modelClass Fully qualified model class name
+     * @param  string  $modelClass  Fully qualified model class name
      * @return bool True if activated, false if not found
      */
     public function activateMapping(string $modelClass): bool
@@ -324,7 +323,7 @@ class PayableMappingService
     {
         return array_filter(
             $this->getPayableFields(),
-            fn ($field) => $field['required']
+            fn (array $field) => $field['required']
         );
     }
 
@@ -337,7 +336,7 @@ class PayableMappingService
     {
         return array_filter(
             $this->getPayableFields(),
-            fn ($field) => !$field['required']
+            fn (array $field): bool => ! $field['required']
         );
     }
 }

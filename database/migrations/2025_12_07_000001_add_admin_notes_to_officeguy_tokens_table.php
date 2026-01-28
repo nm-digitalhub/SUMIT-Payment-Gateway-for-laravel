@@ -13,12 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (!Schema::hasTable('officeguy_tokens')) {
+        if (! Schema::hasTable('officeguy_tokens')) {
             return;
         }
 
         Schema::table('officeguy_tokens', function (Blueprint $table) {
-            if (!Schema::hasColumn('officeguy_tokens', 'admin_notes')) {
+            if (! Schema::hasColumn('officeguy_tokens', 'admin_notes')) {
                 $table->text('admin_notes')->nullable()->after('metadata');
             }
         });
@@ -29,7 +29,7 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (!Schema::hasTable('officeguy_tokens')) {
+        if (! Schema::hasTable('officeguy_tokens')) {
             return;
         }
 

@@ -16,7 +16,11 @@ class OfficeGuyTransactionPolicy
 {
     public function viewAny(User $user): bool
     {
-        return $user->isStaff() || $user->isClient();
+        if ($user->isStaff()) {
+            return true;
+        }
+
+        return (bool) $user->isClient();
     }
 
     public function view(User $user, OfficeGuyTransaction $transaction): bool
@@ -26,11 +30,18 @@ class OfficeGuyTransactionPolicy
         }
 
         if ($user->role === UserRole::CLIENT) {
-            // Prefer direct client_id match if column/data exists
-            if (property_exists($transaction, 'client_id') && ! is_null($transaction->client_id) && ! is_null($user->client_id)) {
-                if ((int) $transaction->client_id === (int) $user->client_id) {
-                    return true;
-                }
+            if (! (property_exists($transaction, 'client_id') && ! is_null($transaction->client_id))) {
+                // Fallbacks: SUMIT customer_id or order_id ↔ user id
+                return (string) $transaction->customer_id === (string) $user->sumit_customer_id
+                    || (int) $transaction->order_id === (int) $user->id;
+            }
+            if (is_null($user->client_id)) {
+                // Fallbacks: SUMIT customer_id or order_id ↔ user id
+                return (string) $transaction->customer_id === (string) $user->sumit_customer_id
+                    || (int) $transaction->order_id === (int) $user->id;
+            }
+            if ((int) $transaction->client_id === (int) $user->client_id) {
+                return true;
             }
 
             // Fallbacks: SUMIT customer_id or order_id ↔ user id

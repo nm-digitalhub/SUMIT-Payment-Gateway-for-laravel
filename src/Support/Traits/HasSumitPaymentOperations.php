@@ -20,7 +20,6 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
  * @property int|null $officeguy_document_id
  * @property int|null $officeguy_token_id
  *
- * @package OfficeGuy\LaravelSumitGateway\Support\Traits
  * @version 1.10.0
  */
 trait HasSumitPaymentOperations
@@ -52,7 +51,7 @@ trait HasSumitPaymentOperations
     /**
      * Get the document URL for a specific document type.
      *
-     * @param string $documentType The type of document (default: 'invoice')
+     * @param  string  $documentType  The type of document (default: 'invoice')
      * @return string|null The document URL or null if not found
      */
     public function getDocumentUrl(string $documentType = 'invoice'): ?string

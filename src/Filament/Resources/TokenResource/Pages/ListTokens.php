@@ -24,7 +24,7 @@ class ListTokens extends ListRecords
                         ->label('Select Customer')
                         ->searchable()
                         ->required()
-                        ->options(function () {
+                        ->options(function (): array {
                             // Get all unique owners from tokens
                             $tokens = \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken::query()
                                 ->with('owner')
@@ -43,13 +43,14 @@ class ListTokens extends ListRecords
                                     }
                                 }
                             }
+
                             return $options;
                         })
                         ->helperText('Select the customer to add a new payment card for'),
                 ])
                 ->action(function (array $data) {
                     // Parse owner_type and owner_id
-                    [$ownerType, $ownerId] = explode(':', $data['owner_id']);
+                    [$ownerType, $ownerId] = explode(':', (string) $data['owner_id']);
 
                     // URL encode the owner type to handle backslashes
                     $encodedOwnerType = urlencode($ownerType);

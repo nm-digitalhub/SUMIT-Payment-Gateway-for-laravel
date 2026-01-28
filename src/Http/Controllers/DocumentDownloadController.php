@@ -19,10 +19,9 @@ class DocumentDownloadController extends Controller
      * Uses Route Model Binding to automatically load the document by ID.
      * The route parameter {document} will be resolved to the OfficeGuyDocument model.
      *
-     * @param OfficeGuyDocument $document Document model (auto-loaded via route model binding)
-     * @return Response|BinaryFileResponse
+     * @param  OfficeGuyDocument  $document  Document model (auto-loaded via route model binding)
      */
-    public function download(OfficeGuyDocument $document): Response|BinaryFileResponse
+    public function download(OfficeGuyDocument $document): Response | BinaryFileResponse
     {
         // Document is automatically loaded via route model binding
         // No need for manual query - Laravel does it for us!
@@ -46,8 +45,6 @@ class DocumentDownloadController extends Controller
     /**
      * Check if the current user can access this document.
      *
-     * @param OfficeGuyDocument $document
-     * @return void
      * @throws \Symfony\Component\HttpKernel\Exception\HttpException
      */
     protected function authorizeDocumentAccess(OfficeGuyDocument $document): void
@@ -85,8 +82,7 @@ class DocumentDownloadController extends Controller
     /**
      * Get the owner (user/client) of a documentable model.
      *
-     * @param mixed $documentable
-     * @return mixed
+     * @param  mixed  $documentable
      */
     protected function getDocumentOwner($documentable): mixed
     {
@@ -106,7 +102,7 @@ class DocumentDownloadController extends Controller
             if (method_exists($documentable, $relation)) {
                 try {
                     return $documentable->{$relation}()->first();
-                } catch (\Exception $e) {
+                } catch (\Exception) {
                     continue;
                 }
             }

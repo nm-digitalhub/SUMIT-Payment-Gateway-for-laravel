@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource\Pages;
 
-use Filament\Resources\Pages\ListRecords;
 use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\WebhookEventResource;
 use OfficeGuy\LaravelSumitGateway\Models\WebhookEvent;
 
@@ -21,9 +21,9 @@ class ListWebhookEvents extends ListRecords
                 ->icon('heroicon-o-arrow-path')
                 ->color('warning')
                 ->requiresConfirmation()
-                ->action(function () {
+                ->action(function (): void {
                     $events = WebhookEvent::where('status', 'failed')
-                        ->orWhere(function ($query) {
+                        ->orWhere(function ($query): void {
                             $query->where('status', 'retrying')
                                 ->where('next_retry_at', '<=', now());
                         })
@@ -47,7 +47,7 @@ class ListWebhookEvents extends ListRecords
                 ->color('gray')
                 ->requiresConfirmation()
                 ->modalDescription('This will permanently delete all successfully sent webhook events older than 7 days.')
-                ->action(function () {
+                ->action(function (): void {
                     $deleted = WebhookEvent::where('status', 'sent')
                         ->where('created_at', '<', now()->subDays(7))
                         ->delete();

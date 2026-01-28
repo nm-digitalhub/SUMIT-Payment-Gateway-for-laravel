@@ -72,9 +72,6 @@ class FulfillmentListener
 
     /**
      * Handle the event.
-     *
-     * @param PaymentCompleted $event
-     * @return void
      */
     public function handle(PaymentCompleted $event): void
     {
@@ -84,11 +81,12 @@ class FulfillmentListener
         );
 
         // Ensure we have required data
-        if (! $event->transaction) {
+        if (! $event->transaction instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction) {
             OfficeGuyApi::writeToLog(
                 'FulfillmentListener: No transaction in PaymentCompleted event - skipping fulfillment',
                 'warning'
             );
+
             return;
         }
 
@@ -97,6 +95,7 @@ class FulfillmentListener
                 "FulfillmentListener: No payable in PaymentCompleted event for transaction {$event->transaction->id} - skipping fulfillment",
                 'warning'
             );
+
             return;
         }
 
@@ -106,6 +105,7 @@ class FulfillmentListener
                 "FulfillmentListener: Payable does not implement Payable contract for transaction {$event->transaction->id} - skipping fulfillment",
                 'warning'
             );
+
             return;
         }
 
@@ -136,8 +136,6 @@ class FulfillmentListener
      * for instant delivery products (eSIM, software licenses, etc.)
      *
      * Projects can override this by implementing ShouldQueue on custom handlers.
-     *
-     * @return bool
      */
     public function shouldQueue(): bool
     {

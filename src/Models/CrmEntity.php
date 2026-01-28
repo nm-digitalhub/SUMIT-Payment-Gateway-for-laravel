@@ -38,7 +38,6 @@ use OfficeGuy\LaravelSumitGateway\Services\CustomerService;
  * @property \Carbon\Carbon $created_at
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
- *
  * @property-read CrmFolder $folder
  * @property-read \App\Models\User|null $owner
  * @property-read \App\Models\User|null $assigned
@@ -56,7 +55,7 @@ class CrmEntity extends Model
      */
     protected static function booted(): void
     {
-        static::addGlobalScope('sumit_customers_folder', function ($query) {
+        static::addGlobalScope('sumit_customers_folder', function ($query): void {
             $folderId = \OfficeGuy\LaravelSumitGateway\Models\CrmFolder::where('sumit_folder_id', 1076734599)->value('id');
             if ($folderId) {
                 $query->where('crm_folder_id', $folderId);
@@ -135,8 +134,6 @@ class CrmEntity extends Model
      *
      * Fallback: If no customer model is configured, defaults to \App\Models\Client
      * for backward compatibility.
-     *
-     * @return BelongsTo
      */
     public function customer(): BelongsTo
     {
@@ -156,8 +153,6 @@ class CrmEntity extends Model
      * Migration:
      * - Replace $entity->client with $entity->customer
      * - Replace $entity->client() with $entity->customer()
-     *
-     * @return BelongsTo
      */
     public function client(): BelongsTo
     {
@@ -227,7 +222,7 @@ class CrmEntity extends Model
     /**
      * Scope a query to only include active entities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeActive($query)
@@ -238,8 +233,7 @@ class CrmEntity extends Model
     /**
      * Scope a query to filter by entity type.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $type
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOfType($query, string $type)
@@ -250,8 +244,7 @@ class CrmEntity extends Model
     /**
      * Scope a query to filter by owner.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeOwnedBy($query, int $userId)
@@ -262,8 +255,7 @@ class CrmEntity extends Model
     /**
      * Scope a query to filter by assigned user.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param int $userId
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeAssignedTo($query, int $userId)
@@ -274,13 +266,12 @@ class CrmEntity extends Model
     /**
      * Scope a query to search entities.
      *
-     * @param \Illuminate\Database\Eloquent\Builder $query
-     * @param string $search
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
      * @return \Illuminate\Database\Eloquent\Builder
      */
     public function scopeSearch($query, string $search)
     {
-        return $query->where(function ($q) use ($search) {
+        return $query->where(function ($q) use ($search): void {
             $q->where('name', 'like', "%{$search}%")
                 ->orWhere('email', 'like', "%{$search}%")
                 ->orWhere('phone', 'like', "%{$search}%")
@@ -290,8 +281,6 @@ class CrmEntity extends Model
 
     /**
      * Get the full display name for this entity.
-     *
-     * @return string
      */
     public function getDisplayNameAttribute(): string
     {
@@ -305,13 +294,12 @@ class CrmEntity extends Model
     /**
      * Get custom field value by field name.
      *
-     * @param string $fieldName
      * @return mixed
      */
     public function getCustomField(string $fieldName)
     {
         $field = $this->customFields()
-            ->whereHas('folderField', function ($query) use ($fieldName) {
+            ->whereHas('folderField', function ($query) use ($fieldName): void {
                 $query->where('name', $fieldName);
             })
             ->first();
@@ -334,9 +322,7 @@ class CrmEntity extends Model
     /**
      * Set custom field value by field name.
      *
-     * @param string $fieldName
-     * @param mixed $value
-     * @return void
+     * @param  mixed  $value
      */
     public function setCustomField(string $fieldName, $value): void
     {

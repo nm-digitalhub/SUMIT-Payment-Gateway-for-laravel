@@ -16,7 +16,7 @@ final readonly class AddressData
 {
     public function __construct(
         public string $line1,
-        public ?string $line2 = null,
+        public ?string $line2,
         public string $city,
         public ?string $state = null,
         public string $country = 'IL',
@@ -26,8 +26,7 @@ final readonly class AddressData
     /**
      * Create from array (for deserialization from DB/session)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -63,9 +62,9 @@ final readonly class AddressData
      */
     public function isComplete(): bool
     {
-        return !empty($this->line1)
-            && !empty($this->city)
-            && !empty($this->country);
+        return $this->line1 !== '' && $this->line1 !== '0'
+            && ($this->city !== '' && $this->city !== '0')
+            && ($this->country !== '' && $this->country !== '0');
     }
 
     /**

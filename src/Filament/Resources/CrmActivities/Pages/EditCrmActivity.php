@@ -28,7 +28,7 @@ class EditCrmActivity extends EditRecord
 
     protected function mutateFormDataBeforeSave(array $data): array
     {
-        if (!empty($data['crm_entity_id'])) {
+        if (! empty($data['crm_entity_id'])) {
             $entity = \OfficeGuy\LaravelSumitGateway\Models\CrmEntity::find($data['crm_entity_id']);
             if ($entity && $entity->client_id) {
                 $data['client_id'] = $entity->client_id;

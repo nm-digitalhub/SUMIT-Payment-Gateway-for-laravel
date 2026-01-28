@@ -15,7 +15,7 @@ class PaymentFailedNotification extends Notification
      * Create a new notification instance.
      */
     public function __construct(
-        public readonly string|int $orderId,
+        public readonly string | int $orderId,
         public readonly array $payment,
         public readonly array $response,
         public readonly ?object $payable = null

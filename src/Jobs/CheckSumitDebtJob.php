@@ -4,26 +4,27 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs;
 
+use Carbon\Carbon;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
-use OfficeGuy\LaravelSumitGateway\Services\DebtService;
-use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Log;
+use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
+use OfficeGuy\LaravelSumitGateway\Services\DebtService;
 
 class CheckSumitDebtJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 1;
 
-    public function __construct(public ?int $entityId = null)
-    {
-    }
+    public function __construct(public ?int $entityId = null) {}
 
     public function handle(DebtService $debtService): void
     {
@@ -34,13 +35,14 @@ class CheckSumitDebtJob implements ShouldQueue
             $query->where('id', $this->entityId);
         }
 
-        $query->chunkById(50, function ($entities) use ($debtService) {
+        $query->chunkById(50, function ($entities) use ($debtService): void {
             foreach ($entities as $entity) {
                 try {
                     $balance = $debtService->getCustomerBalanceById((int) $entity->sumit_customer_id);
 
                     if (! $balance || ($balance['debt'] ?? 0) <= 0) {
                         $this->resetAttempts((int) $entity->sumit_customer_id);
+
                         continue;
                     }
 
@@ -74,9 +76,9 @@ class CheckSumitDebtJob implements ShouldQueue
     {
         $settings = config('officeguy.collection', []);
         $maxAttempts = (int) ($settings['max_attempts'] ?? 3);
-        $reminderDays = array_values(array_filter(array_map('trim', explode(',', $settings['reminder_days'] ?? '0,3,7')), 'strlen'));
-        $reminderDays = array_map('intval', $reminderDays);
-        if (empty($reminderDays)) {
+        $reminderDays = array_values(array_filter(array_map(trim(...), explode(',', $settings['reminder_days'] ?? '0,3,7')), strlen(...)));
+        $reminderDays = array_map(intval(...), $reminderDays);
+        if ($reminderDays === []) {
             $reminderDays = [0, 3, 7];
         }
 
@@ -95,11 +97,7 @@ class CheckSumitDebtJob implements ShouldQueue
         $index = min($attempts, count($reminderDays) - 1);
         $days = $reminderDays[$index] ?? 0;
 
-        if ($lastSent && $lastSent->diffInDays(now()) < $days) {
-            return false;
-        }
-
-        return true;
+        return ! ($lastSent && $lastSent->diffInDays(now()) < $days);
     }
 
     protected function markSent(?int $entityId, int $sumitCustomerId): void

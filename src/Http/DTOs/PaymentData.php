@@ -125,8 +125,7 @@ class PaymentData
     /**
      * Create from array (for backward compatibility)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {

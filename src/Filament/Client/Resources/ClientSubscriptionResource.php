@@ -4,29 +4,34 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
-use Filament\Forms;
-use Filament\Schemas;
-use Filament\Tables;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
 use Filament\Actions;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas;
+use Filament\Schemas\Schema;
+use Filament\Tables;
 use Filament\Tables\Table;
-use OfficeGuy\LaravelSumitGateway\Models\Subscription;
-use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use Illuminate\Database\Eloquent\Builder;
+use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSubscriptionResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
+use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 
 class ClientSubscriptionResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = Subscription::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-path';
-
-    protected static ?string $navigationLabel = 'מנויים';
-
-    protected static ?int $navigationSort = 3;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     public static function getEloquentQuery(): Builder
     {
@@ -36,7 +41,7 @@ class ClientSubscriptionResource extends Resource
         if (auth()->check()) {
             $client = auth()->user()->client;
 
-            if (!$client) {
+            if (! $client) {
                 // No client found - return empty query
                 return parent::getEloquentQuery()->whereRaw('1 = 0');
             }
@@ -190,13 +195,13 @@ class ClientSubscriptionResource extends Resource
 
                 Tables\Columns\TextColumn::make('total_paid')
                     ->label('סה"כ שולם')
-                    ->formatStateUsing(function ($state, $record) {
+                    ->formatStateUsing(
                         // Sum the pivot amounts for this subscription across all documents
-                        return $record->documentsMany()
+                        fn ($state, $record) => $record->documentsMany()
                             ->wherePivot('amount', '>', 0)
                             ->get()
-                            ->sum('pivot.amount');
-                    })
+                            ->sum('pivot.amount')
+                    )
                     ->money(fn ($record) => $record->currency ?? 'ILS')
                     ->toggleable(isToggledHiddenByDefault: true),
 
@@ -227,7 +232,6 @@ class ClientSubscriptionResource extends Resource
             ->emptyStateHeading('אין מנויים')
             ->emptyStateDescription('לא נמצאו מנויים פעילים');
     }
-
 
     public static function getPages(): array
     {

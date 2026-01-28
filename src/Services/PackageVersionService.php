@@ -33,8 +33,6 @@ use OfficeGuy\LaravelSumitGateway\DataTransferObjects\PackageVersion;
  * - Display badges in UI
  * - Send notifications to admins
  * - Trigger alerts
- *
- * @package OfficeGuy\LaravelSumitGateway\Services
  */
 class PackageVersionService
 {
@@ -60,8 +58,6 @@ class PackageVersionService
      * with the latest version from Packagist API.
      *
      * Results are cached for 24 hours to avoid excessive API calls.
-     *
-     * @return PackageVersion
      */
     public function getStatus(): PackageVersion
     {
@@ -72,23 +68,21 @@ class PackageVersionService
             installed: $installed,
             latest: $latest,
             outdated: version_compare($installed, $latest, '<'),
-            latestUrl: "https://packagist.org/packages/" . self::PACKAGE_NAME,
-            changelogUrl: "https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel/blob/main/CHANGELOG.md",
+            latestUrl: 'https://packagist.org/packages/' . self::PACKAGE_NAME,
+            changelogUrl: 'https://github.com/nm-digitalhub/SUMIT-Payment-Gateway-for-laravel/blob/main/CHANGELOG.md',
             timestamp: time()
         );
     }
 
     /**
      * Get the currently installed version from composer.lock.
-     *
-     * @return string
      */
     public function getInstalledVersion(): string
     {
         // Try to read from composer.lock file
         $composerLockPath = base_path('composer.lock');
 
-        if (!file_exists($composerLockPath)) {
+        if (! file_exists($composerLockPath)) {
             return 'unknown';
         }
 
@@ -106,7 +100,7 @@ class PackageVersionService
         foreach ($lockContent['packages'] ?? [] as $package) {
             if ($package['name'] === self::PACKAGE_NAME) {
                 // Remove 'v' prefix if present (e.g., v2.3.0 -> 2.3.0)
-                return ltrim($package['version'], 'v');
+                return ltrim((string) $package['version'], 'v');
             }
         }
 
@@ -118,14 +112,10 @@ class PackageVersionService
      * Get the latest version from Packagist API.
      *
      * Results are cached for 24 hours.
-     *
-     * @return string
      */
     public function getLatestVersion(): string
     {
-        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, function () {
-            return $this->fetchLatestVersionFromPackagist();
-        });
+        return Cache::remember(self::CACHE_KEY, self::CACHE_TTL, fn (): string => $this->fetchLatestVersionFromPackagist());
     }
 
     /**
@@ -135,16 +125,15 @@ class PackageVersionService
      * and very efficient (static files).
      *
      * @see https://packagist.org/apidoc#get-package-data
-     * @return string
      */
     protected function fetchLatestVersionFromPackagist(): string
     {
         try {
-            $url = "https://repo.packagist.org/p2/" . self::PACKAGE_NAME . ".json";
+            $url = 'https://repo.packagist.org/p2/' . self::PACKAGE_NAME . '.json';
 
             $response = Http::timeout(10)->get($url);
 
-            if (!$response->successful()) {
+            if (! $response->successful()) {
                 Log::warning('Failed to fetch package version from Packagist', [
                     'status' => $response->status(),
                     'package' => self::PACKAGE_NAME,
@@ -168,7 +157,7 @@ class PackageVersionService
             }
 
             // Filter out dev versions and get the latest stable
-            $stableVersions = array_filter($packageVersions, function ($version) {
+            $stableVersions = array_filter($packageVersions, function (array $version): bool {
                 $versionString = $version['version'] ?? '';
 
                 // Skip dev versions, aliases, and references
@@ -181,14 +170,10 @@ class PackageVersionService
                 }
 
                 // Only stable versions (no alpha, beta, RC)
-                if (preg_match('/-(alpha|beta|rc|pl)/i', $versionString)) {
-                    return false;
-                }
-
-                return true;
+                return ! preg_match('/-(alpha|beta|rc|pl)/i', $versionString);
             });
 
-            if (empty($stableVersions)) {
+            if ($stableVersions === []) {
                 // No stable versions found, return the first version
                 $latest = $packageVersions[0]['version'] ?? 'unknown';
             } else {
@@ -213,8 +198,6 @@ class PackageVersionService
      * Clear the version cache.
      *
      * Useful for testing or forcing a refresh.
-     *
-     * @return bool
      */
     public function clearCache(): bool
     {
@@ -225,8 +208,6 @@ class PackageVersionService
      * Force refresh the version information.
      *
      * Clears cache and fetches fresh data from Packagist.
-     *
-     * @return PackageVersion
      */
     public function refresh(): PackageVersion
     {

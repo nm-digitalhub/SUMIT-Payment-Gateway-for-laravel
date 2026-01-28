@@ -34,8 +34,6 @@ use OfficeGuy\LaravelSumitGateway\Services\PackageVersionService;
  * - Can add admin alerts
  * - Can integrate with monitoring systems
  * - Can customize UI/UX
- *
- * @package OfficeGuy\LaravelSumitGateway\Filament\Pages
  */
 class AboutPage extends Page
 {
@@ -47,7 +45,7 @@ class AboutPage extends Page
     /**
      * The page navigation icon.
      */
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-information-circle';
+    protected static string | \BackedEnum | null $navigationIcon = 'heroicon-o-information-circle';
 
     /**
      * The page navigation label.
@@ -76,14 +74,10 @@ class AboutPage extends Page
      * Get the package version status.
      *
      * Cached for 5 minutes within the page to avoid excessive service calls.
-     *
-     * @return PackageVersion
      */
     public function getVersionStatus(): PackageVersion
     {
-        return Cache::remember('officeguy.about_page_version', 300, function () {
-            return app(PackageVersionService::class)->getStatus();
-        });
+        return Cache::remember('officeguy.about_page_version', 300, fn () => app(PackageVersionService::class)->getStatus());
     }
 
     /**
@@ -158,8 +152,6 @@ class AboutPage extends Page
      * Refresh the version information.
      *
      * Clears cache and fetches fresh data from Packagist.
-     *
-     * @return void
      */
     public function refreshVersion(): void
     {
@@ -169,9 +161,6 @@ class AboutPage extends Page
 
     /**
      * Get the badge color for the version status.
-     *
-     * @param PackageVersion $version
-     * @return string
      */
     public function getBadgeColor(PackageVersion $version): string
     {

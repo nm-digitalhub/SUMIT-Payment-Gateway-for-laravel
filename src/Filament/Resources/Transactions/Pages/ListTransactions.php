@@ -2,9 +2,9 @@
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\Pages;
 
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\Transactions\TransactionResource;
 
 class ListTransactions extends ListRecords
 {

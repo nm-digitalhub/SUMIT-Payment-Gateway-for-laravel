@@ -31,7 +31,7 @@ class CrmWebhookController extends Controller
         $endpoint = $request->path();
 
         // SUMIT שולחת לפעמים מערך ממוּספר: [FolderID, EntityID, Action, Properties]
-        if (!$entityId && is_array($payload)) {
+        if (! $entityId && is_array($payload)) {
             $values = array_values($payload);
 
             if (isset($values[0]) && is_numeric($values[0])) {
@@ -44,12 +44,12 @@ class CrmWebhookController extends Controller
 
             // אם הצעד השלישי הוא מחרוזת – נשמור כאינדיקציה לפעולה (לא חובה לסנכרון)
             if (isset($values[2]) && is_string($values[2])) {
-                $payload['Action'] = $payload['Action'] ?? $values[2];
+                $payload['Action'] ??= $values[2];
             }
 
             // אם הצעד הרביעי הוא מערך מאפיינים – נשמר בשם Properties
             if (isset($values[3]) && is_array($values[3])) {
-                $payload['Properties'] = $payload['Properties'] ?? $values[3];
+                $payload['Properties'] ??= $values[3];
             }
         }
 

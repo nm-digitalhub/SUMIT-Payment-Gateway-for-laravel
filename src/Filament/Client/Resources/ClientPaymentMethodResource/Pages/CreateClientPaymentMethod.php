@@ -4,16 +4,14 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource\Pages;
 
-use Filament\Resources\Pages\CreateRecord;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use Filament\Forms\Components\Hidden;
-use Filament\Forms\Components\ViewField;
 use Filament\Notifications\Notification;
+use Filament\Resources\Pages\CreateRecord;
 use Filament\Schemas\Schema;
 use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientPaymentMethodResource;
-use OfficeGuy\LaravelSumitGateway\Services\TokenService;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
+use OfficeGuy\LaravelSumitGateway\Services\TokenService;
 
 class CreateClientPaymentMethod extends CreateRecord
 {
@@ -29,7 +27,7 @@ class CreateClientPaymentMethod extends CreateRecord
         \Log::info('[CreateClientPaymentMethod] form() called', [
             'pci_mode' => $pciMode,
             'company_id' => config('officeguy.company_id'),
-            'public_key' => substr(config('officeguy.public_key'), 0, 10) . '...',
+            'public_key' => substr((string) config('officeguy.public_key'), 0, 10) . '...',
         ]);
 
         $components = [];
@@ -148,11 +146,11 @@ class CreateClientPaymentMethod extends CreateRecord
 
         \Log::info('[CreateClientPaymentMethod] handleRecordCreation called', [
             'pci_mode' => $pciMode,
-            'has_ccnum' => !empty($data['og-ccnum']),
-            'has_cvv' => !empty($data['og-cvv']),
-            'has_expmonth' => !empty($data['og-expmonth']),
-            'has_expyear' => !empty($data['og-expyear']),
-            'has_citizenid' => !empty($data['og-citizenid']),
+            'has_ccnum' => ! empty($data['og-ccnum']),
+            'has_cvv' => ! empty($data['og-cvv']),
+            'has_expmonth' => ! empty($data['og-expmonth']),
+            'has_expyear' => ! empty($data['og-expyear']),
+            'has_citizenid' => ! empty($data['og-citizenid']),
         ]);
 
         // TokenService משתמש ב-RequestHelpers::post, אז נזריק את הדאטה ל-request
@@ -160,7 +158,7 @@ class CreateClientPaymentMethod extends CreateRecord
 
         // Get client (token owner)
         $client = auth()->user()->client;
-        if (!$client) {
+        if (! $client) {
             Notification::make()
                 ->danger()
                 ->title('Client not found')
@@ -171,7 +169,7 @@ class CreateClientPaymentMethod extends CreateRecord
 
         $result = TokenService::processToken($client, $pciMode);
 
-        if (!($result['success'] ?? false)) {
+        if (! ($result['success'] ?? false)) {
             Notification::make()
                 ->danger()
                 ->title('Failed to add payment method')
@@ -186,7 +184,7 @@ class CreateClientPaymentMethod extends CreateRecord
         $token = $result['token'];
 
         // אם המשתמש בחר "Set as default" – נסמן את הטוקן כברירת מחדל
-        if (!empty($data['set_as_default'])) {
+        if (! empty($data['set_as_default'])) {
             $token->setAsDefault();
         }
 

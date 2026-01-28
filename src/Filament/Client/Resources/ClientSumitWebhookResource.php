@@ -4,41 +4,44 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Client\Resources;
 
-use Filament\Resources\Resource;
-use Filament\Schemas\Schema;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
+use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
+use Filament\Actions;
 use Filament\Forms;
+use Filament\Resources\Resource;
 use Filament\Schemas;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
-use Filament\Actions;
-use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
-use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSumitWebhookResource\Pages;
-use OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient;
 use Illuminate\Database\Eloquent\Builder;
+use OfficeGuy\LaravelSumitGateway\Filament\Client\Resources\ClientSumitWebhookResource\Pages;
+use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin;
+use OfficeGuy\LaravelSumitGateway\Models\SumitWebhook;
 
 class ClientSumitWebhookResource extends Resource
 {
+    use HasLabels;
+    use HasNavigation;
+
     protected static ?string $model = SumitWebhook::class;
 
-    protected static ?string $cluster = SumitClient::class;
-
-    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-arrow-down-tray';
-
-    protected static ?string $navigationLabel = 'SUMIT Webhooks (נכנסים)';
-
-    protected static ?int $navigationSort = 6;
+    /**
+     * Link this resource to its plugin
+     */
+    public static function getEssentialsPlugin(): ?OfficeGuyClientPlugin
+    {
+        return OfficeGuyClientPlugin::get();
+    }
 
     public static function getEloquentQuery(): Builder
     {
         $query = parent::getEloquentQuery();
 
         // Show only webhooks related to the current user's client
-        if (auth()->check()) {
-            // Use the client_id field that's populated by matchClientIdFromPayload()
-            // This is more efficient than JSON queries and works with all webhook types
-            if (auth()->user()->client_id) {
-                $query->where('client_id', auth()->user()->client_id);
-            }
+        // Use the client_id field that's populated by matchClientIdFromPayload()
+        // This is more efficient than JSON queries and works with all webhook types
+        if (auth()->check() && auth()->user()->client_id) {
+            $query->where('client_id', auth()->user()->client_id);
         }
 
         return $query;
@@ -77,7 +80,7 @@ class ClientSumitWebhookResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('signature_verified')
                             ->label('חתימה מאומתת')
-                            ->formatStateUsing(fn ($state) => $state ? 'כן' : 'לא')
+                            ->formatStateUsing(fn ($state): string => $state ? 'כן' : 'לא')
                             ->disabled(),
                         Forms\Components\TextInput::make('processed_at')
                             ->label('עובד בתאריך')
@@ -88,7 +91,7 @@ class ClientSumitWebhookResource extends Resource
                     ])->columns(3),
 
                 Schemas\Components\Section::make('שגיאות')
-                    ->visible(fn ($record) => !empty($record?->error_message))
+                    ->visible(fn ($record): bool => ! empty($record?->error_message))
                     ->schema([
                         Forms\Components\Textarea::make('error_message')
                             ->label('הודעת שגיאה')

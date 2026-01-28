@@ -45,8 +45,7 @@ final readonly class PaymentPreferences
     /**
      * Create from array (for deserialization from DB/session)
      *
-     * @param array<string, mixed> $data
-     * @return self
+     * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
@@ -78,7 +77,7 @@ final readonly class PaymentPreferences
      */
     public function isUsingSavedToken(): bool
     {
-        return !empty($this->tokenId);
+        return ! in_array($this->tokenId, [null, '', '0'], true);
     }
 
     /**

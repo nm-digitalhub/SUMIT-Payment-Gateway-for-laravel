@@ -19,7 +19,6 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
  * - Service data is stored separately in PendingCheckout table
  * - This is CONTEXT only, not a mutable state container
  *
- * @package OfficeGuy\LaravelSumitGateway
  * @since 1.2.0
  */
 final readonly class CheckoutIntent
@@ -33,9 +32,8 @@ final readonly class CheckoutIntent
     /**
      * Create from HTTP request and payable entity
      *
-     * @param Request $request Validated checkout request
-     * @param Payable $payable The entity being purchased
-     * @return self
+     * @param  Request  $request  Validated checkout request
+     * @param  Payable  $payable  The entity being purchased
      */
     public static function fromRequest(Request $request, Payable $payable): self
     {
@@ -49,9 +47,8 @@ final readonly class CheckoutIntent
     /**
      * Create from array (for deserialization from DB/session)
      *
-     * @param array<string, mixed> $data
-     * @param Payable $payable The payable entity (must be loaded separately)
-     * @return self
+     * @param  array<string, mixed>  $data
+     * @param  Payable  $payable  The payable entity (must be loaded separately)
      */
     public static function fromArray(array $data, Payable $payable): self
     {
@@ -73,7 +70,7 @@ final readonly class CheckoutIntent
     public function toArray(): array
     {
         return [
-            'payable_type' => get_class($this->payable),
+            'payable_type' => $this->payable::class,
             'payable_id' => $this->payable->getPayableId(),
             'customer' => $this->customer->toArray(),
             'payment' => $this->payment->toArray(),

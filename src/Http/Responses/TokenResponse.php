@@ -34,9 +34,6 @@ class TokenResponse
 
     /**
      * Create from Saloon response
-     *
-     * @param SaloonResponse $response
-     * @return self
      */
     public static function fromSaloonResponse(SaloonResponse $response): self
     {
@@ -66,8 +63,6 @@ class TokenResponse
 
     /**
      * Check if token was created successfully
-     *
-     * @return bool
      */
     public function isSuccessful(): bool
     {
@@ -76,8 +71,6 @@ class TokenResponse
 
     /**
      * Check if API call failed (not declined)
-     *
-     * @return bool
      */
     public function isApiError(): bool
     {
@@ -86,18 +79,14 @@ class TokenResponse
 
     /**
      * Check if token creation was declined by gateway
-     *
-     * @return bool
      */
     public function isDeclined(): bool
     {
-        return $this->status === 0 && !$this->success;
+        return $this->status === 0 && ! $this->success;
     }
 
     /**
      * Get human-readable error/decline message
-     *
-     * @return string|null
      */
     public function getErrorMessage(): ?string
     {
@@ -134,10 +123,6 @@ class TokenResponse
 
     /**
      * Get specific data field
-     *
-     * @param string $key
-     * @param mixed $default
-     * @return mixed
      */
     public function getData(string $key, mixed $default = null): mixed
     {
@@ -146,8 +131,6 @@ class TokenResponse
 
     /**
      * Check if response has token
-     *
-     * @return bool
      */
     public function hasToken(): bool
     {
@@ -156,8 +139,6 @@ class TokenResponse
 
     /**
      * Check if response has transaction ID
-     *
-     * @return bool
      */
     public function hasTransactionId(): bool
     {
@@ -172,7 +153,7 @@ class TokenResponse
      */
     public function getTokenFormat(): ?string
     {
-        if (!$this->token) {
+        if (! $this->token) {
             return null;
         }
 

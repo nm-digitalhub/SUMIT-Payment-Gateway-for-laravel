@@ -4,8 +4,9 @@ class OfficeGuyDokanMarketplace
 {
     public static function Init()
     {
-        if (!OfficeGuyDokanMarketplace::PluginIsActive())
+        if (! OfficeGuyDokanMarketplace::PluginIsActive()) {
             return;
+        }
 
         add_action('show_user_profile', 'OfficeGuyDokanMarketplace::OfficeGuyUserAPIKeyFields');
         add_action('edit_user_profile', 'OfficeGuyDokanMarketplace::OfficeGuyUserAPIKeyFields');
@@ -17,13 +18,13 @@ class OfficeGuyDokanMarketplace
 
     public static function OfficeGuyUserAPIKeyFields($User)
     {
-        if (!dokan_is_user_seller($User->ID))
+        if (! dokan_is_user_seller($User->ID)) {
             return;
+        }
 
         $OfficeGuyValidCredentialsMsg = get_the_author_meta('OfficeGuyValidCredentials', $User->ID);
-        if ($OfficeGuyValidCredentialsMsg != null)
-        {
-?>
+        if ($OfficeGuyValidCredentialsMsg != null) {
+            ?>
             <div class="error">
                 <p><?php echo 'SUMIT error: ' . $OfficeGuyValidCredentialsMsg; ?></p>
             </div>
@@ -54,64 +55,66 @@ class OfficeGuyDokanMarketplace
 
     public static function SaveOfficeGuyUserAPIKeyFields($UserID)
     {
-        if (empty($_POST['_wpnonce']) || !wp_verify_nonce($_POST['_wpnonce'], 'update-user_' . $UserID))
+        if (empty($_POST['_wpnonce']) || ! wp_verify_nonce($_POST['_wpnonce'], 'update-user_' . $UserID)) {
             return;
+        }
 
-        if (!current_user_can('edit_user', $UserID))
+        if (! current_user_can('edit_user', $UserID)) {
             return false;
+        }
 
         update_user_meta($UserID, 'OfficeGuyCompanyID', $_POST['officeguycompanyid']);
         update_user_meta($UserID, 'OfficeGuyAPIKey', $_POST['officeguyapikey']);
 
-        if (!empty($_POST['officeguycompanyid']) && !empty($_POST['officeguyapikey']))
-        {
+        if (! empty($_POST['officeguycompanyid']) && ! empty($_POST['officeguyapikey'])) {
             $Response = OfficeGuyAPI::CheckCredentials($_POST['officeguycompanyid'], $_POST['officeguyapikey']);
             update_user_meta($UserID, 'OfficeGuyValidCredentials', $Response);
-        }
-        else
+        } else {
             delete_user_meta($UserID, 'OfficeGuyValidCredentials');
+        }
     }
 
     public static function GetProductVendorCredentials()
     {
-        $ProductCredentials = array();
+        $ProductCredentials = [];
         $ProductIDs = OfficeGuySubscriptions::GetCartProductIDs();
-        foreach ($ProductIDs as $ProductID)
-        {
+        foreach ($ProductIDs as $ProductID) {
             $VendorID = get_post_field('post_author', $ProductID);
             $ProductCredentials[$ProductID]['OfficeGuyCompanyID'] = get_the_author_meta('OfficeGuyCompanyID', $VendorID);
             $ProductCredentials[$ProductID]['OfficeGuyAPIKey'] = get_the_author_meta('OfficeGuyAPIKey', $VendorID);
         }
+
         return $ProductCredentials;
     }
 
     public static function PluginIsActive()
     {
-        return is_plugin_active('dokan-lite/dokan.php') 
-            || is_plugin_active('dokan/dokan.php') 
+        return is_plugin_active('dokan-lite/dokan.php')
+            || is_plugin_active('dokan/dokan.php')
             || is_plugin_active('dokan-pro/dokan-pro.php');
     }
 
     public static function VendorsInCartCount()
     {
         $ProductCredentials = OfficeGuyDokanMarketplace::GetProductVendorCredentials();
-        $CompanyIDs = array();
+        $CompanyIDs = [];
 
-        foreach ($ProductCredentials as $ProductCredential)
-        {
+        foreach ($ProductCredentials as $ProductCredential) {
             $CompanyID = $ProductCredential['OfficeGuyCompanyID'];
-            if (is_numeric($CompanyID))
+            if (is_numeric($CompanyID)) {
                 $CompanyIDs[] = $CompanyID;
+            }
         }
 
         $CompanyIDs = array_unique($CompanyIDs);
+
         return count($CompanyIDs);
     }
 }
 
 add_action('admin_init', 'OfficeGuyDokanMarketplace::Init');
 
-//debug
+// debug
 // add_action('woocommerce_cart_loaded_from_session', 'OfficeGuyDokanMarketplace::GetProductVendorCredentials');
 
 ?>

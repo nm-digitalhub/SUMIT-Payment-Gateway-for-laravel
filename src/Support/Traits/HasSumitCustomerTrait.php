@@ -40,8 +40,6 @@ trait HasSumitCustomerTrait
      * Get the SUMIT customer ID
      *
      * Default implementation assumes attribute name: sumit_customer_id
-     *
-     * @return int|null
      */
     public function getSumitCustomerId(): ?int
     {
@@ -52,8 +50,6 @@ trait HasSumitCustomerTrait
      * Get the customer's email address
      *
      * Default implementation assumes attribute name: email
-     *
-     * @return string|null
      */
     public function getSumitCustomerEmail(): ?string
     {
@@ -67,8 +63,6 @@ trait HasSumitCustomerTrait
      * 1. full_name
      * 2. name
      * 3. first_name + last_name
-     *
-     * @return string|null
      */
     public function getSumitCustomerName(): ?string
     {
@@ -89,7 +83,7 @@ trait HasSumitCustomerTrait
                 $this->last_name ?? null,
             ]);
 
-            if (! empty($parts)) {
+            if ($parts !== []) {
                 return implode(' ', $parts);
             }
         }
@@ -104,8 +98,6 @@ trait HasSumitCustomerTrait
      * 1. phone
      * 2. mobile
      * 3. telephone
-     *
-     * @return string|null
      */
     public function getSumitCustomerPhone(): ?string
     {
@@ -123,8 +115,6 @@ trait HasSumitCustomerTrait
      * 2. business_id
      * 3. id_number
      * 4. hp
-     *
-     * @return string|null
      */
     public function getSumitCustomerBusinessId(): ?string
     {

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\Pages;
 
-use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\CrmEntityResource;
-use OfficeGuy\LaravelSumitGateway\Services\CrmDataService;
 use Filament\Resources\Pages\CreateRecord;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmEntities\CrmEntityResource;
 
 class CreateCrmEntity extends CreateRecord
 {
@@ -40,24 +39,22 @@ class CreateCrmEntity extends CreateRecord
     protected function afterCreate(): void
     {
         // Save custom fields using the model's setCustomField method
-        if (!empty($this->customFields)) {
-            foreach ($this->customFields as $key => $value) {
-                // Extract field ID from key: custom_field_123 -> 123
-                $fieldId = (int) str_replace('custom_field_', '', $key);
+        foreach ($this->customFields as $key => $value) {
+            // Extract field ID from key: custom_field_123 -> 123
+            $fieldId = (int) str_replace('custom_field_', '', $key);
 
-                // Get the field to find its name
-                $field = \OfficeGuy\LaravelSumitGateway\Models\CrmFolderField::find($fieldId);
+            // Get the field to find its name
+            $field = \OfficeGuy\LaravelSumitGateway\Models\CrmFolderField::find($fieldId);
 
-                if ($field) {
-                    $this->record->setCustomField($field->field_name, $value);
-                }
+            if ($field) {
+                $this->record->setCustomField($field->field_name, $value);
             }
         }
 
         // Auto-push to SUMIT on create (best-effort, non-blocking)
         try {
             $this->record->syncToSumit();
-        } catch (\Throwable $e) {
+        } catch (\Throwable) {
             // Swallow errors; manual sync action is available if needed.
         }
     }

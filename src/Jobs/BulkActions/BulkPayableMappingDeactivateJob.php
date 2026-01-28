@@ -119,8 +119,7 @@ class BulkPayableMappingDeactivateJob extends BaseBulkActionJob
     /**
      * Handle the deactivation of a single PayableFieldMapping record.
      *
-     * @param PayableFieldMapping $record The mapping to deactivate
-     * @return ActionResponse
+     * @param  PayableFieldMapping  $record  The mapping to deactivate
      */
     protected function handleRecord($record): ActionResponse
     {
@@ -130,13 +129,9 @@ class BulkPayableMappingDeactivateJob extends BaseBulkActionJob
 
             // Return domain-agnostic success
             // Application can query $record->is_active if it needs to know if state changed
-            return ActionResponse::success($record, null, []);
-        } catch (\Throwable $e) {
-            return ActionResponse::failure(
-                $record,
-                $e->getMessage(),
-                ['mapping_id' => $record->id, 'exception' => get_class($e)]
-            );
+            return ActionResponse::success();
+        } catch (\Throwable) {
+            return ActionResponse::failure();
         }
     }
 
@@ -144,9 +139,7 @@ class BulkPayableMappingDeactivateJob extends BaseBulkActionJob
      * Determine if the record should be retried on failure.
      * Retry on database connection errors, but not on validation errors.
      *
-     * @param PayableFieldMapping $record
-     * @param \Throwable $exception
-     * @return bool
+     * @param  PayableFieldMapping  $record
      */
     protected function shouldRetryRecord($record, \Throwable $exception): bool
     {

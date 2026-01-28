@@ -24,7 +24,7 @@ return new class extends Migration
 
         foreach ($defaults as $key => $value) {
             // Only insert if key doesn't exist (preserve user overrides)
-            if (!OfficeGuySetting::has($key)) {
+            if (! OfficeGuySetting::has($key)) {
                 OfficeGuySetting::set($key, $value);
             }
         }

@@ -25,7 +25,7 @@ class InvoiceSettingsService
                 $settings = app(\App\Settings\InvoiceSettings::class);
 
                 return $settings->currency_code ?? $this->getConfigCurrency();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Fall back to config
             }
         }
@@ -58,7 +58,7 @@ class InvoiceSettingsService
                 $settings = app(\App\Settings\InvoiceSettings::class);
 
                 return $settings->invoice_prefix ?? $this->getConfigPrefix();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Fall back
             }
         }
@@ -76,7 +76,7 @@ class InvoiceSettingsService
                 $settings = app(\App\Settings\InvoiceSettings::class);
 
                 return $settings->tax_rate ?? $this->getConfigTaxRate();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Fall back
             }
         }
@@ -94,7 +94,7 @@ class InvoiceSettingsService
                 $settings = app(\App\Settings\InvoiceSettings::class);
 
                 return $settings->due_days ?? $this->getConfigDueDays();
-            } catch (\Throwable $e) {
+            } catch (\Throwable) {
                 // Fall back
             }
         }
