@@ -13,6 +13,7 @@ use Filament\Tables\Table;
 use OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\CreateCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\EditCrmActivity;
+use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ListCrmActivities;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Pages\ViewCrmActivity;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas\CrmActivityForm;
 use OfficeGuy\LaravelSumitGateway\Filament\Resources\CrmActivities\Schemas\CrmActivityInfolist;
