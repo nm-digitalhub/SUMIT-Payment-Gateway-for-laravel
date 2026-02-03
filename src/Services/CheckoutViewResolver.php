@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use Illuminate\Support\Facades\View;
+use BackedEnum;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use Illuminate\Support\Facades\View;
 
 /**
  * CheckoutViewResolver
@@ -17,6 +18,7 @@ use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
  * 3. Custom overrides
  * 4. Generic fallback (checkout.blade.php)
  *
+ * @package OfficeGuy\LaravelSumitGateway
  * @since 1.10.0
  */
 class CheckoutViewResolver
@@ -31,16 +33,23 @@ class CheckoutViewResolver
      * 2. Type-specific (e.g., digital.blade.php for DIGITAL_PRODUCT)
      * 3. Generic fallback (checkout.blade.php)
      *
+     * @param Payable $payable
      * @return string Full view path (e.g., "officeguy::pages.checkout.digital")
      */
     public function resolve(Payable $payable): string
     {
         // Priority 1: Product-specific template
-        // Check if model has service_type property (common in Package models)
-        if (method_exists($payable, '__get') && property_exists($payable, 'service_type')) {
+        // Check if model has service_type attribute (Eloquent models use isset/hasAttribute, not property_exists)
+        if (method_exists($payable, '__get') && isset($payable->service_type)) {
             $serviceType = $payable->service_type;
-            if ($serviceType) {
-                $productView = "{$this->baseViewPath}.{$serviceType}";
+
+            // Handle string-backed enums (extract value)
+            if ($serviceType instanceof BackedEnum) {
+                $serviceType = $serviceType->value;
+            }
+
+            if (is_string($serviceType)) {
+                $productView = $this->baseViewPath . '.' . $serviceType;
                 if (View::exists($productView)) {
                     return $productView;
                 }
@@ -49,14 +58,15 @@ class CheckoutViewResolver
 
         // Priority 2: Type-specific template
         $typeTemplate = $payable->getPayableType()->checkoutTemplate();
-        $typeView = "{$this->baseViewPath}.{$typeTemplate}";
+        // Use concatenation instead of interpolation
+        $typeView = $this->baseViewPath . '.' . $typeTemplate;
 
         if (View::exists($typeView)) {
             return $typeView;
         }
 
         // Priority 3: Fallback to generic checkout
-        return "{$this->baseViewPath}.checkout";
+        return $this->baseViewPath . '.checkout';
     }
 
     /**
@@ -64,6 +74,7 @@ class CheckoutViewResolver
      *
      * Allows applications to override the default view path namespace.
      *
+     * @param string $path
      * @return $this
      */
     public function setBaseViewPath(string $path): self
@@ -75,6 +86,8 @@ class CheckoutViewResolver
 
     /**
      * Get current base view path
+     *
+     * @return string
      */
     public function getBaseViewPath(): string
     {
@@ -84,11 +97,12 @@ class CheckoutViewResolver
     /**
      * Check if a specific template exists
      *
-     * @param  string  $template  Template name without extension (e.g., 'digital', 'infrastructure')
+     * @param string $template Template name without extension (e.g., 'digital', 'infrastructure')
+     * @return bool
      */
     public function templateExists(string $template): bool
     {
-        return View::exists("{$this->baseViewPath}.{$template}");
+        return View::exists($this->baseViewPath . '.' . $template);
     }
 
     /**
@@ -108,6 +122,6 @@ class CheckoutViewResolver
             'service',         // SERVICE
         ];
 
-        return array_filter($templates, $this->templateExists(...));
+        return array_filter($templates, fn ($template) => $this->templateExists($template));
     }
 }
