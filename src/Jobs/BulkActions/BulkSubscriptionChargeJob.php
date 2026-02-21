@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs\BulkActions;
 
-use Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
 use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
 
@@ -15,21 +14,25 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * Processes each subscription through `SubscriptionService::processRecurringCharge()`
  * to trigger payment collection before the scheduled billing date.
  *
+ * ## Filament v5 Migration (v2.4.0)
+ *
+ * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
+ * Uses native Laravel queue with ShouldQueue interface.
+ *
  * ## Flow
  *
  * ```
  * User selects subscriptions in Filament → Clicks "Charge Now"
  *     ↓
- * QueueableBulkAction dispatches BulkSubscriptionChargeJob
+ * Bus::batch dispatches BulkSubscriptionChargeJob for each record
  *     ↓
  * For each selected subscription:
  *     1. Check if subscription can be charged (canBeCharged())
  *     2. Verify recurring_id exists (required for SUMIT API)
  *     3. Call SubscriptionService::processRecurringCharge($subscription)
- *     4. Return ActionResponse::success() or ActionResponse::failure()
+ *     4. Exceptions are caught by BaseBulkActionJob and logged
  *     ↓
- * User receives real-time progress updates via Livewire polling
- * User sees success/failure notification when complete
+ * Batch completion notification shows success/failure count
  * ```
  *
  * ## Use Cases
@@ -44,7 +47,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * Each subscription is validated before charging:
  * - Checks `canBeCharged()` method on Subscription model
  * - Verifies `recurring_id` is set (required for SUMIT recurring charges)
- * - Returns failure with descriptive message if validation fails
+ * - Throws exception if validation fails (no retry)
  *
  * ## SUMIT API Integration
  *
@@ -57,51 +60,31 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  *
  * ## Error Handling
  *
- * - **Cannot be charged**: Returns failure with `reason='cannot_be_charged'`
- * - **No recurring_id**: Returns failure with `reason='no_recurring_id'`
- * - **Insufficient funds**: Returns failure with `code='insufficient_funds'`
- * - **Token expired**: Returns failure with `code='token_expired'`
- * - **API timeout**: Retries via shouldRetryRecord (GuzzleException)
- *
- * ## Response Metadata
- *
- * Success response includes:
- * ```php
- * [
- *     'subscription_id' => 123,
- *     'charged_at' => '2026-01-22T10:30:00+00:00',
- * ]
- * ```
- *
- * Failure response includes:
- * ```php
- * [
- *     'subscription_id' => 123,
- *     'error_code' => 'insufficient_funds', // or other codes
- * ]
- * ```
+ * - **Cannot be charged**: Throws exception (no retry)
+ * - **No recurring_id**: Throws exception (no retry)
+ * - **Insufficient funds**: Throws exception (API response)
+ * - **Token expired**: Throws exception (API response)
+ * - **API timeout**: Retries via shouldRetry (GuzzleException)
  *
  * ## Filament Integration
  *
  * Used in `SubscriptionResource`:
  * ```php
- * QueueableBulkAction::make('charge_now')
+ * use Filament\Actions\BulkAction;
+ * use Illuminate\Support\Facades\Bus;
+ *
+ * BulkAction::make('charge_now')
  *     ->label('Charge Now')
- *     ->job(BulkSubscriptionChargeJob::class)
- *     ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
- *     ->successNotificationTitle(__('officeguy::messages.bulk_charge_success'))
- *     ->failureNotificationTitle(__('officeguy::messages.bulk_charge_partial'))
- *     ->modalDescription(__('officeguy::messages.bulk_charge_desc'))
- *     ->color('danger') // Warning color for financial action
- *     ->requiresConfirmation(true)
+ *     ->action(function ($records) {
+ *         Bus::batch(
+ *             $records
+ *                 ->filter(fn ($record) => $record->canBeCharged() && $record->recurring_id)
+ *                 ->map(fn ($record) => new BulkSubscriptionChargeJob($record))
+ *         )->dispatch();
+ *     })
+ *     ->requiresConfirmation()
+ *     ->color('danger'); // Warning color for financial action
  * ```
- *
- * ## Translation Keys
- *
- * - `officeguy::messages.subscription_cannot_be_charged` - Validation failure
- * - `officeguy::messages.bulk_charge_success` - "Subscriptions charged successfully"
- * - `officeguy::messages.bulk_charge_partial` - "Some charges failed"
- * - `officeguy::messages.bulk_charge_desc` - Confirmation modal description
  *
  * ## Security Considerations
  *
@@ -112,50 +95,32 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  *
  * @see \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::processRecurringCharge()
  * @see \OfficeGuy\LaravelSumitGateway\Models\Subscription::canBeCharged()
- * @see docs/QUEUEABLE_BULK_ACTIONS_INTEGRATION.md
+ * @see \OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BaseBulkActionJob
  */
 class BulkSubscriptionChargeJob extends BaseBulkActionJob
 {
     /**
-     * Handle subscription charge.
+     * Process subscription charge.
      *
      * @param  Subscription  $record
      */
-    protected function handleRecord($record): ActionResponse
+    protected function process(mixed $record): void
     {
         // בדיקה אם המנוי יכול להיות מחויב
         if (! $record->canBeCharged()) {
-            return ActionResponse::failure();
+            throw new \RuntimeException('Subscription cannot be charged');
         }
 
         // בדיקה שיש recurring_id
         if (! $record->recurring_id) {
-            return ActionResponse::failure();
+            throw new \RuntimeException('Subscription has no recurring_id');
         }
 
-        try {
-            // קריאה ל-Service לחיוב המנוי
-            $result = SubscriptionService::processRecurringCharge($record);
+        // קריאה ל-Service לחיוב המנוי
+        $result = SubscriptionService::processRecurringCharge($record);
 
-            if ($result['success'] ?? false) {
-                return ActionResponse::success();
-            }
-
-            return ActionResponse::failure();
-        } catch (\Throwable) {
-            return ActionResponse::failure();
+        if (!($result['success'] ?? false)) {
+            throw new \RuntimeException($result['message'] ?? 'Failed to charge subscription');
         }
-    }
-
-    /**
-     * Control retry behavior per-record.
-     *
-     * @param  Subscription  $record
-     */
-    protected function shouldRetryRecord($record, \Throwable $exception): bool
-    {
-        // Retry API failures, but not validation/business logic errors
-        return $exception instanceof \GuzzleHttp\Exception\GuzzleException
-            || $exception instanceof \Illuminate\Http\Client\ConnectionException;
     }
 }

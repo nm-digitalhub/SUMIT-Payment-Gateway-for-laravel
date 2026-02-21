@@ -7,8 +7,8 @@ namespace OfficeGuy\LaravelSumitGateway\Filament\Resources;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
-use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\Bus;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -356,17 +356,25 @@ class TokenResource extends Resource
             ])
             ->bulkActions([
                 BulkActionGroup::make([
-                    // Queueable bulk action (asynchronous, disabled by default)
-                    QueueableBulkAction::make('sync_all_from_sumit')
+                    // Native Filament v5 bulk action with Bus::batch()
+                    BulkAction::make('sync_all_from_sumit')
                         ->label('Sync All from SUMIT')
                         ->icon('heroicon-o-arrow-path')
                         ->color('info')
-                        ->job(BulkTokenSyncJob::class)
-                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
-                        ->successNotificationTitle(__('officeguy::messages.bulk_sync_success'))
-                        ->failureNotificationTitle(__('officeguy::messages.bulk_sync_partial'))
+                        ->requiresConfirmation()
                         ->modalHeading(__('officeguy::messages.bulk_sync_confirm'))
-                        ->modalDescription(__('officeguy::messages.bulk_sync_desc')),
+                        ->modalDescription(__('officeguy::messages.bulk_sync_desc'))
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $batch = Bus::batch(
+                                $records->map(fn ($record) => new BulkTokenSyncJob($record))
+                            )->dispatch();
+
+                            Notification::make()
+                                ->title('Bulk sync started')
+                                ->body("Batch ID: {$batch->id}. Processing {$records->count()} tokens.")
+                                ->info()
+                                ->send();
+                        }),
 
                     // Legacy synchronous bulk action (for backwards compatibility)
                     BulkAction::make('sync_all_from_sumit_sync')

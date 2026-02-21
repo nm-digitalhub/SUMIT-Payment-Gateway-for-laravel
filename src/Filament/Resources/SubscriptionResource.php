@@ -9,9 +9,9 @@ use App\Models\User;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasGlobalSearch;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasLabels;
 use BezhanSalleh\PluginEssentials\Concerns\Resource\HasNavigation;
-use Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction;
 use Carbon\Carbon;
 use Filament\Actions\Action;
+use Illuminate\Support\Facades\Bus;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
@@ -580,17 +580,27 @@ class SubscriptionResource extends Resource
 
             ->bulkActions([
                 BulkActionGroup::make([
-                    // Queueable bulk action (asynchronous, disabled by default)
-                    QueueableBulkAction::make('cancel_selected')
+                    // Native Filament v5 bulk action with Bus::batch()
+                    BulkAction::make('cancel_selected')
                         ->label('Cancel Selected')
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
-                        ->job(BulkSubscriptionCancelJob::class)
-                        ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
-                        ->successNotificationTitle(__('officeguy::messages.bulk_cancel_success'))
-                        ->failureNotificationTitle(__('officeguy::messages.bulk_cancel_partial'))
+                        ->requiresConfirmation()
                         ->modalHeading(__('officeguy::messages.bulk_cancel_confirm'))
-                        ->modalDescription(__('officeguy::messages.bulk_cancel_desc')),
+                        ->modalDescription(__('officeguy::messages.bulk_cancel_desc'))
+                        ->action(function (\Illuminate\Database\Eloquent\Collection $records) {
+                            $batch = Bus::batch(
+                                $records
+                                    ->filter(fn ($record) => $record->canBeCancelled())
+                                    ->map(fn ($record) => new BulkSubscriptionCancelJob($record))
+                            )->dispatch();
+
+                            Notification::make()
+                                ->title('Bulk cancellation started')
+                                ->body("Batch ID: {$batch->id}. Processing {$records->count()} subscriptions.")
+                                ->info()
+                                ->send();
+                        }),
 
                     // Legacy synchronous bulk action (for backwards compatibility)
                     BulkAction::make('cancel_selected_sync')

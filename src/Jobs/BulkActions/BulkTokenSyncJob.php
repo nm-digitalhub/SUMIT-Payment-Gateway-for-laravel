@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs\BulkActions;
 
-use Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken;
 use OfficeGuy\LaravelSumitGateway\Services\TokenService;
 
@@ -15,20 +14,24 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  * Processes each token through `TokenService::syncTokenFromSumit()` to update
  * local token status and metadata from the remote SUMIT system.
  *
+ * ## Filament v5 Migration (v2.4.0)
+ *
+ * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
+ * Uses native Laravel queue with ShouldQueue interface.
+ *
  * ## Flow
  *
  * ```
  * User selects tokens in Filament → Clicks "Sync from SUMIT"
  *     ↓
- * QueueableBulkAction dispatches BulkTokenSyncJob
+ * Bus::batch dispatches BulkTokenSyncJob for each record
  *     ↓
  * For each selected token:
  *     1. Call TokenService::syncTokenFromSumit($token)
  *     2. Update local token with SUMIT API response
- *     3. Return ActionResponse::success() or ActionResponse::failure()
+ *     3. Exceptions are caught by BaseBulkActionJob and logged
  *     ↓
- * User receives real-time progress updates via Livewire polling
- * User sees success/failure notification when complete
+ * Batch completion notification shows success/failure count
  * ```
  *
  * ## Use Cases
@@ -47,47 +50,27 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  *
  * ## Error Handling
  *
- * - **Token not found in SUMIT**: Returns failure with `code='token_not_found'`
- * - **API authentication error**: Returns failure with `code='auth_failed'`
- * - **Network timeout**: Retries via shouldRetryRecord (GuzzleException)
- * - **Invalid token format**: Returns failure without retry
- *
- * ## Response Metadata
- *
- * Success response includes:
- * ```php
- * [
- *     'token_id' => 456,
- *     'synced_at' => '2026-01-22T10:30:00+00:00',
- * ]
- * ```
- *
- * Failure response includes:
- * ```php
- * [
- *     'token_id' => 456,
- *     'error_code' => 'token_not_found', // or 'auth_failed', 'api_error'
- * ]
- * ```
+ * - **Token not found in SUMIT**: Throws exception (no retry)
+ * - **API authentication error**: Retries via shouldRetry (GuzzleException)
+ * - **Network timeout**: Retries via shouldRetry (ConnectionException)
+ * - **Invalid token format**: Throws exception (no retry)
  *
  * ## Filament Integration
  *
  * Used in `TokenResource`:
  * ```php
- * QueueableBulkAction::make('sync_all_from_sumit')
+ * use Filament\Actions\BulkAction;
+ * use Illuminate\Support\Facades\Bus;
+ *
+ * BulkAction::make('sync_all_from_sumit')
  *     ->label('Sync from SUMIT')
- *     ->job(BulkTokenSyncJob::class)
- *     ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
- *     ->successNotificationTitle(__('officeguy::messages.bulk_sync_success'))
- *     ->failureNotificationTitle(__('officeguy::messages.bulk_sync_partial'))
- *     ->modalDescription(__('officeguy::messages.bulk_sync_desc'))
+ *     ->action(function ($records) {
+ *         Bus::batch(
+ *             $records->map(fn ($record) => new BulkTokenSyncJob($record))
+ *         )->dispatch();
+ *     })
+ *     ->requiresConfirmation();
  * ```
- *
- * ## Translation Keys
- *
- * - `officeguy::messages.bulk_sync_success` - "Token sync completed"
- * - `officeguy::messages.bulk_sync_partial` - "Some tokens failed to sync"
- * - `officeguy::messages.bulk_sync_desc` - Confirmation modal description
  *
  * ## Performance Considerations
  *
@@ -97,40 +80,22 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  *
  * @see \OfficeGuy\LaravelSumitGateway\Services\TokenService::syncTokenFromSumit()
  * @see \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyToken
- * @see docs/QUEUEABLE_BULK_ACTIONS_INTEGRATION.md
+ * @see \OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BaseBulkActionJob
  */
 class BulkTokenSyncJob extends BaseBulkActionJob
 {
     /**
-     * Handle token synchronization from SUMIT.
+     * Process token synchronization from SUMIT.
      *
      * @param  OfficeGuyToken  $record
      */
-    protected function handleRecord($record): ActionResponse
+    protected function process(mixed $record): void
     {
-        try {
-            // קריאה ל-Service לסינכרון ה-token
-            $result = TokenService::syncTokenFromSumit($record);
+        // קריאה ל-Service לסינכרון ה-token
+        $result = TokenService::syncTokenFromSumit($record);
 
-            if ($result['success'] ?? false) {
-                return ActionResponse::success();
-            }
-
-            return ActionResponse::failure();
-        } catch (\Throwable) {
-            return ActionResponse::failure();
+        if (!($result['success'] ?? false)) {
+            throw new \RuntimeException($result['message'] ?? 'Failed to sync token from SUMIT');
         }
-    }
-
-    /**
-     * Control retry behavior per-record.
-     *
-     * @param  OfficeGuyToken  $record
-     */
-    protected function shouldRetryRecord($record, \Throwable $exception): bool
-    {
-        // Retry API failures, but not validation/business logic errors
-        return $exception instanceof \GuzzleHttp\Exception\GuzzleException
-            || $exception instanceof \Illuminate\Http\Client\ConnectionException;
     }
 }

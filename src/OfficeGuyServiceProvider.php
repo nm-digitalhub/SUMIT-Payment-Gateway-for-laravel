@@ -12,7 +12,6 @@ use OfficeGuy\LaravelSumitGateway\Console\Commands\ProcessRecurringPaymentsComma
 use OfficeGuy\LaravelSumitGateway\Console\Commands\StockSyncCommand;
 use OfficeGuy\LaravelSumitGateway\Console\Commands\SyncAllDocumentsCommand;
 use OfficeGuy\LaravelSumitGateway\Events\SumitWebhookReceived;
-use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Listeners\CrmActivitySyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\CustomerSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\DocumentSyncListener;
@@ -23,6 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Listeners\NotifySubscriptionCreatedListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\RefundWebhookListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\TransactionSyncListener;
 use OfficeGuy\LaravelSumitGateway\Listeners\WebhookEventListener;
+use OfficeGuy\LaravelSumitGateway\Http\Requests\CheckoutRequest;
 use OfficeGuy\LaravelSumitGateway\Services\CustomerMergeService;
 use OfficeGuy\LaravelSumitGateway\Services\DonationService;
 use OfficeGuy\LaravelSumitGateway\Services\MultiVendorPaymentService;
@@ -81,18 +81,15 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\ServiceDataFactory::class);
         $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\TemporaryStorageService::class);
 
-        // Bind PackageVersionService for About page (v2.4.0)
-        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Services\PackageVersionService::class);
-
         // Resolve CheckoutRequest for route model binding
-        $this->app->resolving(CheckoutRequest::class, fn ($request, array $app) => CheckoutRequest::createFrom($app['request'], $request));
+        $this->app->resolving(CheckoutRequest::class, function ($request, $app) {
+            return CheckoutRequest::createFrom($app['request'], $request);
+        });
 
         // Bind customer model class resolution (backward compatible)
-        $this->app->singleton('officeguy.customer_model', fn ($app): ?string => $this->resolveCustomerModel());
-
-        // Register Filament Plugin classes for auto-discovery
-        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyPlugin::class);
-        $this->app->singleton(\OfficeGuy\LaravelSumitGateway\Filament\OfficeGuyClientPlugin::class);
+        $this->app->singleton('officeguy.customer_model', function ($app) {
+            return $this->resolveCustomerModel();
+        });
     }
 
     /**
@@ -120,7 +117,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     return $dbValue;
                 }
             }
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             // Silently fail if DB not ready - continue to config
         }
 
@@ -168,10 +165,6 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $this->publishes([
             __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'officeguy-migrations');
-
-        $this->publishes([
-            __DIR__ . '/../public' => public_path('vendor/officeguy'),
-        ], 'officeguy-assets');
 
         // Load settings from database and override config
         $this->loadDatabaseSettings();
@@ -278,6 +271,11 @@ class OfficeGuyServiceProvider extends ServiceProvider
 
         // Register Container-Driven Fulfillment handlers (v1.18.0)
         $this->registerFulfillmentHandlers();
+
+        // Register Blade components (v2.2.0)
+        if (class_exists(\Illuminate\Support\Facades\Blade::class)) {
+            \Illuminate\Support\Facades\Blade::component('officeguy::payment-form', \OfficeGuy\LaravelSumitGateway\View\Components\PaymentForm::class);
+        }
     }
 
     /**
@@ -290,7 +288,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
     {
         try {
             // Only load if table exists (prevents errors during migration)
-            if (! \Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
+            if (!\Illuminate\Support\Facades\Schema::hasTable('officeguy_settings')) {
                 return;
             }
 
@@ -326,7 +324,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
                     config(["officeguy.webhooks.{$configKey}" => $value]);
                 }
             }
-        } catch (\Exception) {
+        } catch (\Exception $e) {
             // Silently fail - config defaults will be used
             // This handles cases where DB isn't ready yet
         }
@@ -339,7 +337,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerLivewireComponents(): void
     {
-        if (! class_exists(\Livewire\Livewire::class)) {
+        if (!class_exists(\Livewire\Livewire::class)) {
             return;
         }
 
@@ -351,6 +349,46 @@ class OfficeGuyServiceProvider extends ServiceProvider
     }
 
     /**
+     * Register Filament Clusters for navigation organization.
+     *
+     * Registers package Clusters with Filament panels so resources are grouped properly.
+     * Uses Filament's serving hook to register after panels are initialized.
+     */
+    protected function registerFilamentClusters(): void
+    {
+        if (!class_exists(\Filament\Facades\Filament::class)) {
+            return;
+        }
+
+        // Use Filament's serving hook to register clusters after panels are ready
+        \Filament\Facades\Filament::serving(function () {
+            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters');
+
+            // Register clusters for admin panel
+            try {
+                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
+                $adminPanel->clusters([
+                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
+                ]);
+                \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
+            } catch (\Exception $e) {
+                \Log::error('[SUMIT] Failed to register SumitGateway cluster: ' . $e->getMessage());
+            }
+
+            // Register clusters for client panel
+            try {
+                $clientPanel = \Filament\Facades\Filament::getPanel('client');
+                $clientPanel->clusters([
+                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
+                ]);
+                \Log::info('[SUMIT] SumitClient cluster registered to client panel');
+            } catch (\Exception $e) {
+                \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
+            }
+        });
+    }
+
+    /**
      * Register stock sync scheduler based on settings.
      *
      * Schedules automatic stock synchronization based on the stock_sync_freq setting.
@@ -358,11 +396,11 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerStockSyncScheduler(): void
     {
-        if (! $this->app->runningInConsole()) {
+        if (!$this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
             $freq = config('officeguy.stock_sync_freq', 'none');
 
             if ($freq === '12') {
@@ -383,21 +421,21 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerDocumentSyncScheduler(): void
     {
-        if (! $this->app->runningInConsole()) {
+        if (!$this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
             // Daily sync at 3:00 AM (low traffic time)
             $schedule->command('sumit:sync-all-documents --days=30')
                 ->dailyAt('03:00')
                 ->name('sumit-documents-sync')
                 ->withoutOverlapping(120) // Prevent overlapping runs, timeout after 2 hours
                 ->runInBackground()
-                ->onFailure(function (): void {
+                ->onFailure(function () {
                     \Log::error('SUMIT documents auto-sync failed');
                 })
-                ->onSuccess(function (): void {
+                ->onSuccess(function () {
                     \Log::info('SUMIT documents auto-sync completed successfully');
                 });
         });
@@ -412,21 +450,21 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerCrmFoldersSyncScheduler(): void
     {
-        if (! $this->app->runningInConsole()) {
+        if (!$this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
             // Daily sync at 2:00 AM (before documents sync at 3:00 AM)
             $schedule->command('crm:sync-folders')
                 ->dailyAt('02:00')
                 ->name('crm-folders-sync')
                 ->withoutOverlapping(60) // Prevent overlapping runs, timeout after 1 hour
                 ->runInBackground()
-                ->onFailure(function (): void {
+                ->onFailure(function () {
                     \Log::error('CRM folders auto-sync failed');
                 })
-                ->onSuccess(function (): void {
+                ->onSuccess(function () {
                     \Log::info('CRM folders auto-sync completed successfully');
                 });
         });
@@ -437,19 +475,19 @@ class OfficeGuyServiceProvider extends ServiceProvider
      */
     protected function registerDebtCollectionScheduler(): void
     {
-        if (! $this->app->runningInConsole()) {
+        if (!$this->app->runningInConsole()) {
             return;
         }
 
-        $this->callAfterResolving(\Illuminate\Console\Scheduling\Schedule::class, function ($schedule): void {
+        $this->callAfterResolving('Illuminate\Console\Scheduling\Schedule', function ($schedule) {
             $schedule->job(\OfficeGuy\LaravelSumitGateway\Jobs\CheckSumitDebtJob::class)
                 ->dailyAt(config('officeguy.collection.schedule_time', '02:00'))
                 ->name('sumit-debt-check')
                 ->withoutOverlapping(60)
-                ->onFailure(function (): void {
+                ->onFailure(function () {
                     \Log::error('SUMIT debt auto-check failed');
                 })
-                ->onSuccess(function (): void {
+                ->onSuccess(function () {
                     \Log::info('SUMIT debt auto-check completed successfully');
                 });
         });
@@ -497,7 +535,9 @@ class OfficeGuyServiceProvider extends ServiceProvider
         $currentMiddleware = config('officeguy.routes.middleware', ['web', 'auth']);
 
         // Replace 'auth' with 'optional.auth' in the middleware array
-        $newMiddleware = array_map(fn ($middleware) => $middleware === 'auth' ? 'optional.auth' : $middleware, $currentMiddleware);
+        $newMiddleware = array_map(function ($middleware) {
+            return $middleware === 'auth' ? 'optional.auth' : $middleware;
+        }, $currentMiddleware);
 
         // Set the new middleware configuration
         config(['officeguy.routes.middleware' => $newMiddleware]);

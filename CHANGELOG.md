@@ -5,6 +5,77 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.7.0] - 2026-02-21
+
+### ⚠️ BREAKING CHANGES
+- **Requires Filament v5.0+** - Minimum version upgraded from ^4.0 to ^5.0
+- **Removed bytexr/filament-queueable-bulk-actions** dependency - Migrated to native Laravel Bus::batch()
+- **Livewire v4.0+** - Required by Filament v5
+
+### Removed
+- `Bytexr\QueueableBulkActions\Filament\Actions\QueueableBulkAction`
+- `Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse`
+- `Bytexr\QueueableBulkActions\Jobs\BulkActionJob` base class
+- `bytexr/filament-queueable-bulk-actions` composer dependency
+
+### Added
+- **Native Laravel Bus::batch()** support for all bulk actions
+- **BaseBulkActionJob** - New abstract base class implementing `ShouldQueue`
+  - `process()` abstract method (subclasses implement business logic)
+  - `handle()` template method with logging and telemetry
+  - `uniqueId()` for batch identification
+  - `shouldRetry()` for intelligent retry control
+- **checkout.blade.php** layout for payment flows
+
+### Changed
+- **Bulk Actions Architecture** - Complete migration to native Laravel queue:
+  - `handleRecord()` → `process()` method
+  - `ActionResponse` return type → `void` (exceptions for errors)
+  - QueueableBulkAction → native BulkAction with Bus::batch()
+
+- **Updated Bulk Action Jobs** (6 files):
+  - `BulkSubscriptionCancelJob` - Cancel subscriptions via Bus::batch()
+  - `BulkDocumentEmailJob` - Email documents via Bus::batch()
+  - `BulkPayableMappingActivateJob` - Activate mappings via Bus::batch()
+  - `BulkPayableMappingDeactivateJob` - Deactivate mappings via Bus::batch()
+  - `BulkSubscriptionChargeJob` - Charge subscriptions via Bus::batch()
+  - `BulkTokenSyncJob` - Sync tokens from SUMIT via Bus::batch()
+
+- **Updated Resources** for Filament v5 bulk actions:
+  - `TokenResource` - Sync All from SUMIT now uses Bus::batch()
+  - `SubscriptionResource` - Cancel Selected now uses Bus::batch()
+
+### Migration Guide
+
+If you're using `QueueableBulkAction` in your own resources, migrate to:
+
+```php
+use Filament\Actions\BulkAction;
+use Illuminate\Support\Facades\Bus;
+
+BulkAction::make('action_name')
+    ->label('Action Name')
+    ->action(function ($records) {
+        Bus::batch(
+            $records->map(fn ($record) => new YourBulkJob($record))
+        )->dispatch();
+    });
+```
+
+### Technical Details
+- **Exponential Backoff**: `[60, 300, 900]` = 1min, 5min, 15min
+- **Queue**: `officeguy-bulk-actions` (configurable)
+- **Connection**: `redis` (configurable)
+- **Timeout**: 3600s (1 hour)
+- **Tries**: 3 attempts
+- **Logging**: Only failures logged (reduces volume on large batches)
+
+### Developer Experience
+- **No external dependencies** for bulk actions - uses native Laravel
+- **Better error handling** - exceptions logged with full context
+- **Progress tracking** - via Laravel's built-in batch system
+- **Type safety** - strict typing throughout
+
 ## [2.6.0] - 2026-01-28
 
 ### Added

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs\BulkActions;
 
-use Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
 use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
 
@@ -15,22 +14,26 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  * Processes each document through `DocumentService::sendByEmail()` to deliver
  * invoices, receipts, and other documents via email.
  *
+ * ## Filament v5 Migration (v2.4.0)
+ *
+ * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
+ * Uses native Laravel queue with ShouldQueue interface.
+ *
  * ## Flow
  *
  * ```
  * User selects documents in Filament → Clicks "Email to Customers"
  *     ↓
- * QueueableBulkAction dispatches BulkDocumentEmailJob
+ * Bus::batch dispatches BulkDocumentEmailJob for each record
  *     ↓
  * For each selected document:
  *     1. Retrieve document (invoice/receipt/donation receipt)
  *     2. Get customer email from Payable model
  *     3. Generate PDF attachment
  *     4. Send email via DocumentService::sendByEmail()
- *     5. Return ActionResponse::success() or ActionResponse::failure()
+ *     5. Exceptions are caught by BaseBulkActionJob and logged
  *     ↓
- * User receives real-time progress updates via Livewire polling
- * User sees success/failure notification when complete
+ * Batch completion notification shows success/failure count
  * ```
  *
  * ## Use Cases
@@ -49,47 +52,27 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  *
  * ## Error Handling
  *
- * - **Missing customer email**: Returns failure with `error='no_email'`
- * - **Invalid document**: Returns failure with `error='invalid_document'`
- * - **Email service failure**: Retries via shouldRetryRecord (ConnectionException)
- * - **PDF generation failure**: Returns failure without retry
- *
- * ## Response Metadata
- *
- * Success response includes:
- * ```php
- * [
- *     'document_id' => 789,
- *     'sent_at' => '2026-01-22T10:30:00+00:00',
- * ]
- * ```
- *
- * Failure response includes:
- * ```php
- * [
- *     'document_id' => 789,
- *     'document_number' => 'INV-2024-001',
- * ]
- * ```
+ * - **Missing customer email**: Throws exception (no retry)
+ * - **Invalid document**: Throws exception (no retry)
+ * - **Email service failure**: Retries via shouldRetry (ConnectionException)
+ * - **PDF generation failure**: Throws exception (no retry)
  *
  * ## Filament Integration
  *
  * Used in `DocumentResource`:
  * ```php
- * QueueableBulkAction::make('email_documents')
+ * use Filament\Actions\BulkAction;
+ * use Illuminate\Support\Facades\Bus;
+ *
+ * BulkAction::make('email_documents')
  *     ->label('Email to Customers')
- *     ->job(BulkDocumentEmailJob::class)
- *     ->visible(fn () => config('officeguy.bulk_actions.enabled', false))
- *     ->successNotificationTitle(__('officeguy::messages.bulk_email_success'))
- *     ->failureNotificationTitle(__('officeguy::messages.bulk_email_partial'))
- *     ->modalDescription(__('officeguy::messages.bulk_email_desc'))
+ *     ->action(function ($records) {
+ *         Bus::batch(
+ *             $records->map(fn ($record) => new BulkDocumentEmailJob($record))
+ *         )->dispatch();
+ *     })
+ *     ->requiresConfirmation();
  * ```
- *
- * ## Translation Keys
- *
- * - `officeguy::messages.bulk_email_success` - "Documents sent successfully"
- * - `officeguy::messages.bulk_email_partial` - "Some documents failed to send"
- * - `officeguy::messages.bulk_email_desc` - Confirmation modal description
  *
  * ## Privacy & Compliance
  *
@@ -100,40 +83,22 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  *
  * @see \OfficeGuy\LaravelSumitGateway\Services\DocumentService::sendByEmail()
  * @see \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument
- * @see docs/QUEUEABLE_BULK_ACTIONS_INTEGRATION.md
+ * @see \OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BaseBulkActionJob
  */
 class BulkDocumentEmailJob extends BaseBulkActionJob
 {
     /**
-     * Handle document email sending.
+     * Process document email sending.
      *
      * @param  OfficeGuyDocument  $record
      */
-    protected function handleRecord($record): ActionResponse
+    protected function process(mixed $record): void
     {
-        try {
-            // קריאה ל-Service לשליחת המסמך באימייל
-            $result = DocumentService::sendByEmail($record);
+        // קריאה ל-Service לשליחת המסמך באימייל
+        $result = DocumentService::sendByEmail($record);
 
-            if ($result['success'] ?? false) {
-                return ActionResponse::success();
-            }
-
-            return ActionResponse::failure();
-        } catch (\Throwable) {
-            return ActionResponse::failure();
+        if (!($result['success'] ?? false)) {
+            throw new \RuntimeException($result['message'] ?? 'Failed to send document email');
         }
-    }
-
-    /**
-     * Control retry behavior per-record.
-     *
-     * @param  OfficeGuyDocument  $record
-     */
-    protected function shouldRetryRecord($record, \Throwable $exception): bool
-    {
-        // Retry API failures, but not validation/business logic errors
-        return $exception instanceof \GuzzleHttp\Exception\GuzzleException
-            || $exception instanceof \Illuminate\Http\Client\ConnectionException;
     }
 }

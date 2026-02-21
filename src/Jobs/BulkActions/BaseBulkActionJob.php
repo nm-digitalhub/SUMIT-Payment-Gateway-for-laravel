@@ -4,25 +4,26 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Jobs\BulkActions;
 
-use Bytexr\QueueableBulkActions\Filament\Actions\ActionResponse;
-use Bytexr\QueueableBulkActions\Jobs\BulkActionJob;
+use Illuminate\Bus\Batchable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 /**
  * Base Bulk Action Job
  *
  * Abstract base class for all queueable bulk action jobs in the SUMIT Gateway package.
- * Extends `Bytexr\QueueableBulkActions\Jobs\BulkActionJob` to provide:
- * - Dynamic queue configuration from `config/officeguy.php`
- * - Exponential backoff retry strategy
- * - Intelligent failure logging (logs only failures, not every record)
- * - Per-record retry control (API errors = retry, validation errors = no retry)
+ *
+ * ## Filament v5 Migration (v2.4.0)
+ *
+ * Migrated from `Bytexr\QueueableBulkActions\Jobs\BulkActionJob` to native Laravel implementation.
+ * Uses native Laravel Bus::batch() for bulk operations.
  *
  * ## Architecture
  *
  * This class implements the **Template Method Pattern**:
- * - `processRecord()` is the template method (handles logging, telemetry)
- * - `handleRecord()` is the abstract method (subclasses implement business logic)
+ * - `process()` is the template method (handles logging, telemetry)
+ * - `handle()` is the abstract method (subclasses implement business logic)
  *
  * ## Queue Configuration
  *
@@ -45,7 +46,7 @@ use Illuminate\Support\Facades\Log;
  *
  * ## Intelligent Retry Control
  *
- * `shouldRetryRecord()` distinguishes between:
+ * `shouldRetry()` distinguishes between:
  * - **Retryable errors**: API failures, network issues (GuzzleException, ConnectionException)
  * - **Non-retryable errors**: Validation errors, business logic failures
  *
@@ -64,62 +65,50 @@ use Illuminate\Support\Facades\Log;
  *
  * ## Subclass Implementation
  *
- * Subclasses only need to implement `handleRecord()`:
+ * Subclasses only need to implement `handle()`:
  * ```php
- * protected function handleRecord($record): ActionResponse
+ * protected function handle(): void
  * {
- *     try {
- *         $result = SubscriptionService::cancel($record);
- *         return ActionResponse::success($record, null, ['cancelled_at' => now()]);
- *     } catch (\Throwable $e) {
- *         return ActionResponse::failure($record, $e->getMessage());
- *     }
+ *     $result = SubscriptionService::cancel($this->record);
+ *     // No return value needed - exceptions indicate failure
  * }
  * ```
  *
- * ## Integration with Filament
+ * ## Integration with Filament v5
  *
- * Jobs are triggered from Filament resources using `QueueableBulkAction`:
+ * Jobs are triggered from Filament resources using native `Bus::batch()`:
  * ```php
- * QueueableBulkAction::make('cancel_selected')
- *     ->job(BulkSubscriptionCancelJob::class)
- *     ->visible(fn () => config('officeguy.bulk_actions.enabled'))
+ * use Filament\Actions\BulkAction;
+ * use Illuminate\Support\Facades\Bus;
+ *
+ * BulkAction::make('cancel_selected')
+ *     ->action(function ($records) {
+ *         Bus::batch(
+ *             $records
+ *                 ->filter(fn ($record) => $record->canBeCancelled())
+ *                 ->map(fn ($record) => new BulkSubscriptionCancelJob($record))
+ *         )->dispatch();
+ *     });
  * ```
  *
- * ## Supervisor Configuration
- *
- * Recommended supervisor configuration for production:
- * ```ini
- * [program:officeguy-bulk-actions]
- * process_name=%(program_name)s_%(process_num)02d
- * command=php /path/to/artisan queue:work redis --queue=officeguy-bulk-actions --sleep=3 --tries=3 --timeout=3600
- * numprocs=3
- * autostart=true
- * autorestart=true
- * ```
- *
- * @see \Bytexr\QueueableBulkActions\Jobs\BulkActionJob
- * @see docs/QUEUEABLE_BULK_ACTIONS_INTEGRATION.md
+ * @see https://filamentphp.com/docs/5.x/tables/bulk-actions.html
  */
-abstract class BaseBulkActionJob extends BulkActionJob
+abstract class BaseBulkActionJob implements ShouldQueue
 {
+    /**
+     * The record to process.
+     */
+    public mixed $record;
+
     /**
      * Queue configuration from config (not hardcoded).
      */
-    public string $queue;
-
-    public string $connection;
+    public string $queue = 'officeguy-bulk-actions';
 
     /**
-     * Constructor - sets queue configuration dynamically.
+     * Queue connection.
      */
-    public function __construct()
-    {
-        $this->queue = config('officeguy.bulk_actions.queue', 'officeguy-bulk-actions');
-        $this->connection = config('officeguy.bulk_actions.connection');
-
-        parent::__construct();
-    }
+    public string $connection = 'redis';
 
     /**
      * Number of attempts for the job.
@@ -142,47 +131,72 @@ abstract class BaseBulkActionJob extends BulkActionJob
     public int $timeout = 3600;
 
     /**
-     * Enhanced processRecord with telemetry.
-     *
-     * Logs only failures to reduce log volume.
-     *
-     * @param  mixed  $record
+     * Constructor - accepts the record to process.
      */
-    protected function processRecord($record): ActionResponse
+    public function __construct(mixed $record)
     {
-        $result = $this->handleRecord($record);
-
-        // Log only failures (reduce log volume)
-        if (! $result->isSuccess()) {
-            Log::warning('Bulk action record failed', [
-                'job' => class_basename($this),
-                'record_id' => $record->id,
-                'record_type' => $record::class,
-                'error' => $result->getMessage(),
-            ]);
-        }
-
-        return $result;
+        $this->record = $record;
     }
 
     /**
-     * Subclasses implement this instead of processRecord.
+     * Enhanced process with telemetry.
      *
-     * @param  mixed  $record
+     * Logs only failures to reduce log volume.
+     *
+     * @return void
      */
-    abstract protected function handleRecord($record): ActionResponse;
+    public function handle(): void
+    {
+        try {
+            $this->process($this->record);
+        } catch (Throwable $e) {
+            // Log only failures (reduce log volume)
+            Log::warning('Bulk action record failed', [
+                'job' => class_basename($this),
+                'record_id' => $this->record?->id,
+                'record_type' => $this->record?::class,
+                'error' => $e->getMessage(),
+            ]);
+
+            // Re-throw to trigger retry mechanism
+            throw $e;
+        }
+    }
 
     /**
-     * Control retry behavior per-record.
+     * Subclasses implement this instead of handle().
+     *
+     * @param mixed $record
+     * @return void
+     */
+    abstract protected function process(mixed $record): void;
+
+    /**
+     * Control retry behavior.
      *
      * Retry API/network errors, but not validation/business logic errors.
      *
-     * @param  mixed  $record
+     * @param mixed $record
+     * @param Throwable $exception
+     * @return bool
      */
-    protected function shouldRetryRecord($record, \Throwable $exception): bool
+    protected function shouldRetry(mixed $record, Throwable $exception): bool
     {
         // Retry API/network errors, but not validation/business logic errors
         return $exception instanceof \GuzzleHttp\Exception\GuzzleException
             || $exception instanceof \Illuminate\Http\Client\ConnectionException;
+    }
+
+    /**
+     * Get unique ID for this job in batch.
+     *
+     * @return string
+     */
+    public function uniqueId(): string
+    {
+        return sha1(json_encode([
+            get_class($this),
+            $this->record->id,
+        ]));
     }
 }
