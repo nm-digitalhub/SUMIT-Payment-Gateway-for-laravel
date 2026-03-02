@@ -42,6 +42,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Laravel apps with Filament:** When the adapter is available, add `officeguy/laravel-sumit-gateway-filament` and configure `officeguy.routes.client_login_route` and `officeguy.notification_routes.*` if you use Filament panels.
 - **Checkout / notifications:** Set `officeguy.routes.client_login_route` (e.g. `filament.client.auth.login`) and the notification view routes in `config/officeguy.php` so emails and checkout redirects point to your admin/client panel.
 
+## [3.0.1] - 2026-03-02
+
+### Changed
+
+- **Config-driven UI routes** – All remaining hardcoded `route('filament.*')` in views replaced with config lookups so core is fully UI-agnostic.
+  - Checkout login fallback: `route(config('officeguy.routes.client_login_route', 'login'))`
+  - Subscription ticket link: `config('officeguy.notification_routes.ticket_create')` (link shown only when route is set and registered)
+  - Success page “view orders”: `config('officeguy.notification_routes.profile_page_upgraded')`
+  - API payload node links: `transaction_view`, `document_view`, `subscription_view`, `token_view`, `order_view`, `clients_index` from `officeguy.notification_routes`
+- **Config** – Added `notification_routes.ticket_create`, `profile_page_upgraded`, `token_view`, `order_view`, `clients_index`; comments rephrased to “admin panel” (no Filament wording in runtime config).
+- **Lang** – “Filament v4 integration” rephrased to “Admin panel integration” in `en/officeguy.php` and `he/officeguy.php`.
+- **officeguy/checkout.blade.php** – Filament auth fallback removed; login URL and `$client` use config and null-safe access.
+
+### Added
+
+- **Filament adapter (when used)** – Can inject Filament route names via `injectFilamentRouteConfig()` in `SumitGatewayFilamentServiceProvider` so core views get Filament URLs without hardcoding. (Adapter lives in `packages/filament/`; core repo has `packages/` in `.gitignore`.)
+
 ## [2.7.0] - 2026-02-21
 
 ### ⚠️ BREAKING CHANGES
