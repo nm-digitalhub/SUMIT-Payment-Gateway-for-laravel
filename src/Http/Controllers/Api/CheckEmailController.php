@@ -73,10 +73,10 @@ class CheckEmailController extends Controller
             // Get the referring URL (checkout page) for post-login redirect
             $returnUrl = $request->header('Referer') ?? url()->previous();
 
-            // Generate Filament client panel login URL with return parameter
-            $response['login_url'] = route('filament.client.auth.login', [
+            $loginRoute = config('officeguy.routes.client_login_route', 'login');
+            $response['login_url'] = route($loginRoute, array_filter([
                 'return_url' => $returnUrl,
-            ]);
+            ]));
         }
 
         return response()->json($response);

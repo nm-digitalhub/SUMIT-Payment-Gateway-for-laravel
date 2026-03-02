@@ -56,7 +56,9 @@ class SubscriptionCreatedNotification extends Notification
             'actions' => [
                 [
                     'label' => __('officeguy::notifications.subscription_created.view_subscription'),
-                    'url' => route('filament.admin.resources.subscriptions.view', $this->subscription),
+                    'url' => config('officeguy.notification_routes.subscription_view')
+                    ? route(config('officeguy.notification_routes.subscription_view'), $this->subscription)
+                    : null,
                 ],
             ],
         ];

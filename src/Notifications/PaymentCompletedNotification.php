@@ -58,8 +58,8 @@ class PaymentCompletedNotification extends Notification
             'actions' => [
                 [
                     'label' => __('officeguy::notifications.payment_completed.view_transaction'),
-                    'url' => $this->transaction instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction
-                        ? route('filament.admin.resources.office-guy-transactions.view', $this->transaction)
+                    'url' => $this->transaction instanceof \OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction && config('officeguy.notification_routes.transaction_view')
+                        ? route(config('officeguy.notification_routes.transaction_view'), $this->transaction)
                         : null,
                 ],
             ],

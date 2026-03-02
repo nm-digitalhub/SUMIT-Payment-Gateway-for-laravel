@@ -22,10 +22,7 @@
     $shipping = $payable->getShippingAmount();
     $fees = $payable->getFees();
     $user = auth()->user();
-    if (!$user && class_exists(\Filament\Facades\Filament::class)) {
-        $user = \Filament\Facades\Filament::auth()->user();
-    }
-    $client = $user?->client;
+    $client = $user?->client ?? null;
 
     $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
     $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client->email ?? null) ?? ($user->email ?? null);

@@ -1,6 +1,6 @@
 {
     "name": "officeguy/laravel-sumit-gateway",
-    "description": "Laravel package for SUMIT payment gateway with Filament integration - 1:1 port from WooCommerce (Laravel 12 Compatible)",
+    "description": "Laravel package for SUMIT payment gateway (core) - 1:1 port from WooCommerce (Laravel 12 Compatible)",
     "type": "library",
     "keywords": [
         "laravel",
@@ -9,8 +9,6 @@
         "gateway",
         "sumit",
         "officeguy",
-        "filament",
-        "filament-5",
         "credit-card",
         "bit",
         "israel"
@@ -28,8 +26,6 @@
     ],
     "require": {
         "php": "^8.2",
-        "bezhansalleh/filament-plugin-essentials": "^1.1",
-        "filament/filament": "^5.0",
         "guzzlehttp/guzzle": "^7.0",
         "laravel/framework": "^12.0",
         "saloonphp/saloon": "^3.14"
@@ -58,10 +54,10 @@
             ]
         }
     },
-    "minimum-stability": "dev",
+    "minimum-stability": "stable",
     "prefer-stable": true,
     "config": {
         "sort-packages": true,
-        "optimize-autuloader": true
+        "optimize-autoloader": true
     }
 }

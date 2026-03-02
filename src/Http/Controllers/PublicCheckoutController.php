@@ -72,10 +72,7 @@ class PublicCheckoutController extends Controller
 
         // Prefill from query params -> payable -> client -> authenticated user
         $user = auth()->user();
-        if (! $user && class_exists(\Filament\Facades\Filament::class)) {
-            $user = \Filament\Facades\Filament::auth()->user();
-        }
-        $client = $user?->client;
+        $client = $user?->client ?? null;
 
         $prefillName = $request->query('name')
             ?? $payable->getCustomerName()

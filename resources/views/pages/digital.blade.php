@@ -12,14 +12,11 @@
     $amount = $payable->getPayableAmount();
     $items = $payable->getLineItems();
     $user = auth()->user();
-    if (!$user && class_exists(\Filament\Facades\Filament::class)) {
-        $user = \Filament\Facades\Filament::auth()->user();
-    }
-    $client = $user?->client;
+    $client = $user?->client ?? null;
 
     // Pre-fill from user/client (if available)
-    $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
-    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client->email ?? null) ?? ($user->email ?? null);
+    $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client?->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
+    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client?->email ?? null) ?? ($user->email ?? null);
 
     // Digital product theme
     $primaryColor = '#3B82F6';

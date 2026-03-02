@@ -12,22 +12,19 @@
     $amount = $payable->getPayableAmount();
     $items = $payable->getLineItems();
     $user = auth()->user();
-    if (!$user && class_exists(\Filament\Facades\Filament::class)) {
-        $user = \Filament\Facades\Filament::auth()->user();
-    }
-    $client = $user?->client;
+    $client = $user?->client ?? null;
 
     // Pre-fill all fields from user/client
-    $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
-    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client->email ?? null) ?? ($user->email ?? null);
-    $customerPhone = $prefillPhone ?? $payable->getCustomerPhone() ?? ($client->phone ?? null) ?? ($user->phone ?? null);
-    $customerCompany = $prefillCompany ?? $client->company ?? $user->company ?? null;
-    $customerVat = $prefillVat ?? $client->vat_number ?? $user->vat_number ?? null;
-    $customerAddress = $prefillAddress ?? $client->client_address ?? $client->address ?? null;
-    $customerCity = $prefillCity ?? $client->client_city ?? $client->city ?? null;
-    $customerState = $prefillState ?? $client->client_state ?? $client->state ?? null;
-    $customerCountry = $prefillCountry ?? $client->client_country ?? $client->country ?? 'IL';
-    $customerPostal = $prefillPostal ?? $client->client_postal_code ?? $client->postal_code ?? null;
+    $customerName = $prefillName ?? $payable->getCustomerName() ?? ($client?->name ?? null) ?? ($user ? trim(($user->first_name ?? '') . ' ' . ($user->last_name ?? '')) ?: $user->name : null);
+    $customerEmail = $prefillEmail ?? $payable->getCustomerEmail() ?? ($client?->email ?? null) ?? ($user->email ?? null);
+    $customerPhone = $prefillPhone ?? $payable->getCustomerPhone() ?? ($client?->phone ?? null) ?? ($user->phone ?? null);
+    $customerCompany = $prefillCompany ?? $client?->company ?? $user->company ?? null;
+    $customerVat = $prefillVat ?? $client?->vat_number ?? $user->vat_number ?? null;
+    $customerAddress = $prefillAddress ?? $client?->client_address ?? $client?->address ?? null;
+    $customerCity = $prefillCity ?? $client?->client_city ?? $client?->city ?? null;
+    $customerState = $prefillState ?? $client?->client_state ?? $client?->state ?? null;
+    $customerCountry = $prefillCountry ?? $client?->client_country ?? $client?->country ?? 'IL';
+    $customerPostal = $prefillPostal ?? $client?->client_postal_code ?? $client?->postal_code ?? null;
 
     // Infrastructure theme
     $primaryColor = '#3B82F6';

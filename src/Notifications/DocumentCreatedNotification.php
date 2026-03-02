@@ -54,7 +54,9 @@ class DocumentCreatedNotification extends Notification
             'actions' => [
                 [
                     'label' => __('officeguy::notifications.document_created.view_document'),
-                    'url' => route('filament.admin.resources.documents.view', $this->document),
+                    'url' => config('officeguy.notification_routes.document_view')
+                    ? route(config('officeguy.notification_routes.document_view'), $this->document)
+                    : null,
                 ],
                 [
                     'label' => __('officeguy::notifications.document_created.download_document'),

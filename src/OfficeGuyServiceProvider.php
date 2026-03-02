@@ -266,9 +266,6 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Register debt collection scheduler
         $this->registerDebtCollectionScheduler();
 
-        // Register Livewire components for Filament widgets
-        $this->registerLivewireComponents();
-
         // Register Container-Driven Fulfillment handlers (v1.18.0)
         $this->registerFulfillmentHandlers();
 
@@ -328,64 +325,6 @@ class OfficeGuyServiceProvider extends ServiceProvider
             // Silently fail - config defaults will be used
             // This handles cases where DB isn't ready yet
         }
-    }
-
-    /**
-     * Register Livewire components for Filament widgets.
-     *
-     * Registers package widgets with Livewire so they can be used in Filament panels.
-     */
-    protected function registerLivewireComponents(): void
-    {
-        if (!class_exists(\Livewire\Livewire::class)) {
-            return;
-        }
-
-        // Register Filament widgets with explicit Livewire component names
-        \Livewire\Livewire::component(
-            'office-guy.laravel-sumit-gateway.filament.widgets.payable-mappings-table-widget',
-            \OfficeGuy\LaravelSumitGateway\Filament\Widgets\PayableMappingsTableWidget::class
-        );
-    }
-
-    /**
-     * Register Filament Clusters for navigation organization.
-     *
-     * Registers package Clusters with Filament panels so resources are grouped properly.
-     * Uses Filament's serving hook to register after panels are initialized.
-     */
-    protected function registerFilamentClusters(): void
-    {
-        if (!class_exists(\Filament\Facades\Filament::class)) {
-            return;
-        }
-
-        // Use Filament's serving hook to register clusters after panels are ready
-        \Filament\Facades\Filament::serving(function () {
-            \Log::info('[SUMIT] Filament::serving() hook fired - registering clusters');
-
-            // Register clusters for admin panel
-            try {
-                $adminPanel = \Filament\Facades\Filament::getPanel('admin');
-                $adminPanel->clusters([
-                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitGateway::class,
-                ]);
-                \Log::info('[SUMIT] SumitGateway cluster registered to admin panel');
-            } catch (\Exception $e) {
-                \Log::error('[SUMIT] Failed to register SumitGateway cluster: ' . $e->getMessage());
-            }
-
-            // Register clusters for client panel
-            try {
-                $clientPanel = \Filament\Facades\Filament::getPanel('client');
-                $clientPanel->clusters([
-                    \OfficeGuy\LaravelSumitGateway\Filament\Clusters\SumitClient::class,
-                ]);
-                \Log::info('[SUMIT] SumitClient cluster registered to client panel');
-            } catch (\Exception $e) {
-                \Log::error('[SUMIT] Failed to register SumitClient cluster: ' . $e->getMessage());
-            }
-        });
     }
 
     /**

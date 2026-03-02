@@ -226,6 +226,22 @@ return [
         'checkout_charge' => env('OFFICEGUY_CHECKOUT_CHARGE_PATH', 'checkout/charge'),
         'enable_public_checkout' => env('OFFICEGUY_ENABLE_PUBLIC_CHECKOUT', false),
         'public_checkout' => env('OFFICEGUY_PUBLIC_CHECKOUT_PATH', 'checkout/{id}'),
+        // Route name for client login (e.g. 'login' or 'filament.client.auth.login'). Used by CheckEmailController.
+        'client_login_route' => env('OFFICEGUY_CLIENT_LOGIN_ROUTE', 'login'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Notification action routes (optional)
+    |--------------------------------------------------------------------------
+    | Route names for database notification "view" links. Set when using
+    | Filament adapter (e.g. filament.admin.resources.office-guy-transactions.view).
+    |
+    */
+    'notification_routes' => [
+        'transaction_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_TRANSACTION_VIEW'),
+        'document_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_DOCUMENT_VIEW'),
+        'subscription_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_SUBSCRIPTION_VIEW'),
     ],
 
     /*
