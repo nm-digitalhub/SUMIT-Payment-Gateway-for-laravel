@@ -3,7 +3,7 @@
 /**
  * English Translations for SUMIT Payment Gateway
  *
- * Usage in Filament:
+ * Usage in admin resources:
  * protected static ?string $navigationLabel = __('officeguy::officeguy.nav.transactions');
  *
  * Usage in Blade:
@@ -435,7 +435,7 @@ return [
     'about' => [
         // Page Title & Description
         'title' => 'SUMIT Payment Gateway - About',
-        'description' => 'Official Laravel package for SUMIT payment gateway integration. Includes full Filament v4 support, payment management, tokens, documents, subscriptions, webhooks, and more. Built by NM-DigitalHub with focus on quality, security, and maintainability.',
+        'description' => 'Official Laravel package for SUMIT payment gateway integration. Includes payment management, tokens, documents, subscriptions, webhooks, and optional admin panel integration. Built by NM-DigitalHub with focus on quality, security, and maintainability.',
 
         // Section Titles
         'title_version' => 'Version Information',
@@ -468,7 +468,7 @@ return [
         'feature_bit' => 'Bit payment integration',
         'feature_multi_vendor' => 'Multi-vendor support',
         'feature_webhooks' => 'Webhook handling (incoming + outgoing)',
-        'feature_filament' => 'Full Filament v4 integration',
+        'feature_filament' => 'Admin panel integration',
 
         // Legacy Features (full form)
         'features' => [
@@ -479,7 +479,7 @@ return [
             'recurring_billing' => 'Recurring billing',
             'multi_vendor' => 'Multi-vendor support',
             'webhook_handling' => 'Webhook handling (incoming + outgoing)',
-            'filament_integration' => 'Full Filament v4 integration',
+            'filament_integration' => 'Admin panel integration',
         ],
 
         // Statistics

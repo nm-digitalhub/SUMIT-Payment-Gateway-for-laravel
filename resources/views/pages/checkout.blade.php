@@ -1211,7 +1211,7 @@
 
                         if (data.exists) {
                             this.userExists = true;
-                            this.loginUrl = data.login_url || '{{ route("filament.client.auth.login") }}';
+                            this.loginUrl = data.login_url || '{{ route(config("officeguy.routes.client_login_route", "login")) }}';
                         }
                     } catch (error) {
                         console.error('Email check error:', error);

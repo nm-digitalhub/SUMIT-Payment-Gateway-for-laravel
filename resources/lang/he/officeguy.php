@@ -3,7 +3,7 @@
 /**
  * Hebrew (עברית) Translations for SUMIT Payment Gateway
  *
- * Usage in Filament:
+ * Usage in admin resources:
  * protected static ?string $navigationLabel = __('officeguy::officeguy.nav.transactions');
  *
  * Usage in Blade:
@@ -446,7 +446,7 @@ return [
     'about' => [
         // Page Title & Description
         'title' => 'SUMIT Payment Gateway - אודות',
-        'description' => 'חבילת Laravel רשמית לאינטגרציה עם שער התשלומים SUMIT. כוללת תמיכה מלאה ב-Filament v4, ניהול תשלומים, טוקנים, מסמכים, מנויים, Webhooks ועוד. נבנתה על-ידי NM-DigitalHub עם התמקדות באיכות, אבטחה ותחזוקה.',
+        'description' => 'חבילת Laravel רשמית לאינטגרציה עם שער התשלומים SUMIT. כוללת ניהול תשלומים, טוקנים, מסמכים, מנויים, Webhooks ואינטגרציית פאנל ניהול אופציונלית. נבנתה על-ידי NM-DigitalHub עם התמקדות באיכות, אבטחה ותחזוקה.',
 
         // Section Titles
         'title_version' => 'מידע גרסה',
@@ -479,7 +479,7 @@ return [
         'feature_bit' => 'אינטגרציה עם Bit',
         'feature_multi_vendor' => 'תמיכה רב-ספקים',
         'feature_webhooks' => 'טיפול ב-Webhooks (נכנסים + יוצאים)',
-        'feature_filament' => 'אינטגרציה מלאה עם Filament v4',
+        'feature_filament' => 'אינטגרציית פאנל ניהול',
 
         // Legacy Features (full form)
         'features' => [
@@ -490,7 +490,7 @@ return [
             'recurring_billing' => 'חיובים חוזרים',
             'multi_vendor' => 'תמיכה רב-ספקים',
             'webhook_handling' => 'טיפול ב-Webhooks (נכנסים + יוצאים)',
-            'filament_integration' => 'אינטגרציה מלאה עם Filament v4',
+            'filament_integration' => 'אינטגרציית פאנל ניהול',
         ],
 
         // Statistics

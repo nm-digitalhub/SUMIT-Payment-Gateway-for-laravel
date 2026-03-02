@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.0] - 2026-02-27
+
+### ⚠️ BREAKING CHANGES
+
+- **Filament is no longer a core dependency** – The package is now UI-agnostic. Filament admin/client panels, resources, widgets, and clusters have been moved to a separate adapter package: `officeguy/laravel-sumit-gateway-filament` (when published).
+- **Core package has zero Filament references** – No `filament/filament` or `bezhansalleh/filament-plugin-essentials` in `composer.json`. Install the Filament adapter only if you use Filament.
+
+### Removed
+
+- `filament/filament` and `bezhansalleh/filament-plugin-essentials` from `composer.json` (core)
+- All Filament PHP classes from core `src/` (moved to adapter): `src/Filament/*` (PanelProvider, Resources, Pages, Clusters, Widgets, RelationManagers, etc.)
+- All Filament Blade views from core: `resources/views/filament/*`
+- Filament registration from `OfficeGuyServiceProvider` (`registerLivewireComponents`, `registerFilamentClusters`)
+
+### Added
+
+- **Configurable integration points** – Admin/client URLs are no longer hardcoded:
+  - `config('officeguy.routes.client_login_route')` – Login URL used by check-email flow (e.g. Filament client login or custom route)
+  - `config('officeguy.notification_routes.transaction_view')` – Admin view route for transaction notifications
+  - `config('officeguy.notification_routes.document_view')` – Admin view route for document notifications
+  - `config('officeguy.notification_routes.subscription_view')` – Admin view route for subscription notifications
+- **Null-safe checkout views** – All `$client->` in Blade replaced with `$client?->` so checkout works when no client is linked.
+
+### Changed
+
+- **PublicCheckoutController** – Uses only `auth()->user()` and `$user?->client ?? null`. No Filament fallback for user resolution.
+- **CheckEmailController** – Login URL comes from `config('officeguy.routes.client_login_route', 'login')`.
+- **PaymentCompletedNotification, DocumentCreatedNotification, SubscriptionCreatedNotification** – Action URLs use `config('officeguy.notification_routes.*')` when set; otherwise no link.
+- **Bulk action job docblocks** – Filament-specific examples removed or reworded to "admin UI" / "adapter package" so core stays Filament-free.
+- **resources/lang/README.md** – Filament code samples replaced with generic "admin resources" usage.
+
+### Migration Guide
+
+- **Laravel apps without Filament:** Use `officeguy/laravel-sumit-gateway` only. No change.
+- **Laravel apps with Filament:** When the adapter is available, add `officeguy/laravel-sumit-gateway-filament` and configure `officeguy.routes.client_login_route` and `officeguy.notification_routes.*` if you use Filament panels.
+- **Checkout / notifications:** Set `officeguy.routes.client_login_route` (e.g. `filament.client.auth.login`) and the notification view routes in `config/officeguy.php` so emails and checkout redirects point to your admin/client panel.
+
 ## [2.7.0] - 2026-02-21
 
 ### ⚠️ BREAKING CHANGES
@@ -350,8 +387,6 @@ $entity->customer
 ```
 
 Old methods still work but emit deprecation warnings.
-
-## [Unreleased]
 
 ## [v1.21.4] - 2026-01-04
 

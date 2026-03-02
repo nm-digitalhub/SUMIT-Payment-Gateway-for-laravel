@@ -192,7 +192,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Enable database notifications for important events (payments, subscriptions, documents, etc.)
-    | Users will receive notifications in their Filament notification panel
+    | Users will receive notifications in their admin notification panel
     |
     */
     'enable_notifications' => env('OFFICEGUY_ENABLE_NOTIFICATIONS', true),
@@ -226,22 +226,28 @@ return [
         'checkout_charge' => env('OFFICEGUY_CHECKOUT_CHARGE_PATH', 'checkout/charge'),
         'enable_public_checkout' => env('OFFICEGUY_ENABLE_PUBLIC_CHECKOUT', false),
         'public_checkout' => env('OFFICEGUY_PUBLIC_CHECKOUT_PATH', 'checkout/{id}'),
-        // Route name for client login (e.g. 'login' or 'filament.client.auth.login'). Used by CheckEmailController.
+        // Route name for client login. Used by CheckEmailController and checkout views.
         'client_login_route' => env('OFFICEGUY_CLIENT_LOGIN_ROUTE', 'login'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Notification action routes (optional)
+    | UI action routes (optional)
     |--------------------------------------------------------------------------
-    | Route names for database notification "view" links. Set when using
-    | Filament adapter (e.g. filament.admin.resources.office-guy-transactions.view).
+    | Route names for notification links and client-facing actions. Set in your
+    | app or via an adapter (e.g. admin panel transaction view, client ticket create).
+    | Defaults are null; links are omitted when not set.
     |
     */
     'notification_routes' => [
         'transaction_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_TRANSACTION_VIEW'),
         'document_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_DOCUMENT_VIEW'),
         'subscription_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_SUBSCRIPTION_VIEW'),
+        'token_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_TOKEN_VIEW'),
+        'order_view' => env('OFFICEGUY_NOTIFICATION_ROUTE_ORDER_VIEW'),
+        'clients_index' => env('OFFICEGUY_NOTIFICATION_ROUTE_CLIENTS_INDEX'),
+        'ticket_create' => env('OFFICEGUY_NOTIFICATION_ROUTE_TICKET_CREATE'),
+        'profile_page_upgraded' => env('OFFICEGUY_NOTIFICATION_ROUTE_PROFILE_PAGE_UPGRADED'),
     ],
 
     /*
@@ -386,7 +392,7 @@ return [
     |--------------------------------------------------------------------------
     |
     | Configure asynchronous bulk operations with real-time progress tracking.
-    | Uses bytexr/filament-queueable-bulk-actions package.
+    | Uses Laravel Bus::batch() for queueable bulk operations.
     |
     */
     'bulk_actions' => [

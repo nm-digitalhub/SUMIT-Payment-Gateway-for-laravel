@@ -134,10 +134,13 @@
                 {{-- Actions --}}
                 <div class="space-y-3">
                     @auth
-                        <a href="{{ route('filament.client.pages.profile-page-upgraded') }}"
+                        @php $profileRoute = config('officeguy.notification_routes.profile_page_upgraded'); @endphp
+                        @if($profileRoute && \Illuminate\Support\Facades\Route::has($profileRoute))
+                        <a href="{{ route($profileRoute) }}"
                            class="block w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-3 px-6 rounded-lg transition-colors">
                             {{ __('צפה בהזמנות שלי') }}
                         </a>
+                        @endif
                     @endauth
 
                     <a href="{{ url('/') }}"

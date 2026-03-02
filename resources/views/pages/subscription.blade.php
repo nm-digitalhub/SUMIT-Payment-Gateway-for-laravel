@@ -376,7 +376,8 @@
                 <x-heroicon-o-ticket class="w-5 h-5 text-gray-600 flex-shrink-0 mt-0.5" />
                 <div class="text-sm text-gray-700">
                     <span class="font-semibold">{{ __('Support Ticket') }}:</span>
-                    <a href="{{ route('filament.client.resources.tickets.create') }}" class="text-indigo-600 hover:underline">
+                    @php $ticketCreateRoute = config('officeguy.notification_routes.ticket_create'); @endphp
+                    <a href="{{ $ticketCreateRoute && \Illuminate\Support\Facades\Route::has($ticketCreateRoute) ? route($ticketCreateRoute) : '#' }}" class="text-indigo-600 hover:underline">
                         {{ __('Open a cancellation ticket') }}
                     </a>
                 </div>

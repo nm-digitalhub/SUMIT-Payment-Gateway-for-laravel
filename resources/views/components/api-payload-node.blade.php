@@ -27,10 +27,16 @@
     $valueType = null;
     $linkUrl = null;
 
-    // Helper function to build route URL if exists
-    $buildRouteIfExists = function(string $routeName, array $params) {
-        return Route::has($routeName) ? route($routeName, $params) : null;
+    // Helper: build link only when route name is configured and registered
+    $buildRouteIfExists = function(?string $routeName, array $params) {
+        return $routeName && Route::has($routeName) ? route($routeName, $params) : null;
     };
+    $txView = config('officeguy.notification_routes.transaction_view');
+    $docView = config('officeguy.notification_routes.document_view');
+    $subView = config('officeguy.notification_routes.subscription_view');
+    $tokenView = config('officeguy.notification_routes.token_view');
+    $orderView = config('officeguy.notification_routes.order_view');
+    $clientsIndex = config('officeguy.notification_routes.clients_index');
 
     if ($isScalar) {
         if (is_bool($node)) $valueType = 'boolean';
@@ -61,26 +67,24 @@
         default => null,
     };
 
-    // Smart link detection for IDs (only creates links to routes that actually exist)
+    // Smart link detection for IDs (uses config-driven UI routes when set)
     if ($enableLinks && $isScalar && is_numeric($node)) {
         $linkUrl = match(true) {
-            // SUMIT Gateway Cluster resources (corrected route names)
             str_contains($keyLower, 'transaction') && str_contains($keyLower, 'id') =>
-                $buildRouteIfExists('filament.admin.sumit-gateway.resources.transactions.view', ['record' => $node]),
+                $buildRouteIfExists($txView, ['record' => $node]),
             str_contains($keyLower, 'document') && str_contains($keyLower, 'id') =>
-                $buildRouteIfExists('filament.admin.sumit-gateway.resources.documents.view', ['record' => $node]),
+                $buildRouteIfExists($docView, ['record' => $node]),
             str_contains($keyLower, 'subscription') && str_contains($keyLower, 'id') =>
-                $buildRouteIfExists('filament.admin.sumit-gateway.resources.subscriptions.view', ['record' => $node]),
+                $buildRouteIfExists($subView, ['record' => $node]),
             str_contains($keyLower, 'token') && str_contains($keyLower, 'id') =>
-                $buildRouteIfExists('filament.admin.sumit-gateway.resources.tokens.view', ['record' => $node]),
+                $buildRouteIfExists($tokenView, ['record' => $node]),
 
-            // Application main resources (without cluster)
             str_contains($keyLower, 'customer') && str_contains($keyLower, 'id') =>
-                Route::has('filament.admin.resources.clients.index')
-                    ? route('filament.admin.resources.clients.index') . '?tableFilters[sumit_customer_id][value]=' . $node
+                $clientsIndex && Route::has($clientsIndex)
+                    ? route($clientsIndex) . '?tableFilters[sumit_customer_id][value]=' . $node
                     : null,
             str_contains($keyLower, 'order') && str_contains($keyLower, 'id') =>
-                $buildRouteIfExists('filament.admin.resources.orders.view', ['record' => $node]),
+                $buildRouteIfExists($orderView, ['record' => $node]),
 
             default => null,
         };
