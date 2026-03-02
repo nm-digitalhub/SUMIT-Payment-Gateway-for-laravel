@@ -14,7 +14,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * Processes each subscription through `SubscriptionService::cancel()` with validation
  * and error handling for individual records.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -22,7 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * ## Flow
  *
  * ```
- * User selects subscriptions in Filament → Clicks "Cancel Selected"
+ * User selects subscriptions in admin UI → Clicks "Cancel Selected"
  *     ↓
  * Bus::batch dispatches BulkSubscriptionCancelJob for each record
  *     ↓
@@ -47,25 +47,9 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * - **API errors**: SUMIT API failure → retry (via shouldRetry)
  * - **Network errors**: Connection timeout → retry
  *
- * ## Filament Integration
+ * ## Admin UI Integration
  *
- * Used in `SubscriptionResource`:
- * ```php
- * use Filament\Actions\BulkAction;
- * use Illuminate\Support\Facades\Bus;
- *
- * BulkAction::make('cancel_selected')
- *     ->label('Cancel Selected')
- *     ->action(function ($records) {
- *         Bus::batch(
- *             $records
- *                 ->filter(fn ($record) => $record->canBeCancelled())
- *                 ->map(fn ($record) => new BulkSubscriptionCancelJob($record))
- *         )->dispatch();
- *     })
- *     ->requiresConfirmation()
- *     ->color('danger');
- * ```
+ * Used from SubscriptionResource (adapter package) via Bus::batch().
  *
  * @see \OfficeGuy\LaravelSumitGateway\Services\SubscriptionService::cancel()
  * @see \OfficeGuy\LaravelSumitGateway\Models\Subscription::canBeCancelled()

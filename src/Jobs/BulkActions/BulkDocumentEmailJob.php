@@ -14,7 +14,7 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  * Processes each document through `DocumentService::sendByEmail()` to deliver
  * invoices, receipts, and other documents via email.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -22,7 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  * ## Flow
  *
  * ```
- * User selects documents in Filament → Clicks "Email to Customers"
+ * User selects documents in admin UI → Clicks "Email to Customers"
  *     ↓
  * Bus::batch dispatches BulkDocumentEmailJob for each record
  *     ↓
@@ -45,7 +45,7 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  *
  * ## Email Template
  *
- * Uses Filament notification system with customizable templates:
+ * Uses admin UI notification system with customizable templates:
  * - Subject: Document type + number (e.g., "Invoice #INV-2024-001")
  * - Body: Includes document link, amount, and date
  * - Attachment: PDF of the document
@@ -57,22 +57,9 @@ use OfficeGuy\LaravelSumitGateway\Services\DocumentService;
  * - **Email service failure**: Retries via shouldRetry (ConnectionException)
  * - **PDF generation failure**: Throws exception (no retry)
  *
- * ## Filament Integration
+ * ## Admin UI Integration
  *
- * Used in `DocumentResource`:
- * ```php
- * use Filament\Actions\BulkAction;
- * use Illuminate\Support\Facades\Bus;
- *
- * BulkAction::make('email_documents')
- *     ->label('Email to Customers')
- *     ->action(function ($records) {
- *         Bus::batch(
- *             $records->map(fn ($record) => new BulkDocumentEmailJob($record))
- *         )->dispatch();
- *     })
- *     ->requiresConfirmation();
- * ```
+ * Used from DocumentResource (adapter package) via Bus::batch().
  *
  * ## Privacy & Compliance
  *

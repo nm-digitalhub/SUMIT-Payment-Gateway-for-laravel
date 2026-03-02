@@ -13,7 +13,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * Sets `is_active = true` for selected mappings, enabling them for use in
  * payment processing and checkout forms.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -21,7 +21,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * ## Flow
  *
  * ```
- * User selects mappings in Filament → Clicks "Activate"
+ * User selects mappings in admin UI → Clicks "Activate"
  *     ↓
  * Bus::batch dispatches BulkPayableMappingActivateJob for each record
  *     ↓
@@ -50,11 +50,11 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * - **Database connection error**: Retries via shouldRetry (QueryException)
  * - **Record not found**: Throws exception (no retry)
  *
- * ## Filament Integration
+ * ## admin UI Integration
  *
  * Used in `PayableMappingsTableWidget`:
  * ```php
- * use Filament\Actions\BulkAction;
+ * use admin UI\Actions\BulkAction;
  * use Illuminate\Support\Facades\Bus;
  *
  * BulkAction::make('activate_mappings')
@@ -76,7 +76,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * - Takes effect immediately (no cache invalidation needed)
  *
  * @see \OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping
- * @see \OfficeGuy\LaravelSumitGateway\Filament\Widgets\PayableMappingsTableWidget
+ * @see PayableMappingsTableWidget (in adapter package)
  * @see \OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BaseBulkActionJob
  */
 class BulkPayableMappingActivateJob extends BaseBulkActionJob

@@ -14,7 +14,7 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  * Processes each token through `TokenService::syncTokenFromSumit()` to update
  * local token status and metadata from the remote SUMIT system.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -22,7 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  * ## Flow
  *
  * ```
- * User selects tokens in Filament → Clicks "Sync from SUMIT"
+ * User selects tokens in admin UI → Clicks "Sync from SUMIT"
  *     ↓
  * Bus::batch dispatches BulkTokenSyncJob for each record
  *     ↓
@@ -55,22 +55,9 @@ use OfficeGuy\LaravelSumitGateway\Services\TokenService;
  * - **Network timeout**: Retries via shouldRetry (ConnectionException)
  * - **Invalid token format**: Throws exception (no retry)
  *
- * ## Filament Integration
+ * ## Admin UI Integration
  *
- * Used in `TokenResource`:
- * ```php
- * use Filament\Actions\BulkAction;
- * use Illuminate\Support\Facades\Bus;
- *
- * BulkAction::make('sync_all_from_sumit')
- *     ->label('Sync from SUMIT')
- *     ->action(function ($records) {
- *         Bus::batch(
- *             $records->map(fn ($record) => new BulkTokenSyncJob($record))
- *         )->dispatch();
- *     })
- *     ->requiresConfirmation();
- * ```
+ * Used from TokenResource (adapter package) via Bus::batch().
  *
  * ## Performance Considerations
  *

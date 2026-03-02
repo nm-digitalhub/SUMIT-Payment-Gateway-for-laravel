@@ -14,7 +14,7 @@ use Throwable;
  *
  * Abstract base class for all queueable bulk action jobs in the SUMIT Gateway package.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## v2.4.0 Migration
  *
  * Migrated from `Bytexr\QueueableBulkActions\Jobs\BulkActionJob` to native Laravel implementation.
  * Uses native Laravel Bus::batch() for bulk operations.
@@ -74,24 +74,9 @@ use Throwable;
  * }
  * ```
  *
- * ## Integration with Filament v5
+ * ## Integration with admin UI
  *
- * Jobs are triggered from Filament resources using native `Bus::batch()`:
- * ```php
- * use Filament\Actions\BulkAction;
- * use Illuminate\Support\Facades\Bus;
- *
- * BulkAction::make('cancel_selected')
- *     ->action(function ($records) {
- *         Bus::batch(
- *             $records
- *                 ->filter(fn ($record) => $record->canBeCancelled())
- *                 ->map(fn ($record) => new BulkSubscriptionCancelJob($record))
- *         )->dispatch();
- *     });
- * ```
- *
- * @see https://filamentphp.com/docs/5.x/tables/bulk-actions.html
+ * Jobs are triggered from admin resources using native `Bus::batch()`.
  */
 abstract class BaseBulkActionJob implements ShouldQueue
 {

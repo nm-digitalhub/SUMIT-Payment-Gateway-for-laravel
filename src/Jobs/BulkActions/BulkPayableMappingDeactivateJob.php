@@ -13,7 +13,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * Sets `is_active = false` for selected mappings, disabling them from use in
  * payment processing and checkout forms.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -21,7 +21,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * ## Flow
  *
  * ```
- * User selects mappings in Filament → Clicks "Deactivate"
+ * User selects mappings in admin UI → Clicks "Deactivate"
  *     ↓
  * Bus::batch dispatches BulkPayableMappingDeactivateJob for each record
  *     ↓
@@ -50,11 +50,11 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * - **Database connection error**: Retries via shouldRetry (QueryException)
  * - **Record not found**: Throws exception (no retry)
  *
- * ## Filament Integration
+ * ## admin UI Integration
  *
  * Used in `PayableMappingsTableWidget`:
  * ```php
- * use Filament\Actions\BulkAction;
+ * use admin UI\Actions\BulkAction;
  * use Illuminate\Support\Facades\Bus;
  *
  * BulkAction::make('deactivate_mappings')
@@ -85,7 +85,7 @@ use OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping;
  * Only NEW checkouts are affected by deactivated mappings.
  *
  * @see \OfficeGuy\LaravelSumitGateway\Models\PayableFieldMapping
- * @see \OfficeGuy\LaravelSumitGateway\Filament\Widgets\PayableMappingsTableWidget
+ * @see PayableMappingsTableWidget (in adapter package)
  * @see \OfficeGuy\LaravelSumitGateway\Jobs\BulkActions\BaseBulkActionJob
  */
 class BulkPayableMappingDeactivateJob extends BaseBulkActionJob

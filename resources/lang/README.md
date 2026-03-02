@@ -9,35 +9,9 @@ This directory contains translation files for the SUMIT Payment Gateway package.
 
 ## Usage
 
-### In Filament Resources
+### In admin resources
 
-```php
-use Filament\Resources\Resource;
-
-class TransactionResource extends Resource
-{
-    // Use translation keys for navigation
-    protected static ?string $navigationLabel = __('officeguy::officeguy.nav.transactions');
-    protected static ?string $navigationGroup = __('officeguy::officeguy.nav.group');
-
-    // Use in form schemas
-    public static function form(Form $form): Form
-    {
-        return $form->schema([
-            TextInput::make('amount')
-                ->label(__('officeguy::officeguy.fields.amount')),
-
-            Select::make('status')
-                ->label(__('officeguy::officeguy.fields.status'))
-                ->options([
-                    'pending' => __('officeguy::officeguy.status.pending'),
-                    'completed' => __('officeguy::officeguy.status.completed'),
-                    'failed' => __('officeguy::officeguy.status.failed'),
-                ]),
-        ]);
-    }
-}
-```
+Use translation keys for navigation and form labels, e.g. `__('officeguy::officeguy.nav.transactions')`, `__('officeguy::officeguy.fields.amount')`, `__('officeguy::officeguy.status.pending')`.
 
 ### In Blade Views
 
@@ -58,29 +32,7 @@ class TransactionResource extends Resource
 
 ### In Controllers/Services
 
-```php
-use Filament\Notifications\Notification;
-
-class PaymentService
-{
-    public function processPayment($data)
-    {
-        // ... payment logic
-
-        // Success notification
-        Notification::make()
-            ->title(__('officeguy::officeguy.messages.payment_success'))
-            ->success()
-            ->send();
-
-        // Or error notification
-        Notification::make()
-            ->title(__('officeguy::officeguy.messages.payment_failed'))
-            ->danger()
-            ->send();
-    }
-}
-```
+Use `__('officeguy::officeguy.messages.payment_success')` and `__('officeguy::officeguy.messages.payment_failed')` in your notification or flash messages.
 
 ### Settings Page Usage
 
@@ -185,7 +137,7 @@ app()->setLocale('en'); // English
 
 ## Best Practices
 
-1. **Always use translation keys** - Never hardcode text in Filament resources or views
+1. **Always use translation keys** - Never hardcode text in admin resources or views
 2. **Provide both languages** - Ensure all keys exist in both Hebrew and English
 3. **Use descriptive keys** - Make keys self-explanatory
 4. **Keep structure consistent** - Follow the existing hierarchy
@@ -201,7 +153,7 @@ Hebrew is RTL (right-to-left). Ensure your views support RTL:
 </div>
 ```
 
-Filament automatically handles RTL for Hebrew locales.
+Admin UI can handle RTL for Hebrew locales.
 
 ## Translation Coverage
 

@@ -14,7 +14,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * Processes each subscription through `SubscriptionService::processRecurringCharge()`
  * to trigger payment collection before the scheduled billing date.
  *
- * ## Filament v5 Migration (v2.4.0)
+ * ## admin UI v5 Migration (v2.4.0)
  *
  * Migrated from bytexr QueueableBulkAction to native Laravel Bus::batch().
  * Uses native Laravel queue with ShouldQueue interface.
@@ -22,7 +22,7 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * ## Flow
  *
  * ```
- * User selects subscriptions in Filament → Clicks "Charge Now"
+ * User selects subscriptions in admin UI → Clicks "Charge Now"
  *     ↓
  * Bus::batch dispatches BulkSubscriptionChargeJob for each record
  *     ↓
@@ -66,25 +66,9 @@ use OfficeGuy\LaravelSumitGateway\Services\SubscriptionService;
  * - **Token expired**: Throws exception (API response)
  * - **API timeout**: Retries via shouldRetry (GuzzleException)
  *
- * ## Filament Integration
+ * ## Admin UI Integration
  *
- * Used in `SubscriptionResource`:
- * ```php
- * use Filament\Actions\BulkAction;
- * use Illuminate\Support\Facades\Bus;
- *
- * BulkAction::make('charge_now')
- *     ->label('Charge Now')
- *     ->action(function ($records) {
- *         Bus::batch(
- *             $records
- *                 ->filter(fn ($record) => $record->canBeCharged() && $record->recurring_id)
- *                 ->map(fn ($record) => new BulkSubscriptionChargeJob($record))
- *         )->dispatch();
- *     })
- *     ->requiresConfirmation()
- *     ->color('danger'); // Warning color for financial action
- * ```
+ * Used from SubscriptionResource (adapter package) via Bus::batch().
  *
  * ## Security Considerations
  *
