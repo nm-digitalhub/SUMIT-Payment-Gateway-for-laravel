@@ -59,6 +59,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - **Filament adapter (when used)** – Can inject Filament route names via `injectFilamentRouteConfig()` in `SumitGatewayFilamentServiceProvider` so core views get Filament URLs without hardcoding. (Adapter lives in `packages/filament/`; core repo has `packages/` in `.gitignore`.)
 
+## [3.0.2] - 2026-03-03
+
+### Fixed
+
+- **Database portability (MySQL ↔ PostgreSQL)** – Migrations now use only Laravel Schema Builder; removed all MySQL-specific SQL for full compatibility with PostgreSQL.
+  - **`2025_11_30_120000_add_subscription_support_to_documents_table.php`** – Replaced `SHOW INDEX`, `information_schema.KEY_COLUMN_USAGE`, `DATABASE()`, and raw `ALTER TABLE ... ADD/DROP INDEX` with `$table->index()` / `$table->dropIndex()` and `$table->foreign()` / `$table->dropForeign()`. Index names preserved: `officeguy_documents_subscription_id_created_at`, `officeguy_documents_customer_id_document_date`, `officeguy_documents_external_reference`.
+  - **`2025_12_26_000001_add_transaction_linking_fields_to_officeguy_transactions.php`** – Replaced `DB::statement()` for `CREATE INDEX IF NOT EXISTS` / `DROP INDEX IF EXISTS ... ON table` with Schema Builder `$table->index()` and `$table->dropIndex()` so rollback works on PostgreSQL (no MySQL-only `ON table` syntax). Index names preserved: `idx_transaction_type`, `idx_payment_token`.
+- **DB_PORTABILITY_AUDIT_REPORT.md** – Added audit report documenting MySQL/PostgreSQL compatibility findings and portability score.
+
 ## [2.7.0] - 2026-02-21
 
 ### ⚠️ BREAKING CHANGES
