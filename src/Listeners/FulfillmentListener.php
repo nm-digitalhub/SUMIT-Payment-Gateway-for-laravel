@@ -55,7 +55,7 @@ use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
  *
  * Returns `false` for `shouldQueue()` because:
  * - Fulfillment should happen immediately after payment confirmation
- * - For instant delivery products (eSIM, software licenses, etc.)
+     * - For instant delivery items
  * - Projects can override by implementing ShouldQueue on custom handlers
  *
  * @see docs/STATE_MACHINE_ARCHITECTURE.md
@@ -133,7 +133,7 @@ class FulfillmentListener
      * Determine whether the listener should queue.
      *
      * Fulfillment should happen immediately after payment confirmation
-     * for instant delivery products (eSIM, software licenses, etc.)
+     * for instant delivery items
      *
      * Projects can override this by implementing ShouldQueue on custom handlers.
      */

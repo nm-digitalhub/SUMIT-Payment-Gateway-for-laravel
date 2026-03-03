@@ -12,12 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('officeguy_sumit_webhooks', function (Blueprint $table) {
-            $table->foreignId('client_id')
-                ->nullable()
-                ->after('customer_id')
-                ->constrained('clients')
-                ->nullOnDelete();
-
+            $table->unsignedBigInteger('client_id')->nullable()->after('customer_id');
             $table->index(['client_id', 'customer_id'], 'officeguy_sumit_webhooks_client_customer_idx');
         });
     }
@@ -28,7 +23,6 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('officeguy_sumit_webhooks', function (Blueprint $table) {
-            $table->dropForeign(['client_id']);
             $table->dropIndex('officeguy_sumit_webhooks_client_customer_idx');
             $table->dropColumn('client_id');
         });

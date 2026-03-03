@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use App\Models\Client;
-use App\Models\Order;
 use Carbon\Carbon;
+use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
+use OfficeGuy\LaravelSumitGateway\Events\DocumentSynced;
 use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
 use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\GetDocumentDetailsRequest;
@@ -401,15 +401,23 @@ class DocumentService
     }
 
     /**
-     * Sync documents for a given Client (by SUMIT CustomerID) and link to orders when possible.
+     * Sync documents from SUMIT for a given customer (by SUMIT CustomerID).
+     *
+     * Documents are stored in officeguy_documents and associated with the customer via customer_id (SUMIT).
+     * Order linking is not performed by the package. Listen to DocumentSynced in the host to attach
+     * documents to orders (order_id, order_type) using your own schema.
+     *
+     * @see DocumentSynced
+     * @see ORDER_LINKING_EXTRACTION_DIRECTIVE.md
      */
-    public static function syncForClient(Client $client, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): int
+    public static function syncForClient(HasSumitCustomer $customer, ?Carbon $dateFrom = null, ?Carbon $dateTo = null): int
     {
-        if (! $client->sumit_customer_id) {
+        $sumitCustomerId = $customer->getSumitCustomerId();
+        if (! $sumitCustomerId) {
             return 0;
         }
 
-        $documents = self::fetchFromSumit((int) $client->sumit_customer_id, $dateFrom, $dateTo);
+        $documents = self::fetchFromSumit((int) $sumitCustomerId, $dateFrom, $dateTo);
         $synced = 0;
 
         foreach ($documents as $doc) {
@@ -433,31 +441,6 @@ class DocumentService
                 ]
             );
 
-            // Link to order by external reference or document number
-            $order = null;
-            $ext = $doc['ExternalReference'] ?? null;
-            if ($ext) {
-                $order = Order::where('client_id', $client->id)
-                    ->where(function ($q) use ($ext): void {
-                        $q->where('order_number', $ext)
-                            ->orWhere('id', is_numeric($ext) ? (int) $ext : 0);
-                    })
-                    ->latest('id')
-                    ->first();
-            }
-
-            if (! $order && ! empty($doc['DocumentNumber'])) {
-                $order = Order::where('client_id', $client->id)
-                    ->where('order_number', $doc['DocumentNumber'])
-                    ->latest('id')
-                    ->first();
-            }
-
-            if ($order) {
-                $document->order_id = $order->id;
-                $document->order_type = Order::class;
-            }
-
             // Fetch items/details for richer data (best effort)
             if (empty($document->items) && ! empty($doc['DocumentID'])) {
                 $details = self::getDocumentDetails($doc['DocumentID']);
@@ -467,6 +450,7 @@ class DocumentService
             }
 
             $document->save();
+            event(new DocumentSynced($document, $doc));
             $synced++;
         }
 
@@ -656,24 +640,12 @@ class DocumentService
 
         $matches = [];
 
-        // Get ALL subscriptions for this customer (including cancelled ones)
-        // IMPORTANT: We don't filter by status here because documents can contain
-        // charges for subscriptions that were later cancelled/paused
-        // We need to handle polymorphic 'subscriber' relationship properly
-        // Since subscriber can be User or other models, we check all possible types
+        // Get ALL subscriptions for this customer (including cancelled ones).
+        // Uses Eloquent whereHas on morph 'subscriber'; no hardcoded table or morph type.
         $subscriptions = \OfficeGuy\LaravelSumitGateway\Models\Subscription::query()
-            ->where(function ($q) use ($sumitCustomerId): void {
-                // For User subscribers (most common case)
-                $q->where('subscriber_type', 'App\\Models\\User')
-                    ->whereIn('subscriber_id', function ($subQ) use ($sumitCustomerId): void {
-                        $subQ->select('id')
-                            ->from('users')
-                            ->where('sumit_customer_id', $sumitCustomerId);
-                    });
-
-                // TODO: Add other subscriber types if needed (e.g., 'App\Models\Client')
+            ->whereHas('subscriber', function ($q) use ($sumitCustomerId): void {
+                $q->where('sumit_customer_id', $sumitCustomerId);
             })
-            // NO status filter - we want ALL subscriptions (active, cancelled, paused, etc.)
             ->get();
 
         // For each item in the document, try to match it to a subscription

@@ -29,13 +29,7 @@ enum PayableType: string
     case INFRASTRUCTURE = 'infrastructure';
 
     /**
-     * Digital Products
-     *
-     * Instantly deliverable digital goods:
-     * - eSIM packages
-     * - Software licenses
-     * - Digital downloads
-     * - API access tokens
+     * Instantly deliverable (host-defined semantics).
      */
     case DIGITAL_PRODUCT = 'digital_product';
 

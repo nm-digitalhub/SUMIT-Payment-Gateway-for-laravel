@@ -43,7 +43,7 @@ use Illuminate\Support\Collection;
  * - `metadata.sku` or `sku` → SUMIT 'sku'
  * - `quantity` → SUMIT 'quantity' (float)
  * - `price_unit` or `unit_price` → SUMIT 'unit_price' (float)
- * - `package_id` or `product_id` → SUMIT 'product_id'
+ * - `product_id` or equivalent line identifier → SUMIT 'product_id'
  * - `metadata.variation_id` → SUMIT 'variation_id'
  *
  * ## Design Principles
@@ -92,16 +92,15 @@ trait HasEloquentLineItems
         // Map Eloquent models to SUMIT API format (adaptive field mapping)
         return $items->map(fn ($line): array => [
             'name' => $line->name,
-            // Adaptive SKU: Check metadata first, then direct field, then generate from package_id
+            // Adaptive SKU: Check metadata first, then direct field
             'sku' => data_get($line, 'metadata.sku')
                 ?? $line->sku
-                ?? ($line->package_id ? "PKG-{$line->package_id}" : null),
+                ?? (isset($line->product_id) ? 'ID-' . $line->product_id : (isset($line->package_id) ? 'ID-' . $line->package_id : null)),
             // Quantity (cast to float for API)
             'quantity' => (float) $line->quantity,
             // Adaptive unit_price: Support both price_unit and unit_price field names
             'unit_price' => (float) ($line->price_unit ?? $line->unit_price ?? 0),
-            // Adaptive product_id: Support both package_id and product_id
-            'product_id' => $line->package_id ?? $line->product_id ?? null,
+            'product_id' => $line->product_id ?? (isset($line->package_id) ? $line->package_id : null),
             // Variation ID from metadata
             'variation_id' => data_get($line, 'metadata.variation_id'),
         ])->toArray();

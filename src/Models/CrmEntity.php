@@ -39,8 +39,8 @@ use OfficeGuy\LaravelSumitGateway\Services\CustomerService;
  * @property \Carbon\Carbon $updated_at
  * @property \Carbon\Carbon|null $deleted_at
  * @property-read CrmFolder $folder
- * @property-read \App\Models\User|null $owner
- * @property-read \App\Models\User|null $assigned
+ * @property-read object|null $owner Staff model (config: officeguy.staff_model)
+ * @property-read object|null $assigned Staff model (config: officeguy.staff_model)
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntityField> $customFields
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmActivity> $activities
  * @property-read \Illuminate\Database\Eloquent\Collection<CrmEntity> $relatedFrom
@@ -125,19 +125,14 @@ class CrmEntity extends Model
     }
 
     /**
-     * Get the customer relationship using dynamic model resolution.
-     *
-     * This method uses app('officeguy.customer_model') with 3-layer priority:
-     * 1. Database: officeguy_settings.customer_model_class (Admin Panel editable)
-     * 2. Config: officeguy.models.customer (new nested structure)
-     * 3. Config: officeguy.customer_model_class (legacy flat structure)
-     *
-     * Fallback: If no customer model is configured, defaults to \App\Models\Client
-     * for backward compatibility.
+     * Get the customer relationship using container resolution only (no fallback).
      */
     public function customer(): BelongsTo
     {
-        $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'client_id')->whereRaw('1 = 0');
+        }
 
         return $this->belongsTo($customerModel, 'client_id');
     }
@@ -160,23 +155,29 @@ class CrmEntity extends Model
     }
 
     /**
-     * Get the user who owns this entity.
-     *
-     * @return BelongsTo<\App\Models\User, CrmEntity>
+     * Get the user who owns this entity. Uses config('officeguy.staff_model').
      */
     public function owner(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'owner_user_id');
+        $staffModel = config('officeguy.staff_model');
+        if (! $staffModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'owner_user_id')->whereRaw('1 = 0');
+        }
+
+        return $this->belongsTo($staffModel, 'owner_user_id');
     }
 
     /**
-     * Get the user this entity is assigned to.
-     *
-     * @return BelongsTo<\App\Models\User, CrmEntity>
+     * Get the user this entity is assigned to. Uses config('officeguy.staff_model').
      */
     public function assigned(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'assigned_to_user_id');
+        $staffModel = config('officeguy.staff_model');
+        if (! $staffModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'assigned_to_user_id')->whereRaw('1 = 0');
+        }
+
+        return $this->belongsTo($staffModel, 'assigned_to_user_id');
     }
 
     /**

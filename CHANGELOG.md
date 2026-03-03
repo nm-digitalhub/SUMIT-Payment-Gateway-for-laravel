@@ -5,6 +5,26 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0-rc1] - 2026-03-04 (Release Candidate)
+
+### Phase 4.6 — Domain vocabulary elimination
+
+- **Fulfillment:** Type-specific handlers (Digital, Infrastructure, Subscription) removed. All types use a single event-only handler that dispatches `PayablePaid`. Host must listen to `PayablePaid` for any product-specific fulfillment.
+- **Checkout view:** View selection no longer based on PayableType. Host sets `officeguy.checkout.view_resolver` (callable `(Request, Payable) -> ?string`). If unset, package uses `officeguy.checkout.default_view` (single default).
+- **Domain terms:** Removed esim/package/digital from core branching, view resolution, and fulfillment. PayableType enum retained for contract; no routing/view/fulfillment logic branches on product-type strings. See `docs/CORE_VS_HOST_RESPONSIBILITIES.md`.
+
+### Phase 4.7 — Public package readiness gate
+
+- **Hard gates verified (zero):** No `App\Models`, `App\Jobs`, `App\Enums`; no host schema literals (`from('users')`, `constrained('clients')`); no checkout type coupling (`checkout_models`, showPackage/processPackage/showEsim/processEsim); no MySQL-only migration SQL.
+- **Autoload and migrations:** No references to removed handler classes; all FKs in migrations point to package tables only; upgrade migration for dropping `client_id` FKs is idempotent.
+- **Result:** READY TO TAG. See `docs/PHASE47_READINESS_GATE_REPORT.md`.
+
+### Added
+
+- **Integration API surface:** `INTEGRATION_API_SURFACE.md` — events and config keys required for host integration (e.g. event invitations / table seating) without modifying core or reintroducing host coupling.
+
+---
+
 ## [3.0.0] - 2026-02-27
 
 ### ⚠️ BREAKING CHANGES

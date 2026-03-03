@@ -14,13 +14,13 @@ use OfficeGuy\LaravelSumitGateway\Services\PayableMappingService;
  * Wraps any Eloquent model to implement the Payable interface using custom field mappings.
  * Automatically loads mappings from the database (payable_field_mappings table).
  *
- * This allows models like MayaNetEsimProduct to be used as Payable objects
+ * Wraps any Eloquent model as Payable using field mapping.
  * without modifying the model class or implementing the interface directly.
  *
  * @example
- * $esim = MayaNetEsimProduct::find(1);
- * $payable = new DynamicPayableWrapper($esim);
- * $amount = $payable->getPayableAmount(); // Returns $esim->final_price_ils (if mapped)
+ * $model = YourPayableModel::find(1);
+ * $payable = new DynamicPayableWrapper($model);
+ * $amount = $payable->getPayableAmount(); // Returns mapped amount from model
  */
 class DynamicPayableWrapper implements Payable
 {

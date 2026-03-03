@@ -54,7 +54,7 @@ class ServiceDataFactory
      * Priority:
      * 1. Payable::service_type property
      * 2. Payable::getServiceType() method
-     * 3. Class name inference (DomainPackage → 'domain')
+     * 3. Class name inference (custom payable class → service type)
      * 4. PayableType fallback
      *
      * @param  mixed  $payable  The payable entity
@@ -87,14 +87,8 @@ class ServiceDataFactory
             return 'ssl';
         }
 
-        // Priority 4: Fallback to PayableType
-        // ⚠️ Returns values that have handlers in match() above
-        return match ($payable->getPayableType()) {
-            PayableType::INFRASTRUCTURE => 'domain', // Default for infrastructure
-            PayableType::DIGITAL_PRODUCT => 'digital',
-            PayableType::SUBSCRIPTION => 'subscription',
-            default => 'generic',
-        };
+        // Priority 4: Fallback – return generic; host can override via class name or custom logic.
+        return 'generic';
     }
 
     /**

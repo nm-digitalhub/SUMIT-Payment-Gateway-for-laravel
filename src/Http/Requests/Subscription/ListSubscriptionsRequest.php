@@ -40,7 +40,7 @@ use Saloon\Traits\Body\HasJsonBody;
  *           "ID": "456",
  *           "Name": "Monthly Subscription",
  *           "SKU": "SUB-001",
- *           "Description": "Premium Package"
+ *           "Description": "Premium plan"
  *         },
  *         "UnitPrice": 99.00,
  *         "Quantity": 1,

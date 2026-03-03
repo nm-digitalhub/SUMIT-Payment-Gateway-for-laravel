@@ -4,25 +4,21 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Handlers;
 
+use OfficeGuy\LaravelSumitGateway\Events\PayablePaid;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 use OfficeGuy\LaravelSumitGateway\Services\OfficeGuyApi;
 
 /**
  * Generic Fulfillment Handler (Safety Net)
  *
- * Handles all orders that don't match specific PayableTypes.
- * Acts as a fallback to ensure NO orders are missed.
+ * Handles all payables that don't match specific PayableTypes.
+ * Dispatches PayablePaid event; host listens to run fulfillment (e.g. jobs).
  *
- * Dispatches to app-specific ProcessPaidOrderJob for:
- * - Unknown service types
- * - Custom products
- * - Future expansions
+ * @see PayablePaid
+ * @see PHASE4.md
  */
 class GenericFulfillmentHandler
 {
-    /**
-     * Handle generic fulfillment
-     */
     public function handle(OfficeGuyTransaction $transaction): void
     {
         OfficeGuyApi::writeToLog(
@@ -41,25 +37,6 @@ class GenericFulfillmentHandler
             return;
         }
 
-        // Dispatch to application's provisioning job
-        if ($payable instanceof \App\Models\Order) {
-            \App\Jobs\ProcessPaidOrderJob::dispatch($payable->id);
-
-            OfficeGuyApi::writeToLog(
-                "GenericFulfillmentHandler: Dispatched ProcessPaidOrderJob for order {$payable->id} (service_type: {$payable->service_type->value})",
-                'info'
-            );
-
-            // Alert: This means we're using fallback - might need specific handler
-            OfficeGuyApi::writeToLog(
-                "GenericFulfillmentHandler: Consider creating specific handler for service_type '{$payable->service_type->value}'",
-                'notice'
-            );
-        } else {
-            OfficeGuyApi::writeToLog(
-                'GenericFulfillmentHandler: Payable is not an Order instance (type: ' . $payable::class . ')',
-                'warning'
-            );
-        }
+        event(new PayablePaid($transaction, $payable));
     }
 }

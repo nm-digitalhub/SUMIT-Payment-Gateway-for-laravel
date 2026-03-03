@@ -103,7 +103,7 @@ return [
     */
     'customer_merging_enabled' => env('OFFICEGUY_CUSTOMER_MERGING_ENABLED', false),
     'customer_local_sync_enabled' => env('OFFICEGUY_CUSTOMER_LOCAL_SYNC_ENABLED', false),
-    'customer_model_class' => env('OFFICEGUY_CUSTOMER_MODEL_CLASS', 'App\\Models\\Client'),
+    'customer_model_class' => env('OFFICEGUY_CUSTOMER_MODEL_CLASS'),
 
     /*
     |--------------------------------------------------------------------------
@@ -132,6 +132,35 @@ return [
         'customer' => null,
         'order' => null,
     ],
+
+    /*
+    | Order model class for listeners (e.g. AutoCreateUserListener). No fallback.
+    */
+    'order' => [
+        'model' => env('OFFICEGUY_ORDER_MODEL'),
+    ],
+
+    /*
+    | Guest user creation: role value (string) and auth model class. No enum.
+    */
+    'guest_user_role' => env('OFFICEGUY_GUEST_USER_ROLE', 'client'),
+    'guest_user_model' => env('OFFICEGUY_GUEST_USER_MODEL'), // defaults to staff_model when null
+
+    /*
+    | SMS model class for debt collection (DebtService). If null, SMS is skipped.
+    */
+    'sms_message_model' => env('OFFICEGUY_SMS_MESSAGE_MODEL'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Staff / Auth Model (Phase 4)
+    |--------------------------------------------------------------------------
+    |
+    | Class name for CRM owner/assigned relations (e.g. your User model).
+    | Required for CrmEntity::owner() and CrmEntity::assigned() to work.
+    |
+    */
+    'staff_model' => env('OFFICEGUY_STAFF_MODEL'),
 
     /*
     |--------------------------------------------------------------------------
@@ -291,6 +320,18 @@ return [
     'order' => [
         'resolver' => null, // fn(string|int $orderId): ?Payable
         'model' => env('OFFICEGUY_ORDER_MODEL'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Checkout View (Phase 4.6)
+    |--------------------------------------------------------------------------
+    | Callable(Request $request, Payable $payable): ?string
+    | If set and returns a non-empty view name, that view is used. Otherwise default checkout view.
+    */
+    'checkout' => [
+        'view_resolver' => null,
+        'default_view' => 'officeguy::pages.checkout',
     ],
 
     /*

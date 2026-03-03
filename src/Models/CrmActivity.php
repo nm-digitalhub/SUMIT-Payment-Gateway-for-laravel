@@ -93,12 +93,13 @@ class CrmActivity extends Model
      * 2. Config: officeguy.models.customer (new nested structure)
      * 3. Config: officeguy.customer_model_class (legacy flat structure)
      *
-     * Fallback: If no customer model is configured, defaults to \App\Models\Client
-     * for backward compatibility.
      */
     public function customer(): BelongsTo
     {
-        $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'client_id')->whereRaw('1 = 0');
+        }
 
         return $this->belongsTo($customerModel, 'client_id');
     }
@@ -121,19 +122,20 @@ class CrmActivity extends Model
     }
 
     /**
-     * Get the user who created/owns this activity.
-     *
-     * @return BelongsTo<\App\Models\User, CrmActivity>
+     * Get the user who created/owns this activity. Uses config('officeguy.staff_model').
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(\App\Models\User::class, 'user_id');
+        $staffModel = config('officeguy.staff_model');
+        if (! $staffModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'user_id')->whereRaw('1 = 0');
+        }
+
+        return $this->belongsTo($staffModel, 'user_id');
     }
 
     /**
      * Alias for user() relationship for better readability.
-     *
-     * @return BelongsTo<\App\Models\User, CrmActivity>
      */
     public function createdBy(): BelongsTo
     {

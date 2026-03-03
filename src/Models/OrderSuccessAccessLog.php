@@ -74,7 +74,7 @@ class OrderSuccessAccessLog extends Model
     /**
      * Create log entry for successful access
      *
-     * @param  object  $payable  The Payable entity (Order, Package, etc.)
+     * @param  object  $payable  The Payable entity (order or any Payable)
      * @param  string  $tokenHash  SHA256 hash of the token used
      * @param  string  $nonce  Nonce used for access
      * @param  string  $ip  Client IP address

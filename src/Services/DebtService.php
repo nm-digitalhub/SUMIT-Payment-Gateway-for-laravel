@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
-use App\Models\SmsMessage;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
@@ -289,12 +288,17 @@ class DebtService
         }
 
         if ($phone && $smsEnabled) {
-            $sms = SmsMessage::createOutbound([
-                'destination' => $phone,
-                'sender' => config('sms.default_sender', 'ExtraMobile'),
-                'message' => "לינק לתשלום חוב ₪{$amount}: {$paymentUrl}",
-            ]);
-            $sms->sendViaExm();
+            $smsClass = config('officeguy.sms_message_model');
+            if ($smsClass && class_exists($smsClass) && method_exists($smsClass, 'createOutbound')) {
+                $sms = $smsClass::createOutbound([
+                    'destination' => $phone,
+                    'sender' => config('sms.default_sender', 'ExtraMobile'),
+                    'message' => "לינק לתשלום חוב ₪{$amount}: {$paymentUrl}",
+                ]);
+                if (method_exists($sms, 'sendViaExm')) {
+                    $sms->sendViaExm();
+                }
+            }
         }
 
         return [
