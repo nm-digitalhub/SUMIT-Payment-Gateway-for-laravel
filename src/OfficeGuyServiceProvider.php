@@ -272,6 +272,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Register Blade components (v2.2.0)
         if (class_exists(\Illuminate\Support\Facades\Blade::class)) {
             \Illuminate\Support\Facades\Blade::component('officeguy::payment-form', \OfficeGuy\LaravelSumitGateway\View\Components\PaymentForm::class);
+            \Illuminate\Support\Facades\Blade::component('officeguy::payment-widget', \OfficeGuy\LaravelSumitGateway\View\Components\PaymentWidget::class);
         }
     }
 
