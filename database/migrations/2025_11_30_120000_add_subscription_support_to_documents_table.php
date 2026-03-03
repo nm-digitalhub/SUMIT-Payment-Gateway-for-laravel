@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -75,39 +74,27 @@ return new class extends Migration
             }
         });
 
-        // Add indexes using raw SQL to avoid duplicates
-        $indexes = [
-            'officeguy_documents_subscription_id_created_at' => 'subscription_id, created_at',
-            'officeguy_documents_customer_id_document_date' => 'customer_id, document_date',
-            'officeguy_documents_external_reference' => 'external_reference',
-        ];
-
-        foreach ($indexes as $indexName => $columns) {
-            $exists = DB::select('SHOW INDEX FROM officeguy_documents WHERE Key_name = ?', [$indexName]);
-            if (empty($exists)) {
-                DB::statement("ALTER TABLE officeguy_documents ADD INDEX {$indexName} ({$columns})");
+        // Add indexes via Schema Builder (portable: MySQL + PostgreSQL)
+        Schema::table('officeguy_documents', function (Blueprint $table) {
+            if (Schema::hasColumn('officeguy_documents', 'subscription_id') && Schema::hasColumn('officeguy_documents', 'created_at')) {
+                $table->index(['subscription_id', 'created_at'], 'officeguy_documents_subscription_id_created_at');
             }
-        }
+            if (Schema::hasColumn('officeguy_documents', 'customer_id') && Schema::hasColumn('officeguy_documents', 'document_date')) {
+                $table->index(['customer_id', 'document_date'], 'officeguy_documents_customer_id_document_date');
+            }
+            if (Schema::hasColumn('officeguy_documents', 'external_reference')) {
+                $table->index('external_reference', 'officeguy_documents_external_reference');
+            }
+        });
 
         // Foreign key (only if subscriptions table exists)
-        if (Schema::hasTable('officeguy_subscriptions')) {
-            // Check if foreign key doesn't already exist
-            $foreignKeys = DB::select("
-                SELECT CONSTRAINT_NAME
-                FROM information_schema.KEY_COLUMN_USAGE
-                WHERE TABLE_SCHEMA = DATABASE()
-                AND TABLE_NAME = 'officeguy_documents'
-                AND COLUMN_NAME = 'subscription_id'
-                AND REFERENCED_TABLE_NAME IS NOT NULL
-            ");
-
-            if (empty($foreignKeys)) {
-                Schema::table('officeguy_documents', function (Blueprint $table) {
-                    $table->foreign('subscription_id')
-                        ->references('id')->on('officeguy_subscriptions')
-                        ->onDelete('set null');
-                });
-            }
+        if (Schema::hasTable('officeguy_subscriptions') && Schema::hasColumn('officeguy_documents', 'subscription_id')) {
+            Schema::table('officeguy_documents', function (Blueprint $table) {
+                $table->foreign('subscription_id')
+                    ->references('id')
+                    ->on('officeguy_subscriptions')
+                    ->onDelete('set null');
+            });
         }
     }
 
@@ -117,36 +104,16 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('officeguy_documents', function (Blueprint $table) {
-            // Drop foreign key first if exists
-            if (Schema::hasTable('officeguy_subscriptions')) {
-                $foreignKeys = DB::select("
-                    SELECT CONSTRAINT_NAME
-                    FROM information_schema.KEY_COLUMN_USAGE
-                    WHERE TABLE_SCHEMA = DATABASE()
-                    AND TABLE_NAME = 'officeguy_documents'
-                    AND COLUMN_NAME = 'subscription_id'
-                    AND REFERENCED_TABLE_NAME IS NOT NULL
-                ");
-
-                foreach ($foreignKeys as $fk) {
-                    $table->dropForeign([$fk->CONSTRAINT_NAME]);
-                }
+            if (Schema::hasTable('officeguy_subscriptions') && Schema::hasColumn('officeguy_documents', 'subscription_id')) {
+                $table->dropForeign(['subscription_id']);
             }
         });
 
-        // Drop indexes
-        $indexes = [
-            'officeguy_documents_subscription_id_created_at',
-            'officeguy_documents_customer_id_document_date',
-            'officeguy_documents_external_reference',
-        ];
-
-        foreach ($indexes as $indexName) {
-            $exists = DB::select('SHOW INDEX FROM officeguy_documents WHERE Key_name = ?', [$indexName]);
-            if (! empty($exists)) {
-                DB::statement("ALTER TABLE officeguy_documents DROP INDEX {$indexName}");
-            }
-        }
+        Schema::table('officeguy_documents', function (Blueprint $table) {
+            $table->dropIndex('officeguy_documents_subscription_id_created_at');
+            $table->dropIndex('officeguy_documents_customer_id_document_date');
+            $table->dropIndex('officeguy_documents_external_reference');
+        });
 
         Schema::table('officeguy_documents', function (Blueprint $table) {
             // Drop columns if they exist
