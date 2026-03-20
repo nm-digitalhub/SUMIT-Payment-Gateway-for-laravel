@@ -5,6 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [3.0.3] - 2026-03-20
+
+### Changed
+
+- **Laravel 13 support** - Expanded Composer support to allow `laravel/framework:^13.0` while preserving Laravel 12 compatibility.
+- **Testbench compatibility** - Expanded `orchestra/testbench` support to `^10.0 || ^11.0` so package tests can run on Laravel 12 and 13.
+- **Documentation** - Updated `README.md` and package metadata to state Laravel 12/13 support and clarify the PHP 8.3 requirement for Laravel 13.
+
 ## [3.0.0] - 2026-02-27
 
 ### ⚠️ BREAKING CHANGES
