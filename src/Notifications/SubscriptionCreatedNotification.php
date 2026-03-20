@@ -17,7 +17,7 @@ class SubscriptionCreatedNotification extends Notification
      */
     public function __construct(
         public readonly Subscription $subscription,
-        public readonly array $response
+        public readonly array $response = []
     ) {}
 
     /**
@@ -40,7 +40,7 @@ class SubscriptionCreatedNotification extends Notification
         return [
             'title' => __('officeguy::notifications.subscription_created.title'),
             'message' => __('officeguy::notifications.subscription_created.message', [
-                'amount' => number_format($this->subscription->amount, 2),
+                'amount' => number_format((float) $this->subscription->amount, 2),
                 'interval' => $this->subscription->interval,
             ]),
             'icon' => 'heroicon-o-arrow-path',
