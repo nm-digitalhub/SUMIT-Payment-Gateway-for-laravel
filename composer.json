@@ -1,9 +1,10 @@
 {
     "name": "officeguy/laravel-sumit-gateway",
-    "description": "Laravel package for SUMIT payment gateway (core) - 1:1 port from WooCommerce (Laravel 13 Compatible)",
+    "description": "Laravel package for SUMIT payment gateway (core) - 1:1 port from WooCommerce (Laravel 12/13 Compatible)",
     "type": "library",
     "keywords": [
         "laravel",
+        "laravel-12",
         "laravel-13",
         "payment",
         "gateway",
@@ -14,7 +15,7 @@
         "israel"
     ],
     "license": "MIT",
-    "version": "5.0.0-rc2",
+    "version": "5.0.0-rc3",
     "authors": [
         {
             "name": "SUMIT",
@@ -26,15 +27,15 @@
         }
     ],
     "require": {
-        "php": "^8.3",
+        "php": "^8.2",
         "guzzlehttp/guzzle": "^7.0",
-        "laravel/framework": "^13.0",
+        "laravel/framework": "^12.0 || ^13.0",
         "saloonphp/saloon": "^3.14"
     },
     "require-dev": {
         "knuckleswtf/scribe": "^5.6",
         "laravel/pint": "^1.27",
-        "orchestra/testbench": "^10.0",
+        "orchestra/testbench": "^10.0 || ^11.0",
         "phpunit/phpunit": "^11.0|^12.0",
         "rector/rector": "^2.3"
     },

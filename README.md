@@ -1,6 +1,12 @@
-# SUMIT (OfficeGuy) Payment Gateway for Laravel 12 + Filament v4
+# SUMIT (OfficeGuy) Payment Gateway for Laravel 12/13
 
 **Clone 1:1 של התוסף WooCommerce `woo-payment-gateway-officeguy` עבור Laravel.**
+
+תמיכה רשמית:
+- Laravel 12
+- Laravel 13
+- PHP 8.2+ עבור Laravel 12
+- PHP 8.3+ עבור Laravel 13
 
 - תשלומים בכרטיס אשראי (PCI modes: no/redirect/yes)
 - תשלומי Bit
@@ -50,6 +56,8 @@
 composer require officeguy/laravel-sumit-gateway
 php artisan migrate   # יריץ את כל מיגרציות החבילה
 ```
+
+> Laravel 13 דורש PHP 8.3 ומעלה. אם האפליקציה שלכם עדיין על PHP 8.2, הישארו עם Laravel 12.
 
 > אם תרצה להעתיק גם קונפיג/מיגרציות/תצוגות: `--tag=officeguy-config`, `--tag=officeguy-migrations`, `--tag=officeguy-views`. ראה [קבצים לפרסום](#קבצים-לפרסום-publishable-assets) לפרטים נוספים.
 

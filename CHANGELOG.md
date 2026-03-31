@@ -5,6 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0-rc3] - 2026-04-01
+
+### Added
+
+- **Accounting income items (OpenAPI + Saloon):** `IncomeItemService`, `IncomeItemData`, Saloon requests for create/list; `SumitApiResponse` normalizes OpenAPI `Status` strings and legacy numeric codes.
+- **CRM product sync:** `SumitProductService` and config keys `crm_products_sumit_folder_id` / `crm_products_folder_id`.
+
+### Changed
+
+- **Release branch:** Merged `main` into `release/5.0.0-rc1` so RC line includes Laravel 12/13 matrix and Composer `5.0.0-rc3`.
+
+---
+
 ## [5.0.0-rc1] - 2026-03-04 (Release Candidate)
 
 ### Phase 4.6 — Domain vocabulary elimination
@@ -24,6 +37,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Integration API surface:** `INTEGRATION_API_SURFACE.md` — events and config keys required for host integration (e.g. event invitations / table seating) without modifying core or reintroducing host coupling.
 
 ---
+
+## [3.0.3] - 2026-03-20
+
+### Changed
+
+- **Laravel 13 support** - Expanded Composer support to allow `laravel/framework:^13.0` while preserving Laravel 12 compatibility.
+- **Testbench compatibility** - Expanded `orchestra/testbench` support to `^10.0 || ^11.0` so package tests can run on Laravel 12 and 13.
+- **Documentation** - Updated `README.md` and package metadata to state Laravel 12/13 support and clarify the PHP 8.3 requirement for Laravel 13.
 
 ## [3.0.0] - 2026-02-27
 
