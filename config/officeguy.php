@@ -295,6 +295,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | CRM — commercial products (plans) sync
+    |--------------------------------------------------------------------------
+    |
+    | Product plans created in your app can be mirrored as CRM entities in SUMIT.
+    | Set either the SUMIT folder ID directly, or the local officeguy_crm_folders ID
+    | (the row must have sumit_folder_id populated after folder sync).
+    |
+    */
+    'crm_products_sumit_folder_id' => env('OFFICEGUY_CRM_PRODUCTS_SUMIT_FOLDER_ID'),
+    'crm_products_folder_id' => env('OFFICEGUY_CRM_PRODUCTS_FOLDER_ID'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Stock Management
     |--------------------------------------------------------------------------
     */
