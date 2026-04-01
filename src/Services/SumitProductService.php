@@ -51,7 +51,9 @@ final class SumitProductService
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
                 'FolderID' => $folder['sumit_folder_id'],
-                'Fields' => $fields,
+                'Entity' => [
+                    'Properties' => $fields,
+                ],
             ];
 
             $response = OfficeGuyApi::post(
@@ -131,8 +133,10 @@ final class SumitProductService
         try {
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'EntityID' => $sumitEntityId,
-                'Fields' => $fields,
+                'Entity' => [
+                    'ID' => $sumitEntityId,
+                    'Properties' => $fields,
+                ],
             ];
 
             $response = OfficeGuyApi::post(
@@ -157,7 +161,7 @@ final class SumitProductService
             }
 
             OfficeGuyApi::writeToLog(
-                'SUMIT product entity updated: SUMIT ID ' . $sumitEntityId,
+                'SUMIT product entity updated: SUMIT ID ' . $sumitEntityId . ', fields: ' . json_encode($fields),
                 'info'
             );
 
