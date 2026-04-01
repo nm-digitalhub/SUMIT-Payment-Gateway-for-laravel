@@ -50,8 +50,8 @@ final class SumitProductService
         try {
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'FolderID' => $folder['sumit_folder_id'],
                 'Entity' => [
+                    'Folder' => (string) $folder['sumit_folder_id'],
                     'Properties' => $fields,
                 ],
             ];
