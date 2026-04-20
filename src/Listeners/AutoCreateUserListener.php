@@ -4,40 +4,57 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Listeners;
 
-use OfficeGuy\LaravelSumitGateway\Events\GuestUserCreated;
-use OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted;
+use App\Mail\GuestWelcomeWithPasswordMail;
+use App\Models\Client;
+use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use OfficeGuy\LaravelSumitGateway\Events\PaymentCompleted;
 
 /**
- * Auto-Create User Listener (Phase 4: config-only, no host references)
+ * Auto-Create User Listener
  *
- * Listens to PaymentCompleted and creates a guest user/customer using config:
- * - officeguy.order.model: order model class
- * - officeguy.guest_user_model or officeguy.staff_model: user model class
- * - officeguy.customer_model (container): customer model class
- * - officeguy.guest_user_role: role value (string, no enum)
+ * Listens to PaymentCompleted event and automatically creates a User account
+ * for guest users after successful payment.
  *
- * Fires GuestUserCreated so the host can send welcome email.
+ * Features:
+ * - Creates User with temporary password (12 chars, 7 days expiry)
+ * - Creates Client record linked to User
+ * - Sends welcome email with login credentials
+ * - Links Order to User and Client
+ * - Handles existing users gracefully
+ *
+ * @version 1.14.0
  */
 class AutoCreateUserListener
 {
+    /**
+     * Handle the PaymentCompleted event.
+     */
     public function handle(PaymentCompleted $event): void
     {
+        // Check if feature is enabled
         if (! config('officeguy.auto_create_guest_user', true)) {
             return;
         }
 
         try {
+            // 1. Get the Order/Payable
             $order = $this->resolveOrder($event->orderId);
+
             if (! $order) {
-                Log::warning('AutoCreateUser: Order not found', ['order_id' => $event->orderId]);
+                Log::warning('AutoCreateUser: Order not found', [
+                    'order_id' => $event->orderId,
+                ]);
 
                 return;
             }
 
+            // 2. Check if guest user (user_id is null)
             if ($order->user_id !== null) {
+                // User already exists, skip
                 Log::debug('AutoCreateUser: Order already has user, skipping', [
                     'order_id' => $order->id,
                     'user_id' => $order->user_id,
@@ -46,51 +63,54 @@ class AutoCreateUserListener
                 return;
             }
 
+            // 3. Check if email is provided
             if (empty($order->client_email)) {
-                Log::warning('AutoCreateUser: No email in order', ['order_id' => $order->id]);
+                Log::warning('AutoCreateUser: No email in order', [
+                    'order_id' => $order->id,
+                ]);
 
                 return;
             }
 
-            $userModelClass = config('officeguy.guest_user_model') ?: config('officeguy.staff_model');
-            if (! $userModelClass || ! class_exists($userModelClass)) {
-                Log::warning('AutoCreateUser: User model not configured (officeguy.guest_user_model / staff_model)');
+            // 4. Check if user already exists with this email
+            $existingUser = User::where('email', $order->client_email)->first();
 
-                return;
-            }
-
-            $existingUser = $userModelClass::where('email', $order->client_email)->first();
             if ($existingUser) {
+                // Link order to existing user
                 $this->linkOrderToExistingUser($order, $existingUser);
 
                 return;
             }
 
-            $user = $this->createUserFromOrder($order, $userModelClass);
-            if (! $user) {
-                return;
-            }
+            // 5. Create new user
+            $user = $this->createUserFromOrder($order);
 
+            // 6. Generate temporary password
             $temporaryPassword = $this->generateTemporaryPassword($user);
-            $client = $this->createOrGetCustomer($user);
-            if ($client) {
-                $order->update([
-                    'user_id' => $user->id,
-                    'client_id' => $client->id,
-                ]);
-            } else {
-                $order->update(['user_id' => $user->id]);
-            }
 
-            event(new GuestUserCreated($user, $temporaryPassword, $order));
+            // 7. Send email with temporary password
+            $this->sendWelcomeEmail($user, $temporaryPassword, $order);
 
-            Log::info('AutoCreateUser: User created', [
+            // 8. Create Client record
+            $client = Client::createFromUser($user);
+
+            // 9. Link order to user and client
+            $order->update([
+                'user_id' => $user->id,
+                'client_id' => $client->id,
+            ]);
+
+            // 10. Log success
+            Log::info('AutoCreateUser: User created successfully', [
                 'order_id' => $order->id,
                 'user_id' => $user->id,
+                'client_id' => $client->id,
                 'email' => $user->email,
+                'temporary_password_expires_at' => $user->temporary_password_expires_at,
             ]);
+
         } catch (\Exception $e) {
-            Log::error('AutoCreateUser: Failed', [
+            Log::error('AutoCreateUser: Failed to create user', [
                 'order_id' => $event->orderId,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
@@ -98,46 +118,77 @@ class AutoCreateUserListener
         }
     }
 
-    protected function resolveOrder(string | int $orderId): ?object
+    /**
+     * Resolve the order from orderId.
+     *
+     * @return mixed|null
+     */
+    protected function resolveOrder(string | int $orderId)
     {
-        $orderClass = config('officeguy.order.model');
-        if (! $orderClass || ! class_exists($orderClass)) {
+        // Non-numeric IDs (e.g. "subscription_179" from recurring billing) are
+        // not valid database primary keys — skip silently to avoid a PostgreSQL
+        // "invalid input syntax for type bigint" error that aborts the transaction.
+        if (! is_numeric($orderId)) {
             return null;
         }
 
-        return $orderClass::find($orderId);
+        $orderClass = config('officeguy.order.model', \App\Models\Order::class);
+
+        if (class_exists($orderClass)) {
+            return $orderClass::find($orderId);
+        }
+
+        return null;
     }
 
-    protected function linkOrderToExistingUser(object $order, object $user): void
+    /**
+     * Link order to existing user.
+     *
+     * @param  mixed  $order
+     */
+    protected function linkOrderToExistingUser($order, User $user): void
     {
-        $customerModel = app('officeguy.customer_model');
-        $client = $user->client ?? null;
-        if (! $client && $customerModel && method_exists($customerModel, 'createFromUser')) {
-            $client = $customerModel::createFromUser($user);
+        $client = $user->client;
+
+        if (! $client) {
+            $client = Client::createFromUser($user);
         }
+
         $order->update([
             'user_id' => $user->id,
-            'client_id' => $client->id ?? null,
+            'client_id' => $client->id,
         ]);
+
         Log::info('AutoCreateUser: Linked order to existing user', [
             'order_id' => $order->id,
             'user_id' => $user->id,
+            'client_id' => $client->id,
         ]);
     }
 
-    protected function createUserFromOrder(object $order, string $userModelClass): ?object
+    /**
+     * Create user from order data.
+     *
+     * @param  mixed  $order
+     */
+    protected function createUserFromOrder($order): User
     {
+        // Parse name into first_name and last_name
         $fullName = $order->client_name ?? $order->billing_name ?? 'Guest User';
         $nameParts = explode(' ', trim($fullName), 2);
         $firstName = $nameParts[0] ?? '';
         $lastName = $nameParts[1] ?? '';
+
+        // Ensure country is 2-char ISO code
         $country = $order->billing_country ?? 'IL';
         if (strlen($country) > 2) {
-            $country = 'IL';
+            $country = 'IL'; // Default to Israel if invalid
         }
+
+        // Get expiry days from config
         $expiryDays = (int) config('officeguy.guest_password_expiry_days', 7);
 
-        $attrs = [
+        return User::create([
             'name' => $fullName,
             'first_name' => $firstName,
             'last_name' => $lastName,
@@ -149,39 +200,58 @@ class AutoCreateUserListener
             'state' => $order->billing_state ?? null,
             'country' => $country,
             'postal_code' => $order->billing_zip ?? null,
-            'vat_number' => null,
-            'id_number' => null,
-            'password' => '',
+            'vat_number' => null, // Not available in order
+            'id_number' => null, // Not available in order
+            'password' => '', // Will be set by generateTemporaryPassword
+            'role' => \App\Enums\UserRole::CLIENT,
             'email_verified_at' => now(),
             'has_temporary_password' => true,
             'temporary_password_expires_at' => now()->addDays($expiryDays),
-            'temporary_password_created_by' => null,
-        ];
-        if (property_exists($userModelClass, 'role') || in_array('role', $userModelClass::getFillable())) {
-            $attrs['role'] = config('officeguy.guest_user_role', 'client');
-        }
-
-        return $userModelClass::create($attrs);
-    }
-
-    protected function generateTemporaryPassword(object $user): string
-    {
-        $password = Str::random(12);
-        $user->update(['password' => Hash::make($password)]);
-
-        return $password;
+            'temporary_password_created_by' => null, // System-generated
+        ]);
     }
 
     /**
-     * Create customer from user if customer model supports createFromUser; otherwise return null.
+     * Generate temporary password for user.
+     *
+     * @return string The plain text temporary password
      */
-    protected function createOrGetCustomer(object $user): ?object
+    protected function generateTemporaryPassword(User $user): string
     {
-        $customerModel = app('officeguy.customer_model');
-        if (! $customerModel || ! method_exists($customerModel, 'createFromUser')) {
-            return null;
-        }
+        // Generate random 12-character password
+        $temporaryPassword = Str::random(12);
 
-        return $customerModel::createFromUser($user);
+        // Update user with hashed password
+        $user->update([
+            'password' => Hash::make($temporaryPassword),
+        ]);
+
+        return $temporaryPassword;
+    }
+
+    /**
+     * Send welcome email with temporary password.
+     *
+     * @param  mixed  $order
+     */
+    protected function sendWelcomeEmail(User $user, string $password, $order): void
+    {
+        try {
+            Mail::to($user->email)->queue(
+                new GuestWelcomeWithPasswordMail($user, $password, $order)
+            );
+
+            Log::info('AutoCreateUser: Welcome email queued', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('AutoCreateUser: Failed to send welcome email', [
+                'user_id' => $user->id,
+                'email' => $user->email,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't throw - user was created successfully, email failure is non-critical
+        }
     }
 }

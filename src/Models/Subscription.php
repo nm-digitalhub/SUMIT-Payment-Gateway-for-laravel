@@ -164,7 +164,7 @@ class Subscription extends Model implements Payable
         return [
             [
                 'name' => $this->name,
-                'sku' => 'subscription_' . $this->id,
+                'sku' => data_get($this->metadata, 'product_plan_sku', 'subscription_' . $this->id),
                 'quantity' => 1,
                 'unit_price' => (float) $this->amount,
                 'product_id' => $this->id,

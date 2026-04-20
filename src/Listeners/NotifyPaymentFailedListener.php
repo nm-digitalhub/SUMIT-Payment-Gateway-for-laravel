@@ -27,11 +27,13 @@ class NotifyPaymentFailedListener
         }
 
         // Send the notification
+        // PaymentFailed event may not carry `payment` or `payable` properties
+        // (e.g. when fired from a recurring-billing path), so guard with property_exists.
         $notifiable->notify(new PaymentFailedNotification(
             orderId: $event->orderId,
-            payment: $event->payment,
-            response: $event->response,
-            payable: $event->payable
+            payment: property_exists($event, 'payment') ? $event->payment : [],
+            response: $event->response ?? [],
+            payable: property_exists($event, 'payable') ? $event->payable : null,
         ));
     }
 
@@ -41,7 +43,8 @@ class NotifyPaymentFailedListener
     protected function getNotifiable(PaymentFailed $event): ?\Illuminate\Contracts\Auth\Authenticatable
     {
         // Try to get user from payable (if it has a user relationship)
-        if ($event->payable && method_exists($event->payable, 'user')) {
+        // Guard with property_exists — PaymentFailed does not always carry $payable.
+        if (property_exists($event, 'payable') && $event->payable && method_exists($event->payable, 'user')) {
             return $event->payable->user;
         }
 
