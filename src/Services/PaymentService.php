@@ -20,6 +20,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\RemovePaymentMethodReque
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Payment\ChargePaymentRequest;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Subscription\ChargeSubscriptionRequest;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Bit\CreateBitPaymentRequest;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Payment Service
@@ -170,7 +171,7 @@ class PaymentService
 
             \Log::info('setPaymentMethodForCustomer response', ['status' => $data['Status'] ?? null]);
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Failed to set payment method',
@@ -214,7 +215,7 @@ class PaymentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Failed to fetch payment details',
@@ -264,7 +265,7 @@ class PaymentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Failed to list payments',
@@ -315,7 +316,7 @@ class PaymentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Failed to fetch payment methods',
@@ -377,7 +378,7 @@ class PaymentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Failed to remove payment method',
@@ -426,7 +427,7 @@ class PaymentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data === null || ($data['Status'] ?? 1) !== 0) {
+            if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $data['UserErrorMessage'] ?? 'Test payment failed',
@@ -968,7 +969,7 @@ class PaymentService
         $status = $response['Status'] ?? null;
         $payment = $response['Data']['Payment'] ?? null;
 
-        if ($status === 0 && $payment && ($payment['ValidPayment'] ?? false) === true) {
+        if (SumitApiResponse::isSuccess($status) && $payment && ($payment['ValidPayment'] ?? false) === true) {
             // Convert SUMIT currency enum to string (0=ILS, 1=USD, 2=EUR, etc.)
             $currencyEnum = $payment['Currency'] ?? null;
             $currencyMap = [0 => 'ILS', 1 => 'USD', 2 => 'EUR', 3 => 'GBP'];
@@ -1170,12 +1171,21 @@ class PaymentService
                 vatIncluded: false
             );
 
+            $rawPayload = [
+                'type' => 'refund',
+                'customer_id' => (int) $sumitCustomerId,
+                'amount' => -abs($amount),
+                'reason' => $reason,
+                'items' => $items,
+                'original_transaction_id' => $transactionId,
+            ];
+
             // Send request
             $response = $connector->send($request);
             $data = $response->json();
             $environment = config('officeguy.environment', 'www');
 
-            if (($data['Status'] ?? 1) === 0 && isset($data['Data'])) {
+            if (SumitApiResponse::isSuccess($data['Status'] ?? null) && isset($data['Data'])) {
                 // Extract refund transaction ID from Payment object
                 // SUMIT returns refund details in Data.Payment (same structure as charge)
                 $refundTransactionId = $response['Data']['Payment']['ID'] ?? null;
@@ -1216,7 +1226,7 @@ class PaymentService
                     'status_description' => $reason,
                     'payment_method' => 'card',
                     'payments_count' => 1,
-                    'raw_request' => $payload,
+                    'raw_request' => $rawPayload,
                     'raw_response' => $response,
                     'environment' => $environment,
                     'is_test' => config('officeguy.testing', false),

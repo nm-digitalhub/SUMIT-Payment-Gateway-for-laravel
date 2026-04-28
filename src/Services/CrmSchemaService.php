@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * CRM Schema Service
@@ -42,7 +43,7 @@ class CrmSchemaService
                 ];
             }
 
-            if (($response['Status'] ?? 1) === 0) {
+            if (SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => true,
                     'folders' => $response['Data']['Folders'] ?? [],
@@ -97,7 +98,7 @@ class CrmSchemaService
                 ];
             }
 
-            if (($response['Status'] ?? 1) === 0) {
+            if (SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => true,
                     'folder' => $response['Data']['Folder'] ?? [],

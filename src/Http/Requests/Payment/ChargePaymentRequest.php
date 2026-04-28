@@ -10,6 +10,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Traits\Body\HasJsonBody;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Charge Payment Request
@@ -245,7 +246,7 @@ class ChargePaymentRequest extends Request implements HasBody
     {
         $data = $response->json();
 
-        return ($data['Status'] ?? 1) === 0;
+        return SumitApiResponse::isSuccess($data['Status'] ?? null);
     }
 
     /**
@@ -306,7 +307,7 @@ class ChargePaymentRequest extends Request implements HasBody
     {
         $data = $response->json();
 
-        if (($data['Status'] ?? 1) === 0) {
+        if (SumitApiResponse::isSuccess($data['Status'] ?? null)) {
             return null;
         }
 

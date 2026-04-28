@@ -12,6 +12,7 @@ use OfficeGuy\LaravelSumitGateway\Http\Connectors\SumitConnector;
 use OfficeGuy\LaravelSumitGateway\Http\DTOs\CredentialsData;
 use OfficeGuy\LaravelSumitGateway\Http\Requests\Document\GetDocumentDetailsRequest;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyDocument;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Document Service
@@ -141,7 +142,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data && $data['Status'] === 0) {
+            if ($data && SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 // Success
                 $documentId = $data['Data']['DocumentID'];
 
@@ -314,7 +315,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if ($data && $data['Status'] === 0) {
+            if ($data && SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 // Success
                 $documentId = $data['Data']['DocumentID'];
                 $customerId = $data['Data']['CustomerID'];
@@ -542,7 +543,7 @@ class DocumentService
                 $response = $connector->send($request);
                 $data = $response->json();
 
-                if (! $data || ($data['Status'] ?? null) !== 0) {
+                if (! $data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                     break;
                 }
 
@@ -605,7 +606,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (! $data || ($data['Status'] ?? null) !== 0) {
+            if (! $data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return null;
             }
 
@@ -1193,7 +1194,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (($data['Status'] ?? null) === 0) {
+            if (SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [
                     'success' => true,
                     'pdf_url' => $data['Data']['PDFURL'] ?? null,
@@ -1309,7 +1310,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (($data['Status'] ?? null) === 0) {
+            if (SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 $logEmail = $email ?? 'customer registered email';
                 OfficeGuyApi::writeToLog(
                     'SUMIT document sent by email. Document #' . $document->document_number . ' (Type: ' . $document->document_type . '), Email: ' . $logEmail,
@@ -1394,7 +1395,7 @@ class DocumentService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (($data['Status'] ?? null) === 0) {
+            if (SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 $responseData = $data['Data'] ?? [];
 
                 OfficeGuyApi::writeToLog(

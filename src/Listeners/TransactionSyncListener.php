@@ -152,7 +152,7 @@ class TransactionSyncListener
         // Mark transaction as webhook-confirmed
         $transaction->update([
             'is_webhook_confirmed' => true,
-            'confirmed_at' => now(),
+            'webhook_confirmed_at' => now(),
             'confirmed_by' => 'webhook_crm',
         ]);
 

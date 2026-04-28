@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * CRM Data Service
@@ -65,7 +66,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to create entity in SUMIT',
@@ -173,7 +174,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entity from SUMIT',
@@ -248,7 +249,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to update entity in SUMIT',
@@ -351,7 +352,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to delete entity in SUMIT',
@@ -453,7 +454,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to list entities from SUMIT',
@@ -653,7 +654,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to archive entity',
@@ -712,7 +713,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to count entity usage',
@@ -774,7 +775,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entity print HTML',
@@ -839,7 +840,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entities HTML',

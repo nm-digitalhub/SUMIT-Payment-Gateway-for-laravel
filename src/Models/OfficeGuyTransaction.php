@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 class OfficeGuyTransaction extends Model
 {
@@ -63,7 +64,7 @@ class OfficeGuyTransaction extends Model
         // Webhook confirmation fields (ADR-004)
         'sumit_entity_id',
         'is_webhook_confirmed',
-        'confirmed_at',
+        'webhook_confirmed_at',
         'confirmed_by',
     ];
 
@@ -83,7 +84,7 @@ class OfficeGuyTransaction extends Model
         'updated_at' => 'datetime',
         'deleted_at' => 'datetime',
         'completed_at' => 'datetime',
-        'confirmed_at' => 'datetime',
+        'webhook_confirmed_at' => 'datetime',
     ];
 
     /* -----------------------------------------------------------------
@@ -270,7 +271,7 @@ class OfficeGuyTransaction extends Model
             'currency' => $currency,
             'payments_count' => $request['Payments_Count'] ?? 1,
 
-            'status' => ($response['Status'] === 0 && ($payment['ValidPayment'] ?? false))
+            'status' => (SumitApiResponse::isSuccess($response['Status'] ?? null) && ($payment['ValidPayment'] ?? false))
                 ? 'completed'
                 : 'failed',
 

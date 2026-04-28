@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Maps commercial product plans to SUMIT CRM entities (e.g. accounting / catalog schemas).
@@ -70,7 +71,7 @@ final class SumitProductService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => (string) ($response['UserErrorMessage'] ?? 'Failed to create product entity in SUMIT'),
@@ -153,7 +154,7 @@ final class SumitProductService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => (string) ($response['UserErrorMessage'] ?? 'Failed to update product entity in SUMIT'),

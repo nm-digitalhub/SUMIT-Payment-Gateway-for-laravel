@@ -9,6 +9,7 @@ use Illuminate\Support\Facades\Mail;
 use OfficeGuy\LaravelSumitGateway\Contracts\HasSumitCustomer;
 use OfficeGuy\LaravelSumitGateway\Support\Traits\HasSumitCustomerTrait;
 use Throwable;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Service for managing customer debt and credit balance in SUMIT
@@ -110,7 +111,7 @@ class DebtService
             $saloonResponse = $connector->send($request);
             $response = $saloonResponse->json();
 
-            if (! $response || ($response['Status'] ?? null) !== 0) {
+            if (! $response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 Log::warning('SUMIT debt retrieval failed', [
                     'sumit_customer_id' => $sumitCustomerId,
                     'error' => $response['UserErrorMessage'] ?? 'Unknown error',
@@ -234,7 +235,7 @@ class DebtService
             $saloonResponse = $connector->send($request);
             $response = $saloonResponse->json();
 
-            if ($response && ($response['Status'] ?? 1) === 0) {
+            if ($response && SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return $response['Data']['DocumentPaymentURL'] ?? null;
             }
 
@@ -533,7 +534,7 @@ class DebtService
             $saloonResponse = $connector->send($request);
             $response = $saloonResponse->json();
 
-            if (! $response || ($response['Status'] ?? null) !== 0) {
+            if (! $response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [];
             }
 
