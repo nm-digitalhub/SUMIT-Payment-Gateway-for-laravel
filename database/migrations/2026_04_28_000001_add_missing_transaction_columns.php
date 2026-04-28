@@ -37,21 +37,23 @@ return new class extends Migration
             }
         });
 
-        // Add indexes (safe to add even if columns were pre-existing)
+        // Add indexes — check existence via Schema::getIndexes() (Laravel 10.24+, all drivers)
         Schema::table('officeguy_transactions', function (Blueprint $table) {
-            $sm = Schema::getConnection()->getDoctrineSchemaManager();
-            $existingIndexes = array_keys($sm->listTableIndexes('officeguy_transactions'));
+            $existingIndexes = array_column(
+                Schema::getIndexes('officeguy_transactions'),
+                'name'
+            );
 
-            if (! in_array('idx_transaction_type', $existingIndexes, true)
-                && Schema::hasColumn('officeguy_transactions', 'transaction_type')) {
+            if (Schema::hasColumn('officeguy_transactions', 'transaction_type')
+                && ! in_array('idx_transaction_type', $existingIndexes, true)) {
                 $table->index('transaction_type', 'idx_transaction_type');
             }
-            if (! in_array('idx_payment_token', $existingIndexes, true)
-                && Schema::hasColumn('officeguy_transactions', 'payment_token')) {
+            if (Schema::hasColumn('officeguy_transactions', 'payment_token')
+                && ! in_array('idx_payment_token', $existingIndexes, true)) {
                 $table->index('payment_token', 'idx_payment_token');
             }
-            if (! in_array('idx_client_id', $existingIndexes, true)
-                && Schema::hasColumn('officeguy_transactions', 'client_id')) {
+            if (Schema::hasColumn('officeguy_transactions', 'client_id')
+                && ! in_array('idx_client_id', $existingIndexes, true)) {
                 $table->index('client_id', 'idx_client_id');
             }
         });
@@ -60,9 +62,20 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('officeguy_transactions', function (Blueprint $table) {
-            $table->dropIndex('idx_transaction_type');
-            $table->dropIndex('idx_payment_token');
-            $table->dropIndex('idx_client_id');
+            $existingIndexes = array_column(
+                Schema::getIndexes('officeguy_transactions'),
+                'name'
+            );
+
+            if (in_array('idx_transaction_type', $existingIndexes, true)) {
+                $table->dropIndex('idx_transaction_type');
+            }
+            if (in_array('idx_payment_token', $existingIndexes, true)) {
+                $table->dropIndex('idx_payment_token');
+            }
+            if (in_array('idx_client_id', $existingIndexes, true)) {
+                $table->dropIndex('idx_client_id');
+            }
         });
 
         Schema::table('officeguy_transactions', function (Blueprint $table) {
