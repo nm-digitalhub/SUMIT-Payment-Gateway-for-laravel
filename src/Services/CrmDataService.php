@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * CRM Data Service
@@ -65,7 +66,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to create entity in SUMIT',
@@ -173,7 +174,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entity from SUMIT',
@@ -248,7 +249,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to update entity in SUMIT',
@@ -351,7 +352,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to delete entity in SUMIT',
@@ -453,7 +454,7 @@ class CrmDataService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to list entities from SUMIT',
@@ -653,7 +654,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to archive entity',
@@ -712,7 +713,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to count entity usage',
@@ -774,7 +775,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entity print HTML',
@@ -839,7 +840,7 @@ class CrmDataService
                 false
             );
 
-            if ($response === null || ($response['Status'] ?? 1) !== 0) {
+            if (!$response || !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => $response['UserErrorMessage'] ?? 'Failed to get entities HTML',
@@ -906,14 +907,25 @@ class CrmDataService
     }
 
     /**
-     * Try to match a local Client ID based on SUMIT entity payload.
+     * Try to match a local customer ID based on SUMIT entity payload.
+     * Uses container customer model only; no fallback. If not configured, returns null.
      */
     protected static function matchClientId(array $entityData, ?int $sumitEntityId): ?int
     {
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel || ! is_string($customerModel)) {
+            if (config('officeguy.logging', false)) {
+                \Illuminate\Support\Facades\Log::channel(config('officeguy.log_channel', 'stack'))
+                    ->warning('CrmDataService: customer model not configured; skipping client match');
+            }
+
+            return null;
+        }
+
         try {
             // 1) Exact SUMIT mapping
             if ($sumitEntityId) {
-                $client = \App\Models\Client::where('sumit_customer_id', $sumitEntityId)->first();
+                $client = $customerModel::where('sumit_customer_id', $sumitEntityId)->first();
                 if ($client) {
                     return $client->id;
                 }
@@ -922,7 +934,7 @@ class CrmDataService
             // 2) Fuzzy match by VAT/ID number
             $vat = $entityData['Customers_CompanyNumber'][0] ?? $entityData['CompanyNumber'] ?? null;
             if ($vat) {
-                $client = \App\Models\Client::where('vat_number', $vat)->orWhere('id_number', $vat)->first();
+                $client = $customerModel::where('vat_number', $vat)->orWhere('id_number', $vat)->first();
                 if ($client) {
                     return $client->id;
                 }
@@ -932,7 +944,7 @@ class CrmDataService
             $email = $entityData['Customers_EmailAddress'][0] ?? $entityData['Email'] ?? null;
             if ($email) {
                 $emailNorm = strtolower(trim((string) $email));
-                $client = \App\Models\Client::whereRaw('LOWER(email) = ?', [$emailNorm])
+                $client = $customerModel::whereRaw('LOWER(email) = ?', [$emailNorm])
                     ->orWhereRaw('LOWER(client_email) = ?', [$emailNorm])
                     ->first();
                 if ($client) {
@@ -944,9 +956,9 @@ class CrmDataService
             $phone = $entityData['Customers_Phone'][0] ?? null;
             if ($phone) {
                 $norm = preg_replace('/\\D+/', '', (string) $phone);
-                $client = \App\Models\Client::whereRaw('REPLACE(REPLACE(REPLACE(phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
-                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
-                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,\"-\",\"\"),\" \",\"\"),\"+\",\"\") = ?', [$norm])
+                $client = $customerModel::whereRaw('REPLACE(REPLACE(REPLACE(phone,"-","")," ",""),"+","") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(client_phone,"-","")," ",""),"+","") = ?', [$norm])
+                    ->orWhereRaw('REPLACE(REPLACE(REPLACE(mobile_phone,"-","")," ",""),"+","") = ?', [$norm])
                     ->first();
                 if ($client) {
                     return $client->id;

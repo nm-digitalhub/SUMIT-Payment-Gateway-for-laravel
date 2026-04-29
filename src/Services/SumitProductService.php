@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Maps commercial product plans to SUMIT CRM entities (e.g. accounting / catalog schemas).
@@ -50,8 +51,10 @@ final class SumitProductService
         try {
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'FolderID' => $folder['sumit_folder_id'],
-                'Fields' => $fields,
+                'Entity' => [
+                    'Folder' => (string) $folder['sumit_folder_id'],
+                    'Properties' => $fields,
+                ],
             ];
 
             $response = OfficeGuyApi::post(
@@ -68,7 +71,7 @@ final class SumitProductService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => (string) ($response['UserErrorMessage'] ?? 'Failed to create product entity in SUMIT'),
@@ -131,8 +134,10 @@ final class SumitProductService
         try {
             $payload = [
                 'Credentials' => PaymentService::getCredentials(),
-                'EntityID' => $sumitEntityId,
-                'Fields' => $fields,
+                'Entity' => [
+                    'ID' => $sumitEntityId,
+                    'Properties' => $fields,
+                ],
             ];
 
             $response = OfficeGuyApi::post(
@@ -149,7 +154,7 @@ final class SumitProductService
                 ];
             }
 
-            if (($response['Status'] ?? 1) !== 0) {
+            if (!SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => false,
                     'error' => (string) ($response['UserErrorMessage'] ?? 'Failed to update product entity in SUMIT'),
@@ -157,7 +162,7 @@ final class SumitProductService
             }
 
             OfficeGuyApi::writeToLog(
-                'SUMIT product entity updated: SUMIT ID ' . $sumitEntityId,
+                'SUMIT product entity updated: SUMIT ID ' . $sumitEntityId . ', fields: ' . json_encode($fields),
                 'info'
             );
 

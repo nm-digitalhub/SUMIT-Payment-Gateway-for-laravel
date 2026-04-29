@@ -85,25 +85,29 @@ class SyncAllDocumentsCommand extends Command
     {
         $totalSynced = 0;
 
-        // Get all users with SUMIT customer ID
-        $query = \App\Models\User::whereNotNull('sumit_customer_id');
-
-        if ($userId) {
-            $query->where('id', $userId);
-        }
-
-        $users = $query->get();
-
-        if ($users->isEmpty()) {
-            $this->warn('   ⚠️  No users with SUMIT customer ID found');
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            $this->warn('   ⚠️  Customer model not configured (officeguy.customer_model)');
 
             return 0;
         }
 
-        $this->info("   Found {$users->count()} users with SUMIT customer ID");
+        $query = $customerModel::whereNotNull('sumit_customer_id');
+        if ($userId) {
+            $query->where('id', $userId);
+        }
+        $users = $query->get();
+
+        if ($users->isEmpty()) {
+            $this->warn('   ⚠️  No customers with SUMIT customer ID found');
+
+            return 0;
+        }
+
+        $this->info("   Found {$users->count()} customers with SUMIT customer ID");
 
         foreach ($users as $user) {
-            $this->line("   • User #{$user->id} ({$user->email})...");
+            $this->line("   • Customer #{$user->id} ({$user->email})...");
 
             if ($dryRun) {
                 $this->line('     [DRY RUN] Would sync subscriptions');
@@ -132,7 +136,7 @@ class SyncAllDocumentsCommand extends Command
      * Sync ALL documents for all customers
      *
      * This syncs ALL documents from SUMIT, not just subscription-related ones.
-     * Includes invoices, credit notes, eSIM purchases, and any other document type.
+     * Includes invoices, credit notes, and any other document type.
      *
      * @param  int|null  $userId  Specific user ID or null for all users
      * @param  int  $days  Number of days to look back
@@ -144,17 +148,21 @@ class SyncAllDocumentsCommand extends Command
     {
         $totalDocuments = 0;
 
-        // Get all users with SUMIT customer ID
-        $query = \App\Models\User::whereNotNull('sumit_customer_id');
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            $this->warn('   ⚠️  Customer model not configured (officeguy.customer_model)');
 
+            return 0;
+        }
+
+        $query = $customerModel::whereNotNull('sumit_customer_id');
         if ($userId) {
             $query->where('id', $userId);
         }
-
         $users = $query->get();
 
         if ($users->isEmpty()) {
-            $this->warn('   ⚠️  No users with SUMIT customer ID found');
+            $this->warn('   ⚠️  No customers with SUMIT customer ID found');
 
             return 0;
         }

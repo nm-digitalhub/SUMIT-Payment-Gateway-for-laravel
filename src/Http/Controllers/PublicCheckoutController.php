@@ -107,7 +107,7 @@ class PublicCheckoutController extends Controller
 
         // Resolve dynamic checkout template based on PayableType
         $resolver = app(CheckoutViewResolver::class);
-        $view = $resolver->resolve($payable);
+        $view = $resolver->resolve($request, $payable);
 
         return view($view, [
             'payable' => $payable,
@@ -180,8 +180,10 @@ class PublicCheckoutController extends Controller
                 return back()->withErrors(['accept_terms' => __('You must accept the Terms & Conditions to create an account')])->withInput();
             }
 
-            // Resolve user model from container binding
-            $userModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+            $userModel = app('officeguy.customer_model');
+            if (! $userModel) {
+                return back()->withErrors(['customer_email' => __('Customer model not configured.')])->withInput();
+            }
 
             // Check if email already exists
             if ($userModel::where('email', $validated['customer_email'])->exists()) {
@@ -564,88 +566,6 @@ class PublicCheckoutController extends Controller
                 ? (string) $data['ExpirationYear']
                 : null,
         ]);
-    }
-
-    /**
-     * Display checkout page for Package model (hosting/domain/SSL).
-     *
-     * @param  string|int  $id  Package ID
-     */
-    public function showPackage(Request $request, string | int $id): View
-    {
-        // Set resolver for Package model
-        $request->route()->setParameter('resolver', function ($id) {
-            $modelClass = 'App\\Models\\Package';
-            if (class_exists($modelClass)) {
-                return $modelClass::find($id);
-            }
-
-            return null;
-        });
-
-        return $this->show($request, $id);
-    }
-
-    /**
-     * Process payment for Package model.
-     *
-     * @param  string|int  $id  Package ID
-     * @return mixed
-     */
-    public function processPackage(Request $request, string | int $id)
-    {
-        // Set resolver for Package model
-        $request->route()->setParameter('resolver', function ($id) {
-            $modelClass = 'App\\Models\\Package';
-            if (class_exists($modelClass)) {
-                return $modelClass::find($id);
-            }
-
-            return null;
-        });
-
-        return $this->process($request, $id);
-    }
-
-    /**
-     * Display checkout page for MayaNetEsimProduct model.
-     *
-     * @param  string|int  $id  eSIM Product ID
-     */
-    public function showEsim(Request $request, string | int $id): View
-    {
-        // Set resolver for eSIM model
-        $request->route()->setParameter('resolver', function ($id) {
-            $modelClass = 'App\\Models\\MayaNetEsimProduct';
-            if (class_exists($modelClass)) {
-                return $modelClass::find($id);
-            }
-
-            return null;
-        });
-
-        return $this->show($request, $id);
-    }
-
-    /**
-     * Process payment for MayaNetEsimProduct model.
-     *
-     * @param  string|int  $id  eSIM Product ID
-     * @return mixed
-     */
-    public function processEsim(Request $request, string | int $id)
-    {
-        // Set resolver for eSIM model
-        $request->route()->setParameter('resolver', function ($id) {
-            $modelClass = 'App\\Models\\MayaNetEsimProduct';
-            if (class_exists($modelClass)) {
-                return $modelClass::find($id);
-            }
-
-            return null;
-        });
-
-        return $this->process($request, $id);
     }
 
     /**

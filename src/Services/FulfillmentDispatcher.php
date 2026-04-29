@@ -14,8 +14,7 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
  * Container-driven fulfillment orchestration based on PayableType.
  *
  * This service acts as the **bridge between payment completion and service fulfillment**.
- * It receives PaymentCompleted events from the package and dispatches to appropriate
- * fulfillment handlers based on the Payable type (Infrastructure, Digital, Subscription, etc.).
+ * It receives PaymentCompleted events and dispatches to the registered handler for the Payable type.
  *
  * ## Architecture Decision: Type-Based Dispatch (not Payable-Driven)
  *
@@ -47,13 +46,7 @@ use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
  *
  * Handlers are registered in OfficeGuyServiceProvider::registerFulfillmentHandlers():
  *
- * ```php
- * $dispatcher->registerMany([
- *     PayableType::INFRASTRUCTURE->value => InfrastructureFulfillmentHandler::class,
- *     PayableType::DIGITAL_PRODUCT->value => DigitalProductFulfillmentHandler::class,
- *     PayableType::SUBSCRIPTION->value => SubscriptionFulfillmentHandler::class,
- * ]);
- * ```
+ * Host registers one handler per type; default is GenericFulfillmentHandler (dispatches PayablePaid).
  *
  * @see docs/ARCHITECTURE_DECISION_FULFILLMENT_PATTERN.md
  * @see docs/STATE_MACHINE_ARCHITECTURE.md

@@ -100,9 +100,13 @@ class DocumentSyncListener implements ShouldQueue
             return null;
         }
 
-        $user = \App\Models\User::where('sumit_customer_id', $customerId)->first();
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return null;
+        }
+        $customer = $customerModel::where('sumit_customer_id', $customerId)->first();
 
-        return $user?->id;
+        return $customer?->id;
     }
 
     /**

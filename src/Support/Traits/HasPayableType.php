@@ -23,9 +23,8 @@ trait HasPayableType
      *
      * public function getPayableType(): PayableType
      * {
-     *     return match($this->service_type) {
-     *         'domain' => PayableType::INFRASTRUCTURE,
-     *         'esim' => PayableType::DIGITAL_PRODUCT,
+     *     return match($this->service_type ?? '') {
+     *         'type_a' => PayableType::GENERIC,
      *         default => PayableType::GENERIC,
      *     };
      * }
@@ -38,9 +37,7 @@ trait HasPayableType
     /**
      * Get checkout template for this payable
      *
-     * Returns the template name without path/extension:
-     * - 'digital' → resources/views/pages/checkout/digital.blade.php
-     * - 'infrastructure' → resources/views/pages/checkout/infrastructure.blade.php
+     * Returns the template name from PayableType. View selection is host-owned via config (officeguy.checkout.view_resolver).
      */
     public function getCheckoutTemplate(): string
     {

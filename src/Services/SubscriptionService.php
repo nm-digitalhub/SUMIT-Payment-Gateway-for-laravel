@@ -9,6 +9,7 @@ use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCharged;
 use OfficeGuy\LaravelSumitGateway\Events\SubscriptionChargesFailed;
 use OfficeGuy\LaravelSumitGateway\Events\SubscriptionCreated;
 use OfficeGuy\LaravelSumitGateway\Models\Subscription;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Subscription Service
@@ -421,7 +422,7 @@ class SubscriptionService
             $response = $connector->send($request);
             $data = $response->json();
 
-            if (! $data || ($data['Status'] ?? null) !== 0) {
+            if (! $data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
                 return [];
             }
 

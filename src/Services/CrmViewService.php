@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmFolder;
 use OfficeGuy\LaravelSumitGateway\Models\CrmView;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * CRM View Service
@@ -48,7 +49,7 @@ class CrmViewService
                 ];
             }
 
-            if (($response['Status'] ?? 1) === 0) {
+            if (SumitApiResponse::isSuccess($response['Status'] ?? null)) {
                 return [
                     'success' => true,
                     'views' => $response['Data']['Views'] ?? [],

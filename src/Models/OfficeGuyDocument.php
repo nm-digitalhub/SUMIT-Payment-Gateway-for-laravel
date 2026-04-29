@@ -82,15 +82,16 @@ class OfficeGuyDocument extends Model
      * 2. Config: officeguy.models.customer (new nested structure)
      * 3. Config: officeguy.customer_model_class (legacy flat structure)
      *
-     * Fallback: If no customer model is configured, defaults to \App\Models\Client
-     * for backward compatibility.
      *
      * The relationship matches SUMIT customer ID stored in the customer_id field
      * with the sumit_customer_id field in the customer model.
      */
     public function customer(): BelongsTo
     {
-        $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'customer_id')->whereRaw('1 = 0');
+        }
 
         return $this->belongsTo($customerModel, 'customer_id', 'sumit_customer_id');
     }

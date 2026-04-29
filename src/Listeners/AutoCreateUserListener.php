@@ -125,7 +125,13 @@ class AutoCreateUserListener
      */
     protected function resolveOrder(string | int $orderId)
     {
-        // Try to find Order by ID
+        // Non-numeric IDs (e.g. "subscription_179" from recurring billing) are
+        // not valid database primary keys — skip silently to avoid a PostgreSQL
+        // "invalid input syntax for type bigint" error that aborts the transaction.
+        if (! is_numeric($orderId)) {
+            return null;
+        }
+
         $orderClass = config('officeguy.order.model', \App\Models\Order::class);
 
         if (class_exists($orderClass)) {

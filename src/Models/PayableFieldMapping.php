@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  * without directly modifying the model or using the PayableAdapter trait.
  *
  * @property int $id
- * @property string $model_class Fully qualified model class name (e.g., App\Models\MayaNetEsimProduct)
+ * @property string $model_class Fully qualified payable model class name
  * @property string|null $label User-friendly label for this mapping
  * @property array $field_mappings JSON mapping of Payable interface fields to model field names
  * @property bool $is_active Whether this mapping is currently active

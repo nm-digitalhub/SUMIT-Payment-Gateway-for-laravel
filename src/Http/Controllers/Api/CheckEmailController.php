@@ -44,10 +44,11 @@ class CheckEmailController extends Controller
         // Normalize email (lowercase, trim whitespace)
         $email = strtolower(trim((string) $validated['email']));
 
-        // Resolve user model from container binding
-        $userModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $userModel = app('officeguy.customer_model');
+        if (! $userModel) {
+            return response()->json(['exists' => false, 'login_url' => null]);
+        }
 
-        // Check if user exists (case-insensitive query)
         $exists = $userModel::whereRaw('LOWER(email) = ?', [$email])->exists();
 
         // Log email check for monitoring (optional, based on config)

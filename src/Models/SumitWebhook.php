@@ -65,12 +65,13 @@ class SumitWebhook extends Model
      * 2. Config: officeguy.models.customer (new nested structure)
      * 3. Config: officeguy.customer_model_class (legacy flat structure)
      *
-     * Fallback: If no customer model is configured, defaults to \App\Models\Client
-     * for backward compatibility.
      */
     public function customer(): BelongsTo
     {
-        $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return $this->belongsTo(\Illuminate\Database\Eloquent\Model::class, 'customer_id')->whereRaw('1 = 0');
+        }
 
         return $this->belongsTo($customerModel, 'client_id');
     }
@@ -286,15 +287,16 @@ class SumitWebhook extends Model
 
     /**
      * Try to match a local customer based on webhook payload.
-     *
-     * Uses dynamic customer model resolution with fallback to App\Models\Client.
+     * Uses container customer model only; returns null if not configured.
      */
     protected static function matchClientIdFromPayload(array $payload): ?int
     {
-        try {
-            // Use dynamic customer model resolution with fallback to App\Models\Client
-            $customerModel = app('officeguy.customer_model') ?? \App\Models\Client::class;
+        $customerModel = app('officeguy.customer_model');
+        if (! $customerModel) {
+            return null;
+        }
 
+        try {
             // Try to match by SUMIT customer ID
             $customerId = $payload['CustomerID'] ?? $payload['customer_id'] ?? $payload['ID'] ?? null;
             if ($customerId) {

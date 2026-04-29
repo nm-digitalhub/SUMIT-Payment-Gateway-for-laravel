@@ -4,90 +4,84 @@ declare(strict_types=1);
 
 namespace OfficeGuy\LaravelSumitGateway\Policies;
 
-use App\Enums\UserRole;
-use App\Models\User;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
 
 /**
- * Authorization policy for SUMIT transactions (OfficeGuyTransaction)
- * Mirrors existing TransactionPolicy semantics for staff/client/admin roles.
+ * Authorization policy for SUMIT transactions (OfficeGuyTransaction).
+ * Uses capability-based checks (isStaff, isClient, isAdmin, isSuperAdmin) so the host auth model is not referenced.
+ *
+ * @see PHASE4.md
  */
 class OfficeGuyTransactionPolicy
 {
-    public function viewAny(User $user): bool
+    public function viewAny(object $user): bool
     {
-        if ($user->isStaff()) {
+        if (method_exists($user, 'isStaff') && $user->isStaff()) {
             return true;
         }
 
-        return (bool) $user->isClient();
+        return method_exists($user, 'isClient') && (bool) $user->isClient();
     }
 
-    public function view(User $user, OfficeGuyTransaction $transaction): bool
+    public function view(object $user, OfficeGuyTransaction $transaction): bool
     {
-        if ($user->isStaff()) {
+        if (method_exists($user, 'isStaff') && $user->isStaff()) {
             return true;
         }
 
-        if ($user->role === UserRole::CLIENT) {
-            if (! (property_exists($transaction, 'client_id') && ! is_null($transaction->client_id))) {
-                // Fallbacks: SUMIT customer_id or order_id ↔ user id
-                return (string) $transaction->customer_id === (string) $user->sumit_customer_id
-                    || (int) $transaction->order_id === (int) $user->id;
-            }
-            if (is_null($user->client_id)) {
-                // Fallbacks: SUMIT customer_id or order_id ↔ user id
-                return (string) $transaction->customer_id === (string) $user->sumit_customer_id
-                    || (int) $transaction->order_id === (int) $user->id;
-            }
-            if ((int) $transaction->client_id === (int) $user->client_id) {
-                return true;
+        if (method_exists($user, 'isClient') && $user->isClient()) {
+            if (property_exists($transaction, 'client_id') && $transaction->client_id !== null) {
+                $clientId = $user->client_id ?? null;
+                if ($clientId !== null && (int) $transaction->client_id === (int) $clientId) {
+                    return true;
+                }
             }
 
-            // Fallbacks: SUMIT customer_id or order_id ↔ user id
-            return (string) $transaction->customer_id === (string) $user->sumit_customer_id
-                || (int) $transaction->order_id === (int) $user->id;
+            return (string) $transaction->customer_id === (string) ($user->sumit_customer_id ?? '')
+                || (int) $transaction->order_id === (int) ($user->id ?? 0);
         }
 
-        if ($user->role === UserRole::RESELLER) {
-            return $transaction->client?->created_by === $user->id;
+        if (method_exists($user, 'isReseller') && $user->isReseller()) {
+            $client = $transaction->client ?? null;
+
+            return $client !== null && isset($client->created_by) && (int) $client->created_by === (int) ($user->id ?? 0);
         }
 
         return false;
     }
 
-    public function create(User $user): bool
+    public function create(object $user): bool
     {
-        return $user->isStaff();
+        return method_exists($user, 'isStaff') && $user->isStaff();
     }
 
-    public function update(User $user, OfficeGuyTransaction $transaction): bool
+    public function update(object $user, OfficeGuyTransaction $transaction): bool
     {
-        return $user->isAdmin();
+        return method_exists($user, 'isAdmin') && $user->isAdmin();
     }
 
-    public function delete(User $user, OfficeGuyTransaction $transaction): bool
+    public function delete(object $user, OfficeGuyTransaction $transaction): bool
     {
-        return $user->isSuperAdmin();
+        return method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
     }
 
-    public function restore(User $user, OfficeGuyTransaction $transaction): bool
+    public function restore(object $user, OfficeGuyTransaction $transaction): bool
     {
-        return $user->isSuperAdmin();
+        return method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
     }
 
-    public function forceDelete(User $user, OfficeGuyTransaction $transaction): bool
+    public function forceDelete(object $user, OfficeGuyTransaction $transaction): bool
     {
-        return $user->isSuperAdmin();
+        return method_exists($user, 'isSuperAdmin') && $user->isSuperAdmin();
     }
 
-    public function refund(User $user, OfficeGuyTransaction $transaction): bool
+    public function refund(object $user, OfficeGuyTransaction $transaction): bool
     {
-        return $user->isAdmin();
+        return method_exists($user, 'isAdmin') && $user->isAdmin();
     }
 
-    public function import(User $user): bool
+    public function import(object $user): bool
     {
-        return $user->isAdmin();
+        return method_exists($user, 'isAdmin') && $user->isAdmin();
     }
 }

@@ -11,6 +11,7 @@ use Saloon\Enums\Method;
 use Saloon\Http\Request;
 use Saloon\Http\Response;
 use Saloon\Traits\Body\HasJsonBody;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * List Payments Request
@@ -195,7 +196,7 @@ class ListPaymentsRequest extends Request implements HasBody
     {
         $data = $response->json();
 
-        return ($data['Status'] ?? 1) === 0;
+        return SumitApiResponse::isSuccess($data['Status'] ?? null);
     }
 
     /**
@@ -246,7 +247,7 @@ class ListPaymentsRequest extends Request implements HasBody
     {
         $data = $response->json();
 
-        if (($data['Status'] ?? 1) === 0) {
+        if (SumitApiResponse::isSuccess($data['Status'] ?? null)) {
             return null;
         }
 

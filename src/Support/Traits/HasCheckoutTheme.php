@@ -12,7 +12,7 @@ namespace OfficeGuy\LaravelSumitGateway\Support\Traits;
  *
  * Usage:
  * ```php
- * class MayaNetEsimProduct extends Model implements Payable
+ * class YourPayableModel extends Model implements Payable
  * {
  *     use HasCheckoutTheme;
  * }

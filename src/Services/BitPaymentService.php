@@ -6,6 +6,7 @@ namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Contracts\Payable;
 use OfficeGuy\LaravelSumitGateway\Models\OfficeGuyTransaction;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Bit Payment Service
@@ -142,7 +143,7 @@ class BitPaymentService
             ];
         }
 
-        if ($response && $response['Status'] === 0 && isset($response['Data']['RedirectURL'])) {
+        if ($response && SumitApiResponse::isSuccess($response['Status'] ?? null) && isset($response['Data']['RedirectURL'])) {
             $environment = config('officeguy.environment', 'www');
             // Create pending transaction
             OfficeGuyTransaction::create([
@@ -164,7 +165,7 @@ class BitPaymentService
             ];
         }
 
-        if ($response && $response['Status'] !== 0) {
+        if ($response && !SumitApiResponse::isSuccess($response['Status'] ?? null)) {
             // API error
             OfficeGuyApi::writeToLog(
                 'Bit payment failed for order #' . $order->getPayableId() . ': ' . ($response['UserErrorMessage'] ?? 'Unknown error'),

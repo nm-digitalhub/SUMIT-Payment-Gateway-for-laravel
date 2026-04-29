@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace OfficeGuy\LaravelSumitGateway\Services;
 
 use OfficeGuy\LaravelSumitGateway\Models\CrmEntity;
+use OfficeGuy\LaravelSumitGateway\Support\SumitApiResponse;
 
 /**
  * Customer Service
@@ -77,7 +78,7 @@ class CustomerService
             ];
         }
 
-        if ($data === null || ($data['Status'] ?? 1) !== 0) {
+        if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
             return [
                 'success' => false,
                 'error' => $data['UserErrorMessage'] ?? 'Failed to sync customer with SUMIT',
@@ -163,7 +164,7 @@ class CustomerService
             ];
         }
 
-        if ($data === null || ($data['Status'] ?? 1) !== 0) {
+        if (!$data || !SumitApiResponse::isSuccess($data['Status'] ?? null)) {
             return [
                 'success' => false,
                 'error' => $data['UserErrorMessage'] ?? 'Failed to pull customer details from SUMIT',

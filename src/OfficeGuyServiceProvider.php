@@ -272,6 +272,7 @@ class OfficeGuyServiceProvider extends ServiceProvider
         // Register Blade components (v2.2.0)
         if (class_exists(\Illuminate\Support\Facades\Blade::class)) {
             \Illuminate\Support\Facades\Blade::component('officeguy::payment-form', \OfficeGuy\LaravelSumitGateway\View\Components\PaymentForm::class);
+            \Illuminate\Support\Facades\Blade::component('officeguy::payment-widget', \OfficeGuy\LaravelSumitGateway\View\Components\PaymentWidget::class);
         }
     }
 
@@ -448,15 +449,15 @@ class OfficeGuyServiceProvider extends ServiceProvider
     protected function registerFulfillmentHandlers(): void
     {
         $dispatcher = $this->app->make(\OfficeGuy\LaravelSumitGateway\Services\FulfillmentDispatcher::class);
+        $genericHandler = \OfficeGuy\LaravelSumitGateway\Handlers\GenericFulfillmentHandler::class;
 
-        // Register handlers for each PayableType
+        // Phase 4.6: Single event-only handler for all types. Host listens to PayablePaid for any fulfillment.
         $dispatcher->registerMany([
-            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::INFRASTRUCTURE->value => \OfficeGuy\LaravelSumitGateway\Handlers\InfrastructureFulfillmentHandler::class,
-            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::DIGITAL_PRODUCT->value => \OfficeGuy\LaravelSumitGateway\Handlers\DigitalProductFulfillmentHandler::class,
-            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SUBSCRIPTION->value => \OfficeGuy\LaravelSumitGateway\Handlers\SubscriptionFulfillmentHandler::class,
-            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::GENERIC->value => \OfficeGuy\LaravelSumitGateway\Handlers\GenericFulfillmentHandler::class,
-            // SERVICE type intentionally omitted - it will log warnings
-            // Projects can register custom handlers via dispatcher->register() in their own ServiceProvider
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::INFRASTRUCTURE->value => $genericHandler,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::DIGITAL_PRODUCT->value => $genericHandler,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SUBSCRIPTION->value => $genericHandler,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::SERVICE->value => $genericHandler,
+            \OfficeGuy\LaravelSumitGateway\Enums\PayableType::GENERIC->value => $genericHandler,
         ]);
     }
 
